@@ -49,8 +49,9 @@ export async function GET(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ role: 'guest' });
     }
-    
     const role = await getUserRole(userId);
+
+    // console.log('User role:', role);
     
     return NextResponse.json({ role });
   } catch (error) {

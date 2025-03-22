@@ -2,320 +2,312 @@ import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb/client';
 import { Document, Sort } from 'mongodb';
 
+// ==============================
+// Main API handler function
+// ==============================
 export async function GET(request: NextRequest) {
   try {
     const client = await clientPromise;
     const db = client.db('travel-app');
     const { searchParams } = request.nextUrl;
     
-    const category = searchParams.get('category') || 'property';
+    const category = searchParams.get('category') || 'travelling';
     
-    // Ensure text indexes exist before querying
-    await ensureTextIndexes(db, category);
+    // Validate search parameters
+    const validationResult = validateSearchParams(searchParams, category);
+    if (!validationResult.valid) {
+      return NextResponse.json({ error: validationResult.error }, { status: 400 });
+    }
     
     const query = buildSearchQuery(searchParams);
     const sort = buildSortQuery(searchParams, query);
     
-    const pageSize = 10;
+    const pageSize = parseInt(searchParams.get('pageSize') || '10');
     const page = parseInt(searchParams.get('page') || '1');
 
     let results: Document[] = [];
     let total = 0;
     
-    switch (category.toLowerCase()) {
-      case 'property':
-        total = await db.collection('properties').countDocuments(query);
-        results = await db.collection('properties')
-          .find(query)
-          .sort(sort)
-          .skip((page - 1) * pageSize)
-          .limit(pageSize)
-          .toArray();
-        break;
-      case 'travelling':
-        total = await db.collection('travellings').countDocuments(query);
-        results = await db.collection('travellings')
-          .find(query)
-          .sort(sort)
-          .skip((page - 1) * pageSize)
-          .limit(pageSize)
-          .toArray();
-        break;
-      case 'trip':
-        total = await db.collection('trips').countDocuments(query);
-        results = await db.collection('trips')
-          .find(query)
-          .sort(sort)
-          .skip((page - 1) * pageSize)
-          .limit(pageSize)
-          .toArray();
-        break;
-      default:
-        results = [];
+    const collectionName = getCategoryCollection(category);
+    if (!collectionName) {
+      return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
     }
     
-    // Convert MongoDB documents to plain objects before sending the response
-    const plainResults = results.map(doc => {
-      const plainDoc = JSON.parse(JSON.stringify(doc));
-      
-      if (plainDoc._id) {
-        plainDoc._id = doc._id.toString();
-      }
-      
-      for (const key in plainDoc) {
-        if (plainDoc[key] && plainDoc[key]._id) {
-          plainDoc[key]._id = plainDoc[key]._id.toString();
-        }
-      }
-      
-      for (const key in plainDoc) {
-        if (plainDoc[key] instanceof Date) {
-          plainDoc[key] = plainDoc[key].toISOString();
-        }
-      }
-      
-      return plainDoc;
-    });
+    // Execute query
+    total = await db.collection(collectionName).countDocuments(query);
+    results = await db.collection(collectionName)
+      .find(query)
+      .sort(sort)
+      .skip((page - 1) * pageSize)
+      .limit(pageSize)
+      .toArray();
     
-    return NextResponse.json({ results: plainResults, total });
+    // Serialize results to plain objects
+    const plainResults = serializeDocuments(results);
+    
+    return NextResponse.json({ 
+      results: plainResults, 
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize)
+    });
   } catch (error) {
     console.error('Search API error:', error);
     return NextResponse.json({ error: 'Failed to fetch search results' }, { status: 500 });
   }
 }
 
-// Function to ensure text indexes exist
-async function ensureTextIndexes(db: any, category: string) {
-  try {
-    switch (category.toLowerCase()) {
-      case 'property':
-        await db.collection('properties').createIndex(
-          { 
-            name: "text", 
-            description: "text", 
-            "location.city": "text", 
-            "location.country": "text" 
-          }
-        );
-        break;
-      case 'travelling':
-        await db.collection('travellings').createIndex(
-          { 
-            title: "text", 
-            description: "text", 
-            "days.description": "text", 
-            "days.activities.name": "text", 
-            "days.activities.description": "text" 
-          }
-        );
-        break;
-      case 'trip':
-        await db.collection('trips').createIndex(
-          { 
-            title: "text", 
-            description: "text", 
-            "destination.city": "text", 
-            "destination.country": "text" 
-          }
-        );
-        break;
-    }
-  } catch (error) {
-    console.error('Error creating text index:', error);
-    // Continue execution even if index creation fails
-    // The index might already exist or there might be other issues
+// ==============================
+// Helper functions
+// ==============================
+
+// Get collection name based on category
+function getCategoryCollection(category: string): string | null {
+  switch (category.toLowerCase()) {
+    case 'property':
+      return 'properties';
+    case 'travelling':
+      return 'travellings';
+    case 'trip':
+      return 'trips';
+    default:
+      return null;
   }
 }
 
+// Validate search parameters
+function validateSearchParams(searchParams: URLSearchParams, category: string): { valid: boolean, error?: string } {
+  // Check for valid date parameters
+  if (searchParams.has('startDate') || searchParams.has('endDate')) {
+    try {
+      if (searchParams.has('startDate')) {
+        new Date(searchParams.get('startDate') as string);
+      }
+      if (searchParams.has('endDate')) {
+        new Date(searchParams.get('endDate') as string);
+      }
+    } catch (error) {
+      return { valid: false, error: 'Invalid date format' };
+    }
+  }
+  
+  // Validate numeric parameters based on category
+  const numericParams: Record<string, string[]> = {
+    'property': ['minPrice', 'maxPrice', 'bedrooms', 'bathrooms', 'guests'],
+    'trip': ['minBudget', 'maxBudget']
+  };
+  
+  if (numericParams[category.toLowerCase()]) {
+    for (const param of numericParams[category.toLowerCase()]) {
+      if (searchParams.has(param)) {
+        const value = parseInt(searchParams.get(param) as string);
+        if (isNaN(value)) {
+          return { valid: false, error: `Invalid value for ${param}` };
+        }
+      }
+    }
+  }
+  
+  return { valid: true };
+}
+
+// Build search query based on parameters
 function buildSearchQuery(searchParams: URLSearchParams) {
   const query: any = {};
-  const category = searchParams.get('category') || 'property';
+  const category = searchParams.get('category') || 'travelling';
 
   // General search term
   if (searchParams.has('query') && searchParams.get('query')) {
     const searchText = searchParams.get('query') as string;
-    // Only add text search if there's actual text to search for
+    
     if (searchText.trim() !== '') {
       query.$text = { $search: searchText };
     }
   }
   
-  switch (category.toLowerCase()) {
-    case 'property':
-      // Property-specific filters
-      try {
-        if (searchParams.has('minPrice') || searchParams.has('maxPrice')) {
-          query.pricePerNight = {};
-          if (searchParams.has('minPrice')) {
-            const minPrice = parseInt(searchParams.get('minPrice') as string);
-            if (!isNaN(minPrice)) query.pricePerNight.$gte = minPrice;
-          }
-          if (searchParams.has('maxPrice')) {
-            const maxPrice = parseInt(searchParams.get('maxPrice') as string);
-            if (!isNaN(maxPrice)) query.pricePerNight.$lte = maxPrice;
-          }
-        }
-      } catch (error) {
-        console.warn('Invalid price parameter');
-      }
-      
-      try {
-        if (searchParams.has('bedrooms')) {
-          const bedrooms = parseInt(searchParams.get('bedrooms') as string);
-          if (!isNaN(bedrooms)) query.bedrooms = { $gte: bedrooms };
-        }
-      } catch (error) {
-        console.warn('Invalid bedrooms parameter');
-      }
-      
-      try {
-        if (searchParams.has('bathrooms')) {
-          const bathrooms = parseInt(searchParams.get('bathrooms') as string);
-          if (!isNaN(bathrooms)) query.bathrooms = { $gte: bathrooms };
-        }
-      } catch (error) {
-        console.warn('Invalid bathrooms parameter');
-      }
-      
-      try {
-        if (searchParams.has('guests')) {
-          const guests = parseInt(searchParams.get('guests') as string);
-          if (!isNaN(guests)) query.maximumGuests = { $gte: guests };
-        }
-      } catch (error) {
-        console.warn('Invalid guests parameter');
-      }
-      
-      if (searchParams.has('propertyType')) {
-        query.type = searchParams.get('propertyType');
-      }
-      
-      if (searchParams.has('amenities')) {
-        const amenitiesList = (searchParams.get('amenities') as string).split(',');
-        query.amenities = { $all: amenitiesList };
-      }
-      
-      if (searchParams.has('city')) {
-        const locationQuery = searchParams.get('city');
+  // Add universal location filter, with consistent implementation across categories
+  if (searchParams.has('city')) {
+    const locationQuery = searchParams.get('city') as string;
+    
+    switch (category.toLowerCase()) {
+      case 'property':
         query.$or = [
           { 'location.city': { $regex: locationQuery, $options: 'i' } },
           { 'location.country': { $regex: locationQuery, $options: 'i' } }
         ];
-      }
-      
-      // Filter for active properties only
-      query.active = true;
-      break;
-      
-    case 'travelling':
-      // Travelling-specific filters
-      if (searchParams.has('visibility')) {
-        query.visibility = searchParams.get('visibility');
-      }
-      
-      if (searchParams.has('startDate') || searchParams.has('endDate')) {
-        try {
-          if (searchParams.has('startDate') && searchParams.has('endDate')) {
-            const startDate = new Date(searchParams.get('startDate') as string);
-            const endDate = new Date(searchParams.get('endDate') as string);
-            
-            query.$or = [
-              { 'days.date': { $gte: startDate, $lte: endDate } },
-              { 
-                $and: [
-                  { 'days.date': { $lte: startDate } },
-                  { 'days.date': { $gte: endDate } }
-                ]
-              }
-            ];
-          } else if (searchParams.has('startDate')) {
-            query['days.date'] = { $gte: new Date(searchParams.get('startDate') as string) };
-          } else if (searchParams.has('endDate')) {
-            query['days.date'] = { $lte: new Date(searchParams.get('endDate') as string) };
-          }
-        } catch (error) {
-          console.warn('Invalid date parameter for travelling');
-        }
-      }
-      
-      if (searchParams.has('activityCategory')) {
-        query['days.activities.category'] = searchParams.get('activityCategory');
-      }
-      
-      if (searchParams.has('tags')) {
-        const tagsList = (searchParams.get('tags') as string).split(',');
-        query.tags = { $in: tagsList };
-      }
-      
-      if (searchParams.has('city')) {
-        const locationQuery = searchParams.get('city');
+        break;
+      case 'travelling':
         query.$or = [
           { 'location.city': { $regex: locationQuery, $options: 'i' } },
           { 'location.country': { $regex: locationQuery, $options: 'i' } }
         ];
-      }
-      break;
-      
-    case 'trip':
-      // Trip-specific filters
-      if (searchParams.has('status')) {
-        query.status = searchParams.get('status');
-      }
-      
-      try {
-        if (searchParams.has('startDate') && searchParams.has('endDate')) {
-          const startDate = new Date(searchParams.get('startDate') as string);
-          const endDate = new Date(searchParams.get('endDate') as string);
-          
-          query.$or = [
-            { startDate: { $lte: endDate }, endDate: { $gte: startDate } },
-            { startDate: { $gte: startDate, $lte: endDate } },
-            { endDate: { $gte: startDate, $lte: endDate } }
-          ];
-        } else if (searchParams.has('startDate')) {
-          query.startDate = { $gte: new Date(searchParams.get('startDate') as string) };
-        } else if (searchParams.has('endDate')) {
-          query.endDate = { $lte: new Date(searchParams.get('endDate') as string) };
-        }
-      } catch (error) {
-        console.warn('Invalid date parameter for trip');
-      }
-      
-      if (searchParams.has('city')) {
-        const locationQuery = searchParams.get('city');
+        break;
+      case 'trip':
         query.$or = [
           { 'destination.city': { $regex: locationQuery, $options: 'i' } },
           { 'destination.country': { $regex: locationQuery, $options: 'i' } }
         ];
-      }
-      
-      try {
-        if (searchParams.has('minBudget') || searchParams.has('maxBudget')) {
-          query['budget.amount'] = {};
-          
-          if (searchParams.has('minBudget')) {
-            const minBudget = parseInt(searchParams.get('minBudget') as string);
-            if (!isNaN(minBudget)) query['budget.amount'].$gte = minBudget;
-          }
-          
-          if (searchParams.has('maxBudget')) {
-            const maxBudget = parseInt(searchParams.get('maxBudget') as string);
-            if (!isNaN(maxBudget)) query['budget.amount'].$lte = maxBudget;
-          }
-        }
-      } catch (error) {
-        console.warn('Invalid budget parameter');
-      }
-      
-      if (searchParams.has('transportationType')) {
-        query['transportation.type'] = searchParams.get('transportationType');
-      }
+        break;
+    }
+  }
+  
+  // Add category-specific filters
+  switch (category.toLowerCase()) {
+    case 'property':
+      addPropertyFilters(query, searchParams);
+      break;
+    case 'travelling':
+      addTravellingFilters(query, searchParams);
+      break;
+    case 'trip':
+      addTripFilters(query, searchParams);
       break;
   }
   
   return query;
 }
 
+// Property-specific query filters
+function addPropertyFilters(query: any, searchParams: URLSearchParams) {
+  // Price range
+  if (searchParams.has('minPrice') || searchParams.has('maxPrice')) {
+    query.pricePerNight = {};
+    
+    if (searchParams.has('minPrice')) {
+      const minPrice = parseInt(searchParams.get('minPrice') as string);
+      if (!isNaN(minPrice)) query.pricePerNight.$gte = minPrice;
+    }
+    
+    if (searchParams.has('maxPrice')) {
+      const maxPrice = parseInt(searchParams.get('maxPrice') as string);
+      if (!isNaN(maxPrice)) query.pricePerNight.$lte = maxPrice;
+    }
+  }
+  
+  // Bedrooms
+  if (searchParams.has('bedrooms')) {
+    const bedrooms = parseInt(searchParams.get('bedrooms') as string);
+    if (!isNaN(bedrooms)) query.bedrooms = { $gte: bedrooms };
+  }
+  
+  // Bathrooms
+  if (searchParams.has('bathrooms')) {
+    const bathrooms = parseInt(searchParams.get('bathrooms') as string);
+    if (!isNaN(bathrooms)) query.bathrooms = { $gte: bathrooms };
+  }
+  
+  // Guest capacity
+  if (searchParams.has('guests')) {
+    const guests = parseInt(searchParams.get('guests') as string);
+    if (!isNaN(guests)) query.maximumGuests = { $gte: guests };
+  }
+  
+  // Property type
+  if (searchParams.has('propertyType')) {
+    query.type = searchParams.get('propertyType');
+  }
+  
+  // Amenities (filter for properties containing ALL specified amenities)
+  if (searchParams.has('amenities')) {
+    const amenitiesList = (searchParams.get('amenities') as string).split(',');
+    query.amenities = { $all: amenitiesList };
+  }
+  
+  // Filter for active properties only
+  query.active = true;
+}
+
+// Travelling-specific query filters
+function addTravellingFilters(query: any, searchParams: URLSearchParams) {
+  // Visibility
+  if (searchParams.has('visibility')) {
+    query.visibility = searchParams.get('visibility');
+  }
+  
+  // Date range - Fixed to use a consistent pattern
+  if (searchParams.has('startDate') || searchParams.has('endDate')) {
+    const dateQuery: any = {};
+    
+    if (searchParams.has('startDate')) {
+      const startDate = new Date(searchParams.get('startDate') as string);
+      dateQuery.$gte = startDate;
+    }
+    
+    if (searchParams.has('endDate')) {
+      const endDate = new Date(searchParams.get('endDate') as string);
+      dateQuery.$lte = endDate;
+    }
+    
+    query['days.date'] = dateQuery;
+  }
+  
+  // Activity category
+  if (searchParams.has('activityCategory')) {
+    query['days.activities.category'] = searchParams.get('activityCategory');
+  }
+  
+  // Tags (filter for itineraries containing ANY of the specified tags)
+  if (searchParams.has('tags')) {
+    const tagsList = (searchParams.get('tags') as string).split(',');
+    query.tags = { $in: tagsList };
+  }
+}
+
+// Trip-specific query filters
+function addTripFilters(query: any, searchParams: URLSearchParams) {
+  // Trip status
+  if (searchParams.has('status')) {
+    query.status = searchParams.get('status');
+  }
+  
+  // Date range - standardized approach
+  if (searchParams.has('startDate') || searchParams.has('endDate')) {
+    // For trips, we need to handle date range overlap scenarios
+    if (searchParams.has('startDate') && searchParams.has('endDate')) {
+      const startDate = new Date(searchParams.get('startDate') as string);
+      const endDate = new Date(searchParams.get('endDate') as string);
+      
+      // Find trips that overlap with the selected date range
+      query.$or = [
+        // Case 1: Trip starts before search end date AND ends after search start date
+        { startDate: { $lte: endDate }, endDate: { $gte: startDate } },
+        // Case 2: Trip starts within the search range
+        { startDate: { $gte: startDate, $lte: endDate } },
+        // Case 3: Trip ends within the search range
+        { endDate: { $gte: startDate, $lte: endDate } }
+      ];
+    } else if (searchParams.has('startDate')) {
+      // Find trips that start on or after the specified date
+      query.startDate = { $gte: new Date(searchParams.get('startDate') as string) };
+    } else if (searchParams.has('endDate')) {
+      // Find trips that end on or before the specified date
+      query.endDate = { $lte: new Date(searchParams.get('endDate') as string) };
+    }
+  }
+  
+  // Budget range
+  if (searchParams.has('minBudget') || searchParams.has('maxBudget')) {
+    query['budget.amount'] = {};
+    
+    if (searchParams.has('minBudget')) {
+      const minBudget = parseInt(searchParams.get('minBudget') as string);
+      if (!isNaN(minBudget)) query['budget.amount'].$gte = minBudget;
+    }
+    
+    if (searchParams.has('maxBudget')) {
+      const maxBudget = parseInt(searchParams.get('maxBudget') as string);
+      if (!isNaN(maxBudget)) query['budget.amount'].$lte = maxBudget;
+    }
+  }
+  
+  // Transportation type
+  if (searchParams.has('transportationType')) {
+    query['transportation.type'] = searchParams.get('transportationType');
+  }
+}
+
+// Build sort query
 function buildSortQuery(searchParams: URLSearchParams, query: any): Sort {
   const sortField = searchParams.get('sortBy') || 'createdAt';
   const sortOrder = searchParams.get('sortOrder') === 'asc' ? 1 : -1;
@@ -326,4 +318,56 @@ function buildSortQuery(searchParams: URLSearchParams, query: any): Sort {
   }
   
   return { [sortField]: sortOrder };
+}
+
+// Serialize MongoDB documents to plain objects
+function serializeDocuments(documents: Document[]): any[] {
+  return documents.map(serializeDocument);
+}
+
+// Recursively serialize a MongoDB document to a plain object
+function serializeDocument(doc: any): any {
+  // Handle null or undefined
+  if (doc === null || doc === undefined) {
+    return doc;
+  }
+  
+  // Handle arrays by recursively serializing each item
+  if (Array.isArray(doc)) {
+    return doc.map(item => serializeDocument(item));
+  }
+  
+  // Handle objects
+  if (typeof doc === 'object') {
+    // Convert to plain object first
+    const plainDoc = JSON.parse(JSON.stringify(doc));
+    
+    // Handle MongoDB ObjectId
+    if (doc._id) {
+      plainDoc._id = doc._id.toString();
+    }
+    
+    // Process each property
+    for (const key in plainDoc) {
+      // Handle nested ObjectIds
+      if (plainDoc[key] && typeof plainDoc[key] === 'object' && plainDoc[key]._id) {
+        plainDoc[key]._id = plainDoc[key]._id.toString();
+      }
+      
+      // Handle dates
+      if (doc[key] instanceof Date) {
+        plainDoc[key] = doc[key].toISOString();
+      }
+      
+      // Handle nested objects and arrays recursively
+      if (plainDoc[key] && typeof plainDoc[key] === 'object') {
+        plainDoc[key] = serializeDocument(doc[key]);
+      }
+    }
+    
+    return plainDoc;
+  }
+  
+  // Return primitives as-is
+  return doc;
 }

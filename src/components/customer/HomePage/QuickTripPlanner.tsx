@@ -64,7 +64,7 @@ export default function QuickTripPlanner() {
     const fetchTripVibes = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/trips');
+        const response = await fetch('/api/tavellings');
         
         if (!response.ok) {
           throw new Error('Failed to fetch trip data');
@@ -118,7 +118,7 @@ export default function QuickTripPlanner() {
               <div className="relative h-52 overflow-hidden">
                 <Image 
                   src={vibe?.bannerImage?.url} 
-                  alt={vibe?.bannerImage?.alt}
+                  alt={vibe?.bannerImage?.alt || vibe.title}
                   width={500}
                   height={500}
                   className="w-full h-full object-cover group-hover:scale-105 transition duration-500"

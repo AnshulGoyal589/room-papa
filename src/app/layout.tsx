@@ -4,6 +4,7 @@ import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ClerkProvider } from '@clerk/nextjs';
+import RoleProtection from "@/components/auth/RoleProtection";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,9 +30,11 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-          <Header />
-          <main className="flex-grow">{children}</main>
-          <Footer />
+        <RoleProtection>
+            <Header />
+            <main className="flex-grow">{children}</main>
+            <Footer />
+        </RoleProtection>
         </body>
       </html>
     </ClerkProvider>

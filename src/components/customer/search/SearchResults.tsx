@@ -34,13 +34,7 @@ export default function SearchResults({ initialResults, category, searchParams }
   }, [initialResults, searchParams]);
 
   useEffect(() => {
-    // Load additional data client-side when sorting or pagination changes
     const loadData = async () => {
-      // if (sortBy === searchParams.sortBy && 
-      //     sortOrder === searchParams.sortOrder && 
-      //     currentPage === parseInt(searchParams.page || '1')) {
-      //   return; 
-      // }
       setIsLoading(true);
       
       const params = new URLSearchParams(currentSearchParams?.toString() || '');

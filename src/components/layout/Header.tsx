@@ -8,7 +8,12 @@ import {
   Hotel, 
   ShoppingBag, 
   Menu,
-  UserCircle
+  UserCircle,
+  X,
+  User,
+  Briefcase,
+  ArrowRight,
+  ChevronLeft
 } from 'lucide-react';
 import {
   SignInButton,
@@ -25,53 +30,114 @@ type UserRole = 'customer' | 'manager';
 
 interface RoleModalProps {
   onRoleSelect: (role: UserRole) => Promise<void>;
+  onClose: () => void;
   isSubmitting: boolean;
 }
 
-const RoleSelectionModal: React.FC<RoleModalProps> = ({ onRoleSelect, isSubmitting }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-      <h2 className="text-xl font-bold mb-4">Select Your Role</h2>
-      <p className="text-gray-600 mb-6">Please select your role to continue:</p>
-      
-      <div className="flex flex-col space-y-4">
-        <button
-          onClick={() => onRoleSelect('customer')}
-          disabled={isSubmitting}
-          className="flex items-center p-4 border rounded-lg hover:bg-blue-50 disabled:opacity-50"
-        >
-          <UserCircle className="w-6 h-6 mr-3 text-blue-600" />
-          <div>
-            <div className="font-medium">Customer</div>
-            <div className="text-sm text-gray-500">Book trips and manage your bookings</div>
-          </div>
-        </button>
-        
-        <button
-          onClick={() => onRoleSelect('manager')}
-          disabled={isSubmitting}
-          className="flex items-center p-4 border rounded-lg hover:bg-blue-50 disabled:opacity-50"
-        >
-          <UserCircle className="w-6 h-6 mr-3 text-green-600" />
-          <div>
-            <div className="font-medium">Manager</div>
-            <div className="text-sm text-gray-500">Manage trips, hotels and customer bookings</div>
-          </div>
-        </button>
-      </div>
-      
-      {isSubmitting && (
-        <div className="mt-4 text-center text-blue-600">
-          Saving your role...
+const RoleSelectionModal: React.FC<RoleModalProps> = ({ onRoleSelect, onClose, isSubmitting }) => {
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+
+  const handleContinue = async () => {
+    if (selectedRole) {
+      await onRoleSelect(selectedRole);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 bg-opacity-60 flex items-center justify-center z-50 p-4">
+      <div className="bg-white p-6 rounded-xl shadow-xl max-w-md w-full">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">Choose Your Role</h2>
+          <button 
+            onClick={onClose}
+            className="p-1 rounded-full hover:bg-gray-100"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
         </div>
-      )}
+        
+        <p className="text-gray-600 mb-8">Please select how you'll use TravelNow:</p>
+        
+        <div className="flex flex-col space-y-4 mb-8">
+          <button
+            onClick={() => setSelectedRole('customer')}
+            className={`flex items-center p-5 border rounded-xl transition-all duration-200 ${
+              selectedRole === 'customer' 
+                ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
+                : 'border-gray-200 hover:border-blue-200 hover:bg-blue-50'
+            }`}
+          >
+            <div className={`p-3 rounded-full mr-4 ${
+              selectedRole === 'customer' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
+            }`}>
+              <User className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="font-semibold text-lg">Customer</div>
+              <div className="text-sm text-gray-500">Search and book trips, manage your reservations</div>
+            </div>
+          </button>
+          
+          <button
+            onClick={() => setSelectedRole('manager')}
+            className={`flex items-center p-5 border rounded-xl transition-all duration-200 ${
+              selectedRole === 'manager' 
+                ? 'border-green-500 bg-green-50 ring-2 ring-green-200' 
+                : 'border-gray-200 hover:border-green-200 hover:bg-green-50'
+            }`}
+          >
+            <div className={`p-3 rounded-full mr-4 ${
+              selectedRole === 'manager' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'
+            }`}>
+              <Briefcase className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="font-semibold text-lg">Manager</div>
+              <div className="text-sm text-gray-500">Manage listings, bookings and customer requests</div>
+            </div>
+          </button>
+        </div>
+        
+        <div className="flex flex-col space-y-3">
+          <button
+            onClick={handleContinue}
+            disabled={!selectedRole || isSubmitting}
+            className={`w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center transition-all ${
+              selectedRole && !isSubmitting
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            {isSubmitting ? (
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Processing...</span>
+              </div>
+            ) : (
+              <>
+                <span>Continue to Sign Up</span>
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </>
+            )}
+          </button>
+          
+          <button 
+            onClick={onClose}
+            className="text-gray-500 text-sm font-medium hover:text-gray-800 transition flex items-center justify-center"
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            <span>Go back</span>
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export function Header() {
-  const { isSignedIn, user , isLoaded } = useUser();
-  const { openSignUp } = useClerk();
+  const { isSignedIn, user, isLoaded } = useUser();
+  const { openSignUp, openSignIn } = useClerk();
   const [role, setRole] = useState<UserRole | ''>('');
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -115,8 +181,6 @@ export function Header() {
     try {
       setRole(selectedRole);
       
-      // localStorage.setItem('userRole', selectedRole);
-      
       if (isSignedIn && user) {
         await saveUserRoleToDatabase(user.id, selectedRole, user.primaryEmailAddress?.emailAddress || '');
       } else {
@@ -129,11 +193,15 @@ export function Header() {
       alert('There was an error saving your role. Please try again.');
       
       setRole('');
-      // localStorage.removeItem('userRole');
     } finally {
       setIsSubmitting(false);
     }
   };
+  
+  const closeRoleModal = () => {
+    setShowRoleModal(false);
+  };
+  
   useEffect(() => {
     const saveRoleAfterSignUp = async () => {
       if (isSignedIn && user) {
@@ -177,7 +245,7 @@ export function Header() {
       <header className="bg-white shadow-md">
         <div className="container mx-auto flex justify-between items-center p-4">
           
-          <Link href="/" className="text-2xl font-bold text-blue-600">
+          <Link href="/customeC" className="text-2xl font-bold text-blue-600">
             TravelNow
           </Link>
 
@@ -215,11 +283,12 @@ export function Header() {
           <div className="flex items-center space-x-4">
             <SignedOut>
               <div className="flex items-center gap-2">
-                <SignInButton>
-                  <button className="flex items-center space-x-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full hover:bg-blue-100 transition">
-                    <span>Login</span>
-                  </button>
-                </SignInButton>
+                <button 
+                  onClick={() => openSignIn()}
+                  className="flex items-center space-x-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full hover:bg-blue-100 transition"
+                >
+                  <span>Login</span>
+                </button>
                 <button 
                   onClick={handleSignUp}
                   className="hidden md:flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition"
@@ -249,6 +318,7 @@ export function Header() {
       {showRoleModal && (
         <RoleSelectionModal 
           onRoleSelect={handleRoleSelect}
+          onClose={closeRoleModal}
           isSubmitting={isSubmitting}
         />
       )}

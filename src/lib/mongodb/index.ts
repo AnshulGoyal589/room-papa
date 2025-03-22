@@ -49,9 +49,10 @@ export async function getUserRole(clerkId: string | undefined): Promise<UserRole
   if (!clerkId) {
     return 'guest';
   }
-  
+  console.log('Clerk ID:', clerkId);
   const users = await getUsersCollection();
   const user = await users.findOne({ clerkId });
+  console.log('User:', user);
   
   return user ? user.role : 'guest';
 }

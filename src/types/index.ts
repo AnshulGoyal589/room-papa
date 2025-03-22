@@ -8,6 +8,23 @@ export type TripStatus = 'planned' | 'booked' | 'ongoing' | 'completed' | 'cance
 
 export type UserRole = 'customer' | 'manager' | 'admin';
 
+export interface RoleRouteConfig {
+  allowedRoutes: string[];
+  redirectTo: string;
+  defaultRoute: string;
+}
+
+export interface RouteConfig {
+  publicRoutes: string[];
+  roleRoutes: {
+    [key in UserRole]: RoleRouteConfig;
+  };
+}
+
+export interface UserWithRole {
+  id: string;
+  role: UserRole;
+}
 
 // types/index.ts
 import { ObjectId } from 'mongodb';

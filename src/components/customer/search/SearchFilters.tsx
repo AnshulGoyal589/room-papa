@@ -113,7 +113,7 @@ export default function SearchFilters({ initialCategory, searchParams }: SearchF
     }, [searchParams]);
   
     const applyFilters = () => {
-      const params = new URLSearchParams(currentSearchParams.toString());
+      const params = new URLSearchParams(currentSearchParams?.toString());
       params.set('category', category);
       
       // Clear category-specific filters first
@@ -153,7 +153,7 @@ export default function SearchFilters({ initialCategory, searchParams }: SearchF
     };
   
     const clearFilters = () => {
-      const params = new URLSearchParams(currentSearchParams.toString());
+      const params = new URLSearchParams(currentSearchParams?.toString());
       params.set('category', category);
       
       // Clear category-specific filters
@@ -192,12 +192,12 @@ export default function SearchFilters({ initialCategory, searchParams }: SearchF
             className="space-y-2"
           >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="property" id="property" />
-              <label htmlFor="property">Properties</label>
-            </div>
-            <div className="flex items-center space-x-2">
               <RadioGroupItem value="travelling" id="travelling" />
               <label htmlFor="travelling">Itineraries</label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="property" id="property" />
+              <label htmlFor="property">Properties</label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="trip" id="trip" />

@@ -202,36 +202,12 @@ export async function getTravellingsCollection(): Promise<Collection<Travelling>
     return travellings.findOne({_id: new ObjectId(id) });
   }
   
-  export async function createTravelling(travellingData: Omit<Travelling, '_id' | 'createdAt' | 'updatedAt'>): Promise<Travelling> {
-    try {
-      // Validate travelling data
-      validateTravelling(travellingData as any);
-      
-      const travellings = await getTravellingsCollection();
-      
-      const newTravelling: Travelling = {
-        ...travellingData,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      const result = await travellings.insertOne(newTravelling as any);
-      
-      return {
-        ...newTravelling,
-        _id: result.insertedId.toString()
-      };
-    } catch (error) {
-      console.error('Error creating travelling:', error);
-      throw error;
-    }
-  }
   
   export async function updateTravelling(id: string, travellingData: Partial<Travelling>): Promise<Travelling | null> {
     const travellings = await getTravellingsCollection();
     
     await travellings.updateOne(
-      { _id: id },
+      { _id: new ObjectId(id) },
       { 
         $set: {
           ...travellingData,
@@ -245,6 +221,6 @@ export async function getTravellingsCollection(): Promise<Collection<Travelling>
   
   export async function deleteTravelling(id: string): Promise<boolean> {
     const travellings = await getTravellingsCollection();
-    const result = await travellings.deleteOne({ _id: id });
+    const result = await travellings.deleteOne({ _id: new ObjectId(id) });
     return result.deletedCount === 1;
   }

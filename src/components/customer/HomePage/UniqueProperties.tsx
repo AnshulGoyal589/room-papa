@@ -124,7 +124,7 @@ export default function UniqueProperties(): React.ReactElement {
                   src={getPropertyImage(property.images)} 
                   height={500}
                   width={500}
-                  alt={property.name}
+                  alt={property.name || 'Property Image'}
                   className="w-full h-60 object-cover"
                 />
                 <div className="absolute top-3 right-3 bg-blue-600 text-white text-sm px-3 py-1 rounded-full">

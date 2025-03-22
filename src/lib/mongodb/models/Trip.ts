@@ -170,7 +170,7 @@ export async function getTripsCollection(): Promise<Collection<Trip>> {
     const trips = await getTripsCollection();
     
     await trips.updateOne(
-      { _id: id },
+      { _id: new ObjectId(id) },
       { 
         $set: {
           ...tripData,
@@ -184,6 +184,6 @@ export async function getTripsCollection(): Promise<Collection<Trip>> {
   
   export async function deleteTrip(id: string): Promise<boolean> {
     const trips = await getTripsCollection();
-    const result = await trips.deleteOne({ _id: id });
+    const result = await trips.deleteOne({ _id: new ObjectId(id) });
     return result.deletedCount === 1;
   }

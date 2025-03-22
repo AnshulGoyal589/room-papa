@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createTravelling, getAllTravellings, Travelling } from '@/lib/mongodb/models/Travelling';
+import { getAllTravellings, Travelling } from '@/lib/mongodb/models/Travelling';
 import clientPromise from '@/lib/mongodb/client';
 
 export async function GET(request: NextRequest) {

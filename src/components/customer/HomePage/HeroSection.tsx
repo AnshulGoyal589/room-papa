@@ -6,8 +6,12 @@ import TravelTypeSelector from './TravelTypeSelector';
 import SearchForm from './SearchForm';
 import { ChevronRight } from 'lucide-react';
 
+type SearchFormProps = {
+  defaultCategory: 'property' | 'trip' | 'travelling';
+};
+
 export default function HeroSection() {
-  const [searchType, setSearchType] = useState<'stays' | 'flights' | 'car-rentals'>('stays');
+  const [searchType, setSearchType] = useState<SearchFormProps['defaultCategory']>('property');
   const [currentBackground, setCurrentBackground] = useState(0);
   
   const backgrounds = [
@@ -66,9 +70,9 @@ export default function HeroSection() {
           </p>
           
           {/* Travel type selector with enhanced styling */}
-          <div className="bg-white/10 backdrop-blur-md p-1 rounded-xl inline-block mb-8">
+          {/* <div className="bg-white/10 backdrop-blur-md p-1 rounded-xl inline-block mb-8">
             <TravelTypeSelector searchType={searchType} setSearchType={setSearchType} />
-          </div>
+          </div> */}
         </div>
         
         {/* Search form with glass effect */}

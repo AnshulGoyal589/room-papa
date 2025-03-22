@@ -143,7 +143,7 @@ export async function getPropertiesCollection(): Promise<Collection<Property>> {
       
       return {
         ...newProperty,
-        _id: result.insertedId.toString()
+        _id: new ObjectId(result.insertedId.toString())
       };
     } catch (error) {
       console.error('Error creating property:', error);
@@ -155,7 +155,7 @@ export async function getPropertiesCollection(): Promise<Collection<Property>> {
     const properties = await getPropertiesCollection();
     
     await properties.updateOne(
-      { _id: id },
+      { _id: new ObjectId(id) },
       { 
         $set: {
           ...propertyData,
@@ -169,6 +169,6 @@ export async function getPropertiesCollection(): Promise<Collection<Property>> {
   
   export async function deleteProperty(id: string): Promise<boolean> {
     const properties = await getPropertiesCollection();
-    const result = await properties.deleteOne({ _id: id });
+    const result = await properties.deleteOne({ _id: new ObjectId(id) });
     return result.deletedCount === 1;
   }
