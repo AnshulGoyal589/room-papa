@@ -80,11 +80,15 @@ export default function SearchResults({ initialResults, category, searchParams }
 
   // Render property card
   const renderPropertyCard = (property: any) => (
-    <div key={property._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+    <div 
+      key={property._id} 
+      className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow" 
+      onClick={() => router.push(`/customer/property/${property._id}`)}
+    >
       <div className="relative h-48">
         {property.bannerImage ? (
           <Image 
-            src={property.bannerImage.url || '/placeholder-property.jpg'} 
+            src={property.bannerImage.url} 
             alt={property.name || ""}
             fill
             style={{ objectFit: 'cover' }}
@@ -141,7 +145,10 @@ export default function SearchResults({ initialResults, category, searchParams }
 
   // Render trip card
   const renderTripCard = (trip: any) => (
-    <div key={trip._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+    <div key={trip._id} 
+      className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+      onClick={() => router.push(`/customer/trip/${trip._id}`)}
+      >
       <div className="relative h-48">
         {trip.bannerImage ? (
           <Image 
@@ -203,7 +210,10 @@ export default function SearchResults({ initialResults, category, searchParams }
   
   // Render travelling (itinerary) card
   const renderTravellingCard = (itinerary: any) => (
-    <div key={itinerary._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+    <div key={itinerary._id}
+      className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+      onClick={() => router.push(`/customer/travelling/${itinerary._id}`)}
+      >
       <div className="relative h-48">
         {itinerary.bannerImage ? (
           <Image 

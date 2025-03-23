@@ -41,7 +41,7 @@ export default function PopularDestinations() {
     fetchDestinations();
   }, []);
   const handleSearch = (id: string) => {
-    router.push(`/customer/trips/${id}`);
+    router.push(`/customer/trip/${id}`);
   };
 
   return (

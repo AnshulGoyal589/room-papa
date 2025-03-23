@@ -33,29 +33,6 @@ export interface Trip {
   bannerImage?: Image; // Main featured image
   detailImages?: Image[]; // Trip gallery images
   domain?: string;
-
-  // ownerId : string; 
-  // status: TripType;
-  // accommodations: {
-  //   propertyId: string; // Reference to booked property
-  //   checkIn: Date;
-  //   checkOut: Date;
-  //   confirmationCode?: string;
-  //   price: number;
-  // }[];
-  // transportation: {
-  //   type: TransportationType;
-  //   departureLocation: string;
-  //   arrivalLocation: string;
-  //   departureTime: Date;
-  //   arrivalTime: Date;
-  //   confirmationCode?: string;
-  //   price?: number;
-  //   provider?: string; // Airline, train company, etc.
-  // }[];
-  // totalCost?: number;
-  // notes?: string;
-  // sharedWith?: string[]; // List of user IDs with whom the trip is shared
 }
 
 interface TripValidationInput {

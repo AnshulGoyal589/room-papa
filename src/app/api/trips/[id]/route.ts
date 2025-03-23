@@ -6,9 +6,10 @@ export async function GET(
   context: { params: { id: string } }
 ) {
   try {
-
-    const { id } = await context.params;
-    const trip = await getTripById(id);
+    const params = await context.params;
+    const tripId = params.id;
+    
+    const trip = await getTripById(tripId);
     
     if (!trip) {
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 });

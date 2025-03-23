@@ -34,7 +34,7 @@ export default function UniqueProperties(): React.ReactElement {
   const [error, setError] = useState<string | null>(null);
 
   const handleSearch = (id: string) => {
-    router.push(`/customer/properties/${id}`);
+    router.push(`/customer/property/${id}`);
   };
   const handleProperties = () => {
     const params = new URLSearchParams(currentSearchParams?.toString() || '');

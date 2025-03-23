@@ -15,6 +15,8 @@ export async function GET(
     
     const query = buildCategoryQuery(searchParams, category);
     const sort = buildSortQuery(searchParams);
+
+    // console.log('Category search query:', query);
     
     const pageSize = 10;
     const page = parseInt(searchParams.get('page') || '1');
@@ -35,6 +37,7 @@ export async function GET(
     }
     
     const total = await db.collection(collection).countDocuments(query);
+
     const results = await db.collection(collection)
       .find(query)
       .sort(sort)

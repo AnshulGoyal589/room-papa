@@ -7,12 +7,11 @@ import UniqueProperties from '@/components/customer/HomePage/UniqueProperties';
 import PropertyTypes from '@/components/customer/HomePage/PropertyTypes';
 import WeekendDeals from '@/components/customer/HomePage/WeekendDeals';
 import ExploreIndia from '@/components/customer/HomePage/ExploreIndia';
-// import { currentUser } from '@clerk/nextjs/server'
 
 
 export default async function Dashboard() {
-  // const user = await currentUser();
-  // console.log(user);
+
+  
   return (
     <div className="min-h-screen bg-gray-50">
       
