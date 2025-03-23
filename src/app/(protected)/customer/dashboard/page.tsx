@@ -26,9 +26,9 @@ export default async function Dashboard() {
       
       <PropertyTypes />
       
-      <WeekendDeals />
+      {/* <WeekendDeals /> */}
       
-      <ExploreIndia />
+      <ExploreIndia /> {/* keep domestic trips here */}
       
       <WhyChooseUs />
       

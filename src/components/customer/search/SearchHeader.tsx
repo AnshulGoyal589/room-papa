@@ -5,11 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, MapPin, Calendar, Users, DollarSign, Tag, Plane, Compass, Hotel } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { SearchHeaderProps } from '@/types';
 
-interface SearchHeaderProps {
-  category: string;
-  initialSearchParams?: { [key: string]: string };
-}
 
 export default function SearchHeader({ category, initialSearchParams = {} }: SearchHeaderProps) {
   const router = useRouter();

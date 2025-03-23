@@ -1,50 +1,46 @@
 "use client"
 
+import { PropertyType } from '@/types';
 import Image from 'next/image';
 import React, { useState, useEffect } from 'react';
-
-// Type definitions from your schema
-type PropertyType = 'hotel' | 'apartment' | 'villa' | 'hostel' | 'resort';
-type PropertyAmenities = 'wifi' | 'pool' | 'gym' | 'spa' | 'restaurant' | 'parking' | 'airConditioning' | 'breakfast';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface Property {
-  _id?: string;
-  name: string;
+  _id: string;
+  title: string;
+  costing: {
+    price: number;
+    discountedPrice: number;
+    currency: string;
+  };
+  bannerImage: {
+    url: string;
+  };
   type: PropertyType;
   location: {
-    address: string;
     city: string;
-    state?: string;
+    state : string;
     country: string;
-    zipCode?: string;
-    coordinates?: {
-      latitude: number;
-      longitude: number;
-    }
   };
-  description: string;
-  amenities: PropertyAmenities[];
-  images: string[]; // URLs to property images
-  pricePerNight: number;
-  currency: string; // e.g., 'USD', 'EUR'
-  rating?: number; // Average rating out of 5
-  reviewCount?: number;
-  maximumGuests: number;
-  bedrooms: number;
-  bathrooms: number;
-  availabilityCalendar?: {
-    [date: string]: boolean; // true if available, false if booked
-  };
-  ownerId: string; // Reference to property owner/manager
-  active: boolean; // Whether the property is active for booking
-  createdAt: Date;
-  updatedAt: Date;
+
 }
 
 export default function UniqueProperties(): React.ReactElement {
+
+  const router = useRouter();
+  const currentSearchParams = useSearchParams();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handleSearch = (id: string) => {
+    router.push(`/customer/properties/${id}`);
+  };
+  const handleProperties = () => {
+    const params = new URLSearchParams(currentSearchParams?.toString() || '');
+    params.set('category', 'property');
+    router.push(`/customer/search?${params.toString()}`);
+  };
 
   useEffect(() => {
     const fetchProperties = async (): Promise<void> => {
@@ -69,22 +65,7 @@ export default function UniqueProperties(): React.ReactElement {
     fetchProperties();
   }, []);
 
-  // Helper function to format currency
-  const formatCurrency = (amount: number, currency: string): string => {
-    // Format based on currency type
-    if (currency === 'INR') {
-      return `₹${amount.toLocaleString('en-IN')}/night`;
-    }
-    return `${currency} ${amount.toLocaleString()}/night`;
-  };
 
-  // Get a default image or the first image from the array
-  const getPropertyImage = (images: string[]): string => {
-    if (images && images.length > 0) {
-      return images[0];
-    }
-    return '/images/placeholder.jpg'; // fallback image
-  };
 
   if (loading) {
     return (
@@ -118,13 +99,14 @@ export default function UniqueProperties(): React.ReactElement {
             <div 
               key={property._id} 
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300"
+              onClick={() => handleSearch(property._id)}
             >
               <div className="relative">
                 <Image
-                  src={getPropertyImage(property.images)} 
+                  src={property.bannerImage.url} 
                   height={500}
                   width={500}
-                  alt={property.name || 'Property Image'}
+                  alt={property.title}
                   className="w-full h-60 object-cover"
                 />
                 <div className="absolute top-3 right-3 bg-blue-600 text-white text-sm px-3 py-1 rounded-full">
@@ -132,13 +114,13 @@ export default function UniqueProperties(): React.ReactElement {
                 </div>
               </div>
               <div className="p-4">
-                <h3 className="text-xl font-semibold mb-1">{property.name}</h3>
+                <h3 className="text-xl font-semibold mb-1">{property.title}</h3>
                 <p className="text-gray-500 mb-2">{property.location.city}, {property.location.country}</p>
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-blue-600">
-                    {formatCurrency(property.pricePerNight, property.currency)}
+                    {(property.costing.price, property.costing.currency)}
                   </span>
-                  <button className="text-sm text-blue-600 hover:underline">
+                  <button className="text-sm text-blue-600 hover:underline" onClick = {() => handleProperties()}>
                     View Details
                   </button>
                 </div>
@@ -148,9 +130,15 @@ export default function UniqueProperties(): React.ReactElement {
         </div>
         
         <div className="mt-8 text-center">
-          <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-300">
-            Discover All Properties
-          </button>
+          <button 
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-300"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleProperties();
+            }}
+          >
+          More Properties
+         </button>
         </div>
       </div>
     </div>

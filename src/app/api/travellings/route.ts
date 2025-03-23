@@ -22,7 +22,6 @@ export async function POST(req: NextRequest) {
     
     const travellingData = await req.json();
     
-    // Add timestamps if not present
     const travelling: Travelling = {
       ...travellingData,
       createdAt: travellingData.createdAt || new Date(),

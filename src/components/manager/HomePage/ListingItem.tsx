@@ -1,16 +1,18 @@
-// components/ListingItem.tsx
 import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, ArrowRightIcon } from 'lucide-react';
+import Image from 'next/image';
 
 type Item = {
-  id: string;
+  _id?: string;
   title: string;
   description: string;
   category: 'Property' | 'Trip' | 'Travelling';
-  status: string;
   createdAt: Date;
+  bannerImage?: {
+    url: string;
+  }
 };
 
 type ListingItemProps = {
@@ -19,35 +21,39 @@ type ListingItemProps = {
 };
 
 const ListingItem: React.FC<ListingItemProps> = ({ item, onClick }) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'In Progress':
-        return 'bg-blue-100 text-blue-800';
-      case 'Completed':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   return (
-    <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={onClick}>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <Badge variant="outline">{item.category}</Badge>
-          <Badge className={getStatusColor(item.status)}>{item.status}</Badge>
+    <Card 
+      className="cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden group"
+      onClick={onClick}
+    >
+      <div className="relative h-56">
+        <Image
+          src={item.bannerImage?.url || '/default-banner.jpg'}
+          alt={item.title}
+          layout="fill"
+          objectFit="cover"
+          className="group-hover:scale-105 transition-transform duration-300"
+        />
+        <div className="absolute top-4 left-4 z-10">
+          <Badge variant="secondary" className="text-sm font-semibold px-3 py-1">
+            {item.category}
+          </Badge>
         </div>
-        <CardTitle className="text-lg">{item.title}</CardTitle>
+      </div>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xl font-bold line-clamp-1">{item.title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-gray-600 line-clamp-2">{item.description}</p>
+        <p className="text-sm text-gray-600 line-clamp-3">{item.description}</p>
       </CardContent>
-      <CardFooter className="pt-0">
-        <div className="flex items-center text-xs text-gray-500">
-          <CalendarIcon className="w-3 h-3 mr-1" />
-          {new Date(item.createdAt).toLocaleDateString()}
+      <CardFooter className="pt-4 flex justify-between items-center border-t">
+        <div className="flex items-center text-sm text-gray-500">
+          <CalendarIcon className="w-4 h-4 mr-2" />
+          {new Date(item.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+        </div>
+        <div className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center group">
+          View Details
+          <ArrowRightIcon className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
         </div>
       </CardFooter>
     </Card>

@@ -14,12 +14,13 @@ import { checkAuth } from '@/lib/auth';
 type ItemCategory = 'Property' | 'Trip' | 'Travelling';
 
 interface BaseItem {
-  id:string;
   _id?: string;
   title: string;
   description: string;
   category: ItemCategory;
-  status: string;
+  bannerImage?: {
+    url: string;
+  };
   createdAt: Date;
 }
 
@@ -35,8 +36,6 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('all');
 
   
-
-  // Fetch items on component mount
   useEffect(() => {
     fetchItems();
   }, []);
@@ -44,19 +43,19 @@ export default function Dashboard() {
   const fetchItems = async () => {
     setIsLoading(true);
     try {
-      // Fetch properties
+      
       const propertiesRes = await fetch('/api/properties');
       const properties = await propertiesRes.json();
+      // console.log(properties);
       const formattedProperties = properties.map((prop: any) => ({
         _id: prop._id,
         title: prop.title,
         description: prop.description,
+        bannerImage: prop.bannerImage,
         category: 'Property' as ItemCategory,
-        status: prop.active ? 'Active' : 'Inactive',
         createdAt: new Date(prop.createdAt)
       }));
 
-      // Fetch trips
       const tripsRes = await fetch('/api/trips');
       const trips = await tripsRes.json();
       const formattedTrips = trips.map((trip: any) => ({
@@ -64,11 +63,11 @@ export default function Dashboard() {
         title: trip.title,
         description: trip.description || '',
         category: 'Trip' as ItemCategory,
-        status: trip.status.charAt(0).toUpperCase() + trip.status.slice(1),
+        bannerImage: trip.bannerImage,
         createdAt: new Date(trip.createdAt)
       }));
 
-      // Fetch travellings
+      
       const travellingsRes = await fetch('/api/travellings');
       const travellings = await travellingsRes.json();
       const formattedTravellings = travellings.map((travelling: any) => ({
@@ -76,16 +75,18 @@ export default function Dashboard() {
         title: travelling.title,
         description: travelling.description || '',
         category: 'Travelling' as ItemCategory,
-        status: travelling.visibility.charAt(0).toUpperCase() + travelling.visibility.slice(1),
+        bannerImage: travelling.bannerImage,
         createdAt: new Date(travelling.createdAt)
       }));
 
-      // Combine all items
+      
       const allItems = [
         ...formattedProperties,
         ...formattedTrips,
         ...formattedTravellings
       ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+      // console.log(allItems);
 
       setItems(allItems);
     } catch (error) {

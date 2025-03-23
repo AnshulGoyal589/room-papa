@@ -32,7 +32,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import ImageUpload from '@/components/cloudinary/ImageUpload';
 import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
 import { Image } from '@/lib/mongodb/models/Image';
-import { ItineraryVisibility, PropertyType, TripStatus } from '@/types';
+import { ItineraryVisibility, PropertyType, TransportationType, TripType } from '@/types';
 import { useUser } from "@clerk/nextjs";
 import { Description } from '@radix-ui/react-dialog';
 
@@ -75,52 +75,61 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
 
   const selectedCategory = form.watch('category');
 
-  // Form fields specific to each category
   const [propertyData, setPropertyData] = useState({
     type: 'hotel' as PropertyType,
     location: {
       address: '',
       city: '',
+      state: '',
       country: '',
     },
     amenities: ['wifi'],
-    pricePerNight: 100,
-    currency: 'USD',
+    costing:{
+      price: 100,
+      discountedPrice: 80,
+      currency: 'USD',
+    },
     bedrooms: 1,
     bathrooms: 1,
     maximumGuests: 2,
-    active: true,
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    
   });
 
   const [tripData, setTripData] = useState({
     destination: {
       city: '',
+      state: '',
       country: '',
     },
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    status: 'planned' as TripStatus,
-    budget: {
-      amount: 1000,
+    type: 'domestic' as TripType,
+    costing: {
+      price: 1000,
+      discountedPrice : 800,
       currency: 'USD',
     },
-    accommodations: [],
-    transportation: [],
-    activities: [],
+    domain: 'beach',
+    activityChoices: [] as string[],
   });
 
   const [travellingData, setTravellingData] = useState({
-    tripId: '',
-    visibility: 'private' as ItineraryVisibility,
-    status: 'planned',
-    days: [
-      {
-        date: new Date().toISOString().split('T')[0],
-        activities: [],
-        weather: 'unknown',
-      }
-    ],
-    tags: [],
+  
+    transportation: {
+      type: 'flight' as TransportationType,
+      departureTime: new Date().toISOString(),
+      arrivalTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+      from: 'Mumbai',
+      to: 'New York',
+    },
+    costing: {
+      price: 1000,
+      discountedPrice: 800,
+      currency: 'USD',
+    },
+    totalRating: 0
   });
 
   const handlePropertyChange = (field: string, value: any) => {
@@ -153,6 +162,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
     }
   };
 
+
   const handleTravellingChange = (field: string, value: any) => {
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
@@ -172,13 +182,12 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
     try {
       setIsSubmitting(true);
       
-      // Validate image requirements
       if (!bannerImage) {
         form.setError('root', { 
           message: 'Banner image is required' 
         });
         setIsSubmitting(false);
-        return; // Make sure to return here
+        return; 
       }
       
       if (detailImages.length < 3) {
@@ -186,31 +195,25 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
           message: 'At least 3 detail images are required' 
         });
         setIsSubmitting(false);
-        return; // Make sure to return here
+        return;
       }
       
-      let additionalData: Record<string, any> = {};
-      let apiRoute = '';
+      let apiRoute = 'properties';
+      let finalData;
       
-      // Add category-specific data
-      if (selectedCategory === 'Property') {
-        additionalData = {
-          ...propertyData,
-          ownerId: userID,
-        };
-        apiRoute = 'properties';
-      } else if (selectedCategory === 'Trip') {
-        additionalData = {
+      if (selectedCategory === 'Trip') {
+        const filteredActivities = tripData.activityChoices.filter(activity => activity.trim() !== '');
+        finalData = {
           ...tripData,
-          ownerId: userID,
+          activityChoices: filteredActivities
         };
         apiRoute = 'trips';
       } else if (selectedCategory === 'Travelling') {
-        additionalData = {
-          ...travellingData,
-          ownerId: userID,
-        };
+        finalData = travellingData;
         apiRoute = 'travellings';
+      }else{
+        finalData = propertyData;
+        apiRoute = 'properties';
       }
       
       if (!apiRoute) {
@@ -218,17 +221,18 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
           message: 'Invalid category selected' 
         });
         setIsSubmitting(false);
-        return; // Make sure to return here
+        return;
       }
       
-      // Combine the form values with additional data and images
       const newItem = {
-        ...values,
-        ...additionalData,
+        title: values.title,
+        description: values.description,
+        ...finalData,
         bannerImage,
-        detailImages
+        detailImages,
+        ownerId: userID,
       };
-      // console.log(newItem);
+      
       const response = await fetch(`/api/${apiRoute}`, {
         method: 'POST',
         headers: {
@@ -241,7 +245,6 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
         throw new Error('Failed to save item');
       }
       
-      const result = await response.json();
       onAdd();
       onClose();
     } catch (error) {
@@ -254,11 +257,12 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
     }
   };
 
-  // Render additional fields based on the selected category
   const renderCategoryFields = () => {
+
     if (!isAdvancedMode) return null;
     
     switch (selectedCategory) {
+
       case 'Property':
         return (
           <div className="space-y-4 max-h-96 overflow-y-auto p-2">
@@ -290,13 +294,21 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
               />
             </FormItem>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormItem>
                 <FormLabel>City</FormLabel>
                 <Input 
                   value={propertyData.location.city}
                   onChange={(e) => handlePropertyChange('location.city', e.target.value)}
                   placeholder="Enter city"
+                />
+              </FormItem>
+              <FormItem>
+                <FormLabel>State</FormLabel>
+                <Input 
+                  value={propertyData.location.state}
+                  onChange={(e) => handlePropertyChange('location.state', e.target.value)}
+                  placeholder="Enter State"
                 />
               </FormItem>
               
@@ -310,13 +322,22 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
               </FormItem>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormItem>
                 <FormLabel>Price per Night</FormLabel>
                 <Input 
                   type="number"
-                  value={propertyData.pricePerNight}
-                  onChange={(e) => handlePropertyChange('pricePerNight', Number(e.target.value))}
+                  value={propertyData.costing.price}
+                  onChange={(e) => handlePropertyChange('costing.price', Number(e.target.value))}
+                  min={1}
+                />
+              </FormItem>
+              <FormItem>
+                <FormLabel>Discounted Price per Night</FormLabel>
+                <Input 
+                  type="number"
+                  value={propertyData.costing.discountedPrice}
+                  onChange={(e) => handlePropertyChange('costing.discountedPrice ', Number(e.target.value))}
                   min={1}
                 />
               </FormItem>
@@ -324,13 +345,14 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
               <FormItem>
                 <FormLabel>Currency</FormLabel>
                 <Select
-                  value={propertyData.currency}
-                  onValueChange={(value) => handlePropertyChange('currency', value)}
+                  value={propertyData.costing.currency}
+                  onValueChange={(value) => handlePropertyChange('costing.currency', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select currency" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="INR">INR</SelectItem>
                     <SelectItem value="USD">USD</SelectItem>
                     <SelectItem value="EUR">EUR</SelectItem>
                     <SelectItem value="GBP">GBP</SelectItem>
@@ -401,7 +423,8 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
       
       case 'Trip':
         return (
-          <div className="space-y-4 max-h-96 overflow-y-auto p-2">
+          <div className="space-y-4 overflow-y-auto p-2">
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormItem>
                 <FormLabel>Start Date</FormLabel>
@@ -422,13 +445,22 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
               </FormItem>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormItem>
                 <FormLabel>City</FormLabel>
                 <Input 
                   value={tripData.destination.city}
                   onChange={(e) => handleTripChange('destination.city', e.target.value)}
                   placeholder="Enter city"
+                />
+              </FormItem>
+
+              <FormItem>
+                <FormLabel>State</FormLabel>
+                <Input 
+                  value={tripData.destination.state}
+                  onChange={(e) => handleTripChange('destination.state', e.target.value)}
+                  placeholder="Enter State"
                 />
               </FormItem>
               
@@ -440,52 +472,223 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
                   placeholder="Enter country"
                 />
               </FormItem>
+
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
+              <FormItem>
+                <FormLabel>Major Domain</FormLabel>
+                <Select
+                  value={tripData.domain}
+                  onValueChange={(value) => handleTripChange('domain', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Domain" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="beach">Beach Getaway</SelectItem>
+                    <SelectItem value="mountain">Mountain Retreat</SelectItem>
+                    <SelectItem value="cultural">Cultural Experience</SelectItem>
+                    <SelectItem value="wildlife">Wildlife Adventure</SelectItem>
+                    <SelectItem value="city">City Exploration</SelectItem>
+                    <SelectItem value="heritage">Heritage Sites</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormItem>
+
+              <FormItem>
+                <FormLabel>Type</FormLabel>
+                <Select
+                  value={tripData.type}
+                  onValueChange={(value) => handleTripChange('type', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="domestic">Domestic</SelectItem>
+                    <SelectItem value="international">International</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormItem>
+
+            </div>
+
+
             <FormItem>
-              <FormLabel>Status</FormLabel>
+              <FormLabel>Activity Choices</FormLabel>
+              <div className="space-y-2">
+                {tripData.activityChoices.map((activity, index) => (
+                  <div key={index} className="flex items-center space-x-2">
+                    <Input 
+                      value={activity}
+                      onChange={(e) => {
+                        const newActivities = [...tripData.activityChoices];
+                        newActivities[index] = e.target.value;
+                        handleTripChange('activityChoices', newActivities);
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const newActivities = tripData.activityChoices.filter((_, i) => i !== index);
+                        handleTripChange('activityChoices', newActivities);
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  onClick={() => {
+                    handleTripChange('activityChoices', [...tripData.activityChoices, '']);
+                  }}
+                >
+                  Add Activity Choice
+                </Button>
+              </div>
+            </FormItem>
+          
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormItem>
+                  <FormLabel>Total Price</FormLabel>
+                  <Input 
+                    type="number"
+                    value={tripData.costing.price}
+                    onChange={(e) => handleTripChange('costing.price', Number(e.target.value))}
+                    min={0}
+                  />
+                </FormItem>
+                <FormItem>
+                  <FormLabel>Discounted Price</FormLabel>
+                  <Input 
+                    type="number"
+                    value={tripData.costing.discountedPrice}
+                    onChange={(e) => handleTripChange('costing.discountedPrice', Number(e.target.value))}
+                    min={0}
+                  />
+                </FormItem>
+                
+                <FormItem>
+                  <FormLabel>Currency</FormLabel>
+                  <Select
+                    value={tripData.costing.currency}
+                    onValueChange={(value) => handleTripChange('costing.currency', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="INR">INR</SelectItem>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="GBP">GBP</SelectItem>
+                      <SelectItem value="JPY">JPY</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+            </div>
+
+          </div>
+        );
+      
+      case 'Travelling':
+        return (
+          <div className="space-y-4 max-h-96 overflow-y-auto p-2">
+            <FormItem>
+              <FormLabel>Transportation Type</FormLabel>
               <Select
-                value={tripData.status}
-                onValueChange={(value) => handleTripChange('status', value)}
+                value={travellingData.transportation.type}
+                onValueChange={(value) => handleTravellingChange('transportation.type', value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder="Select transportation type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="planned">Planned</SelectItem>
-                  <SelectItem value="booked">Booked</SelectItem>
-                  <SelectItem value="ongoing">Ongoing</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="flight">Flight</SelectItem>
+                  <SelectItem value="train">Train</SelectItem>
+                  <SelectItem value="bus">Bus</SelectItem>
+                  <SelectItem value="car">Car</SelectItem>
                 </SelectContent>
               </Select>
             </FormItem>
-            
 
-            {/* </Select>
-            </FormItem> */}
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormItem>
-                <FormLabel>Budget Amount</FormLabel>
+                <FormLabel>Departure Time</FormLabel>
+                <Input 
+                  type="datetime-local"
+                  value={travellingData.transportation.departureTime.slice(0, 16)}
+                  onChange={(e) => handleTravellingChange('transportation.departureTime', e.target.value)}
+                />
+              </FormItem>
+
+              <FormItem>
+                <FormLabel>Arrival Time</FormLabel>
+                <Input 
+                  type="datetime-local"
+                  value={travellingData.transportation.arrivalTime.slice(0, 16)}
+                  onChange={(e) => handleTravellingChange('transportation.arrivalTime', e.target.value)}
+                />
+              </FormItem>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormItem>
+                <FormLabel>From</FormLabel>
+                <Input 
+                  value={travellingData.transportation.from}
+                  onChange={(e) => handleTravellingChange('transportation.from', e.target.value)}
+                  placeholder="Enter departure location"
+                />
+              </FormItem>
+
+              <FormItem>
+                <FormLabel>To</FormLabel>
+                <Input 
+                  value={travellingData.transportation.to}
+                  onChange={(e) => handleTravellingChange('transportation.to', e.target.value)}
+                  placeholder="Enter arrival location"
+                />
+              </FormItem>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormItem>
+                <FormLabel>Price</FormLabel>
                 <Input 
                   type="number"
-                  value={tripData.budget.amount}
-                  onChange={(e) => handleTripChange('budget.amount', Number(e.target.value))}
+                  value={travellingData.costing.price}
+                  onChange={(e) => handleTravellingChange('costing.price', Number(e.target.value))}
                   min={0}
                 />
               </FormItem>
-              
+
+              <FormItem>
+                <FormLabel>Discounted Price</FormLabel>
+                <Input 
+                  type="number"
+                  value={travellingData.costing.discountedPrice}
+                  onChange={(e) => handleTravellingChange('costing.discountedPrice', Number(e.target.value))}
+                  min={0}
+                />
+              </FormItem>
+
               <FormItem>
                 <FormLabel>Currency</FormLabel>
                 <Select
-                  value={tripData.budget.currency}
-                  onValueChange={(value) => handleTripChange('budget.currency', value)}
+                  value={travellingData.costing.currency}
+                  onValueChange={(value) => handleTravellingChange('costing.currency', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select currency" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="INR">INR</SelectItem>
                     <SelectItem value="USD">USD</SelectItem>
                     <SelectItem value="EUR">EUR</SelectItem>
                     <SelectItem value="GBP">GBP</SelectItem>
@@ -494,71 +697,13 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
                 </Select>
               </FormItem>
             </div>
+
           </div>
         );
-      
-      case 'Travelling':
-        return (
-          <div className="space-y-4 max-h-96 overflow-y-auto p-2">
-            <FormItem>
-              <FormLabel>Trip ID</FormLabel>
-              <Input 
-                value={travellingData.tripId}
-                onChange={(e) => handleTravellingChange('tripId', e.target.value)}
-                placeholder="Enter associated trip ID"
-              />
-            </FormItem>
-            
-            <FormItem>
-              <FormLabel>Visibility</FormLabel>
-              <Select
-                value={travellingData.visibility}
-                onValueChange={(value) => handleTravellingChange('visibility', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select visibility" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="private">Private</SelectItem>
-                  <SelectItem value="shared">Shared</SelectItem>
-                  <SelectItem value="public">Public</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormItem>
-            
-            <FormItem>
-              <FormLabel>Status</FormLabel>
-              <Select
-                value={travellingData.status}
-                onValueChange={(value) => handleTravellingChange('status', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="planned">Planned</SelectItem>
-                  <SelectItem value="in-progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormItem>
-            
-            <FormItem>
-              <FormLabel>Tags (comma separated)</FormLabel>
-              <Input 
-                value={travellingData.tags.join(', ')}
-                onChange={(e) => {
-                  const tagsArray = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag);
-                  handleTravellingChange('tags', tagsArray);
-                }}
-                placeholder="Enter tags"
-              />
-            </FormItem>
-          </div>
-        );
-      
+
       default:
         return null;
+    
     }
   };
 

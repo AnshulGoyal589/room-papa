@@ -1,68 +1,61 @@
 import { Collection ,ObjectId} from 'mongodb';
 import { getDb } from '..';
-import { TransportationType, TripStatus } from '@/types';
+import { TripType } from '@/types';
 import { Image } from './Image';
 
 export interface Trip {
-  // Existing fields
   _id?: ObjectId;
-  userId: string; // Reference to the user who created the trip
-  title: string;
-  ownerId : string;
-  priority : number | 0;
-  description?: string;
+  userId: string; // Reference to the user who created the trip i.e. manager ID
+  title: string; // Tagline of the Trip
+  priority : number | 0; // less priority means top priority
+  description?: string; // Description of the trip
+  type : string; // Domestic or International
   destination: {
     city: string;
+    state : string;
     country: string;
-    coordinates?: {
-      latitude: number;
-      longitude: number;
-    }
   };
   startDate: Date;
   endDate: Date;
-  status: TripStatus;
-  budget?: {
-    amount: number;
-    currency: string;
-    spent?: number;
-  };
-  accommodations: {
-    propertyId: string; // Reference to booked property
-    checkIn: Date;
-    checkOut: Date;
-    confirmationCode?: string;
+  costing: {
     price: number;
+    discountedPrice: number;
+    currency: string;
+  };
+  totalRating?: number; 
+  review?: {
+    comment: string;
+    rating: number;
   }[];
-  transportation: {
-    type: TransportationType;
-    departureLocation: string;
-    arrivalLocation: string;
-    departureTime: Date;
-    arrivalTime: Date;
-    confirmationCode?: string;
-    price?: number;
-    provider?: string; // Airline, train company, etc.
-  }[];
-  activities: {
-    name: string;
-    date: Date;
-    location: string;
-    duration?: number; // in minutes
-    price?: number;
-    booked: boolean;
-    confirmationCode?: string;
-  }[];
-  totalCost?: number;
-  notes?: string;
-  sharedWith?: string[]; // List of user IDs with whom the trip is shared
+  activities:string[];
   createdAt: Date;
   updatedAt: Date;
-  
-  // New fields based on the code
   bannerImage?: Image; // Main featured image
   detailImages?: Image[]; // Trip gallery images
-  category?: string; // To categorize as 'Trip'
+  domain?: string;
+
+  // ownerId : string; 
+  // status: TripType;
+  // accommodations: {
+  //   propertyId: string; // Reference to booked property
+  //   checkIn: Date;
+  //   checkOut: Date;
+  //   confirmationCode?: string;
+  //   price: number;
+  // }[];
+  // transportation: {
+  //   type: TransportationType;
+  //   departureLocation: string;
+  //   arrivalLocation: string;
+  //   departureTime: Date;
+  //   arrivalTime: Date;
+  //   confirmationCode?: string;
+  //   price?: number;
+  //   provider?: string; // Airline, train company, etc.
+  // }[];
+  // totalCost?: number;
+  // notes?: string;
+  // sharedWith?: string[]; // List of user IDs with whom the trip is shared
 }
 
 interface TripValidationInput {
@@ -97,9 +90,9 @@ export function validateTrip(tripData: TripValidationInput): boolean {
   }
   
   // Validate trip status
-  const validTripStatuses: TripStatus[] = ['planned', 'booked', 'ongoing', 'completed', 'cancelled'];
-  if (!validTripStatuses.includes(tripData.status as TripStatus)) {
-    throw new Error(`Invalid trip status. Must be one of: ${validTripStatuses.join(', ')}`);
+  const validTripTypees: TripType[] = ['Domestic', 'International'];
+  if (!validTripTypees.includes(tripData.status as TripType)) {
+    throw new Error(`Invalid trip status. Must be one of: ${validTripTypees.join(', ')}`);
   }
   
   // Validate dates

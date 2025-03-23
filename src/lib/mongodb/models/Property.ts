@@ -8,31 +8,35 @@ import { Image } from './Image';
 
 export interface Property {
   _id?: ObjectId;
-  active: boolean; // Whether the property is active for booking
-  amenities: PropertyAmenities[]; //
-  availabilityCalendar?: {
-    [date: string]: boolean;
+  amenities: PropertyAmenities[]; 
+  startDate: Date;
+  endDate: Date;
+  bannerImage?: Image; 
+  bathrooms: number; 
+  bedrooms: number; 
+  createdAt: Date; 
+  costing: {
+    price: number; // pricePerNight
+    discountedPrice: number;
+    currency: string;
   };
-  bannerImage?: Image; //
-  bathrooms: number; //
-  bedrooms: number; //
-  createdAt: Date; //
-  currency: string; //
-  description: string; // .
-  detailImages?: Image[]; //
-  location: { //
+  description: string; 
+  detailImages?: Image[]; 
+  location: { 
     address: string;
+    state: string;
     city: string;
     country: string;
   };
-  maximumGuests: number; //
-  ownerId: string;  //
-  pricePerNight: number; //
-  rating?: number; 
-  reviewCount?: number;
-  title?: string; // .
-  type: PropertyType; //
-  updatedAt: Date; //
+  maximumGuests: number; 
+  totalRating?: number; 
+  review?: {
+    comment: string;
+    rating: number;
+  }[];
+  title?: string; 
+  type: PropertyType;
+  updatedAt: Date;
   userId: string;
 }
 
@@ -134,7 +138,6 @@ export async function getPropertiesCollection(): Promise<Collection<Property>> {
       
       const newProperty: Property = {
         ...propertyData,
-        active: true,
         createdAt: new Date(),
         updatedAt: new Date()
       };

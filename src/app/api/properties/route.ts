@@ -21,7 +21,6 @@ export async function POST(req: NextRequest) {
     
     const propertyData = await req.json();
 
-    // console.log(propertyData);
     
     const property: Property = {
       ...propertyData,

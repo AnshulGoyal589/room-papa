@@ -4,83 +4,32 @@ import { ItineraryDayWeather, ItineraryVisibility, TransportationType } from '@/
 import { Image } from './Image';
 
 export interface Travelling {
-  // Existing fields
   _id?: ObjectId;
-  tripId: string; // Reference to the associated trip
-  userId: string; // Reference to the user who created the itinerary
-  ownerId : string;
+  userId: string;
   title: string;
   description?: string;
-  status: string;
-  visibility: ItineraryVisibility;
-  days: {
-    date: Date;
-    weather?: ItineraryDayWeather;
-    temperature?: {
-      min: number;
-      max: number;
-      unit: 'celsius' | 'fahrenheit';
-    };
-    activities: {
-      title: string;
-      startTime: Date;
-      endTime: Date;
-      location?: {
-        name: string;
-        address?: string;
-        coordinates?: {
-          latitude: number;
-          longitude: number;
-        }
-      };
-      category?: string; // e.g., 'sightseeing', 'dining', 'transportation'
-      notes?: string;
-      cost?: number;
-      bookingReference?: string;
-      completed?: boolean;
-    }[];
-    accommodation?: {
-      propertyId: string;
-      name: string;
-      address?: string;
-    };
-    transportation?: {
-      type: TransportationType;
-      departureTime: Date;
-      arrivalTime: Date;
-      from: string;
-      to: string;
-      notes?: string;
-    }[];
-    notes?: string;
-    dailyBudget?: {
-      planned: number;
-      actual?: number;
-    };
-  }[];
-  tags?: string[];
-  totalDistance?: number; // in kilometers
-  estimatedCost?: number;
-  currency?: string;
-  attachments?: {
-    name: string;
-    fileUrl: string;
-    type: string; // 'image', 'document', etc.
-    uploadedAt: Date;
-  }[];
-  likes?: number;
-  comments?: {
-    userId: string;
-    text: string;
-    timestamp: Date;
+  transportation: {
+    type: TransportationType;
+    departureTime: Date;
+    arrivalTime: Date;
+    from: string;
+    to: string;
+  };
+  costing: {
+    price: number;
+    discountedPrice: number;
+    currency: string;
+  };
+  totalRating?: number; 
+  review?: {
+    comment: string;
+    rating: number;
   }[];
   createdAt: Date;
   updatedAt: Date;
   
-  // New fields based on the code
-  bannerImage?: Image; // Main featured image
-  detailImages?: Image[]; // Itinerary photos
-  category?: string; // To categorize as 'Travelling'
+  bannerImage?: Image;
+  detailImages?: Image[];
 }
 
 interface TravellingValidationInput {

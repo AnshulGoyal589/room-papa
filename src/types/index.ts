@@ -3,8 +3,12 @@ export type PropertyAmenities = 'wifi' | 'pool' | 'gym' | 'spa' | 'restaurant' |
 export type ItineraryVisibility = 'private' | 'shared' | 'public';
 export type ItineraryDayWeather = 'sunny' | 'cloudy' | 'rainy' | 'snowy' | 'unknown';
 export type TransportationType = 'flight' | 'train' | 'bus' | 'car' | 'ferry' | 'other';
-export type TripStatus = 'planned' | 'booked' | 'ongoing' | 'completed' | 'cancelled';
+export type TripType = 'Domestic' | 'International';
 
+export interface SearchHeaderProps {
+  category: string;
+  initialSearchParams?: { [key: string]: string };
+}
 
 export type UserRole = 'customer' | 'manager' | 'admin';
 
@@ -30,7 +34,7 @@ export interface UserWithRole {
 import { ObjectId } from 'mongodb';
 
 // Enums
-// export enum TripStatus {
+// export enum TripType {
 //   PLANNED = 'planned',
 //   ACTIVE = 'active',
 //   COMPLETED = 'completed',
@@ -109,7 +113,7 @@ export interface SearchParams {
 }
 
 export interface TripSearchParams extends SearchParams {
-  status?: TripStatus;
+  status?: TripType;
   minBudget?: number;
   maxBudget?: number;
   hasAccommodation?: boolean;
