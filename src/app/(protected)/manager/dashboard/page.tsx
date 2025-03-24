@@ -46,7 +46,6 @@ export default function Dashboard() {
       
       const propertiesRes = await fetch('/api/properties');
       const properties = await propertiesRes.json();
-      // console.log(properties);
       const formattedProperties = properties.map((prop: any) => ({
         _id: prop._id,
         title: prop.title,

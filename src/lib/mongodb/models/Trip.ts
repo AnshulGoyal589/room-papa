@@ -7,7 +7,7 @@ export interface Trip {
   _id?: ObjectId;
   userId: string; // Reference to the user who created the trip i.e. manager ID
   title: string; // Tagline of the Trip
-  priority : number | 0; // less priority means top priority
+  priority ?: number | 0; // less priority means top priority
   description?: string; // Description of the trip
   type : string; // Domestic or International
   destination: {
@@ -28,10 +28,10 @@ export interface Trip {
     rating: number;
   }[];
   activities:string[];
-  createdAt: Date;
-  updatedAt: Date;
-  bannerImage?: Image; // Main featured image
-  detailImages?: Image[]; // Trip gallery images
+  createdAt?: Date;
+  updatedAt?: Date;
+  bannerImage: Image; // Main featured image
+  detailImages: Image[]; // Trip gallery images
   domain?: string;
 }
 

@@ -10,8 +10,8 @@ export interface Travelling {
   description?: string;
   transportation: {
     type: TransportationType;
-    departureTime: Date;
     arrivalTime: Date;
+    departureTime: Date;
     from: string;
     to: string;
   };
@@ -28,8 +28,8 @@ export interface Travelling {
   createdAt: Date;
   updatedAt: Date;
   
-  bannerImage?: Image;
-  detailImages?: Image[];
+  bannerImage: Image;
+  detailImages: Image[];
 }
 
 interface TravellingValidationInput {

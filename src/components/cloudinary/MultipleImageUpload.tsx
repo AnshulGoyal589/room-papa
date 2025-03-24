@@ -91,7 +91,7 @@ const MultipleImageUpload: React.FC<MultipleImageUploadProps> = ({
         {value.map((image, index) => (
           <div key={image.publicId} className="relative rounded-md overflow-hidden">
             <CldImage
-              src={image.publicId}
+              src={image.publicId || image.url}
               width={150}
               height={100}
               crop="fill"

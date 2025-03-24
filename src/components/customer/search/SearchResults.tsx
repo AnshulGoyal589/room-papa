@@ -31,7 +31,8 @@ export default function SearchResults({ initialResults, category, searchParams }
     
     // Calculate total pages (in a real app, this would come from the API)
     setTotalPages(Math.ceil(initialResults.length / 10) || 1);
-  }, [initialResults, searchParams]);
+  // }, [initialResults, searchParams]);
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -41,7 +42,7 @@ export default function SearchResults({ initialResults, category, searchParams }
       params.set('sortBy', sortBy);
       params.set('sortOrder', sortOrder);
       params.set('page', currentPage.toString());
-      params.set('category', searchParams.category || 'travelling');
+      params.set('category', searchParams.category || 'property');
       
       try {
         const response = await fetch(`/api/search?${params.toString()}`);
@@ -78,29 +79,22 @@ export default function SearchResults({ initialResults, category, searchParams }
     window.scrollTo(0, 0);
   };
 
-  // Render property card
+  // console.log("results: ",results);
+
   const renderPropertyCard = (property: any) => (
+    // console.log("property: ",property);
     <div 
       key={property._id} 
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow" 
       onClick={() => router.push(`/customer/property/${property._id}`)}
     >
       <div className="relative h-48">
-        {property.bannerImage ? (
-          <Image 
-            src={property.bannerImage.url} 
-            alt={property.name || ""}
-            fill
-            style={{ objectFit: 'cover' }}
-          />
-        ) : (
-          <Image 
-            src="/placeholder-property.jpg" 
-            alt={property.name || ""}
-            fill
-            style={{ objectFit: 'cover' }}
-          />
-        )}
+        <Image 
+          src={property.bannerImage.url} 
+          alt={property.name || ""}
+          fill
+          style={{ objectFit: 'cover' }}
+        />
         <button className="absolute top-3 right-3 bg-white p-1.5 rounded-full">
           <Heart size={18} className="text-gray-500 hover:text-red-500" />
         </button>
@@ -112,16 +106,16 @@ export default function SearchResults({ initialResults, category, searchParams }
             <MapPin size={16} className="text-gray-500 mr-1" />
             <span className="text-sm text-gray-500">{property.location?.city}, {property.location?.country}</span>
           </div>
-          {property.rating && (
+          {property.totalRating && (
             <div className="flex items-center">
               <Star size={16} className="text-yellow-500 mr-1" />
-              <span className="text-sm font-medium">{property.rating} ({property.reviewCount || 0})</span>
+              <span className="text-sm font-medium">{property.totalRating} ({property.totalRating || 0})</span>
             </div>
           )}
         </div>
         
         <Link href={`/properties/${property._id}`} className="block">
-          <h3 className="font-semibold text-lg mb-1 hover:text-primary">{property.name}</h3>
+          <h3 className="font-semibold text-lg mb-1 hover:text-primary">{property.title}</h3>
         </Link>
         
         <div className="flex items-center mt-2 text-sm text-gray-600 mb-3">
@@ -132,7 +126,7 @@ export default function SearchResults({ initialResults, category, searchParams }
         
         <div className="flex justify-between items-center mt-4">
           <div>
-            <span className="text-lg font-bold">${property.pricePerNight}</span>
+            <span className="text-lg font-bold">${property.costing.discountedPrice }</span>
             <span className="text-gray-500"> / night</span>
           </div>
           <Link href={`/properties/${property._id}`} className="bg-primary text-white px-4 py-2 rounded-md text-sm">
@@ -143,7 +137,6 @@ export default function SearchResults({ initialResults, category, searchParams }
     </div>
   );
 
-  // Render trip card
   const renderTripCard = (trip: any) => (
     <div key={trip._id} 
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
@@ -208,7 +201,6 @@ export default function SearchResults({ initialResults, category, searchParams }
     </div>
   );
   
-  // Render travelling (itinerary) card
   const renderTravellingCard = (itinerary: any) => (
     <div key={itinerary._id}
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
@@ -329,17 +321,15 @@ export default function SearchResults({ initialResults, category, searchParams }
           ))}
         </div>
       ) : results.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {results.map((item) => {
             switch (category) {
-              case 'property':
-                return renderPropertyCard(item);
               case 'trip':
                 return renderTripCard(item);
               case 'travelling':
                 return renderTravellingCard(item);
               default:
-                return null;
+                return renderPropertyCard(item);
             }
           })}
         </div>

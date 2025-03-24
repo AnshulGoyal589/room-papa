@@ -12,30 +12,21 @@ export default function SearchForm({ defaultCategory = 'property' }: SearchFormP
   const router = useRouter();
   const [category, setCategory] = useState(defaultCategory);
   const [location, setLocation] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [guests, setGuests] = useState(1);
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
 
   const handleSearch = () => {
-    // Build the query parameters
     const params = new URLSearchParams();
     
-    // Common parameters for search results component
     params.set('sortBy', 'createdAt');
     params.set('sortOrder', 'desc');
     params.set('page', '1');
     params.set('category', category);
     
-    // Add location based on the category field naming in the results component
     if (location) {
-      if (category === 'property') {
-        params.set('location.city', location);
-      } else if (category === 'trip' || category === 'travelling') {
-        params.set('destination.city', location);
-      }
+      params.set('location', location);
     }
     
-    // Add dates based on the category
     if (startDate) {
       params.set('startDate', startDate);
     }
@@ -44,37 +35,8 @@ export default function SearchForm({ defaultCategory = 'property' }: SearchFormP
       params.set('endDate', endDate);
     }
     
-    // Add guests parameter
-    if (guests > 0) {
-      if (category === 'property') {
-        params.set('maximumGuests', guests.toString());
-      } else {
-        params.set('guests', guests.toString());
-      }
-    }
-    
-    // Add some default parameters based on category
-    if (category === 'property') {
-      params.set('rating', '4');
-      params.set('propertyType', 'villa');
-    } else if (category === 'trip') {
-      params.set('status', 'active');
-    } else if (category === 'travelling') {
-      params.set('visibility', 'public');
-      params.set('activityCategory', 'dining');
-    }
-    
-    // Navigate to search results page with parameters
     router.push(`/customer/search?${params.toString()}`);
-    
-    console.log('Searching:', { 
-      category,
-      location, 
-      startDate, 
-      endDate, 
-      guests,
-      params: params.toString()
-    });
+
   };
 
   return (
@@ -157,7 +119,7 @@ export default function SearchForm({ defaultCategory = 'property' }: SearchFormP
           </div>
         </div>
 
-        <div className="relative">
+        {/* <div className="relative">
           <label className="block text-gray-700 mb-2">
             {category === 'property' ? 'Guests' : category === 'trip' ? 'Travelers' : 'People'}
           </label>
@@ -171,7 +133,7 @@ export default function SearchForm({ defaultCategory = 'property' }: SearchFormP
               className="w-full text-gray-700 focus:outline-none"
             />
           </div>
-        </div>
+        </div> */}
       </div>
       
       <div className="mt-4 text-center">

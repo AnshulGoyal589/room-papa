@@ -2,32 +2,28 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import PropertyDetails from '@/components/manager/HomePage/PropertyDetails';
-import TripDetails from '@/components/manager/HomePage/TripDetails';
-import TravellingDetails from '@/components/manager/HomePage/TravellingDetails';
 import { useToast } from '@/components/ui/use-toast';
 import { Property } from '@/lib/mongodb/models/Property';
 import { Trip } from '@/lib/mongodb/models/Trip';
 import { Travelling } from '@/lib/mongodb/models/Travelling';
+import PropertyEditForm from '@/components/manager/EditForms/PropertyEditForm';
+import TripEditForm from '@/components/manager/EditForms/TripEditForm';
+import TravellingEditForm from '@/components/manager/EditForms/TravellingEditForm';
 
-
-export default function ItemDetail({ params }: { params: Promise<{ id: string }> }) {
-
+export default function ItemEdit({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = React.use(params);
   const itemId = resolvedParams.id;
   
   const router = useRouter();
   const { toast } = useToast();
-  const [propertyDetails, setPropertyDetails] = useState<Property>();
-  const [tripDetails, setTripDetails] = useState<Trip | null>(null);
-  const [travellingDetails, setTravellingDetails] = useState<Travelling | null>(null);
   const [item, setItem] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [propertyDetails, setPropertyDetails] = useState<Property>();
+  const [tripDetails, setTripDetails] = useState<Trip>();
+  const [travellingDetails, setTravellingDetails] = useState<Travelling>();
 
   useEffect(() => {
     fetchItemDetails();
@@ -36,6 +32,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
   const fetchItemDetails = async () => {
     setIsLoading(true);
     try {
+      // Try to fetch from all possible endpoints
       const endpoints = [
         { url: `/api/properties/${itemId}`, category: 'properties' },
         { url: `/api/trips/${itemId}`, category: 'trips' },
@@ -64,13 +61,18 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
         throw new Error('Item not found in any category');
       }
       
+      // Create unified item for UI rendering
       const generalItem = {
         id: itemId,
         title: foundItem.title,
         description: foundItem.description,
         createdAt: foundItem.createdAt || new Date().toISOString(),
+        status: foundItem.status || 
+                (foundCategory === 'properties' ? (foundItem.active ? 'Active' : 'Inactive') : 
+                (foundCategory === 'trips' ? foundItem.type : 
+                (foundCategory === 'travellings' ? foundItem.visibility || 'Public' : 'Unknown'))),
         category: foundCategory === 'properties' ? 'Property' : 
-                  foundCategory === 'trips' ? 'Trip' : 'Travelling'
+                 foundCategory === 'trips' ? 'Trip' : 'Travelling'
       };
       
       setItem(generalItem);
@@ -94,7 +96,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
           amenities: foundItem.ammenities || [''],
           startDate: new Date(foundItem.startDate),
           endDate: new Date(foundItem.endDate),
-          bannerImage: {
+          bannerImage:{
             url: foundItem.bannerImage.url,
             publicId: foundItem.bannerImage.publicId,
             alt: foundItem.bannerImage.alt
@@ -188,13 +190,9 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
     }
   };
 
-
-  const handleDelete = async () => {
-    if (!item) return;
-    
+  const handleSave = async (updatedData: any) => {
     try {
       let endpoint = '';
-      
       switch (item.category) {
         case 'Property':
           endpoint = `/api/properties/${item.id}`;
@@ -206,101 +204,49 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
           endpoint = `/api/travellings/${item.id}`;
           break;
       }
-      
+
       const response = await fetch(endpoint, {
-        method: 'DELETE'
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to delete item');
-      }
-      
-      toast({
-        title: 'Success',
-        description: 'Item deleted successfully.',
-      });
-      
-      router.push('/manager/dashboard');
+
+      if (!response.ok) throw new Error('Failed to update item');
+
+      toast({ title: 'Success', description: 'Item updated successfully.' });
+      router.push(`/manager/dashboard/${item.id}`);
     } catch (error) {
-      console.error('Error deleting item:', error);
+      console.error('Error updating item:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete item. Please try again.',
+        description: 'Failed to update item. Please try again.',
         variant: 'destructive'
       });
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto py-8">
-        <div className="text-center py-8">Loading item details...</div>
-      </div>
-    );
-  }
-
-  if (!item) {
-    return (
-      <div className="container mx-auto py-8">
-        <div className="text-center py-8">Item not found</div>
-        <Button onClick={() => router.push('/manager/dashboard')}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Dashboard
-        </Button>
-      </div>
-    );
-  }
+  if (isLoading) return <div>Loading...</div>;
+  if (!item) return <div>Item not found</div>;
 
   return (
     <div className="container mx-auto py-8">
       <div className="mb-6">
-        <Button variant="outline" onClick={() => router.push('/manager/dashboard')}>
+        <Button variant="outline" onClick={() => router.push(`/manager/dashboard/${item.id}`)}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Dashboard
+          Back to Details
         </Button>
       </div>
 
-      <Card className="mb-8">
+      <Card>
         <CardHeader>
-          <div className="flex justify-between items-start">
-            <div>
-             
-              <CardTitle className="mt-2 text-2xl">{item.title}</CardTitle>
-            </div>
-            <div className="flex space-x-2">
-              <Button variant="outline" size="sm" onClick={() => router.push(`/manager/dashboard/edit/${item.id}`)}>
-                <Edit className="w-4 h-4 mr-2" />
-                Edit
-              </Button>
-              <Button variant="outline" size="sm" className="text-red-500" onClick={handleDelete}>
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
-              </Button>
-            </div>
-          </div>
+          <CardTitle>Edit {item.category}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-600 mb-4">{item.description}</p>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <p className="text-sm text-gray-500">Category</p>
-              <p>{item.category}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Created</p>
-              <p>{new Date(item.createdAt).toLocaleDateString()}</p>
-            </div>
-          </div>
-
-          <Separator className="my-6" />
-
-          {/* Render specific details based on category */}
-          {item.category === 'Property' && propertyDetails && <PropertyDetails item={propertyDetails} />}
-          {item.category === 'Trip' && tripDetails && <TripDetails item={tripDetails} />}
-          {item.category === 'Travelling' && travellingDetails && <TravellingDetails item={travellingDetails} />}
+          {item.category === 'Property' && <PropertyEditForm item={propertyDetails!} onSave={handleSave} />}
+          {item.category === 'Trip' && <TripEditForm item={tripDetails! } onSave={handleSave} />}
+          {item.category === 'Travelling' && <TravellingEditForm item={ travellingDetails! } onSave={handleSave} />}
         </CardContent>
       </Card>
-
     </div>
   );
 }

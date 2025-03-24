@@ -9,7 +9,7 @@ export async function GET(
 
     const { id } = await context.params;
     const property = await getPropertyById(id);
-    console.log("jurrah: ",property);
+    // console.log("jurrah: ",property);
     
     if (!property) {
       return NextResponse.json({ error: 'Property not found' }, { status: 404 });

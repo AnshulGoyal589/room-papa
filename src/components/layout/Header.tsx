@@ -245,40 +245,42 @@ export function Header() {
       <header className="bg-white shadow-md">
         <div className="container mx-auto flex justify-between items-center p-4">
           
-          <Link href="/customeC" className="text-2xl font-bold text-blue-600">
-            TravelNow
+          <Link href={role=='customer' ? "/customer/dashboard" : "/manager/dashboard"} className="text-2xl font-bold text-blue-600">
+            Room Papa
           </Link>
 
-          <nav className="hidden md:flex space-x-6 items-center">
-            <Link 
-              href="/" 
-              className="flex items-center space-x-2 hover:text-blue-600 transition"
-            >
-              <Home className="w-5 h-5" />
-              <span>Home</span>
-            </Link>
-            <Link 
-              href="/trips" 
-              className="flex items-center space-x-2 hover:text-blue-600 transition"
-            >
-              <Plane className="w-5 h-5" />
-              <span>Trips</span>
-            </Link>
-            <Link 
-              href="/hotels" 
-              className="flex items-center space-x-2 hover:text-blue-600 transition"
-            >
-              <Hotel className="w-5 h-5" />
-              <span>Hotels</span>
-            </Link>
-            <Link 
-              href="/bookings" 
-              className="flex items-center space-x-2 hover:text-blue-600 transition"
-            >
-              <ShoppingBag className="w-5 h-5" />
-              <span>Bookings</span>
-            </Link>
-          </nav>
+          { role == 'customer' && 
+            <nav className="hidden md:flex space-x-6 items-center">
+              <Link 
+                href={role=='customer' ? "/customer/dashboard" : "/manager/dashboard"}
+                className="flex items-center space-x-2 hover:text-blue-600 transition"
+              >
+                <Home className="w-5 h-5" />
+                <span>Home</span>
+              </Link>
+              <Link 
+                href="/customer/search?category=trip" 
+                className="flex items-center space-x-2 hover:text-blue-600 transition"
+              >
+                <Plane className="w-5 h-5" />
+                <span>Trips</span>
+              </Link>
+              <Link 
+                href="/customer/search?category=property" 
+                className="flex items-center space-x-2 hover:text-blue-600 transition"
+              >
+                <Hotel className="w-5 h-5" />
+                <span>Properties</span>
+              </Link>
+              <Link 
+                href="/customer/search?category=travelling" 
+                className="flex items-center space-x-2 hover:text-blue-600 transition"
+              >
+                <ShoppingBag className="w-5 h-5" />
+                <span>Travelling</span>
+              </Link>
+            </nav>
+          }
 
           <div className="flex items-center space-x-4">
             <SignedOut>

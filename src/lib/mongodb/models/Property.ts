@@ -11,17 +11,17 @@ export interface Property {
   amenities: PropertyAmenities[]; 
   startDate: Date;
   endDate: Date;
-  bannerImage?: Image; 
+  bannerImage: Image; 
   bathrooms: number; 
   bedrooms: number; 
-  createdAt: Date; 
+  createdAt?: Date; 
   costing: {
     price: number; // pricePerNight
     discountedPrice: number;
     currency: string;
   };
   description: string; 
-  detailImages?: Image[]; 
+  detailImages: Image[]; 
   location: { 
     address: string;
     state: string;
@@ -34,9 +34,9 @@ export interface Property {
     comment: string;
     rating: number;
   }[];
-  title?: string; 
+  title: string; 
   type: PropertyType;
-  updatedAt: Date;
+  updatedAt?: Date;
   userId: string;
 }
 
