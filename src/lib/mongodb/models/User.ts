@@ -4,29 +4,21 @@ export interface User {
   _id?: string;
   clerkId: string;
   role: UserRole;
-  email?: string;
+  email: string;
   createdAt: Date;
+  status?: {
+    type: string;
+    default: 'pending';
+  }; 
   updatedAt: Date;
 }
 
-interface UserValidationInput {
-  clerkId: string;
-  role: string;
-  [key: string]: any;
-}
-
-export function validateUser(userData: UserValidationInput): boolean {
-  const requiredFields = ['clerkId', 'role'];
-  
-  for (const field of requiredFields) {
-    if (!userData[field]) {
-      throw new Error(`Missing required field: ${field}`);
-    }
+export function validateUser(userData: { clerkId: string; role: UserRole }): void {
+  if (!userData.clerkId) {
+    throw new Error('Clerk ID is required');
   }
   
-  if (!['customer', 'manager'].includes(userData.role)) {
-    throw new Error('Role must be either "customer" or "manager"');
+  if (!['customer', 'manager', 'admin'].includes(userData.role)) {
+    throw new Error('Invalid user role');
   }
-  
-  return true;
 }

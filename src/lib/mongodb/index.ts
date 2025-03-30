@@ -2,19 +2,22 @@ import clientPromise from './client';
 import { Collection, Db } from 'mongodb';
 import { User } from './models/User';
 import { UserRole } from '@/types';
+import { clerkClient } from "@clerk/nextjs/server";
 
 const dbName = process.env.MONGODB_DB || 'travel-app';
 
+
 export async function getDb(): Promise<Db> {
   const client = await clientPromise;
-  // console.log(client);
   return client.db(dbName);
 }
+
 
 export async function getUsersCollection(): Promise<Collection<User>> {
   const db = await getDb();
   return db.collection<User>('users');
 }
+
 
 export async function saveUserRole(
   clerkId: string, 
@@ -40,16 +43,17 @@ export async function saveUserRole(
   );
 }
 
+
 export async function getUserByClerkId(clerkId: string): Promise<User | null> {
   const users = await getUsersCollection();
   return users.findOne({ clerkId });
 }
 
+
 export async function getUserRole(clerkId: string | undefined): Promise<UserRole | 'guest'> {
   if (!clerkId) {
     return 'guest';
   }
-  // console.log('Clerk ID:', clerkId);
   const users = await getUsersCollection();
   const user = await users.findOne({ clerkId });
   
@@ -57,21 +61,57 @@ export async function getUserRole(clerkId: string | undefined): Promise<UserRole
   return user ? user.role : 'guest';
 }
 
-export async function getUserDetails(clerkId: string | undefined): Promise<User | null> {
+
+export async function updateManagerStatus(clerkId: string | undefined , status: string ): Promise<UserRole | 'guest'> {
   if (!clerkId) {
-    return null;
+    return 'guest';
   }
-  
   const users = await getUsersCollection();
-  return users.findOne({ clerkId });
+  await users.updateOne(
+    { clerkId, role: 'manager' }, 
+    { 
+      status, 
+      updatedAt: new Date() 
+    }
+  );
+  
+  
+  return 'guest';
 }
+
 
 export async function getUsersByRole(role: UserRole): Promise<User[]> {
   const users = await getUsersCollection();
   return users.find({ role }).toArray();
 }
 
-export async function getAllUsers(): Promise<User[]> {
-  const users = await getUsersCollection();
-  return users.find({}).toArray();
+export async function getUserDetailsById(clerkUserId: string) {
+  try {
+    // Correctly use clerkClient to fetch user
+    const ck = await clerkClient();
+    const user = await ck.users.getUser(clerkUserId);
+
+    return {
+      id: user.id,
+      fullName: user.fullName,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      primaryEmailAddress: user.primaryEmailAddress?.emailAddress,
+      username: user.username,
+      createdAt: user.createdAt,
+      lastSignInAt: user.lastSignInAt,
+      
+      // Additional useful information
+      emailAddresses: user.emailAddresses.map(email => ({
+        email: email.emailAddress,
+        verified: email.verification?.status === 'verified'
+      })),
+      
+      // Phone numbers if available
+      phoneNumbers: user.phoneNumbers.map(phone => phone.phoneNumber)
+    };
+  } catch (error) {
+    console.error('Error fetching user details:', error);
+    return null;
+  }
 }

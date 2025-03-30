@@ -18,6 +18,7 @@ export async function checkUserRole(requiredRole: UserRole): Promise<boolean> {
   return !!user && user.role === requiredRole;
 }
 
+
 export async function checkAuth(requiredRole?: UserRole): Promise<void> {
   const { userId } = await auth();
   
@@ -33,17 +34,3 @@ export async function checkAuth(requiredRole?: UserRole): Promise<void> {
   }
 }
 
-// Higher order component wrapper for protected pages
-// interface PageProps {
-//   [key: string]: any;
-// }
-
-// export function withRoleProtection(
-//   Component: React.ComponentType<PageProps>,
-//   requiredRole: UserRole
-// ) {
-//   return async function ProtectedRoute(props: PageProps) {
-//     await checkAuth(requiredRole);
-//     return <Component {...props} />;
-//   };
-// }

@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
+    // console.log("hurrah check pint 1");
     const body = await request.json() as RequestBody;
     const { clerkId, role, email } = body;
 
@@ -46,12 +46,13 @@ export async function POST(request: Request) {
 export async function GET(request: NextRequest) {
   try {
     const { userId } = await auth();
+    // console.log('User role:', userId);
     if (!userId) {
       return NextResponse.json({ role: 'guest' });
     }
     const role = await getUserRole(userId);
 
-    // console.log('User role:', role);
+    console.log('User role:', role); 
     
     return NextResponse.json({ role });
   } catch (error) {

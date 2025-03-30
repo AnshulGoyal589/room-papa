@@ -206,6 +206,8 @@ function addArrayFilter(query: Record<string, any>, searchParams: URLSearchParam
 function addDateRangeFilter(query: Record<string, any>, searchParams: URLSearchParams) {
   const startDate = searchParams.get('startDate');
   const endDate = searchParams.get('endDate');
+  // console.log("startDate: ",startDate);
+  // console.log("endDate: ",typeof(new Date(startDate)));
   
   if (startDate || endDate) {
     query.$and = query.$and || [];
@@ -224,7 +226,7 @@ function addDateRangeFilter(query: Record<string, any>, searchParams: URLSearchP
       };
     }
 
-    // console.log("dateFilter: ",dateFilter);
+    console.log("dateFilter: ",dateFilter);
 
     query.$and.push(dateFilter);
   }

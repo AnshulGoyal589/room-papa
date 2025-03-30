@@ -136,12 +136,11 @@ export async function getTravellingsCollection(): Promise<Collection<Travelling>
     return db.collection<Travelling>('travellings');
   }
   
-  export async function getAllTravellings(userId?: string, tripId?: string): Promise<Travelling[]> {
+  export async function getAllTravellings(userId?: string): Promise<Travelling[]> {
     const travellings = await getTravellingsCollection();
     
     const query: any = {};
     if (userId) query.userId = userId;
-    if (tripId) query.tripId = tripId;
     
     return travellings.find(query).toArray();
   }

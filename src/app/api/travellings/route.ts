@@ -6,9 +6,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
-    const tripId = searchParams.get('tripId');
     
-    const travellings = await getAllTravellings(userId || undefined, tripId || undefined);
+    const travellings = await getAllTravellings(userId || undefined);
+    console
     return NextResponse.json(travellings);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
     const db = client.db('travel-app');
     
     const travellingData = await req.json();
+
     
     const travelling: Travelling = {
       ...travellingData,

@@ -92,8 +92,8 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
     bedrooms: 1,
     bathrooms: 1,
     maximumGuests: 2,
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    startDate: new Date().toISOString() ,
+    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() ,
     
   });
 
@@ -103,8 +103,8 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
       state: '',
       country: '',
     },
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    startDate: new Date(),
+    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     type: 'domestic' as TripType,
     costing: {
       price: 1000,
@@ -119,8 +119,8 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
   
     transportation: {
       type: 'flight' as TransportationType,
-      departureTime: new Date().toISOString(),
-      arrivalTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+      departureTime: new Date(),
+      arrivalTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
       from: 'Mumbai',
       to: 'New York',
     },
@@ -133,6 +133,8 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
   });
 
   const handlePropertyChange = (field: string, value: any) => {
+    // console.log(value);
+    // console.log(typeof(value));
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
       setPropertyData(prev => ({
@@ -232,6 +234,9 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
         detailImages,
         ownerId: userID,
       };
+
+      // console.log(finalData.startDate);
+      // console.log(typeof(finalData.startDate));
       
       const response = await fetch(`/api/${apiRoute}`, {
         method: 'POST',
@@ -293,6 +298,26 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
                 placeholder="Enter address"
               />
             </FormItem>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormItem>
+                <FormLabel>Start Date</FormLabel>
+                <Input 
+                  type="date"
+                  value={propertyData.startDate }
+                  onChange={(e) => handlePropertyChange('startDate',e.target.value)}
+                />
+              </FormItem>
+              
+              <FormItem>
+                <FormLabel>End Date</FormLabel>
+                <Input 
+                  type="date"
+                  value={propertyData.endDate }
+                  onChange={(e) => handlePropertyChange('endDate',e.target.value)}
+                />
+              </FormItem>
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormItem>
@@ -430,8 +455,8 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
                 <FormLabel>Start Date</FormLabel>
                 <Input 
                   type="date"
-                  value={tripData.startDate}
-                  onChange={(e) => handleTripChange('startDate', e.target.value)}
+                  value={tripData.startDate.toISOString().split('T')[0]  }
+                  onChange={(e) => handleTripChange('startDate', new Date(e.target.value))}
                 />
               </FormItem>
               
@@ -439,8 +464,8 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
                 <FormLabel>End Date</FormLabel>
                 <Input 
                   type="date"
-                  value={tripData.endDate}
-                  onChange={(e) => handleTripChange('endDate', e.target.value)}
+                  value={tripData.endDate.toISOString().split('T')[0] }
+                  onChange={(e) => handleTripChange('endDate', new Date(e.target.value))}
                 />
               </FormItem>
             </div>
@@ -621,18 +646,18 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
               <FormItem>
                 <FormLabel>Departure Time</FormLabel>
                 <Input 
-                  type="datetime-local"
-                  value={travellingData.transportation.departureTime.slice(0, 16)}
-                  onChange={(e) => handleTravellingChange('transportation.departureTime', e.target.value)}
+                  type="date"
+                  value={travellingData.transportation.departureTime.toISOString().split('T')[0]}
+                  onChange={(e) => handleTravellingChange('transportation.departureTime', new Date(e.target.value))}
                 />
               </FormItem>
 
               <FormItem>
                 <FormLabel>Arrival Time</FormLabel>
                 <Input 
-                  type="datetime-local"
-                  value={travellingData.transportation.arrivalTime.slice(0, 16)}
-                  onChange={(e) => handleTravellingChange('transportation.arrivalTime', e.target.value)}
+                  type="date"
+                  value={travellingData.transportation.arrivalTime.toISOString().split('T')[0] }
+                  onChange={(e) => handleTravellingChange('transportation.arrivalTime', new Date(e.target.value))}
                 />
               </FormItem>
             </div>

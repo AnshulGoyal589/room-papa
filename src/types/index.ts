@@ -10,7 +10,9 @@ export interface SearchHeaderProps {
   initialSearchParams?: { [key: string]: string };
 }
 
-export type UserRole = 'customer' | 'manager' | 'admin';
+export type UserRole = 'customer' | 'manager' | 'admin' ;
+
+
 
 export interface RoleRouteConfig {
   allowedRoutes: string[];

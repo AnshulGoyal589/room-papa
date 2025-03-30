@@ -11,6 +11,7 @@ export function useRole() {
     if (isLoaded && user) {
       // Get role from user metadata
       const userRole = user.publicMetadata.role as UserRole || 'customer';
+      console.log('User role 3:', userRole);
       setRole(userRole);
       setLoading(false);
     } else if (isLoaded) {

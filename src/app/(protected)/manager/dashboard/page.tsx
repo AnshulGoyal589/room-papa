@@ -9,6 +9,7 @@ import ListingItem from '@/components/manager/HomePage/ListingItem';
 import AddItemModal from '@/components/manager/HomePage/AddItemModal';
 import { useToast } from '@/components/ui/use-toast';
 import { checkAuth } from '@/lib/auth';
+import { useUser } from '@clerk/nextjs';
 
 // Define our unified item type to handle all three types
 type ItemCategory = 'Property' | 'Trip' | 'Travelling';
@@ -34,6 +35,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+  const { user } = useUser();
 
   
   useEffect(() => {
@@ -44,7 +46,7 @@ export default function Dashboard() {
     setIsLoading(true);
     try {
       
-      const propertiesRes = await fetch('/api/properties');
+      const propertiesRes = await fetch(`/api/properties?userId=${user?.id}`);
       const properties = await propertiesRes.json();
       const formattedProperties = properties.map((prop: any) => ({
         _id: prop._id,
@@ -55,7 +57,7 @@ export default function Dashboard() {
         createdAt: new Date(prop.createdAt)
       }));
 
-      const tripsRes = await fetch('/api/trips');
+      const tripsRes = await fetch(`/api/trips?userId=${user?.id}`);
       const trips = await tripsRes.json();
       const formattedTrips = trips.map((trip: any) => ({
         _id: trip._id,
@@ -67,7 +69,7 @@ export default function Dashboard() {
       }));
 
       
-      const travellingsRes = await fetch('/api/travellings');
+      const travellingsRes = await fetch(`/api/travellings?userId=${user?.id}`);
       const travellings = await travellingsRes.json();
       const formattedTravellings = travellings.map((travelling: any) => ({
         _id: travelling._id,

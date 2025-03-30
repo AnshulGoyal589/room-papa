@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createProperty, getAllProperties, getPropertyById, Property } from '@/lib/mongodb/models/Property';
+import { getAllProperties, Property } from '@/lib/mongodb/models/Property';
 import clientPromise from '@/lib/mongodb/client';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const ownerId = searchParams.get('ownerId');
+    const userId = searchParams.get('userId');
     
-    const properties = await getAllProperties(ownerId || undefined);
+    const properties = await getAllProperties(userId || undefined);
     return NextResponse.json(properties);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -20,6 +20,12 @@ export async function POST(req: NextRequest) {
     const db = client.db('travel-app');
     
     const propertyData = await req.json();
+
+    propertyData.startDate = new Date(propertyData.startDate);
+    propertyData.endDate = new Date(propertyData.endDate);
+
+    // console.log(new Date(propertyData.startDate));
+    // console.log(typeof(new Date(propertyData.startDate)));
 
     
     const property: Property = {
