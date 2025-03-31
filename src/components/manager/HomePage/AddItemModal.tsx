@@ -32,10 +32,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import ImageUpload from '@/components/cloudinary/ImageUpload';
 import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
 import { Image } from '@/lib/mongodb/models/Image';
-import { ItineraryVisibility, PropertyType, TransportationType, TripType } from '@/types';
+import { PropertyType, TransportationType, TripType } from '@/types';
 import { useUser } from "@clerk/nextjs";
-import { Description } from '@radix-ui/react-dialog';
-
 
 interface AddItemModalProps {
   onClose: () => void;
@@ -132,7 +130,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
     totalRating: 0
   });
 
-  const handlePropertyChange = (field: string, value: any) => {
+  const handlePropertyChange = (field: string, value: unknown ) => {
     // console.log(value);
     // console.log(typeof(value));
     if (field.includes('.')) {
@@ -140,7 +138,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
       setPropertyData(prev => ({
         ...prev,
         [parent]: {
-          ...(prev[parent as keyof typeof prev] as Record<string, any>),
+          ...(prev[parent as keyof typeof prev] as Record<string, unknown>),
           [child]: value
         }
       }));
@@ -149,13 +147,13 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
     }
   };
 
-  const handleTripChange = (field: string, value: any) => {
+  const handleTripChange = (field: string, value: unknown) => {
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
       setTripData(prev => ({
         ...prev,
         [parent]: {
-          ...(prev[parent as keyof typeof prev] as Record<string, any>),
+          ...(prev[parent as keyof typeof prev] as Record<string, unknown>),
           [child]: value
         }
       }));
@@ -165,13 +163,13 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
   };
 
 
-  const handleTravellingChange = (field: string, value: any) => {
+  const handleTravellingChange = (field: string, value: unknown) => {
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
       setTravellingData(prev => ({
         ...prev,
         [parent]: {
-          ...(prev[parent as keyof typeof prev] as Record<string, any>),
+          ...(prev[parent as keyof typeof prev] as Record<string, unknown>),
           [child]: value
         }
       }));
@@ -777,7 +775,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
                   <FormLabel>Category</FormLabel>
                   <Select
                     value={field.value}
-                    onValueChange={(value: any) => {
+                    onValueChange={(value: unknown) => {
                       field.onChange(value);
                     }}
                   >

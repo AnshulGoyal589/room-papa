@@ -5,7 +5,7 @@ import WhyChooseUs from '@/components/customer/HomePage/WhyChooseUs';
 import QuickTripPlanner from '@/components/customer/HomePage/QuickTripPlanner';
 import UniqueProperties from '@/components/customer/HomePage/UniqueProperties';
 import PropertyTypes from '@/components/customer/HomePage/PropertyTypes';
-import WeekendDeals from '@/components/customer/HomePage/WeekendDeals';
+// import WeekendDeals from '@/components/customer/HomePage/WeekendDeals';
 import ExploreIndia from '@/components/customer/HomePage/ExploreIndia';
 
 

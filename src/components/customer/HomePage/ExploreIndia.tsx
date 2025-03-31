@@ -3,6 +3,7 @@
 import React from 'react';
 import { MapPin } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 
 export default function ExploreIndia() {
 
@@ -74,7 +75,9 @@ export default function ExploreIndia() {
             className="relative group overflow-hidden rounded-lg shadow-md"
             onClick={() => handleSearch(destination.location)}
           >
-            <img 
+            <Image
+              width={500}
+              height={300} 
               src={destination.image} 
               alt={destination.name}
               className="w-full h-64 object-cover group-hover:scale-110 transition duration-500"

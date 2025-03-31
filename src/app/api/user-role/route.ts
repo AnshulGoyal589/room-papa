@@ -1,6 +1,6 @@
 
 import { auth } from '@clerk/nextjs/server';
-import { NextRequest , NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { saveUserRole } from '@/lib/mongodb';
 import { validateUser } from '@/lib/mongodb/models/User';
 import { getUserRole } from '@/lib/mongodb';
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const { userId } = await auth();
     // console.log('User role:', userId);
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     }
     const role = await getUserRole(userId);
 
-    console.log('User role:', role); 
+    // console.log('User role:', role); 
     
     return NextResponse.json({ role });
   } catch (error) {

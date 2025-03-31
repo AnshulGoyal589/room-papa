@@ -10,8 +10,62 @@ export interface SearchHeaderProps {
   initialSearchParams?: { [key: string]: string };
 }
 
+
+export type DateFilter2 = {
+  [key: string]: unknown;
+  transportation: {
+      arrivalTime?: {
+          $gte?: Date;
+          $lte?: Date;
+      };
+  };
+}
+
 export type UserRole = 'customer' | 'manager' | 'admin' ;
 
+export interface QueryType {
+  [key: string]: unknown;
+  $or?: Array<Record<string, unknown>>;
+  $and?: Array<Record<string, unknown>>;
+}
+
+export type ErrorResponse = {
+  error: string;
+};
+
+export interface DateFilter {
+  transportation: {
+    arrivalTime?: {
+      $gte?: Date;
+      $lte?: Date;
+    }
+  };
+}
+
+
+export interface Review {
+  comment: string;
+  rating: number;
+}
+
+// Define general item type
+export interface GeneralItem {
+  id: string;
+  title: string;
+  description: string;
+  createdAt: string;
+  category: 'Property' | 'Trip' | 'Travelling';
+}
+
+
+export interface BookingFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  passengers: number;
+  specialRequests: string;
+}
 
 
 export interface RoleRouteConfig {
@@ -31,9 +85,6 @@ export interface UserWithRole {
   id: string;
   role: UserRole;
 }
-
-// types/index.ts
-import { ObjectId } from 'mongodb';
 
 // Enums
 // export enum TripType {
@@ -111,7 +162,7 @@ export interface SearchParams {
   country?: string;
   startDate?: string;
   endDate?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface TripSearchParams extends SearchParams {

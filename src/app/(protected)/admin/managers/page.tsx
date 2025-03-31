@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Card, 
@@ -37,11 +37,9 @@ export default function ManagerUsersPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  useEffect(() => {
-    fetchManagerUsers();
-  }, []);
 
-  const fetchManagerUsers = async () => {
+
+  const fetchManagerUsers = useCallback( async () => {
     try {
       const response = await fetch('/api/manager');
       
@@ -61,15 +59,19 @@ export default function ManagerUsersPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  },[toast]);
+
+  useEffect(() => {
+    fetchManagerUsers();
+  }, [fetchManagerUsers]);
 
   const handleManagerClick = (clerkId: string) => {
     router.push(`/admin/managers/${clerkId}`);
   };
 
-  const handleStatusUpdate = async (clerkId: string, status: string) => {
+  const handleStatusUpdate = async (id: string, status: string) => {
     try {
-      const response = await fetch(`/api/manager/${clerkId}`, {
+      const response = await fetch(`/api/manager/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -83,7 +85,7 @@ export default function ManagerUsersPage() {
 
       // Update local state
       setManagers(managers.map(manager => 
-        manager.clerkId === clerkId 
+        manager.clerkId === id 
           ? { ...manager, status } 
           : manager
       ));

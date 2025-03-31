@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { 
   Card, 
@@ -36,15 +36,12 @@ export default function ManagerDetailsPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchManagerDetails();
-  }, [params?.id]);
 
-  const fetchManagerDetails = async () => {
+  const fetchManagerDetails = useCallback( async () => {
     try {
-      const clerkId = params?.id as string;
+      const id = params?.id as string;
       
-      const response = await fetch(`/api/manager/${clerkId}`);
+      const response = await fetch(`/api/manager/${id}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch manager details');
@@ -63,7 +60,12 @@ export default function ManagerDetailsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  },[toast, router, params?.id]);
+
+
+  useEffect(() => {
+    fetchManagerDetails();
+  }, [fetchManagerDetails]);
 
   if (isLoading) {
     return (

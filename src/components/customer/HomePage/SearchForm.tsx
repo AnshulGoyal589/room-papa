@@ -1,16 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { MapPin, Calendar, Users, Search } from 'lucide-react';
+import { MapPin, Calendar, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-type SearchFormProps = {
-  defaultCategory: 'property' | 'trip' | 'travelling';
-};
 
-export default function SearchForm({ defaultCategory = 'property' }: SearchFormProps) {
+export default function SearchForm() {
   const router = useRouter();
-  const [category, setCategory] = useState(defaultCategory);
+  const [category, setCategory] = useState('property');
   const [location, setLocation] = useState('');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);

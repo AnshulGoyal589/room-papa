@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Calendar, Banknote, Plane, Tag, Star, MessageSquare, Image as ImageIcon } from 'lucide-react';
+import { MapPin, Calendar, Banknote, Plane, Star } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Travelling } from '@/lib/mongodb/models/Travelling';
 import Image from 'next/image';

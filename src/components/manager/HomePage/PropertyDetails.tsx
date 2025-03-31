@@ -2,6 +2,7 @@ import React from 'react';
 import { MapPin, Home, Bath, Users, Tag, Star, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Property } from '@/lib/mongodb/models/Property';
+import Image from 'next/image';
 
 const PropertyDetails: React.FC<{ item: Property }> = ({ item }) => {
   // Function to get formatted address
@@ -121,7 +122,9 @@ const PropertyDetails: React.FC<{ item: Property }> = ({ item }) => {
       {item.bannerImage && item.bannerImage.url && (
         <div className="mt-6">
           <h4 className="text-md font-medium mb-2">Banner Image</h4>
-          <img 
+          <Image
+            width={500}
+            height={300}
             src={item.bannerImage.url} 
             alt={item.bannerImage.alt || "Property banner"} 
             className="rounded-md object-cover w-full h-64"
@@ -135,7 +138,9 @@ const PropertyDetails: React.FC<{ item: Property }> = ({ item }) => {
           <h4 className="text-md font-medium mb-2">Gallery</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {item.detailImages.map((image, index) => (
-              <img 
+              <Image
+                width={200}
+                height={200} 
                 key={index} 
                 src={image.url} 
                 alt={`Property image ${index + 1}`} 

@@ -36,7 +36,7 @@ const StatusUpdateModal: React.FC<StatusUpdateModalProps> = ({
         <div className="py-4">
           <RadioGroup
             value={status}
-            onValueChange={(value) => setStatus(value as any)}
+            onValueChange={(value) => setStatus(value || '')}
             className="space-y-4"
           >
             <div className="flex items-center space-x-2">

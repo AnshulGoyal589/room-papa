@@ -8,10 +8,12 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId');
     
     const travellings = await getAllTravellings(userId || undefined);
-    console
     return NextResponse.json(travellings);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -35,10 +37,9 @@ export async function POST(req: NextRequest) {
       message: 'Travelling created successfully',
       id: result.insertedId,
     });
-  } catch (error) {
-    console.error('Error saving item to MongoDB:', error);
+  } catch (error: unknown) {
     return NextResponse.json(
-      { error: 'Error saving item' },
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

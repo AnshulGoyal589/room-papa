@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getUsersCollection } from '@/lib/mongodb';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const users = await getUsersCollection();
     const allUsers = await users.find({}).toArray();

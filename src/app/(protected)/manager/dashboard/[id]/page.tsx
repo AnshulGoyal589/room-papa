@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import PropertyDetails from '@/components/manager/HomePage/PropertyDetails';
 import TripDetails from '@/components/manager/HomePage/TripDetails';
@@ -14,6 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Property } from '@/lib/mongodb/models/Property';
 import { Trip } from '@/lib/mongodb/models/Trip';
 import { Travelling } from '@/lib/mongodb/models/Travelling';
+import { GeneralItem, Image, Review } from '@/types';
 
 
 export default function ItemDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -26,14 +26,12 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
   const [propertyDetails, setPropertyDetails] = useState<Property>();
   const [tripDetails, setTripDetails] = useState<Trip | null>(null);
   const [travellingDetails, setTravellingDetails] = useState<Travelling | null>(null);
-  const [item, setItem] = useState<any | null>(null);
+  const [item, setItem] = useState<GeneralItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchItemDetails();
-  }, [itemId]);
 
-  const fetchItemDetails = async () => {
+
+  const fetchItemDetails = useCallback( async () => {
     setIsLoading(true);
     try {
       const endpoints = [
@@ -56,7 +54,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
             break;
           }
         } catch (error) {
-          console.log(`Item not found in ${endpoint.category}`);
+          console.log(`Item not found in ${endpoint.category}`,error);
         }
       }
       
@@ -64,7 +62,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
         throw new Error('Item not found in any category');
       }
       
-      const generalItem = {
+      const generalItem : GeneralItem = {
         id: itemId,
         title: foundItem.title,
         description: foundItem.description,
@@ -99,11 +97,11 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
             publicId: foundItem.bannerImage.publicId,
             alt: foundItem.bannerImage.alt
           },
-          detailImages: foundItem.detailImages?.map((image: any) => ({
+          detailImages: foundItem.detailImages?.map((image: Image) => ({
             url: image.url
           })),
           totalRating: foundItem.totalRating || 0,
-          review: foundItem.review?.map((review: any) => ({
+          review: foundItem.review?.map((review: Review) => ({
             comment: review.comment,
             rating: review.rating
           })) || [],
@@ -122,7 +120,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
             publicId: foundItem.bannerImage.publicId,
             alt: foundItem.bannerImage.alt
           },
-          detailImages: foundItem.detailImages?.map((image: any) => ({
+          detailImages: foundItem.detailImages?.map((image: Image) => ({
             url: image.url,
           })),
           type: foundItem.type,
@@ -159,7 +157,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
             currency: foundItem.costing.currency
           },
           totalRating: foundItem.totalRating,
-          review: foundItem.review?.map((review: any) => ({
+          review: foundItem.review?.map((review: Review) => ({
             comment: review.comment,
             rating: review.rating
           })),
@@ -170,7 +168,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
             publicId: foundItem.bannerImage.publicId,
             alt : foundItem.bannerImage.alt
           },
-          detailImages: foundItem.detailImages?.map((image: any) => ({
+          detailImages: foundItem.detailImages?.map((image: Image) => ({
             url: image.url
           })),
         });
@@ -186,7 +184,11 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
     } finally {
       setIsLoading(false);
     }
-  };
+  },[toast, itemId]);
+
+  useEffect(() => {
+    fetchItemDetails();
+  }, [fetchItemDetails]);
 
 
   const handleDelete = async () => {

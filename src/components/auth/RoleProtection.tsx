@@ -15,9 +15,9 @@ export default function RoleProtection({
   children,
   loadingComponent = <div className="flex items-center justify-center min-h-screen">Loading...</div>
 }: RoleProtectionProps) {
-  const { userId, isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn } = useAuth();
   const { openSignIn } = useClerk();
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  // const [ setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const router = useRouter();
@@ -50,7 +50,7 @@ export default function RoleProtection({
         const response = await fetch('/api/user-role');
         const data = await response.json();
         const role = data.role as UserRole;
-        setUserRole(role);
+        // setUserRole(role);
         
         // Check authorization based on user role
         if (role) {

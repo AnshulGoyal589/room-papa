@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,8 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ListingItem from '@/components/manager/HomePage/ListingItem';
 import AddItemModal from '@/components/manager/HomePage/AddItemModal';
 import { useToast } from '@/components/ui/use-toast';
-import { checkAuth } from '@/lib/auth';
 import { useUser } from '@clerk/nextjs';
+import { Property } from '@/lib/mongodb/models/Property';
+import { Trip } from '@/lib/mongodb/models/Trip';
+import { Travelling } from '@/lib/mongodb/models/Travelling';
 
 // Define our unified item type to handle all three types
 type ItemCategory = 'Property' | 'Trip' | 'Travelling';
@@ -38,40 +40,38 @@ export default function Dashboard() {
   const { user } = useUser();
 
   
-  useEffect(() => {
-    fetchItems();
-  }, []);
 
-  const fetchItems = async () => {
+
+  const fetchItems = useCallback( async () => {
     setIsLoading(true);
     try {
       
       const propertiesRes = await fetch(`/api/properties?userId=${user?.id}`);
       const properties = await propertiesRes.json();
-      const formattedProperties = properties.map((prop: any) => ({
+      const formattedProperties = properties.map((prop: Property) => ({
         _id: prop._id,
         title: prop.title,
         description: prop.description,
         bannerImage: prop.bannerImage,
         category: 'Property' as ItemCategory,
-        createdAt: new Date(prop.createdAt)
+        createdAt: new Date(prop.createdAt || Date.now())
       }));
 
       const tripsRes = await fetch(`/api/trips?userId=${user?.id}`);
       const trips = await tripsRes.json();
-      const formattedTrips = trips.map((trip: any) => ({
+      const formattedTrips = trips.map((trip: Trip) => ({
         _id: trip._id,
         title: trip.title,
         description: trip.description || '',
         category: 'Trip' as ItemCategory,
         bannerImage: trip.bannerImage,
-        createdAt: new Date(trip.createdAt)
+        createdAt: new Date(trip.createdAt || Date.now())
       }));
 
       
       const travellingsRes = await fetch(`/api/travellings?userId=${user?.id}`);
       const travellings = await travellingsRes.json();
-      const formattedTravellings = travellings.map((travelling: any) => ({
+      const formattedTravellings = travellings.map((travelling: Travelling) => ({
         _id: travelling._id,
         title: travelling.title,
         description: travelling.description || '',
@@ -100,15 +100,19 @@ export default function Dashboard() {
     } finally {
       setIsLoading(false);
     }
-  };
+  },[user, toast]);
 
+  useEffect(() => {
+    fetchItems();
+  }, [toast , fetchItems]); 
+
+  
   const handleAddItem = async () => {
       fetchItems();
       setIsModalOpen(false);
     };
 
-  const handleItemClick = (id: string, category: ItemCategory) => {
-    const route = category.toLowerCase() + 's';
+  const handleItemClick = (id: string) => {
     router.push(`/manager/dashboard/${id}`);
   };
 
@@ -150,7 +154,7 @@ export default function Dashboard() {
                 <ListingItem 
                   key={item._id} 
                   item={item} 
-                  onClick={() => handleItemClick(item._id as string, item.category)} 
+                  onClick={() => handleItemClick(item._id as string)} 
                 />
               ))}
             </div>

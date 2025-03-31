@@ -4,51 +4,41 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
-import { TransportationType } from '@/types';
+import { BookingFormData, TransportationType } from '@/types';
 import DummyReviews from './Reviews';
-
-interface Image {
-  url: string;
-  alt?: string;
-}
-
-interface Travelling {
-  _id?: string;
-  userId: string;
-  title: string;
-  description?: string;
-  transportation: {
-    type: TransportationType;
-    departureTime: Date;
-    arrivalTime: Date;
-    from: string;
-    to: string;
-  };
-  costing: {
-    price: number;
-    discountedPrice: number;
-    currency: string;
-  };
-  totalRating?: number; 
-  review?: {
-    comment: string;
-    rating: number;
-  }[];
-  createdAt: Date;
-  updatedAt: Date;
-  bannerImage?: Image;
-  detailImages?: Image[];
-}
+import { useUser } from '@clerk/nextjs';
+import { Travelling } from '@/lib/mongodb/models/Travelling';
+// import { toast } from 'react-hot-toast';
 
 export default function TravellingDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const { isSignedIn, user, isLoaded } = useUser();
   const [travelling, setTravelling] = useState<Travelling | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentReviewPage, setCurrentReviewPage] = useState(1);
+  const [checkInDate, setCheckInDate] = useState<Date | null>(null);
+  const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
+  const [guestCount, setGuestCount] = useState(1);
   const reviewsPerPage = 3;
+  
+  // Booking modal state
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [bookingData, setBookingData] = useState<BookingFormData>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    passengers: 1,
+    specialRequests: '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bookingConfirmed, setBookingConfirmed] = useState(false);
+  const [loginRedirectWarning, setLoginRedirectWarning] = useState(false);
+
+  setGuestCount(bookingData.passengers);
 
   useEffect(() => {
     const fetchTravellingDetails = async () => {
@@ -81,6 +71,14 @@ export default function TravellingDetailPage() {
         if (parsedTravelling.bannerImage) {
           setSelectedImage(parsedTravelling.bannerImage.url);
         }
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const dayAfterTomorrow = new Date(today);
+        dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+        
+        setCheckInDate(tomorrow);
+        setCheckOutDate(dayAfterTomorrow);
       } catch (err) {
         setError('Error fetching travelling details. Please try again later.');
         console.error(err);
@@ -91,6 +89,18 @@ export default function TravellingDetailPage() {
 
     fetchTravellingDetails();
   }, [params?.id]);
+
+  // Update booking data with user info when available
+  useEffect(() => {
+    if (isLoaded && isSignedIn && user) {
+      setBookingData(prev => ({
+        ...prev,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.primaryEmailAddress?.emailAddress || ''
+      }));
+    }
+  }, [isLoaded, isSignedIn, user]);
 
   const handleImageClick = (imageUrl: string) => {
     setSelectedImage(imageUrl);
@@ -164,6 +174,98 @@ export default function TravellingDetailPage() {
     }
   };
 
+  const handleBookingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!travelling || !checkInDate || !checkOutDate) return;
+ 
+    if (!travelling) return;
+    
+    setIsSubmitting(true);
+
+    try {
+      
+      const bookingDetails={
+        type : 'travelling',
+        travellingDetails: {
+          id: params?.id,
+          title: travelling.title,
+          locationFrom: travelling.transportation.from,
+          locationTo: travelling.transportation.to,
+          type: travelling.transportation.type,
+        },
+        bookingDetails: {
+          checkIn: checkInDate.toISOString(),
+          checkOut: checkOutDate.toISOString(),
+          guests: guestCount,
+          price: travelling.costing.discountedPrice,
+          currency: travelling.costing.currency,
+          totalPrice: travelling.costing.discountedPrice * bookingData.passengers,
+        },
+        guestDetails: bookingData,
+        recipients: [bookingData.email, 'anshulgoyal589@gmail.com']
+      };
+      
+      // Make API call to save booking
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bookingDetails),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create booking');
+      }
+      
+      // Send confirmation emails
+      await fetch('/api/send-booking-confirmation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...bookingDetails,
+          adminEmail: 'anshulgoyal589@gmail.com',
+        }),
+      });
+      
+      // toast.success('Booking confirmed! Check your email for details.');
+
+      setBookingConfirmed(true);
+      setShowBookingModal(false);
+      
+      // Redirect to bookings page or show success message
+      // router.push('/customer/bookings');
+      
+    } catch (error) {
+      console.error('Booking error:', error);
+      // toast.error('Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setBookingData(prev => ({
+      ...prev,
+      [name]: name === 'passengers' ? parseInt(value) : value,
+    }));
+  };
+
+  const handleBookNowClick = () => {
+    if (!isLoaded) return;
+    
+    if (!isSignedIn) {
+      setLoginRedirectWarning(true);
+      return;
+    }
+    
+    setShowBookingModal(true);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -199,6 +301,9 @@ export default function TravellingDetailPage() {
   const totalReviewPages = travelling.review
     ? Math.ceil(travelling.review.length / reviewsPerPage)
     : 0;
+
+  // Calculate total price
+  // const totalPrice = travelling.costing.discountedPrice * bookingData.passengers;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
@@ -529,7 +634,10 @@ export default function TravellingDetailPage() {
                 </div>
               </div>
 
-              <button className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition duration-300 mb-4">
+              <button 
+                className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition duration-300 mb-4"
+                onClick={handleBookNowClick}
+              >
                 Book Now
               </button>
               
@@ -559,12 +667,225 @@ export default function TravellingDetailPage() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-      <div className="container mx-auto px-4 py-8">
 
-         <DummyReviews />
+        </div>
+        <DummyReviews />
       </div>
+
+         {/* Login Warning Modal */}
+         {loginRedirectWarning && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-lg max-w-md w-full p-6">
+                <h3 className="text-xl font-bold mb-4">Login Required</h3>
+                <p className="mb-6">
+                  You need to be logged in to make a booking. Would you like to login now?
+                </p>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => setLoginRedirectWarning(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      router.push(`/sign-in?redirect=${encodeURIComponent(window.location.pathname)}`);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Login
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+
+      {/* Booking Modal */}
+      {showBookingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">Complete Your Booking</h3>
+              <button
+                onClick={() => setShowBookingModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <div className="flex items-center mb-4">
+                {travelling.bannerImage && (
+                  <div className="relative h-16 w-16 mr-3">
+                    <Image
+                      src={travelling.bannerImage.url}
+                      alt={travelling.title}
+                      layout="fill"
+                      objectFit="cover"
+                      className="rounded-md"
+                    />
+                  </div>
+                )}
+                <div>
+                  <h4 className="font-semibold">{travelling.title}</h4>
+                  <p className="text-sm text-gray-600">{travelling.transportation.from}, {travelling.transportation.to}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <div className="text-sm text-gray-600">Check-in</div>
+                  <div className="font-medium">
+                    {checkInDate?.toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-600">Check-out</div>
+                  <div className="font-medium">
+                    {checkOutDate?.toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-600">Guests</div>
+                  <div className="font-medium">{guestCount} {guestCount === 1 ? 'guest' : 'guests'}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-600">Total</div>
+                  <div className="font-medium">
+                    {travelling.costing.currency} {(travelling.costing.discountedPrice * bookingData.passengers).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <form onSubmit={handleBookingSubmit}>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={bookingData.firstName}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={bookingData.lastName}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={bookingData.email}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={bookingData.phone}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Special Requests (Optional)
+                </label>
+                <textarea
+                  name="specialRequests"
+                  value={bookingData.specialRequests}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                ></textarea>
+              </div>
+              
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-400"
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                  </span>
+                ) : (
+                  "Confirm Booking"
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+            {/* Booking Confirmation Modal */}
+            {bookingConfirmed && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div className="bg-white rounded-lg max-w-md w-full p-6 text-center">
+                  <div className="mb-4">
+                    <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                      <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Booking Confirmed!</h3>
+                  <p className="mb-6 text-gray-600">
+                    Your booking for {travelling.title} has been confirmed. A confirmation has been sent to your email.
+                  </p>
+                  <button
+                    onClick={() => setBookingConfirmed(false)}
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            )}
     </div>
   );
 }

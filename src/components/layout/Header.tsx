@@ -8,7 +8,6 @@ import {
   Hotel, 
   ShoppingBag, 
   Menu,
-  UserCircle,
   X,
   User,
   Briefcase,
@@ -60,7 +59,7 @@ const RoleSelectionModal: React.FC<RoleModalProps> = ({
           </button>
         </div>
         
-        <p className="text-gray-600 mb-8">Please select how you'll use Room Papa:</p>
+        <p className="text-gray-600 mb-8">Please select how you&apos;ll use Room Papa:</p>
         
         <div className="flex flex-col space-y-4 mb-8">
           {/* Customer Role Button */}

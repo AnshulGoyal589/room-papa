@@ -3,7 +3,6 @@ import { getUserByClerkId } from './mongodb';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { UserRole } from '@/types';
-import { ReactNode } from 'react';
 
 
 

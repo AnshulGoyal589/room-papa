@@ -3,11 +3,12 @@ import { deleteTrip, getTripById, updateTrip } from '@/lib/mongodb/models/Trip';
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const params = await context.params;
-    const tripId = params.id;
+
+    const {id} = await params;
+    const tripId = id;
     
     const trip = await getTripById(tripId);
     
@@ -16,42 +17,55 @@ export async function GET(
     }
     
     return NextResponse.json(trip);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
+
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+
+    const {id} = await params;
     const tripData = await request.json();
-    const trip = await updateTrip(params.id, tripData);
+    const trip = await updateTrip(id, tripData);
     
     if (!trip) {
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 });
     }
     
     return NextResponse.json(trip);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  } catch (error: unknown) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const success = await deleteTrip(params.id);
+    const {id} = await params;
+    const success = await deleteTrip(id);
     
     if (!success) {
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 });
     }
     
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  }catch (error: unknown) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

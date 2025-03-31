@@ -4,10 +4,13 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MapPin, Calendar, Users, Star, Bookmark, Heart } from 'lucide-react';
+import { MapPin, Calendar, Star, Bookmark, Heart } from 'lucide-react';
+import { Property } from '@/lib/mongodb/models/Property';
+import { Trip } from '@/lib/mongodb/models/Trip';
+import { Travelling } from '@/lib/mongodb/models/Travelling';
 
 interface SearchResultsProps {
-  initialResults: any[];
+  initialResults: Trip[] | Property[] | Travelling[];
   category: string;
   searchParams: { [key: string]: string };
 }
@@ -24,6 +27,7 @@ export default function SearchResults({ initialResults, category, searchParams }
 
   useEffect(() => {
     // Set initial state from props
+    // console.log("Length 1: ",initialResults.length);
     setResults(initialResults);
     setSortBy(searchParams.sortBy || 'createdAt');
     setSortOrder(searchParams.sortOrder || 'desc');
@@ -32,7 +36,7 @@ export default function SearchResults({ initialResults, category, searchParams }
     // Calculate total pages (in a real app, this would come from the API)
     setTotalPages(Math.ceil(initialResults.length / 10) || 1);
   // }, [initialResults, searchParams]);
-  }, []);
+  }, [ initialResults, searchParams.sortBy, searchParams.sortOrder, searchParams.page ]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -47,11 +51,11 @@ export default function SearchResults({ initialResults, category, searchParams }
       try {
         const response = await fetch(`/api/search?${params.toString()}`);
         const data = await response.json();
-        // console.log("hhghghghghghgh: ",data);
+        // console.log("Property : ",data);
+        // console.log("Length 2: ",data.results.length);
         setResults(data.results);
         setTotalPages(Math.ceil(data.total / 10));
         
-        // Update URL without triggering a navigation
         router.push(`/customer/search?${params.toString()}`, { scroll: false });
       } catch (error) {
         console.error('Error fetching search results:', error);
@@ -61,17 +65,8 @@ export default function SearchResults({ initialResults, category, searchParams }
     };
 
     loadData();
-  }, [sortBy, sortOrder, currentPage, router, currentSearchParams, searchParams.sortBy, searchParams.sortOrder, searchParams.page]);
+  }, [sortBy, sortOrder, currentPage, router, currentSearchParams, searchParams.sortBy, searchParams.sortOrder, searchParams.page, searchParams.category]);
 
-  const handleSort = (field: string) => {
-    if (sortBy === field) {
-      // Toggle sort order if clicking the same field
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('desc'); // Default to descending for new sort field
-    }
-  };
 
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages) return;
@@ -81,17 +76,17 @@ export default function SearchResults({ initialResults, category, searchParams }
 
   // console.log("results: ",results);
 
-  const renderPropertyCard = (property: any) => (
+  const renderPropertyCard = (property: Property) => (
     // console.log("property: ",property);
     <div 
-      key={property._id} 
+      key={property.title} 
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow" 
       onClick={() => router.push(`/customer/property/${property._id}`)}
     >
       <div className="relative h-48">
         <Image 
           src={property.bannerImage.url} 
-          alt={property.name || ""}
+          alt={property.title || ""}
           fill
           style={{ objectFit: 'cover' }}
         />
@@ -137,8 +132,8 @@ export default function SearchResults({ initialResults, category, searchParams }
     </div>
   );
 
-  const renderTripCard = (trip: any) => (
-    <div key={trip._id} 
+  const renderTripCard = (trip: Trip) => (
+    <div key={trip.title} 
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
       onClick={() => router.push(`/customer/trip/${trip._id}`)}
       >
@@ -158,9 +153,6 @@ export default function SearchResults({ initialResults, category, searchParams }
             style={{ objectFit: 'cover' }}
           />
         )}
-        <div className="absolute top-3 right-3 bg-white px-2 py-1 rounded-full text-xs font-medium">
-          {trip.status}
-        </div>
       </div>
       
       <div className="p-4">
@@ -178,19 +170,19 @@ export default function SearchResults({ initialResults, category, searchParams }
           <span>{new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}</span>
         </div>
         
-        {trip.budget && (
+        {trip.costing && (
           <div className="mt-2 text-sm">
             <span className="font-medium">Budget: </span>
-            <span>{trip.budget.amount} {trip.budget.currency}</span>
+            <span>{trip.costing.discountedPrice} {trip.costing.currency}</span>
           </div>
         )}
         
         <div className="flex justify-between items-center mt-4">
           <div className="flex items-center text-sm text-gray-500">
-            <span className="flex items-center mr-3">
+            {/* <span className="flex items-center mr-3">
               <Users size={16} className="mr-1" />
               {trip.sharedWith?.length || 0} sharing
-            </span>
+            </span> */}
             <span>{trip.activities?.length || 0} activities</span>
           </div>
           <Link href={`/trips/${trip._id}`} className="bg-primary text-white px-4 py-2 rounded-md text-sm">
@@ -201,8 +193,8 @@ export default function SearchResults({ initialResults, category, searchParams }
     </div>
   );
   
-  const renderTravellingCard = (itinerary: any) => (
-    <div key={itinerary._id}
+  const renderTravellingCard = (itinerary: Travelling) => (
+    <div key={itinerary.title}
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
       onClick={() => router.push(`/customer/travelling/${itinerary._id}`)}
       >
@@ -223,9 +215,9 @@ export default function SearchResults({ initialResults, category, searchParams }
           />
         )}
         <div className="absolute top-3 right-3 flex space-x-2">
-          <div className="bg-white px-2 py-1 rounded-full text-xs font-medium">
+          {/* <div className="bg-white px-2 py-1 rounded-full text-xs font-medium">
             {itinerary.visibility}
-          </div>
+          </div> */}
           <button className="bg-white p-1.5 rounded-full">
             <Bookmark size={16} className="text-gray-500 hover:text-primary" />
           </button>
@@ -241,9 +233,9 @@ export default function SearchResults({ initialResults, category, searchParams }
         
         <div className="flex items-center mt-2 text-sm text-gray-600">
           <Calendar size={16} className="mr-1" />
-          <span>{itinerary.days?.length || 0} days</span>
+          {/* <span>{itinerary.days?.length || 0} days</span> */}
         </div>
-        
+{/*         
         <div className="flex justify-between items-center mt-4">
           <div className="flex items-center text-sm text-gray-500">
             {itinerary.likes !== undefined && (
@@ -262,7 +254,7 @@ export default function SearchResults({ initialResults, category, searchParams }
           <Link href={`/itineraries/${itinerary._id}`} className="bg-primary text-white px-4 py-2 rounded-md text-sm">
             View Details
           </Link>
-        </div>
+        </div> */}
       </div>
     </div>
   );
@@ -325,11 +317,11 @@ export default function SearchResults({ initialResults, category, searchParams }
           {results.map((item) => {
             switch (category) {
               case 'trip':
-                return renderTripCard(item);
+                return renderTripCard(item as Trip);
               case 'travelling':
-                return renderTravellingCard(item);
+                return renderTravellingCard(item as Travelling);;
               default:
-                return renderPropertyCard(item);
+                return renderPropertyCard(item as Property);
             }
           })}
         </div>

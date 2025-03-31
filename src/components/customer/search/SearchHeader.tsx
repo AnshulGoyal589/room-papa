@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, MapPin, Calendar, Users, DollarSign, Tag, Plane, Compass, Hotel } from 'lucide-react';
+import { Search, MapPin, Calendar, DollarSign, Plane, Hotel } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { SearchHeaderProps } from '@/types';

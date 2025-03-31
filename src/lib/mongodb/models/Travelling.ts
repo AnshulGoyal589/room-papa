@@ -43,11 +43,11 @@ interface TravellingValidationInput {
       title: string;
       startTime: string | Date;
       endTime: string | Date;
-      [key: string]: any;
+      [key: string]: unknown;
     }[];
-    [key: string]: any;
+    [key: string]: unknown;
   }[];
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export function validateTravelling(travellingData: TravellingValidationInput): boolean {
@@ -139,7 +139,7 @@ export async function getTravellingsCollection(): Promise<Collection<Travelling>
   export async function getAllTravellings(userId?: string): Promise<Travelling[]> {
     const travellings = await getTravellingsCollection();
     
-    const query: any = {};
+    const query: Partial<Travelling> = {};
     if (userId) query.userId = userId;
     
     return travellings.find(query).toArray();

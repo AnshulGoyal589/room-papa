@@ -1,8 +1,7 @@
 import React from 'react';
-import { MapPin, Calendar, Banknote, Star, Tag, Globe, Clock, Image as ImageIcon } from 'lucide-react';
+import { MapPin, Calendar, Banknote, Star, Globe, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ObjectId } from 'mongodb';
 import { Trip } from '@/lib/mongodb/models/Trip';
 import Image from 'next/image';
 
@@ -25,10 +24,6 @@ const TripDetails: React.FC<{ item: Trip }> = ({ item }) => {
     }
   };
 
-  // Format date and time functions
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString();
-  };
 
   return (
     <div>
@@ -110,15 +105,6 @@ const TripDetails: React.FC<{ item: Trip }> = ({ item }) => {
           </div>
         )}
         
-        {item.priority !== undefined && (
-          <div className="flex items-center">
-            <Tag className="w-4 h-4 mr-2 text-gray-500" />
-            <div>
-              <p className="text-sm text-gray-500">Priority</p>
-              <p>{item.priority === 0 ? 'Top Priority' : item.priority}</p>
-            </div>
-          </div>
-        )}
         
         {item.updatedAt && (
           <div className="flex items-center">

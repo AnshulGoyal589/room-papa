@@ -7,9 +7,8 @@ export interface Trip {
   _id?: ObjectId;
   userId: string; // Reference to the user who created the trip i.e. manager ID
   title: string; // Tagline of the Trip
-  priority ?: number | 0; // less priority means top priority
   description?: string; // Description of the trip
-  type : string; // Domestic or International
+  domain?: string;
   destination: {
     city: string;
     state : string;
@@ -32,7 +31,7 @@ export interface Trip {
   updatedAt?: Date;
   bannerImage: Image; // Main featured image
   detailImages: Image[]; // Trip gallery images
-  domain?: string;
+  type : string; // Domestic or International
 }
 
 interface TripValidationInput {
@@ -41,12 +40,12 @@ interface TripValidationInput {
   destination: {
     city: string;
     country: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   startDate: string | Date;
   endDate: string | Date;
   status: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export function validateTrip(tripData: TripValidationInput): boolean {

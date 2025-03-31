@@ -2,78 +2,72 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb as connectToDatabase, getDb, getUserByClerkId, updateManagerStatus } from '@/lib/mongodb';
 
 export async function GET(
-  request: NextRequest, 
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Connect to database
     await connectToDatabase();
 
-    // Fetch manager details by Clerk ID
-    const clerkId = params.id;
-    const managerDetails = await getUserByClerkId(clerkId);
+    // Await and destructure the dynamic route parameter
+    const { id } = await params;
+
+    const managerDetails = await getUserByClerkId(id);
 
     if (!managerDetails) {
       return NextResponse.json(
-        { message: 'Manager not found' }, 
+        { message: 'Manager not found' },
         { status: 404 }
       );
     }
 
-    // Optionally, fetch additional details like number of properties, trips, etc.
-    const additionalDetails = await fetchManagerActivities(clerkId);
+    // Optionally, fetch additional details
+    const additionalDetails = await fetchManagerActivities();
 
     // Merge details
     const fullManagerDetails = {
       ...managerDetails,
-      ...additionalDetails
+      ...additionalDetails,
     };
 
     return NextResponse.json(fullManagerDetails);
   } catch (error) {
     console.error('Error fetching manager details:', error);
     return NextResponse.json(
-      { message: 'Failed to fetch manager details' }, 
+      { message: 'Failed to fetch manager details' },
       { status: 500 }
     );
   }
 }
 
-
 export async function PATCH(
-  request: NextRequest, 
-  { params }: { params: { clerkId: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    
     // Connect to MongoDB
     await getDb();
-    const {status}  = await request.json();
-    // console.log("status: ", status);
 
-    // Extract clerkId from params and status from request body
-    const reponse = await updateManagerStatus(params.clerkId, status);
+    const { id } = await params; // Await the dynamic route parameter
+    const { status } = await request.json();
 
+    // Update manager status in the database
+    await updateManagerStatus(id, status);
 
-    // Return updated user
     return NextResponse.json("Successful", { status: 200 });
-
   } catch (error) {
     console.error('Error updating manager status:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error' }, 
+      { error: 'Internal Server Error' },
       { status: 500 }
     );
   }
 }
 
-// Helper function to fetch manager's activities
-async function fetchManagerActivities(clerkId: string) {
-  // Implement logic to count manager's properties, trips, etc.
-  // This is a placeholder implementation
+async function fetchManagerActivities() {
   return {
     properties: 5,
     trips: 3,
-    travellings: 2
+    travellings: 2,
   };
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ListingItem from '@/components/manager/HomePage/ListingItem';
 import AddItemModal from '@/components/manager/HomePage/AddItemModal';
 import { useToast } from '@/components/ui/use-toast';
-import { checkAuth } from '@/lib/auth';
 
 // Define our unified item type to handle all three types
 type ItemCategory = 'Property' | 'Trip' | 'Travelling';
@@ -26,8 +25,6 @@ interface BaseItem {
 
 export default function Dashboard() {
 
-  // await checkAuth('manager');
-
   const router = useRouter();
   const { toast } = useToast();
   const [items, setItems] = useState<BaseItem[]>([]);
@@ -36,17 +33,15 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('all');
 
   
-  useEffect(() => {
-    fetchItems();
-  }, []);
 
-  const fetchItems = async () => {
+
+  const fetchItems = useCallback( async () => {
     setIsLoading(true);
     try {
       
       const propertiesRes = await fetch('/api/properties');
       const properties = await propertiesRes.json();
-      const formattedProperties = properties.map((prop: any) => ({
+      const formattedProperties = properties.map((prop: BaseItem) => ({
         _id: prop._id,
         title: prop.title,
         description: prop.description,
@@ -57,7 +52,7 @@ export default function Dashboard() {
 
       const tripsRes = await fetch('/api/trips');
       const trips = await tripsRes.json();
-      const formattedTrips = trips.map((trip: any) => ({
+      const formattedTrips = trips.map((trip: BaseItem) => ({
         _id: trip._id,
         title: trip.title,
         description: trip.description || '',
@@ -69,7 +64,7 @@ export default function Dashboard() {
       
       const travellingsRes = await fetch('/api/travellings');
       const travellings = await travellingsRes.json();
-      const formattedTravellings = travellings.map((travelling: any) => ({
+      const formattedTravellings = travellings.map((travelling: BaseItem) => ({
         _id: travelling._id,
         title: travelling.title,
         description: travelling.description || '',
@@ -85,8 +80,6 @@ export default function Dashboard() {
         ...formattedTravellings
       ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-      // console.log(allItems);
-
       setItems(allItems);
     } catch (error) {
       console.error('Error fetching items:', error);
@@ -98,15 +91,18 @@ export default function Dashboard() {
     } finally {
       setIsLoading(false);
     }
-  };
+  },[toast]);
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
 
   const handleAddItem = async () => {
       fetchItems();
       setIsModalOpen(false);
     };
 
-  const handleItemClick = (id: string, category: ItemCategory) => {
-    const route = category.toLowerCase() + 's';
+  const handleItemClick = (id: string) => {
     router.push(`/manager/dashboard/${id}`);
   };
 
@@ -148,7 +144,7 @@ export default function Dashboard() {
                 <ListingItem 
                   key={item._id} 
                   item={item} 
-                  onClick={() => handleItemClick(item._id as string, item.category)} 
+                  onClick={() => handleItemClick(item._id as string)} 
                 />
               ))}
             </div>

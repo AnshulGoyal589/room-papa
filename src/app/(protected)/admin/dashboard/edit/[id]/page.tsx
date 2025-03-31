@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
@@ -12,6 +12,8 @@ import { Travelling } from '@/lib/mongodb/models/Travelling';
 import PropertyEditForm from '@/components/manager/EditForms/PropertyEditForm';
 import TripEditForm from '@/components/manager/EditForms/TripEditForm';
 import TravellingEditForm from '@/components/manager/EditForms/TravellingEditForm';
+import { GeneralItem, Review } from '@/types';
+import { Image } from '@/lib/mongodb/models/Image';
 
 export default function ItemEdit({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = React.use(params);
@@ -19,17 +21,15 @@ export default function ItemEdit({ params }: { params: Promise<{ id: string }> }
   
   const router = useRouter();
   const { toast } = useToast();
-  const [item, setItem] = useState<any | null>(null);
+  const [item, setItem] = useState<GeneralItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [propertyDetails, setPropertyDetails] = useState<Property>();
   const [tripDetails, setTripDetails] = useState<Trip>();
   const [travellingDetails, setTravellingDetails] = useState<Travelling>();
 
-  useEffect(() => {
-    fetchItemDetails();
-  }, [itemId]);
 
-  const fetchItemDetails = async () => {
+
+  const fetchItemDetails = useCallback( async () => {
     setIsLoading(true);
     try {
       // Try to fetch from all possible endpoints
@@ -53,7 +53,7 @@ export default function ItemEdit({ params }: { params: Promise<{ id: string }> }
             break;
           }
         } catch (error) {
-          console.log(`Item not found in ${endpoint.category}`);
+          console.log(`Item not found in ${endpoint.category}`,error);
         }
       }
       
@@ -62,15 +62,11 @@ export default function ItemEdit({ params }: { params: Promise<{ id: string }> }
       }
       
       // Create unified item for UI rendering
-      const generalItem = {
+      const generalItem: GeneralItem = {
         id: itemId,
         title: foundItem.title,
         description: foundItem.description,
         createdAt: foundItem.createdAt || new Date().toISOString(),
-        status: foundItem.status || 
-                (foundCategory === 'properties' ? (foundItem.active ? 'Active' : 'Inactive') : 
-                (foundCategory === 'trips' ? foundItem.type : 
-                (foundCategory === 'travellings' ? foundItem.visibility || 'Public' : 'Unknown'))),
         category: foundCategory === 'properties' ? 'Property' : 
                  foundCategory === 'trips' ? 'Trip' : 'Travelling'
       };
@@ -101,11 +97,11 @@ export default function ItemEdit({ params }: { params: Promise<{ id: string }> }
             publicId: foundItem.bannerImage.publicId,
             alt: foundItem.bannerImage.alt
           },
-          detailImages: foundItem.detailImages?.map((image: any) => ({
+          detailImages: foundItem.detailImages?.map((image: Image) => ({
             url: image.url
           })),
           totalRating: foundItem.totalRating || 0,
-          review: foundItem.review?.map((review: any) => ({
+          review: foundItem.review?.map((review: Review) => ({
             comment: review.comment,
             rating: review.rating
           })) || [],
@@ -124,7 +120,7 @@ export default function ItemEdit({ params }: { params: Promise<{ id: string }> }
             publicId: foundItem.bannerImage.publicId,
             alt: foundItem.bannerImage.alt
           },
-          detailImages: foundItem.detailImages?.map((image: any) => ({
+          detailImages: foundItem.detailImages?.map((image: Image) => ({
             url: image.url,
           })),
           type: foundItem.type,
@@ -161,7 +157,7 @@ export default function ItemEdit({ params }: { params: Promise<{ id: string }> }
             currency: foundItem.costing.currency
           },
           totalRating: foundItem.totalRating,
-          review: foundItem.review?.map((review: any) => ({
+          review: foundItem.review?.map((review: Review) => ({
             comment: review.comment,
             rating: review.rating
           })),
@@ -172,7 +168,7 @@ export default function ItemEdit({ params }: { params: Promise<{ id: string }> }
             publicId: foundItem.bannerImage.publicId,
             alt : foundItem.bannerImage.alt
           },
-          detailImages: foundItem.detailImages?.map((image: any) => ({
+          detailImages: foundItem.detailImages?.map((image: Image) => ({
             url: image.url
           })),
         });
@@ -188,20 +184,24 @@ export default function ItemEdit({ params }: { params: Promise<{ id: string }> }
     } finally {
       setIsLoading(false);
     }
-  };
+  },[itemId, toast]);
 
-  const handleSave = async (updatedData: any) => {
+  useEffect(() => {
+    fetchItemDetails();
+  }, [fetchItemDetails]);
+
+  const handleSave = async ( updatedData: Property | Trip | Travelling ) => {
     try {
       let endpoint = '';
-      switch (item.category) {
+      switch (item?.category) {
         case 'Property':
-          endpoint = `/api/properties/${item.id}`;
+          endpoint = `/api/properties/${item?.id}`;
           break;
         case 'Trip':
-          endpoint = `/api/trips/${item.id}`;
+          endpoint = `/api/trips/${item?.id}`;
           break;
         case 'Travelling':
-          endpoint = `/api/travellings/${item.id}`;
+          endpoint = `/api/travellings/${item?.id}`;
           break;
       }
 
@@ -214,7 +214,7 @@ export default function ItemEdit({ params }: { params: Promise<{ id: string }> }
       if (!response.ok) throw new Error('Failed to update item');
 
       toast({ title: 'Success', description: 'Item updated successfully.' });
-      router.push(`/manager/dashboard/${item.id}`);
+      router.push(`/manager/dashboard/${item?.id}`);
     } catch (error) {
       console.error('Error updating item:', error);
       toast({

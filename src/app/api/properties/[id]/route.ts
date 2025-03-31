@@ -3,55 +3,62 @@ import { deleteProperty, getPropertyById, updateProperty } from '@/lib/mongodb/m
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
 
-    const { id } = await context.params;
+    // const params = await context;
+    const {id} = await params;
     const property = await getPropertyById(id);
-    // console.log("jurrah: ",property);
     
     if (!property) {
       return NextResponse.json({ error: 'Property not found' }, { status: 404 });
     }
     
     return NextResponse.json(property);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const propertyData = await request.json();
-    const property = await updateProperty(params.id, propertyData);
+
+    const {id} = await params;
+    const property = await updateProperty(id, propertyData);
     
     if (!property) {
       return NextResponse.json({ error: 'Property not found' }, { status: 404 });
     }
     
     return NextResponse.json(property);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const success = await deleteProperty(params.id);
-    
+
+    const {id} = await params;
+    const success = await deleteProperty(id);
+  
     if (!success) {
       return NextResponse.json({ error: 'Property not found' }, { status: 404 });
     }
     
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

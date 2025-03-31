@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getDb, getUsersByRole } from '@/lib/mongodb';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     await getDb();
     const managers = await getUsersByRole('manager');    

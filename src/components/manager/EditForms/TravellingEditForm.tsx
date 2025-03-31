@@ -17,21 +17,23 @@ interface TravellingEditFormProps {
 const TravellingEditForm: React.FC<TravellingEditFormProps> = ({ item, onSave }) => {
   const [formData, setFormData] = useState<Travelling>(item);
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: string, value: unknown) => {
     setFormData((prev) => {
       const keys = field.split(".");
-      let updated = { ...prev } as any;
-      let temp = updated;
+      const updated: Partial<Travelling> = { ...prev };
+      let temp: Record<string, unknown> = updated;
   
       for (let i = 0; i < keys.length - 1; i++) {
-        temp[keys[i]] = { ...temp[keys[i]] };
-        temp = temp[keys[i]];
+        if (!temp[keys[i]]) temp[keys[i]] = {};
+        temp[keys[i]] = { ...temp[keys[i]] as Record<string, unknown> };
+        temp = temp[keys[i]] as Record<string, unknown>;
       }
   
       temp[keys[keys.length - 1]] = value;
       return updated as Travelling;
     });
   };
+  
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

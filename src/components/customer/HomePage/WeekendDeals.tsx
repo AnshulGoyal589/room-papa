@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Tag } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import Image from 'next/image';
 
 export default function WeekendDeals() {

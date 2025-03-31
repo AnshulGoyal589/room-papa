@@ -1,27 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Document, Sort } from 'mongodb';
+import { Document, Filter, Sort } from 'mongodb';
 import clientPromise from '@/lib/mongodb/client';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { category: string } }
+  { params }: { params: Promise<{ category: string }> }
 ) {
   try {
-    // const { db } = await connectToDatabase();
     const client = await clientPromise;
     const db = client.db('travel-app');
     const { searchParams } = request.nextUrl;
-    const category = params.category;
-    
+
+    const {category} = await params;
+    // const category = params.category;
+
     const query = buildCategoryQuery(searchParams, category);
     const sort = buildSortQuery(searchParams);
 
-    // console.log('Category search query:', query);
-    
     const pageSize = 10;
     const page = parseInt(searchParams.get('page') || '1');
-    
-    let collection;
+
+    let collection: string;
     switch (category) {
       case 'property':
         collection = 'properties';
@@ -35,7 +34,7 @@ export async function GET(
       default:
         return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
     }
-    
+
     const total = await db.collection(collection).countDocuments(query);
 
     const results = await db.collection(collection)
@@ -44,57 +43,101 @@ export async function GET(
       .skip((page - 1) * pageSize)
       .limit(pageSize)
       .toArray();
-    
+
     return NextResponse.json({ results, total });
-  } catch (error) {
-    console.error('Category search API error:', error);
-    return NextResponse.json({ error: 'Failed to fetch results' }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
-function buildCategoryQuery(searchParams: URLSearchParams, category: string) {
-  // Reuse the filtering logic from the main search API
-  const query: any = {};
-  
+function buildCategoryQuery(searchParams: URLSearchParams, category: string): Filter<Document> {
+  const query: Filter<Document> = {};
+
   // General search term
-  if (searchParams.has('query')) {
-    query.$text = { $search: searchParams.get('query') as string };
+  const searchQuery = searchParams.get('query');
+  if (searchQuery) {
+    query.$text = { $search: searchQuery };
   }
-  
+
   switch (category.toLowerCase()) {
     case 'property':
-      // Property-specific filters (same as in buildSearchQuery)
+      // Property-specific filters
       if (searchParams.has('minPrice') || searchParams.has('maxPrice')) {
         query.pricePerNight = {};
-        if (searchParams.has('minPrice')) {
-          query.pricePerNight.$gte = parseInt(searchParams.get('minPrice') as string);
+        const minPrice = searchParams.get('minPrice');
+        const maxPrice = searchParams.get('maxPrice');
+
+        if (minPrice) {
+          query.pricePerNight.$gte = parseInt(minPrice);
         }
-        if (searchParams.has('maxPrice')) {
-          query.pricePerNight.$lte = parseInt(searchParams.get('maxPrice') as string);
+        if (maxPrice) {
+          query.pricePerNight.$lte = parseInt(maxPrice);
         }
       }
-      
-      // Add more property filters (same as in buildSearchQuery)
-      // ...
+
+      const bedrooms = searchParams.get('bedrooms');
+      if (bedrooms) {
+        query.bedrooms = { $gte: parseInt(bedrooms) };
+      }
+
+      const propertyType = searchParams.get('propertyType');
+      if (propertyType) {
+        query.type = propertyType;
+      }
+
+      const city = searchParams.get('city');
+      if (city) {
+        query['location.city'] = {
+          $regex: city,
+          $options: 'i',
+        };
+      }
       break;
-      
+
     case 'travelling':
-      // Travelling-specific filters (same as in buildSearchQuery)
-      // ...
+      // Travelling-specific filters
+      const startDate = searchParams.get('startDate');
+      const endDate = searchParams.get('endDate');
+      if (startDate || endDate) {
+        query.days = { $elemMatch: {} };
+        if (startDate) {
+          (query.days.$elemMatch as Filter<Document>).date = {
+            $gte: new Date(startDate),
+          };
+        }
+        if (endDate) {
+          (query.days.$elemMatch as Filter<Document>).date = {
+            ...(query.days.$elemMatch as Filter<Document>).date,
+            $lte: new Date(endDate),
+          };
+        }
+      }
       break;
-      
+
     case 'trip':
-      // Trip-specific filters (same as in buildSearchQuery)
-      // ...
+      // Trip-specific filters
+      const minBudget = searchParams.get('minBudget');
+      const maxBudget = searchParams.get('maxBudget');
+      if (minBudget || maxBudget) {
+        query.budget = {
+          amount: {
+            ...(minBudget && { $gte: parseInt(minBudget) }),
+            ...(maxBudget && { $lte: parseInt(maxBudget) }),
+          },
+        };
+      }
       break;
   }
-  
+
   return query;
 }
 
-function buildSortQuery(searchParams: URLSearchParams) : Sort {
+function buildSortQuery(searchParams: URLSearchParams): Sort {
   const sortField = searchParams.get('sortBy') || 'createdAt';
   const sortOrder = searchParams.get('sortOrder') === 'asc' ? 1 : -1;
-  
-  return { [sortField]: sortOrder };
+
+  return { [sortField]: sortOrder } as Sort;
 }

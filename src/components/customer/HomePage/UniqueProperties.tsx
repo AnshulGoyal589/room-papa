@@ -92,7 +92,7 @@ export default function UniqueProperties(): React.ReactElement {
     <div className="bg-gray-100 py-16 px-4">
       <div className="container mx-auto">
         <h2 className="text-3xl font-bold mb-2 text-center">Stay at Our Top Unique Properties</h2>
-        <p className="text-xl text-gray-600 mb-8 text-center">From villas and apartments to hotels and resorts, we've got it all</p>
+        <p className="text-xl text-gray-600 mb-8 text-center">From villas and apartments to hotels and resorts, we&aps;ve got it all</p>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {properties.slice(0, 4).map((property) => (

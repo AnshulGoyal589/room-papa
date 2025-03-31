@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Hotel, Plane, Car } from 'lucide-react';
+// import { TransportationType } from '@/types';
 
 type TravelTypeSelectorProps = {
   searchType: 'stays' | 'flights' | 'car-rentals';
@@ -32,7 +33,7 @@ export default function TravelTypeSelector({ searchType, setSearchType }: Travel
       {travelTypes.map((type) => (
         <button
           key={type.type}
-          onClick={() => setSearchType(type.type as any)}
+          onClick={() => setSearchType(type.type as 'flights' | 'stays' | 'car-rentals')}
           className={`flex items-center space-x-2 px-4 py-2 rounded-full ${
             searchType === type.type 
               ? 'bg-white text-blue-600' 

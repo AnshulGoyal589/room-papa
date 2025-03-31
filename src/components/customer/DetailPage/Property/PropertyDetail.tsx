@@ -5,18 +5,15 @@ import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { Property } from '@/lib/mongodb/models/Property';
-import { PropertyAmenities } from '@/types';
+import { BookingFormData, PropertyAmenities } from '@/types';
 import DummyReviews from './Reviews';
-
-interface Image {
-  url: string;
-  alt?: string;
-}
+import { useUser } from '@clerk/nextjs';
 
 
 export default function PropertyDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const { isSignedIn, user, isLoaded } = useUser();
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,13 +23,26 @@ export default function PropertyDetailPage() {
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [guestCount, setGuestCount] = useState(1);
   const reviewsPerPage = 3;
+  
+  // New state for booking confirmation
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [bookingData, setBookingData] = useState<BookingFormData>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    passengers: 1,
+    specialRequests: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bookingConfirmed, setBookingConfirmed] = useState(false);
+  const [loginRedirectWarning, setLoginRedirectWarning] = useState(false);
 
   useEffect(() => {
     const fetchPropertyDetails = async () => {
       if (!params?.id) return;
       
       try {
-        
         setLoading(true);
 
         const response = await fetch(`/api/properties/${params.id}`);
@@ -76,14 +86,22 @@ export default function PropertyDetailPage() {
     fetchPropertyDetails();
   }, [params?.id]);
 
+  // Set form data when user is loaded
+  useEffect(() => {
+    if (isLoaded && isSignedIn && user) {
+      setBookingData(prev => ({
+        ...prev,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.primaryEmailAddress?.emailAddress || ''
+      }));
+    }
+  }, [isLoaded, isSignedIn, user]);
+
   const handleImageClick = (imageUrl: string) => {
     setSelectedImage(imageUrl);
   };
 
-  const calculateNights = (start: Date, end: Date) => {
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  };
 
   const incrementGuests = () => {
     if (property && guestCount < property.maximumGuests) {
@@ -94,6 +112,80 @@ export default function PropertyDetailPage() {
   const decrementGuests = () => {
     if (guestCount > 1) {
       setGuestCount(prev => prev - 1);
+    }
+  };
+
+  const handleBookNowClick = () => {
+    if (!isLoaded) return;
+    
+    if (!isSignedIn) {
+      setLoginRedirectWarning(true);
+      return;
+    }
+    
+    setShowBookingModal(true);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setBookingData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleBookingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!property || !checkInDate || !checkOutDate) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+
+      const propertyDetails = {
+        type : "property",
+        propertyDetails: {
+          id: params?.id,
+          title: property.title,
+          locationFrom: "NA",
+          locationTo: property.location,
+          type: property.type
+        },
+        bookingDetails: {
+          checkIn: checkInDate.toISOString(),
+          checkOut: checkOutDate.toISOString(),
+          guests: guestCount,
+          price: property.costing.discountedPrice,
+          currency: property.costing.currency,
+          totalPrice: property.costing.discountedPrice * bookingData.passengers,
+        },
+        guestDetails: bookingData,
+        recipients: [bookingData.email, 'anshulgoyal589@gmail.com']
+      };
+      
+      // Send email API request
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(propertyDetails),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to send booking confirmation');
+      }
+      
+      setBookingConfirmed(true);
+      setShowBookingModal(false);
+      
+      // You might want to save the booking to database here as well
+      
+    } catch (error) {
+      console.error('Error submitting booking:', error);
+      alert('There was an error processing your booking. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -203,9 +295,6 @@ export default function PropertyDetailPage() {
     );
   }
 
-  // Calculate total price
-  const nights = checkInDate && checkOutDate ? calculateNights(checkInDate, checkOutDate) : 0;
-  const totalPrice = property.costing.discountedPrice * nights;
 
   // Calculate paginated reviews
   const paginatedReviews = property.review
@@ -489,7 +578,6 @@ export default function PropertyDetailPage() {
                 {property.costing.price !== property.costing.discountedPrice && (
                   <div className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm inline-block mt-2">
                     Save{' '}
-                    // Continue from where the code was cut off
                     {Math.round(
                       ((property.costing.price - property.costing.discountedPrice) / property.costing.price) * 100
                     )}% off
@@ -543,92 +631,277 @@ export default function PropertyDetailPage() {
                       </svg>
                     </button>
                     <div className="flex-1 text-center">
-                      {guestCount} {guestCount === 1 ? 'Guest' : 'Guests'}
+                      <span className="font-medium">{guestCount}</span>
+                      <span className="text-gray-500 ml-1">
+                        {guestCount === 1 ? 'guest' : 'guests'}
+                      </span>
                     </div>
                     <button
                       onClick={incrementGuests}
                       disabled={guestCount >= property.maximumGuests}
                       className="px-3 py-2 text-blue-600 disabled:text-gray-400"
                     >
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                      <svg
+                        className="w-5 h-5"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                     </button>
                   </div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    Maximum {property.maximumGuests} guests allowed
-                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Maximum {property.maximumGuests} guests
+                  </p>
                 </div>
               </div>
 
-              {/* Price Summary */}
+              {/* Price Calculation */}
               {checkInDate && checkOutDate && (
-                <div className="border-t border-gray-200 pt-4 mb-6">
-                  <div className="flex justify-between mb-2">
-                    <span>
-                      {property.costing.currency} {property.costing.discountedPrice.toLocaleString()} x {nights} nights
-                    </span>
-                    <span>
-                      {property.costing.currency} {totalPrice.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between mb-2">
-                    <span>Cleaning fee</span>
-                    <span>{property.costing.currency} 50</span>
-                  </div>
-                  <div className="flex justify-between mb-2">
-                    <span>Service fee</span>
-                    <span>{property.costing.currency} {Math.round(totalPrice * 0.1)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200">
+                <div className="border-t border-gray-200 pt-4 mb-6">         
+                  <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200 mt-2">
                     <span>Total</span>
                     <span>
-                      {property.costing.currency} {(totalPrice + 50 + Math.round(totalPrice * 0.1)).toLocaleString()}
+                      {property.costing.currency} {(property.costing.discountedPrice * bookingData.passengers).toLocaleString()}
                     </span>
                   </div>
                 </div>
               )}
 
-              {/* Book Now Button */}
               <button
-                className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition duration-200"
-                onClick={() => {
-                  // Handle booking logic here
-                  alert('Booking functionality would go here');
-                }}
+                onClick={handleBookNowClick}
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 Book Now
               </button>
-              
-              <div className="text-xs text-gray-500 text-center mt-2">
-                You won't be charged yet
-              </div>
 
-              {/* Host Info */}
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="flex items-center mb-4">
-                  <div className="bg-gray-200 rounded-full h-12 w-12 flex items-center justify-center mr-3">
-                    <span className="font-bold text-gray-600">H</span>
-                  </div>
-                  <div>
-                    <div className="font-semibold">Hosted by Property Owner</div>
-                    <div className="text-sm text-gray-500">
-                      Member since {new Date(property.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
-                    </div>
-                  </div>
-                </div>
-                <button className="w-full py-2 border border-blue-600 text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition duration-200">
-                  Contact Host
-                </button>
-              </div>
+              <p className="text-sm text-gray-500 text-center mt-2">
+                You won&apos;t be charged yet
+              </p>
             </div>
           </div>
         </div>
+        <DummyReviews/>
       </div>
-      <div className="container mx-auto px-4 py-8">
 
-         <DummyReviews />
-      </div>
+      {/* Login Warning Modal */}
+      {loginRedirectWarning && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4">Login Required</h3>
+            <p className="mb-6">
+              You need to be logged in to make a booking. Would you like to login now?
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setLoginRedirectWarning(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  router.push(`/sign-in?redirect=${encodeURIComponent(window.location.pathname)}`);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Login
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Booking Modal */}
+      {showBookingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">Complete Your Booking</h3>
+              <button
+                onClick={() => setShowBookingModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <div className="flex items-center mb-4">
+                {property.bannerImage && (
+                  <div className="relative h-16 w-16 mr-3">
+                    <Image
+                      src={property.bannerImage.url}
+                      alt={property.title}
+                      layout="fill"
+                      objectFit="cover"
+                      className="rounded-md"
+                    />
+                  </div>
+                )}
+                <div>
+                  <h4 className="font-semibold">{property.title}</h4>
+                  <p className="text-sm text-gray-600">{property.location.city}, {property.location.country}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <div className="text-sm text-gray-600">Check-in</div>
+                  <div className="font-medium">
+                    {checkInDate?.toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-600">Check-out</div>
+                  <div className="font-medium">
+                    {checkOutDate?.toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-600">Guests</div>
+                  <div className="font-medium">{guestCount} {guestCount === 1 ? 'guest' : 'guests'}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-600">Total</div>
+                  <div className="font-medium">
+                    {property.costing.currency} {(property.costing.discountedPrice * bookingData.passengers).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <form onSubmit={handleBookingSubmit}>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={bookingData.firstName}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={bookingData.lastName}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={bookingData.email}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={bookingData.phone}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Special Requests (Optional)
+                </label>
+                <textarea
+                  name="specialRequests"
+                  value={bookingData.specialRequests}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                ></textarea>
+              </div>
+              
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-400"
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                  </span>
+                ) : (
+                  "Confirm Booking"
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+      
+      {/* Booking Confirmation Modal */}
+      {bookingConfirmed && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 text-center">
+            <div className="mb-4">
+              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+            <h3 className="text-xl font-bold mb-2">Booking Confirmed!</h3>
+            <p className="mb-6 text-gray-600">
+              Your booking for {property.title} has been confirmed. A confirmation has been sent to your email.
+            </p>
+            <button
+              onClick={() => setBookingConfirmed(false)}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

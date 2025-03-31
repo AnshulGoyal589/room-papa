@@ -14,27 +14,28 @@ interface PropertyEditFormProps {
 }
 
 const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => {
-  console.log(item);
+  // console.log(item);
   const [formData, setFormData] = useState<Property>(item);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const amenities: PropertyAmenities[] = ["wifi", "pool", "gym", "spa", "restaurant", "parking", "airConditioning", "breakfast"];
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: string, value: unknown) => {
     setFormData((prev) => {
       const keys = field.split(".");
-      let updated = { ...prev } as any;
-      let temp = updated;
+      const updated: Partial<Property> = { ...prev };
+      let temp: Record<string, unknown> = updated;
   
       for (let i = 0; i < keys.length - 1; i++) {
-        temp[keys[i]] = { ...temp[keys[i]] };
-        temp = temp[keys[i]];
+        if (!temp[keys[i]]) temp[keys[i]] = {};
+        temp[keys[i]] = { ...temp[keys[i]] as Record<string, unknown> };
+        temp = temp[keys[i]] as Record<string, unknown>;
       }
   
       temp[keys[keys.length - 1]] = value;
       return updated as Property;
     });
   };
-
+  
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 

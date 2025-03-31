@@ -18,22 +18,24 @@ const TripEditForm: React.FC<TripEditFormProps> = ({ item, onSave }) => {
   const [formData, setFormData] = useState<Trip>(item);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: string, value: unknown) => {
     setFormData((prev) => {
       const keys = field.split(".");
-      let updated = { ...prev } as any;
-      let temp = updated;
+      const updated: Partial<Trip> = { ...prev };
+      let temp: Record<string, unknown> = updated;
   
       for (let i = 0; i < keys.length - 1; i++) {
-        temp[keys[i]] = { ...temp[keys[i]] };
-        temp = temp[keys[i]];
+        if (!temp[keys[i]]) temp[keys[i]] = {};
+        temp[keys[i]] = { ...temp[keys[i]] as Record<string, unknown> };
+        temp = temp[keys[i]] as Record<string, unknown>;
       }
   
       temp[keys[keys.length - 1]] = value;
       return updated as Trip;
     });
   };
-
+  
+  
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -71,17 +73,6 @@ const TripEditForm: React.FC<TripEditFormProps> = ({ item, onSave }) => {
           placeholder="Enter trip title"
         />
         {errors.title && <span className="text-red-500">{errors.title}</span>}
-      </div>
-
-      <div>
-        <label>Priority</label>
-        <Input
-          type="number"
-          name="priority"
-          value={formData.priority || 0}
-          onChange={(e) => handleChange("priority", parseInt(e.target.value))}
-          min={0}
-        />
       </div>
 
       <div>

@@ -8,36 +8,36 @@ import { Image } from './Image';
 
 export interface Property {
   _id?: ObjectId;
-  amenities: PropertyAmenities[]; 
-  startDate: Date;
-  endDate: Date;
-  bannerImage: Image; 
-  bathrooms: number; 
-  bedrooms: number; 
-  createdAt?: Date; 
-  costing: {
-    price: number; // pricePerNight
-    discountedPrice: number;
-    currency: string;
-  };
+  userId: string;
+  title: string; 
   description: string; 
-  detailImages: Image[]; 
+  type: PropertyType;
   location: { 
     address: string;
     state: string;
     city: string;
     country: string;
   };
-  maximumGuests: number; 
+  startDate: Date;
+  endDate: Date;
+  costing: {
+    price: number; // pricePerNight
+    discountedPrice: number;
+    currency: string;
+  };
   totalRating?: number; 
   review?: {
     comment: string;
     rating: number;
   }[];
-  title: string; 
-  type: PropertyType;
+  amenities: PropertyAmenities[]; 
+  createdAt?: Date; 
   updatedAt?: Date;
-  userId: string;
+  bannerImage: Image; 
+  detailImages: Image[]; 
+  bathrooms: number; 
+  bedrooms: number; 
+  maximumGuests: number; 
 }
 
 
@@ -48,7 +48,7 @@ interface PropertyValidationInput {
     address: string;
     city: string;
     country: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   description: string;
   amenities: string[];
@@ -56,7 +56,7 @@ interface PropertyValidationInput {
   maximumGuests: number;
   bedrooms: number;
   bathrooms: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export function validateProperty(propertyData: PropertyValidationInput): boolean {
@@ -132,8 +132,8 @@ export async function getPropertiesCollection(): Promise<Collection<Property>> {
   export async function createProperty(propertyData: Omit<Property, '_id' | 'createdAt' | 'updatedAt'>): Promise<Property> {
     try {
       // Validate property data
-      validateProperty(propertyData as any);
-      
+      validateProperty(propertyData as unknown as PropertyValidationInput);
+
       const properties = await getPropertiesCollection();
       
       const newProperty: Property = {
@@ -142,7 +142,7 @@ export async function getPropertiesCollection(): Promise<Collection<Property>> {
         updatedAt: new Date()
       };
       
-      const result = await properties.insertOne(newProperty as any);
+      const result = await properties.insertOne(newProperty);
       
       return {
         ...newProperty,

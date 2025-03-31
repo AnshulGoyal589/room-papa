@@ -2,16 +2,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import TravelTypeSelector from './TravelTypeSelector';
+// import TravelTypeSelector from './TravelTypeSelector';
 import SearchForm from './SearchForm';
 import { ChevronRight } from 'lucide-react';
 
-type SearchFormProps = {
-  defaultCategory: 'property' | 'trip' | 'travelling';
-};
+// type SearchFormProps = {
+//   defaultCategory: 'property' | 'trip' | 'travelling';
+// };
 
 export default function HeroSection() {
-  const [searchType, setSearchType] = useState<SearchFormProps['defaultCategory']>('property');
+  // const [searchType, setSearchType] = useState<SearchFormProps['defaultCategory']>('property');
   const [currentBackground, setCurrentBackground] = useState(0);
   
   const backgrounds = [
@@ -27,7 +27,7 @@ export default function HeroSection() {
     }, 7000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [ backgrounds.length ]);
 
   // Offer data
   const specialOffers = [
@@ -77,7 +77,7 @@ export default function HeroSection() {
         
         {/* Search form with glass effect */}
         <div className="bg-white/10 backdrop-blur-lg p-6 rounded-2xl border border-white/20 shadow-2xl">
-          <SearchForm searchType={searchType} />
+          <SearchForm/>
         </div>
         
         {/* Trust badges */}

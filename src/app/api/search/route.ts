@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb/client';
-import { Document, Sort, ObjectId } from 'mongodb';
+import { Document, Sort } from 'mongodb';
+import { QueryType } from '@/types';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,22 +13,25 @@ export async function GET(request: NextRequest) {
     
     const validationResult = validateSearchParams(searchParams, category);
     if (!validationResult.valid) {
-      return NextResponse.json({ error: validationResult.error }, { status: 400 });
+      return NextResponse.json(
+        { error: validationResult.error }, 
+        { status: 400 }
+      );
     }
+
     const query = buildSearchQuery(searchParams);
     const sort = buildSortQuery(searchParams);
-    // console.log("searchParams: ",searchParams);
-    // console.log("query: ",query);
-    // console.log("sort: ",sort);
-    
     const pageSize = parseInt(searchParams.get('pageSize') || '10');
     const page = parseInt(searchParams.get('page') || '1');
 
     const collectionName = getCategoryCollection(category);
     if (!collectionName) {
-      return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid category' }, 
+        { status: 400 }
+      );
     }
-    // console.log("query: ",query['$and'][0].transportation.arrivalTime['$gte'] );
+
     const total = await db.collection(collectionName).countDocuments(query);
     const results = await db.collection(collectionName)
       .find(query)
@@ -45,11 +49,27 @@ export async function GET(request: NextRequest) {
       pageSize,
       totalPages: Math.ceil(total / pageSize)
     });
-  } catch (error) {
-    console.error('Search API error:', error);
-    return NextResponse.json({ error: 'Failed to fetch search results' }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : 'Internal server error';
+    return NextResponse.json(
+      { error: errorMessage },
+      { status: 500 }
+    );
   }
 }
+
+// Modified DateFilter type to include index signature
+type DateFilter = {
+  transportation: {
+    arrivalTime?: {
+      $gte?: Date;
+      $lte?: Date;
+    };
+  };
+  [key: string]: unknown;
+};
 
 function getCategoryCollection(category: string): string | null {
   const collections: Record<string, string> = {
@@ -60,12 +80,13 @@ function getCategoryCollection(category: string): string | null {
   return collections[category.toLowerCase()] || null;
 }
 
-function validateSearchParams(searchParams: URLSearchParams, category: string): { valid: boolean, error?: string } {
+function validateSearchParams(searchParams: URLSearchParams, category: string) {
   if (searchParams.has('startDate') || searchParams.has('endDate')) {
     try {
       if (searchParams.has('startDate')) new Date(searchParams.get('startDate') as string);
       if (searchParams.has('endDate')) new Date(searchParams.get('endDate') as string);
-    } catch (error) {
+    } catch (_error) { // Added underscore for unused var
+      console.error(_error);
       return { valid: false, error: 'Invalid date format' };
     }
   }
@@ -87,8 +108,36 @@ function validateSearchParams(searchParams: URLSearchParams, category: string): 
   return { valid: true };
 }
 
-function buildSearchQuery(searchParams: URLSearchParams) {
-  const query: Record<string, any> = {};
+function addDateRangeFilter(query: QueryType, searchParams: URLSearchParams) {
+  const startDate = searchParams.get('startDate');
+  const endDate = searchParams.get('endDate');
+  
+  if (startDate || endDate) {
+    query.$and = query.$and || [];
+    const dateFilter: DateFilter = { transportation: {} };
+
+    if (startDate) {
+      dateFilter.transportation.arrivalTime = { 
+        $gte: new Date(startDate)
+      };
+    }
+
+    if (endDate) {
+      dateFilter.transportation.arrivalTime = { 
+        ...dateFilter.transportation.arrivalTime,
+        $lte: new Date(endDate)
+      };
+    }
+
+    query.$and.push(dateFilter as Record<string, unknown>);
+  }
+}
+
+
+
+
+function buildSearchQuery(searchParams: URLSearchParams) : QueryType {
+  const query: QueryType = {};
   const category = searchParams.get('category') || 'travelling';
 
   
@@ -129,7 +178,7 @@ function buildSearchQuery(searchParams: URLSearchParams) {
     ];
   }
   
-  const filterFunctions: Record<string, (q: Record<string, any>, sp: URLSearchParams) => void> = {
+  const filterFunctions: Record<string, (q: QueryType, sp: URLSearchParams) => void> = {
     'property': addPropertyFilters,
     'travelling': addTravellingFilters,
     'trip': addTripFilters
@@ -142,7 +191,7 @@ function buildSearchQuery(searchParams: URLSearchParams) {
   return query;
 }
 
-function addPropertyFilters(query: Record<string, any>, searchParams: URLSearchParams) {
+function addPropertyFilters(query: QueryType, searchParams: URLSearchParams) {
   addRangeFilter(query, searchParams, 'costing.discountedPrice', 'minPrice', 'maxPrice');
   addMinFilter(query, searchParams, 'bedrooms');
   addMinFilter(query, searchParams, 'bathrooms');
@@ -152,7 +201,7 @@ function addPropertyFilters(query: Record<string, any>, searchParams: URLSearchP
   addDateRangeFilter(query, searchParams);
 }
 
-function addTravellingFilters(query: Record<string, any>, searchParams: URLSearchParams) {
+function addTravellingFilters(query:QueryType, searchParams: URLSearchParams) {
 
   addRangeFilter(query, searchParams, 'costing.discountedPrice', 'minPrice', 'maxPrice');
   addExactFilter(query, searchParams, 'transportation.type');
@@ -160,7 +209,7 @@ function addTravellingFilters(query: Record<string, any>, searchParams: URLSearc
   // addRangeFilter(query, searchParams, 'costing.discountedPrice', 'minPrice', 'maxPrice');
 }
 
-function addTripFilters(query: Record<string, any>, searchParams: URLSearchParams) {
+function addTripFilters(query:QueryType, searchParams: URLSearchParams) {
   addRangeFilter(query, searchParams, 'costing.discountedPrice', 'minPrice', 'maxPrice');
   addExactFilter(query, searchParams, 'type');
   addDateRangeFilter(query, searchParams);
@@ -169,7 +218,7 @@ function addTripFilters(query: Record<string, any>, searchParams: URLSearchParam
   addExactFilter(query, searchParams, 'domain');
 }
 
-function addRangeFilter(query: Record<string, any>, searchParams: URLSearchParams, field: string, minParam: string, maxParam: string) {
+function addRangeFilter(query: QueryType, searchParams: URLSearchParams, field: string, minParam: string, maxParam: string) {
   const rangeQuery: Record<string, number> = {};
   if (searchParams.has(minParam)) {
     rangeQuery.$gte = parseFloat(searchParams.get(minParam) as string);
@@ -182,20 +231,20 @@ function addRangeFilter(query: Record<string, any>, searchParams: URLSearchParam
   }
 }
 
-function addMinFilter(query: Record<string, any>, searchParams: URLSearchParams, field: string) {
+function addMinFilter(query: QueryType, searchParams: URLSearchParams, field: string) {
   if (searchParams.has(field)) {
     const value = parseFloat(searchParams.get(field) as string);
     if (!isNaN(value)) query[field] = { $gte: value };
   }
 }
 
-function addExactFilter(query: Record<string, any>, searchParams: URLSearchParams, field: string) {
+function addExactFilter(query: QueryType, searchParams: URLSearchParams, field: string) {
   if (searchParams.has(field)) {
     query[field] = searchParams.get(field);
   }
 }
 
-function addArrayFilter(query: Record<string, any>, searchParams: URLSearchParams, field: string) {
+function addArrayFilter(query: QueryType, searchParams: URLSearchParams, field: string) {
   if (searchParams.has(field)) {
     const list = (searchParams.get(field) as string).split(',');
     query[field] = { $all: list };
@@ -203,34 +252,6 @@ function addArrayFilter(query: Record<string, any>, searchParams: URLSearchParam
 }
 
 
-function addDateRangeFilter(query: Record<string, any>, searchParams: URLSearchParams) {
-  const startDate = searchParams.get('startDate');
-  const endDate = searchParams.get('endDate');
-  // console.log("startDate: ",startDate);
-  // console.log("endDate: ",typeof(new Date(startDate)));
-  
-  if (startDate || endDate) {
-    query.$and = query.$and || [];
-    const dateFilter: Record<string, any> = { transportation: {} };
-
-    if (startDate) {
-      dateFilter.transportation.arrivalTime = { 
-        $gte: new Date(startDate)
-      };
-    }
-
-    if (endDate) {
-      dateFilter.transportation.arrivalTime = { 
-        ...dateFilter.transportation.arrivalTime,
-        $lte: new Date(endDate)
-      };
-    }
-
-    console.log("dateFilter: ",dateFilter);
-
-    query.$and.push(dateFilter);
-  }
-}
 
 
 
@@ -240,11 +261,11 @@ function buildSortQuery(searchParams: URLSearchParams): Sort {
   return { [sortField]: sortOrder };
 }
 
-function serializeDocuments(documents: Document[]): any[] {
+function serializeDocuments(documents: Document[]) {
   return documents.map(serializeDocument);
 }
 
-function serializeDocument(doc: any): any {
+function serializeDocument(doc: Document): Document {
   if (doc === null || doc === undefined) return doc;
   if (Array.isArray(doc)) return doc.map(item => serializeDocument(item));
   if (typeof doc === 'object') {
