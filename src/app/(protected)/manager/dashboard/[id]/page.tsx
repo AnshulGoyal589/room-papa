@@ -90,8 +90,8 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
             country: '',
           },
           amenities: foundItem.ammenities || [''],
-          startDate: new Date(foundItem.startDate),
-          endDate: new Date(foundItem.endDate),
+          startDate: foundItem.startDate,
+          endDate: foundItem.endDate,
           bannerImage: {
             url: foundItem.bannerImage.url,
             publicId: foundItem.bannerImage.publicId,
@@ -130,8 +130,8 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
             country: foundItem.destination.country,
             state: foundItem.destination.state
           },
-          startDate: new Date(foundItem.startDate),
-          endDate: new Date(foundItem.endDate),
+          startDate: foundItem.startDate,
+          endDate: foundItem.endDate,
           costing: {
             price: foundItem.costing.price || 0,
             currency: foundItem.costing.currency || 'USD',
@@ -146,8 +146,8 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
           description: foundItem.description,
           transportation: {
             type: foundItem.transportation.type,
-            arrivalTime: new Date(foundItem.transportation.arrivalTime),
-            departureTime: new Date(foundItem.transportation.departureTime),
+            arrivalTime: foundItem.transportation.arrivalTime,
+            departureTime: foundItem.transportation.departureTime,
             from: foundItem.transportation.from,
             to: foundItem.transportation.to
           },

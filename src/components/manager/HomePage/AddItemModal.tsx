@@ -90,8 +90,8 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
     bedrooms: 1,
     bathrooms: 1,
     maximumGuests: 2,
-    startDate: new Date().toISOString() ,
-    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() ,
+    startDate: new Date() ,
+    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) ,
     
   });
 
@@ -230,7 +230,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
         ...finalData,
         bannerImage,
         detailImages,
-        ownerId: userID,
+        userId: userID,
       };
 
       // console.log(finalData.startDate);
@@ -302,8 +302,8 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
                 <FormLabel>Start Date</FormLabel>
                 <Input 
                   type="date"
-                  value={propertyData.startDate }
-                  onChange={(e) => handlePropertyChange('startDate',e.target.value)}
+                  value={propertyData.startDate.toISOString().split('T')[0] }
+                  onChange={(e) => handlePropertyChange('startDate',new Date(e.target.value))}
                 />
               </FormItem>
               
@@ -311,8 +311,8 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
                 <FormLabel>End Date</FormLabel>
                 <Input 
                   type="date"
-                  value={propertyData.endDate }
-                  onChange={(e) => handlePropertyChange('endDate',e.target.value)}
+                  value={propertyData.endDate.toISOString().split('T')[0] }
+                  onChange={(e) => handlePropertyChange('endDate',new Date(e.target.value))}
                 />
               </FormItem>
             </div>

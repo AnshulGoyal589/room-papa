@@ -18,8 +18,8 @@ export interface Property {
     city: string;
     country: string;
   };
-  startDate: Date;
-  endDate: Date;
+  startDate: string;
+  endDate: string;
   costing: {
     price: number; // pricePerNight
     discountedPrice: number;
@@ -116,10 +116,10 @@ export async function getPropertiesCollection(): Promise<Collection<Property>> {
     return db.collection<Property>('properties');
   }
   
-  export async function getAllProperties(ownerId?: string): Promise<Property[]> {
+  export async function getAllProperties(userId?: string): Promise<Property[]> {
     const properties = await getPropertiesCollection();
     
-    const query = ownerId ? { ownerId } : {};
+    const query = userId ? { userId } : {};
     return properties.find(query).toArray();
   }
   

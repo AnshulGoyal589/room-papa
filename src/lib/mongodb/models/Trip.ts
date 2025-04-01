@@ -14,8 +14,8 @@ export interface Trip {
     state : string;
     country: string;
   };
-  startDate: Date;
-  endDate: Date;
+  startDate: string;
+  endDate: string;
   costing: {
     price: number;
     discountedPrice: number;

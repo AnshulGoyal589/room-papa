@@ -12,7 +12,8 @@ import {
   User,
   Briefcase,
   ArrowRight,
-  ChevronLeft
+  ChevronLeft,
+  BookAIcon
 } from 'lucide-react';
 import {
   SignedIn,
@@ -333,6 +334,13 @@ export function Header() {
               >
                 <Home className="w-5 h-5" />
                 <span>Dashboard</span>
+              </Link>
+              <Link 
+                href="/manager/appointments"
+                className="flex items-center space-x-2 hover:text-blue-600 transition"
+              >
+                <BookAIcon className="w-5 h-5" />
+                <span>Bookings</span>
               </Link>
               {/* Add more manager navigation links as needed */}
             </nav>

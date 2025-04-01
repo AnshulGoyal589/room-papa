@@ -144,11 +144,12 @@ export default function PropertyDetailPage() {
 
       const propertyDetails = {
         type : "property",
-        propertyDetails: {
+        details: {
           id: params?.id,
           title: property.title,
+          ownerId : property.userId,
           locationFrom: "NA",
-          locationTo: property.location,
+          locationTo: property.location.address + ", " + property.location.city + ", " + property.location.country,
           type: property.type
         },
         bookingDetails: {

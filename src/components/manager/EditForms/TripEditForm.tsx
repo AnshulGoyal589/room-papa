@@ -141,8 +141,8 @@ const TripEditForm: React.FC<TripEditFormProps> = ({ item, onSave }) => {
           <Input
             type="date"
             name="startDate"
-            value={formData.startDate.toISOString().split('T')[0]}
-            onChange={(e) => handleChange("startDate", new Date(e.target.value))}
+            value={formData.startDate}
+            onChange={(e) => handleChange("startDate",e.target.value)}
           />
           {errors.startDate && <span className="text-red-500">{errors.startDate}</span>}
         </div>
@@ -151,8 +151,8 @@ const TripEditForm: React.FC<TripEditFormProps> = ({ item, onSave }) => {
           <Input
             type="date"
             name="endDate"
-            value={formData.endDate.toISOString().split('T')[0]}
-            onChange={(e) => handleChange("endDate", new Date(e.target.value))}
+            value={formData.endDate}
+            onChange={(e) => handleChange("endDate", e.target.value)}
           />
           {errors.endDate && <span className="text-red-500">{errors.endDate}</span>}
         </div>

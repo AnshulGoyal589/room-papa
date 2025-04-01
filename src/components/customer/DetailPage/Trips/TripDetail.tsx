@@ -134,9 +134,10 @@ export default function TripDetailPage() {
 
       const tripDetails = {
         type : "trip",
-        tripDetails: {
+        details: {
           id: params?.id,
           title: trip.title,
+          ownerId : trip.userId,
           locationFrom: "NA",
           locationTo: trip.destination.city + ', ' + trip.destination.country,
           type: trip.domain

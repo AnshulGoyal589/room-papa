@@ -86,8 +86,8 @@ const TravellingEditForm: React.FC<TravellingEditFormProps> = ({ item, onSave })
           <Input
             type="datetime-local"
             name="transportation.arrivalTime"
-            value={formData.transportation.arrivalTime.toISOString().slice(0, 16)}
-            onChange={(e) => handleChange("transportation.arrivalTime", new Date(e.target.value))}
+            value={formData.transportation.arrivalTime}
+            onChange={(e) => handleChange("transportation.arrivalTime",e.target.value)}
           />
         </div>
         <div>
@@ -95,8 +95,8 @@ const TravellingEditForm: React.FC<TravellingEditFormProps> = ({ item, onSave })
           <Input
             type="datetime-local"
             name="transportation.departureTime"
-            value={formData.transportation.departureTime.toISOString().slice(0, 16)}
-            onChange={(e) => handleChange("transportation.departureTime", new Date(e.target.value))}
+            value={formData.transportation.departureTime}
+            onChange={(e) => handleChange("transportation.departureTime", e.target.value)}
           />
         </div>
       </div>

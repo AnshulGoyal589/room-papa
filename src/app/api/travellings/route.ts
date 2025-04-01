@@ -24,6 +24,10 @@ export async function POST(req: NextRequest) {
     
     const travellingData = await req.json();
 
+
+    // travellingData.transportation.startDate = new Date(travellingData.transportation.startDate);
+    // travellingData.transportation.endDate = new Date(travellingData.transportation.endDate);
+
     
     const travelling: Travelling = {
       ...travellingData,

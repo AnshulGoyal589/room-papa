@@ -93,7 +93,7 @@ const TravellingDetails: React.FC<{ item: Travelling }> = ({ item }) => {
             </div>
             <div className="mt-3">
               <p className="text-sm text-gray-500">Departure</p>
-              <p>{formatDate(item.transportation.departureTime)} {formatTime(item.transportation.departureTime)}</p>
+              <p>{formatDate(new Date(item.transportation.departureTime))} {formatTime(new Date(item.transportation.departureTime))}</p>
             </div>
           </div>
           <div>
@@ -106,7 +106,7 @@ const TravellingDetails: React.FC<{ item: Travelling }> = ({ item }) => {
             </div>
             <div className="mt-3">
               <p className="text-sm text-gray-500">Arrival</p>
-              <p>{formatDate(item.transportation.arrivalTime)} {formatTime(item.transportation.arrivalTime)}</p>
+              <p>{formatDate(new Date(item.transportation.arrivalTime))} {formatTime(new Date(item.transportation.arrivalTime))}</p>
             </div>
           </div>
         </div>

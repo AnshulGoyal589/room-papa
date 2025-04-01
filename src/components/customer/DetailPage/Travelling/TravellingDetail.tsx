@@ -38,7 +38,7 @@ export default function TravellingDetailPage() {
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [loginRedirectWarning, setLoginRedirectWarning] = useState(false);
 
-  setGuestCount(bookingData.passengers);
+  // setGuestCount(bookingData.passengers);
 
   useEffect(() => {
     const fetchTravellingDetails = async () => {
@@ -100,6 +100,7 @@ export default function TravellingDetailPage() {
         email: user.primaryEmailAddress?.emailAddress || ''
       }));
     }
+    setGuestCount(2);
   }, [isLoaded, isSignedIn, user]);
 
   const handleImageClick = (imageUrl: string) => {
@@ -187,8 +188,9 @@ export default function TravellingDetailPage() {
       
       const bookingDetails={
         type : 'travelling',
-        travellingDetails: {
+        details: {
           id: params?.id,
+          ownerId : travelling.userId,
           title: travelling.title,
           locationFrom: travelling.transportation.from,
           locationTo: travelling.transportation.to,
@@ -421,15 +423,10 @@ export default function TravellingDetailPage() {
                   <div className="mb-4 md:mb-0">
                     <div className="text-sm text-gray-500">Departure</div>
                     <div className="text-lg font-bold">
-                      {travelling.transportation.departureTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      {travelling.transportation.departureTime}
                     </div>
                     <div className="text-gray-600">
-                      {travelling.transportation.departureTime.toLocaleDateString(undefined, {
-                        weekday: 'short',
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
+                      {travelling.transportation.departureTime}
                     </div>
                     <div className="font-medium">{travelling.transportation.from}</div>
                   </div>
@@ -438,8 +435,8 @@ export default function TravellingDetailPage() {
                     <div className="text-sm text-gray-500 mb-2">Duration</div>
                     <div className="text-gray-800 font-medium">
                       {calculateDuration(
-                        travelling.transportation.departureTime,
-                        travelling.transportation.arrivalTime
+                        new Date(travelling.transportation.departureTime),
+                        new Date(travelling.transportation.arrivalTime)
                       )}
                     </div>
                     <div className="relative w-24 h-0.5 bg-gray-300 my-2">
@@ -452,15 +449,10 @@ export default function TravellingDetailPage() {
                   <div>
                     <div className="text-sm text-gray-500">Arrival</div>
                     <div className="text-lg font-bold">
-                      {travelling.transportation.arrivalTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      {travelling.transportation.arrivalTime}
                     </div>
                     <div className="text-gray-600">
-                      {travelling.transportation.arrivalTime.toLocaleDateString(undefined, {
-                        weekday: 'short',
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
+                      {travelling.transportation.arrivalTime}
                     </div>
                     <div className="font-medium">{travelling.transportation.to}</div>
                   </div>
@@ -615,8 +607,8 @@ export default function TravellingDetailPage() {
                   <span className="font-semibold">Journey Duration</span>
                   <span>
                     {calculateDuration(
-                      travelling.transportation.departureTime, 
-                      travelling.transportation.arrivalTime
+                      new Date(travelling.transportation.departureTime), 
+                      new Date(travelling.transportation.arrivalTime)
                     )}
                   </span>
                 </div>

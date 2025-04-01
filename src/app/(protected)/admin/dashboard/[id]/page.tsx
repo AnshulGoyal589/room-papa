@@ -89,8 +89,8 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
             country: '',
           },
           amenities: foundItem.ammenities || [''],
-          startDate: new Date(foundItem.startDate),
-          endDate: new Date(foundItem.endDate),
+          startDate: foundItem.startDate,
+          endDate: foundItem.endDate,
           bannerImage: {
             url: foundItem.bannerImage.url,
             publicId: foundItem.bannerImage.publicId,
@@ -129,8 +129,8 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
             country: foundItem.destination.country,
             state: foundItem.destination.state
           },
-          startDate: new Date(foundItem.startDate),
-          endDate: new Date(foundItem.endDate),
+          startDate:foundItem.startDate,
+          endDate:foundItem.endDate,
           costing: {
             price: foundItem.costing.price || 0,
             currency: foundItem.costing.currency || 'USD',
@@ -145,8 +145,8 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
           description: foundItem.description,
           transportation: {
             type: foundItem.transportation.type,
-            arrivalTime: new Date(foundItem.transportation.arrivalTime),
-            departureTime: new Date(foundItem.transportation.departureTime),
+            arrivalTime: foundItem.transportation.arrivalTime,
+            departureTime: foundItem.transportation.departureTime,
             from: foundItem.transportation.from,
             to: foundItem.transportation.to
           },
@@ -221,7 +221,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
         description: 'Item deleted successfully.',
       });
       
-      router.push('/manager/dashboard');
+      router.push('/admin/dashboard');
     } catch (error) {
       console.error('Error deleting item:', error);
       toast({
@@ -244,7 +244,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
     return (
       <div className="container mx-auto py-8">
         <div className="text-center py-8">Item not found</div>
-        <Button onClick={() => router.push('/manager/dashboard')}>
+        <Button onClick={() => router.push('/admin/dashboard')}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Dashboard
         </Button>
@@ -255,7 +255,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
   return (
     <div className="container mx-auto py-8">
       <div className="mb-6">
-        <Button variant="outline" onClick={() => router.push('/manager/dashboard')}>
+        <Button variant="outline" onClick={() => router.push('/admin/dashboard')}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Dashboard
         </Button>
@@ -268,7 +268,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
               <CardTitle className="mt-2 text-2xl">{item.title}</CardTitle>
             </div>
             <div className="flex space-x-2">
-              <Button variant="outline" size="sm" onClick={() => router.push(`/manager/dashboard/edit/${item.id}`)}>
+              <Button variant="outline" size="sm" onClick={() => router.push(`/admin/dashboard/edit/${item.id}`)}>
                 <Edit className="w-4 h-4 mr-2" />
                 Edit
               </Button>

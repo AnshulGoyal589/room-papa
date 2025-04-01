@@ -10,8 +10,8 @@ export interface Travelling {
   description?: string;
   transportation: {
     type: TransportationType;
-    arrivalTime: Date;
-    departureTime: Date;
+    arrivalTime: string;
+    departureTime: string;
     from: string;
     to: string;
   };

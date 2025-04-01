@@ -39,6 +39,8 @@ export async function GET(request: NextRequest) {
       .skip((page - 1) * pageSize)
       .limit(pageSize)
       .toArray();
+
+    // console.log("results: ", results);
     
     const plainResults = serializeDocuments(results);
     
@@ -59,17 +61,6 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
-// Modified DateFilter type to include index signature
-type DateFilter = {
-  transportation: {
-    arrivalTime?: {
-      $gte?: Date;
-      $lte?: Date;
-    };
-  };
-  [key: string]: unknown;
-};
 
 function getCategoryCollection(category: string): string | null {
   const collections: Record<string, string> = {
@@ -107,29 +98,45 @@ function validateSearchParams(searchParams: URLSearchParams, category: string) {
   
   return { valid: true };
 }
-
-function addDateRangeFilter(query: QueryType, searchParams: URLSearchParams) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function addDateRangeFilter(query: Record<string, any>, searchParams: URLSearchParams, schemaType: 'Property' | 'Travelling' | 'Trip') {
   const startDate = searchParams.get('startDate');
   const endDate = searchParams.get('endDate');
-  
+
   if (startDate || endDate) {
     query.$and = query.$and || [];
-    const dateFilter: DateFilter = { transportation: {} };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const dateFilter: Record<string, any> = {};
 
+    // Determine the correct field based on schemaType
+    let dateField: string;
+    switch (schemaType) {
+      case 'Property':
+        dateField = 'startDate' as string; // For filtering properties by their start date
+        break;
+      case 'Travelling':
+        dateField = 'transportation.arrivalTime'; // For filtering travelling documents
+        break;
+      case 'Trip':
+        dateField = 'startDate' as string; // For filtering trips by their start date
+        break;
+      default:
+        throw new Error('Invalid schema type');
+    }
+
+    // Apply filters for startDate and endDate
     if (startDate) {
-      dateFilter.transportation.arrivalTime = { 
-        $gte: new Date(startDate)
-      };
+      dateFilter[dateField] = { $gte: startDate }; // Compare as strings
     }
-
     if (endDate) {
-      dateFilter.transportation.arrivalTime = { 
-        ...dateFilter.transportation.arrivalTime,
-        $lte: new Date(endDate)
+      dateFilter[dateField] = {
+        ...dateFilter[dateField],
+        $lte: endDate, // Compare as strings
       };
     }
 
-    query.$and.push(dateFilter as Record<string, unknown>);
+    
+    query.$and.push(dateFilter);
   }
 }
 
@@ -198,21 +205,21 @@ function addPropertyFilters(query: QueryType, searchParams: URLSearchParams) {
   addMinFilter(query, searchParams, 'maximumGuests');
   addExactFilter(query, searchParams, 'type');
   addArrayFilter(query, searchParams, 'amenities');
-  addDateRangeFilter(query, searchParams);
+  addDateRangeFilter(query, searchParams , "Property");
 }
 
 function addTravellingFilters(query:QueryType, searchParams: URLSearchParams) {
 
   addRangeFilter(query, searchParams, 'costing.discountedPrice', 'minPrice', 'maxPrice');
   addExactFilter(query, searchParams, 'transportation.type');
-  addDateRangeFilter(query, searchParams);
+  addDateRangeFilter(query, searchParams , "Travelling");
   // addRangeFilter(query, searchParams, 'costing.discountedPrice', 'minPrice', 'maxPrice');
 }
 
 function addTripFilters(query:QueryType, searchParams: URLSearchParams) {
   addRangeFilter(query, searchParams, 'costing.discountedPrice', 'minPrice', 'maxPrice');
   addExactFilter(query, searchParams, 'type');
-  addDateRangeFilter(query, searchParams);
+  addDateRangeFilter(query, searchParams , "Trip");
   // addRangeFilter(query, searchParams, 'costing.discountedPrice', 'minBudget', 'maxBudget');
   addArrayFilter(query, searchParams, 'activities');
   addExactFilter(query, searchParams, 'domain');

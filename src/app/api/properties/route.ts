@@ -6,7 +6,6 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
-    
     const properties = await getAllProperties(userId || undefined);
     return NextResponse.json(properties);
   }catch (error: unknown) {
@@ -24,8 +23,8 @@ export async function POST(req: NextRequest) {
     
     const propertyData = await req.json();
 
-    propertyData.startDate = new Date(propertyData.startDate);
-    propertyData.endDate = new Date(propertyData.endDate);
+    // propertyData.startDate = new Date(propertyData.startDate);
+    // propertyData.endDate = new Date(propertyData.endDate);
 
     // console.log(new Date(propertyData.startDate));
     // console.log(typeof(new Date(propertyData.startDate)));

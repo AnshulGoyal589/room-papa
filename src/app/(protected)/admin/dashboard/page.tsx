@@ -103,7 +103,7 @@ export default function Dashboard() {
     };
 
   const handleItemClick = (id: string) => {
-    router.push(`/manager/dashboard/${id}`);
+    router.push(`/admin/dashboard/${id}`);
   };
 
   const filteredItems = activeTab === 'all' 

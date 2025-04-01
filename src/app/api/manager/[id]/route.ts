@@ -1,73 +1,75 @@
+// app/api/bookings/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb as connectToDatabase, getDb, getUserByClerkId, updateManagerStatus } from '@/lib/mongodb';
+import { getBookingRepository, BookingQueryFilters } from '@/lib/booking-db';
+import { BookingInput } from '@/lib/mongodb/models/booking';
+import { sendBookingConfirmationEmail } from '@/lib/email-service';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest) {
   try {
-    // Connect to database
-    await connectToDatabase();
-
-    // Await and destructure the dynamic route parameter
-    const { id } = await params;
-
-    const managerDetails = await getUserByClerkId(id);
-
-    if (!managerDetails) {
+    // Parse booking data from request
+    const bookingData = await request.json() as BookingInput;
+    
+    // Validate the booking data
+    if (!bookingData.tripDetails || !bookingData.bookingDetails || !bookingData.guestDetails) {
       return NextResponse.json(
-        { message: 'Manager not found' },
-        { status: 404 }
+        { message: 'Invalid booking data' },
+        { status: 400 }
       );
     }
-
-    // Optionally, fetch additional details
-    const additionalDetails = await fetchManagerActivities();
-
-    // Merge details
-    const fullManagerDetails = {
-      ...managerDetails,
-      ...additionalDetails,
-    };
-
-    return NextResponse.json(fullManagerDetails);
-  } catch (error) {
-    console.error('Error fetching manager details:', error);
+    
+    // Get repository and create booking
+    const bookingRepo = await getBookingRepository();
+    const { id, booking } = await bookingRepo.createBooking(bookingData);
+    
+    // Send confirmation email
+    if (bookingData.recipients && bookingData.recipients.length > 0) {
+      await sendBookingConfirmationEmail(booking);
+    }
+    
     return NextResponse.json(
-      { message: 'Failed to fetch manager details' },
+      { 
+        message: 'Booking created successfully', 
+        bookingId: id,
+        booking
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error('Error creating booking:', error);
+    return NextResponse.json(
+      { message: 'Failed to create booking' },
       { status: 500 }
     );
   }
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest) {
   try {
-    // Connect to MongoDB
-    await getDb();
-
-    const { id } = await params; // Await the dynamic route parameter
-    const { status } = await request.json();
-
-    // Update manager status in the database
-    await updateManagerStatus(id, status);
-
-    return NextResponse.json("Successful", { status: 200 });
+    // Get query parameters
+    const searchParams = request.nextUrl.searchParams;
+    const filters: BookingQueryFilters = {
+      userId: searchParams.get('userId') || undefined,
+      tripId: searchParams.get('tripId') || undefined,
+      status: searchParams.get('status') as 'pending' | 'confirmed' | 'cancelled' || undefined,
+      type: searchParams.get('type') as 'property' | 'travelling' | 'trip' || undefined,
+      dateFrom: searchParams.get('dateFrom') || undefined,
+      dateTo: searchParams.get('dateTo') || undefined,
+      sortBy: searchParams.get('sortBy') || undefined,
+      sortOrder: searchParams.get('sortOrder') as 'asc' | 'desc' || undefined,
+      limit: searchParams.has('limit') ? parseInt(searchParams.get('limit')!) : undefined,
+      skip: searchParams.has('skip') ? parseInt(searchParams.get('skip')!) : undefined
+    };
+    
+    // Get repository and query bookings
+    const bookingRepo = await getBookingRepository();
+    const bookings = await bookingRepo.queryBookings(filters);
+    
+    return NextResponse.json(bookings);
   } catch (error) {
-    console.error('Error updating manager status:', error);
+    console.error('Error fetching bookings:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { message: 'Failed to fetch bookings' },
       { status: 500 }
     );
   }
-}
-
-async function fetchManagerActivities() {
-  return {
-    properties: 5,
-    trips: 3,
-    travellings: 2,
-  };
 }
