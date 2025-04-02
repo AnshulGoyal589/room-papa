@@ -45,6 +45,13 @@ export default function Dashboard() {
   const fetchItems = useCallback( async () => {
     setIsLoading(true);
     try {
+
+      const managerStatusRes = await fetch(`/api/managerStatus`);
+      const managerStatus = await managerStatusRes.json();
+      if (!managerStatus.isManager) {
+        alert('You are not authorized to access this page.');          
+        return;
+      }
       
       const propertiesRes = await fetch(`/api/properties?userId=${user?.id}`);
       const properties = await propertiesRes.json();

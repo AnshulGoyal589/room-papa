@@ -7,10 +7,12 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {useUser} from '@clerk/nextjs';
 import { BookingDetails } from '@/app/api/bookings/route';
+// import { useToast } from '@/components/ui/use-toast';
 
 export default function ManagerAppointmentsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  // const { toast } = useToast();
   
   const { isSignedIn, user, isLoaded } = useUser();
   const [bookings, setBookings] = useState<BookingDetails[]>([]);
@@ -34,6 +36,14 @@ export default function ManagerAppointmentsPage() {
       if (!isSignedIn) {
         setError('You must be logged in to view appointments');
         setLoading(false);
+        return;
+      }
+
+      const managerStatusRes = await fetch(`/api/managerStatus`);
+      const managerStatus = await managerStatusRes.json();
+      if (!managerStatus.isManager) {
+        alert('You are not authorized to access this page.');   
+        router.push('/manager/dashboard');       
         return;
       }
 
@@ -83,7 +93,7 @@ export default function ManagerAppointmentsPage() {
     };
 
     fetchBookings();
-  }, [ filter, statusFilter, searchTerm, page , isSignedIn, isLoaded, user]);
+  }, [ filter, statusFilter, searchTerm, page , isSignedIn, isLoaded, user , router]); 
 
   // Update URL when filters change
   const updateFilters = (newFilter?: string, newStatus?: string, newSearch?: string, newPage?: number) => {

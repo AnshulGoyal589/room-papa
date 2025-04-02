@@ -60,6 +60,16 @@ export async function getUserRole(clerkId: string | undefined): Promise<UserRole
   
   return user ? user.role : 'guest';
 }
+export async function getManagerStatus(clerkId: string | undefined): Promise<UserRole | 'guest'> {
+  if (!clerkId) {
+    return 'guest';
+  }
+  const users = await getUsersCollection();
+  const user = await users.findOne({ clerkId , role: 'manager' , status: 'approved' });
+  
+  
+  return user ? 'manager' : 'guest';
+}
 
 
 export async function updateManagerStatus(clerkId: string | undefined , status: string ): Promise<UserRole | 'guest'> {
