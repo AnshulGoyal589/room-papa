@@ -6,10 +6,7 @@ export interface User {
   role: UserRole;
   email: string;
   createdAt: Date;
-  status?: {
-    type: string;
-    default: 'pending';
-  }; 
+  status?: string | 'pending';
   updatedAt: Date;
 }
 

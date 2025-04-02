@@ -48,6 +48,7 @@ export default function ManagerUsersPage() {
       }
 
       const data = await response.json();
+      // console.log(data);
       setManagers(data);
     } catch (error) {
       console.error('Error fetching manager users:', error);
@@ -164,6 +165,7 @@ export default function ManagerUsersPage() {
                       <div className="flex space-x-2">
                         {/* Buttons to toggle between all possible statuses */}
                         {['pending', 'approved', 'rejected'].map((status) => (
+                          
                           status !== manager.status && (
                             <Button 
                               key={status}

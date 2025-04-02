@@ -355,6 +355,13 @@ export function Header() {
                 <Home className="w-5 h-5" />
                 <span>Dashboard</span>
               </Link>
+              <Link 
+                href="/admin/managers"
+                className="flex items-center space-x-2 hover:text-blue-600 transition"
+              >
+                <Home className="w-5 h-5" />
+                <span>Managers</span>
+              </Link>
               {/* Add more manager navigation links as needed */}
             </nav>
           )}

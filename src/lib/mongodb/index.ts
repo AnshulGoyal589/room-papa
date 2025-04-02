@@ -70,10 +70,13 @@ export async function updateManagerStatus(clerkId: string | undefined , status: 
   await users.updateOne(
     { clerkId, role: 'manager' }, 
     { 
-      status, 
-      updatedAt: new Date() 
+      $set: {
+        status,
+        updatedAt: new Date()
+      }
     }
   );
+  
   
   
   return 'guest';

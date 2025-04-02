@@ -120,6 +120,7 @@ export async function getPropertiesCollection(): Promise<Collection<Property>> {
     const properties = await getPropertiesCollection();
     
     const query = userId ? { userId } : {};
+    // console.log("query: ",query);
     return properties.find(query).toArray();
   }
   
