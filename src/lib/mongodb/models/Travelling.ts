@@ -7,6 +7,7 @@ export interface Travelling {
   _id?: ObjectId;
   userId: string;
   title: string;
+  rat ?: number | '1';
   description?: string;
   transportation: {
     type: TransportationType;

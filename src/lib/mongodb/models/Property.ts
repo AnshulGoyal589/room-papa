@@ -11,6 +11,7 @@ export interface Property {
   userId: string;
   title: string; 
   description: string; 
+  rat ?: number | '1';
   type: PropertyType;
   location: { 
     address: string;

@@ -71,7 +71,7 @@ export default function SearchForm() {
         </button>
       </div>
 
-      <div className="grid md:grid-cols-4 gap-4">
+      <div className="grid md:grid-cols-3 gap-4">
         <div className="relative">
           <label className="block text-gray-700 mb-2">Location</label>
           <div className="flex items-center border rounded-lg px-3 py-2">

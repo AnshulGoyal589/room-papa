@@ -27,6 +27,7 @@ export interface Trip {
     rating: number;
   }[];
   activities:string[];
+  rat ?: number | '1';
   createdAt?: Date;
   updatedAt?: Date;
   bannerImage: Image; // Main featured image

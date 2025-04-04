@@ -26,16 +26,12 @@ export default function SearchResults({ initialResults, category, searchParams }
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    // Set initial state from props
-    // console.log("Length 1: ",initialResults.length);
     setResults(initialResults);
     setSortBy(searchParams.sortBy || 'createdAt');
     setSortOrder(searchParams.sortOrder || 'desc');
     setCurrentPage(parseInt(searchParams.page || '1'));
     
-    // Calculate total pages (in a real app, this would come from the API)
     setTotalPages(Math.ceil(initialResults.length / 10) || 1);
-  // }, [initialResults, searchParams]);
   }, [ initialResults, searchParams.sortBy, searchParams.sortOrder, searchParams.page ]);
 
   useEffect(() => {
@@ -51,9 +47,8 @@ export default function SearchResults({ initialResults, category, searchParams }
       try {
         const response = await fetch(`/api/search?${params.toString()}`);
         const data = await response.json();
-        // console.log("Property : ",data);
-        // console.log("Length 2: ",data.results.length);
         setResults(data.results);
+        // console.log('Search results:', data.results);
         setTotalPages(Math.ceil(data.total / 10));
         
         router.push(`/customer/search?${params.toString()}`, { scroll: false });
@@ -74,10 +69,8 @@ export default function SearchResults({ initialResults, category, searchParams }
     window.scrollTo(0, 0);
   };
 
-  // console.log("results: ",results);
 
   const renderPropertyCard = (property: Property) => (
-    // console.log("property: ",property);
     <div 
       key={property.title} 
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow" 
@@ -179,10 +172,6 @@ export default function SearchResults({ initialResults, category, searchParams }
         
         <div className="flex justify-between items-center mt-4">
           <div className="flex items-center text-sm text-gray-500">
-            {/* <span className="flex items-center mr-3">
-              <Users size={16} className="mr-1" />
-              {trip.sharedWith?.length || 0} sharing
-            </span> */}
             <span>{trip.activities?.length || 0} activities</span>
           </div>
           <Link href={`/trips/${trip._id}`} className="bg-primary text-white px-4 py-2 rounded-md text-sm">
@@ -194,6 +183,7 @@ export default function SearchResults({ initialResults, category, searchParams }
   );
   
   const renderTravellingCard = (itinerary: Travelling) => (
+    
     <div key={itinerary.title}
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
       onClick={() => router.push(`/customer/travelling/${itinerary._id}`)}
@@ -215,9 +205,6 @@ export default function SearchResults({ initialResults, category, searchParams }
           />
         )}
         <div className="absolute top-3 right-3 flex space-x-2">
-          {/* <div className="bg-white px-2 py-1 rounded-full text-xs font-medium">
-            {itinerary.visibility}
-          </div> */}
           <button className="bg-white p-1.5 rounded-full">
             <Bookmark size={16} className="text-gray-500 hover:text-primary" />
           </button>
@@ -233,28 +220,8 @@ export default function SearchResults({ initialResults, category, searchParams }
         
         <div className="flex items-center mt-2 text-sm text-gray-600">
           <Calendar size={16} className="mr-1" />
-          {/* <span>{itinerary.days?.length || 0} days</span> */}
         </div>
-{/*         
-        <div className="flex justify-between items-center mt-4">
-          <div className="flex items-center text-sm text-gray-500">
-            {itinerary.likes !== undefined && (
-              <span className="flex items-center mr-3">
-                <Heart size={16} className="mr-1" />
-                {itinerary.likes}
-              </span>
-            )}
-            {itinerary.comments !== undefined && (
-              <span className="flex items-center">
-                <span className="mr-1">💬</span>
-                {itinerary.comments.length}
-              </span>
-            )}
-          </div>
-          <Link href={`/itineraries/${itinerary._id}`} className="bg-primary text-white px-4 py-2 rounded-md text-sm">
-            View Details
-          </Link>
-        </div> */}
+
       </div>
     </div>
   );
@@ -281,11 +248,14 @@ export default function SearchResults({ initialResults, category, searchParams }
             >
               <option value="createdAt-desc">Newest</option>
               <option value="createdAt-asc">Oldest</option>
+              <option value="costing.discountedPrice-asc">Price (Low to High)</option>
+              <option value="costing.discountedPrice-desc">Price (High to Low)</option>
+              <option value="rat-desc">Highest Rated</option>
+              
               {category === 'property' && (
                 <>
-                  <option value="pricePerNight-asc">Price (Low to High)</option>
-                  <option value="pricePerNight-desc">Price (High to Low)</option>
-                  <option value="rating-desc">Highest Rated</option>
+                  <option value="bedrooms-desc">Most Bedrooms</option>
+                  <option value="bathrooms-desc">Most Bathrooms</option>
                 </>
               )}
               {category === 'trip' && (
@@ -332,7 +302,6 @@ export default function SearchResults({ initialResults, category, searchParams }
         </div>
       )}
       
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center mt-8">
           <nav className="flex items-center space-x-2">
@@ -346,7 +315,7 @@ export default function SearchResults({ initialResults, category, searchParams }
             
             {[...Array(totalPages)].map((_, index) => {
               const pageNumber = index + 1;
-              // Show first, last, current and adjacent pages
+              
               if (
                 pageNumber === 1 || 
                 pageNumber === totalPages || 
