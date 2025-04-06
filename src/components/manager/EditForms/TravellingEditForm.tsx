@@ -18,20 +18,28 @@ const TravellingEditForm: React.FC<TravellingEditFormProps> = ({ item, onSave })
   const [formData, setFormData] = useState<Travelling>(item);
 
   const handleChange = (field: string, value: unknown) => {
-    setFormData((prev) => {
-      const keys = field.split(".");
-      const updated: Partial<Travelling> = { ...prev };
-      let temp: Record<string, unknown> = updated;
-  
-      for (let i = 0; i < keys.length - 1; i++) {
-        if (!temp[keys[i]]) temp[keys[i]] = {};
-        temp[keys[i]] = { ...temp[keys[i]] as Record<string, unknown> };
-        temp = temp[keys[i]] as Record<string, unknown>;
-      }
-  
-      temp[keys[keys.length - 1]] = value;
-      return updated as Travelling;
-    });
+      setFormData((prev) => {
+        const keys = field.split(".");
+        // Create a deep copy of the previous state
+        const updated = JSON.parse(JSON.stringify(prev)) as Travelling;
+        
+        // Navigate to the right part of the object
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let current: any = updated;
+        for (let i = 0; i < keys.length - 1; i++) {
+          // Ensure the path exists
+          if (!current[keys[i]]) {
+            current[keys[i]] = keys[i + 1].match(/^\d+$/) ? [] : {};
+          }
+          current = current[keys[i]];
+        }
+        
+        // Set the value at the final key
+        const lastKey = keys[keys.length - 1];
+        current[lastKey] = value;
+        
+        return updated;
+      });
   };
   
 

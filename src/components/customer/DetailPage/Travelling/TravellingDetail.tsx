@@ -20,6 +20,7 @@ export default function TravellingDetailPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentReviewPage, setCurrentReviewPage] = useState(1);
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
+  const [days, setDays] = useState<number>(1);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [guestCount, setGuestCount] = useState(1);
   const reviewsPerPage = 3;
@@ -54,6 +55,7 @@ export default function TravellingDetailPage() {
         }
         
         const data = await response.json();
+        console.log('Fetched Travelling Data:', data);
         
         // Convert string dates to Date objects
         const parsedTravelling: Travelling = {
@@ -71,14 +73,14 @@ export default function TravellingDetailPage() {
         if (parsedTravelling.bannerImage) {
           setSelectedImage(parsedTravelling.bannerImage.url);
         }
-        const today = new Date();
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const dayAfterTomorrow = new Date(today);
-        dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+        // const today = new Date();
+        // const tomorrow = new Date(today);
+        // tomorrow.setDate(tomorrow.getDate() + 1);
+        // const dayAfterTomorrow = new Date(today);
+        // dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
         
-        setCheckInDate(tomorrow);
-        setCheckOutDate(dayAfterTomorrow);
+        // setCheckInDate(tomorrow);
+        // setCheckOutDate(dayAfterTomorrow);
       } catch (err) {
         setError('Error fetching travelling details. Please try again later.');
         console.error(err);
@@ -89,6 +91,42 @@ export default function TravellingDetailPage() {
 
     fetchTravellingDetails();
   }, [params?.id]);
+
+
+    const validateDate = (selectedDate: string, startDate: string, endDate: string): Date => {
+      const date = new Date(selectedDate);
+      const minDate = new Date(startDate);
+      const maxDate = new Date(endDate);
+    
+      if (date < minDate) return minDate;
+      if (date > maxDate) return maxDate;
+    
+      return date;
+    };
+  
+    const handleCheckInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if(!travelling) return;
+      const validatedCheckIn = validateDate(e.target.value, travelling.transportation.arrivalTime, travelling.transportation.departureTime);
+      setCheckInDate(validatedCheckIn);
+      setDays(Math.ceil((validatedCheckIn.getTime() - new Date(travelling.transportation.arrivalTime).getTime()) / (1000 * 3600 * 24)));
+  
+      // Adjust check-out date if necessary
+      if (checkOutDate && validatedCheckIn >= checkOutDate) {
+        setCheckOutDate(new Date(validatedCheckIn.getTime() + 86400000)); // Add 1 day
+      }
+    };
+  
+    const handleCheckOutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if(!travelling) return;
+      const validatedCheckOut = validateDate(e.target.value, travelling.transportation.arrivalTime, travelling.transportation.departureTime);
+      setCheckOutDate(validatedCheckOut);
+      setDays(Math.ceil((validatedCheckOut.getTime() - new Date(travelling.transportation.arrivalTime).getTime()) / (1000 * 3600 * 24)));
+  
+      // Ensure check-out is after check-in
+      if (checkInDate && validatedCheckOut <= checkInDate) {
+        setCheckOutDate(new Date(checkInDate.getTime() + 86400000)); // Add 1 day
+      }
+    };
 
   // Update booking data with user info when available
   useEffect(() => {
@@ -107,6 +145,17 @@ export default function TravellingDetailPage() {
     setSelectedImage(imageUrl);
   };
 
+
+  const incrementGuests = () => {
+    setGuestCount(prev => prev + 1);
+  };
+
+  const decrementGuests = () => {
+    if (guestCount > 1) {
+      setGuestCount(prev => prev - 1);
+    }
+  };
+  
   const calculateDuration = (departure: Date, arrival: Date) => {
     const diffTime = Math.abs(arrival.getTime() - departure.getTime());
     const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
@@ -181,6 +230,12 @@ export default function TravellingDetailPage() {
     if (!travelling || !checkInDate || !checkOutDate) return;
  
     if (!travelling) return;
+
+
+    setBookingData(prev => ({
+      ...prev,
+      ['passengers']: guestCount
+    }));
     
     setIsSubmitting(true);
 
@@ -202,7 +257,7 @@ export default function TravellingDetailPage() {
           guests: guestCount,
           price: travelling.costing.discountedPrice,
           currency: travelling.costing.currency,
-          totalPrice: travelling.costing.discountedPrice * bookingData.passengers,
+          totalPrice: travelling.costing.discountedPrice * days * guestCount,
         },
         guestDetails: bookingData,
         recipients: [bookingData.email, 'anshulgoyal589@gmail.com']
@@ -423,10 +478,10 @@ export default function TravellingDetailPage() {
                   <div className="mb-4 md:mb-0">
                     <div className="text-sm text-gray-500">Departure</div>
                     <div className="text-lg font-bold">
-                      {travelling.transportation.departureTime}
+                      {travelling.transportation.departureTime.toLocaleString() }
                     </div>
                     <div className="text-gray-600">
-                      {travelling.transportation.departureTime}
+                      {travelling.transportation.departureTime.toLocaleString() }
                     </div>
                     <div className="font-medium">{travelling.transportation.from}</div>
                   </div>
@@ -449,10 +504,10 @@ export default function TravellingDetailPage() {
                   <div>
                     <div className="text-sm text-gray-500">Arrival</div>
                     <div className="text-lg font-bold">
-                      {travelling.transportation.arrivalTime}
+                      {travelling.transportation.arrivalTime.toLocaleString()}
                     </div>
                     <div className="text-gray-600">
-                      {travelling.transportation.arrivalTime}
+                      {travelling.transportation.arrivalTime.toLocaleString()}
                     </div>
                     <div className="font-medium">{travelling.transportation.to}</div>
                   </div>
@@ -602,7 +657,7 @@ export default function TravellingDetailPage() {
                 )}
               </div>
 
-              <div className="border-t border-b border-gray-200 py-4 my-4">
+              {/* <div className="border-t border-b border-gray-200 py-4 my-4">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-semibold">Journey Duration</span>
                   <span>
@@ -624,7 +679,95 @@ export default function TravellingDetailPage() {
                     {travelling.transportation.arrivalTime.toLocaleString()}
                   </span>
                 </div>
+              </div> */}
+
+
+              {/* Booking Form */}
+              <div className="mb-6">
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label>Arrival Time</label><br />
+                    <input
+                      type="date"
+                      value={checkInDate ? checkInDate.toISOString().split('T')[0] : ''}
+                      onChange={handleCheckInChange}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      
+                      min={new Date(travelling.transportation.arrivalTime).toISOString().split('T')[0]}
+                      max={new Date(travelling.transportation.departureTime).toISOString().split('T')[0]}
+                    />
+                  </div>
+                  <div>
+                    <label>Departure Time</label>
+                    <br />
+                    <input
+                      type="date"
+                      value={checkOutDate ? checkOutDate.toISOString().split('T')[0] : ''}
+                      onChange={handleCheckOutChange}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      min={
+                        checkInDate
+                          ? new Date(checkInDate.getTime() + 86400000).toISOString().split('T')[0]
+                          : new Date(travelling.transportation.arrivalTime).toISOString().split('T')[0]
+                      }
+                      max={new Date(travelling.transportation.departureTime).toISOString().split('T')[0]}
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Guests
+                  </label>
+                  <div className="flex items-center border border-gray-300 rounded-md">
+                    <button
+                      onClick={decrementGuests}
+                      disabled={guestCount <= 1}
+                      className="px-3 py-2 text-blue-600 disabled:text-gray-400"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                    <div className="flex-1 text-center">
+                      <span className="font-medium">{guestCount}</span>
+                      <span className="text-gray-500 ml-1">
+                        {guestCount === 1 ? 'guest' : 'guests'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={incrementGuests}
+                      // disabled={guestCount >= travelling.rooms*3}
+                      className="px-3 py-2 text-blue-600 disabled:text-gray-400"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
               </div>
+
+              {/* Price Calculation */}
+              {checkInDate && checkOutDate && (
+                <div className="border-t border-gray-200 pt-4 mb-6">         
+                  <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200 mt-2">
+                    <span>Total</span>
+                    <span>
+                      {travelling.costing.currency} {(travelling.costing.discountedPrice * guestCount * days ).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <button 
                 className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition duration-300 mb-4"
@@ -632,31 +775,11 @@ export default function TravellingDetailPage() {
               >
                 Book Now
               </button>
-              
-              <button className="w-full bg-white border border-blue-600 text-blue-600 py-3 rounded-lg font-bold hover:bg-blue-50 transition duration-300">
-                Add to Wishlist
-              </button>
+              <p className="text-sm text-gray-500 text-center mt-2">
+                You won&apos;t be charged yet
+              </p>
+             
 
-              <div className="mt-6 text-sm text-gray-600">
-                <div className="flex items-center mb-2">
-                  <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span>Free cancellation up to 24 hours before departure</span>
-                </div>
-                <div className="flex items-center mb-2">
-                  <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span>All taxes and fees included</span>
-                </div>
-                <div className="flex items-center">
-                  <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span>24/7 customer support</span>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -730,7 +853,7 @@ export default function TravellingDetailPage() {
               
               <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
                 <div>
-                  <div className="text-sm text-gray-600">Check-in</div>
+                  <div className="text-sm text-gray-600">Arrival Time</div>
                   <div className="font-medium">
                     {checkInDate?.toLocaleDateString('en-US', {
                       weekday: 'short',
@@ -740,7 +863,7 @@ export default function TravellingDetailPage() {
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-600">Check-out</div>
+                  <div className="text-sm text-gray-600">Departure Time</div>
                   <div className="font-medium">
                     {checkOutDate?.toLocaleDateString('en-US', {
                       weekday: 'short',

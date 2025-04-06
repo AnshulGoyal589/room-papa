@@ -86,3 +86,32 @@ export type Booking = PropertyBooking | TravellingBooking | TripBooking;
 
 // Input types for creating bookings
 export type BookingInput = Omit<Booking, '_id' | 'status' | 'createdAt' | 'updatedAt'>;
+
+export interface BookingDetails {
+  type: 'property' | 'travelling' | 'trip';
+  details: {
+    id: string;
+    title: string;
+    locationFrom?: string; // Optional for property bookings
+    locationTo: string;
+    type: string;
+  };
+  bookingDetails: {
+    checkIn: string;
+    checkOut: string;
+    guests: number;
+    rooms?: number; // Optional for property bookings
+    price: number;
+    currency: string;
+    totalPrice: number;
+  };
+  guestDetails: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    passengers: number;
+    specialRequests?: string;
+  };
+  recipients: string[];
+}

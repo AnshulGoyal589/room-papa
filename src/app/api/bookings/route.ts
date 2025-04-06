@@ -1,35 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
 import nodemailer from 'nodemailer';
+import { BookingDetails } from '@/lib/mongodb/models/Booking';
 
-// Define types for booking details
-export interface BookingDetails {
-  type: 'property' | 'travelling' | 'trip';
-  details: {
-    id: string;
-    title: string;
-    locationFrom?: string; // Optional for property bookings
-    locationTo: string;
-    type: string;
-  };
-  bookingDetails: {
-    checkIn: string;
-    checkOut: string;
-    guests: number;
-    price: number;
-    currency: string;
-    totalPrice: number;
-  };
-  guestDetails: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-    passengers?: number; // Optional for property bookings
-    specialRequests?: string; // Optional
-  };
-  recipients: string[];
-}
 
 // Configure email transport
 const transporter = nodemailer.createTransport({

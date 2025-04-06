@@ -1,6 +1,7 @@
 // lib/email-service.ts
 import nodemailer from 'nodemailer';
-import { Booking } from '@/lib/mongodb/models/booking';
+import { BookingDetails } from './mongodb/models/Booking';
+// import { Booking } from '@/lib/mongodb/models/Booking';
 // Configure email transport
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.example.com',
@@ -13,8 +14,8 @@ const transporter = nodemailer.createTransport({
 });
 
 // Helper function to send booking confirmation email
-export async function sendBookingConfirmationEmail(booking: Booking) {
-  const { tripDetails, bookingDetails, guestDetails, recipients } = booking;
+export async function sendBookingConfirmationEmail(booking: BookingDetails) {
+  const { details, bookingDetails, guestDetails, recipients } = booking;
   
   // Format dates for email
   const checkInDate = new Date(bookingDetails.checkIn).toLocaleDateString('en-US', {
@@ -37,30 +38,23 @@ export async function sendBookingConfirmationEmail(booking: Booking) {
   if (booking.type === 'property') {
     const propertyBooking = booking;
     bookingTypeSpecificDetails = `
-      <p><strong>Property Type:</strong> ${propertyBooking.bookingDetails.propertyType}</p>
-      <p><strong>Bedrooms:</strong> ${propertyBooking.bookingDetails.bedrooms}</p>
+      <p><strong>Property Type:</strong> ${propertyBooking.details.type}</p>
+      <p><strong>Guests:</strong> ${propertyBooking.bookingDetails.guests}</p>
+      <p><strong>Rooms:</strong> ${propertyBooking.bookingDetails.rooms}</p>
     `;
   } else if (booking.type === 'travelling') {
     const travellingBooking = booking;
     bookingTypeSpecificDetails = `
-      <p><strong>Transport Type:</strong> ${travellingBooking.tripDetails.transportType}</p>
-      ${travellingBooking.bookingDetails.seatPreference ? `<p><strong>Seat Preference:</strong> ${travellingBooking.bookingDetails.seatPreference}</p>` : ''}
-      ${travellingBooking.bookingDetails.class ? `<p><strong>Class:</strong> ${travellingBooking.bookingDetails.class}</p>` : ''}
+      <p><strong>Transport Type:</strong> ${travellingBooking.details.type}</p>
     `;
   } else if (booking.type === 'trip') {
     const tripBooking = booking;
     bookingTypeSpecificDetails = `
-      <h4>Itinerary:</h4>
-      <ul>
-        ${tripBooking.tripDetails.itinerary.map(item => `<li>${item}</li>`).join('')}
-      </ul>
-      ${tripBooking.bookingDetails.activities && tripBooking.bookingDetails.activities.length > 0 ? `
-        <h4>Activities:</h4>
-        <ul>
-          ${tripBooking.bookingDetails.activities.map(activity => `<li>${activity}</li>`).join('')}
-        </ul>
-      ` : ''}
-      ${tripBooking.bookingDetails.guide ? `<p><strong>Guide Included:</strong> Yes</p>` : ''}
+      <h4>Destination:</h4>
+  
+        ${tripBooking.details.locationFrom ? `<li>From: ${tripBooking.details.locationFrom}</li>` : ''}
+        <li>To: ${tripBooking.details.locationTo}</li>
+ }
     `;
   }
   
@@ -71,12 +65,12 @@ export async function sendBookingConfirmationEmail(booking: Booking) {
       
       <p>Dear ${guestDetails.firstName} ${guestDetails.lastName},</p>
       
-      <p>Your ${booking.type} booking for <strong>${tripDetails.title}</strong> has been confirmed!</p>
+      <p>Your ${booking.type} booking for <strong>${details.title}</strong> has been confirmed!</p>
       
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
         <h3 style="margin-top: 0;">Booking Details:</h3>
         <p><strong>Booking Type:</strong> ${booking.type.charAt(0).toUpperCase() + booking.type.slice(1)}</p>
-        <p><strong>Destination:</strong> ${tripDetails.locationTo}</p>
+        <p><strong>Destination:</strong> ${details.locationTo}</p>
         <p><strong>Check-in:</strong> ${checkInDate}</p>
         <p><strong>Check-out:</strong> ${checkOutDate}</p>
         <p><strong>Guests:</strong> ${guestDetails.passengers}</p>
@@ -107,7 +101,7 @@ export async function sendBookingConfirmationEmail(booking: Booking) {
     await transporter.sendMail({
       from: process.env.EMAIL_FROM || 'bookings@example.com',
       to: recipients.join(', '),
-      subject: `${booking.type.charAt(0).toUpperCase() + booking.type.slice(1)} Booking Confirmation - ${tripDetails.title}`,
+      subject: `${booking.type.charAt(0).toUpperCase() + booking.type.slice(1)} Booking Confirmation - ${details.title}`,
       html: emailHtml,
     });
     

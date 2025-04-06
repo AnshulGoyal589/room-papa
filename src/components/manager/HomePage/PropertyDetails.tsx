@@ -1,11 +1,12 @@
 import React from 'react';
-import { MapPin, Home, Bath, Users, Tag, Star, Calendar } from 'lucide-react';
+import { MapPin, Users, Tag, Star, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Property } from '@/lib/mongodb/models/Property';
 import Image from 'next/image';
 
 const PropertyDetails: React.FC<{ item: Property }> = ({ item }) => {
   // Function to get formatted address
+  // console.log(item);
   const getFormattedAddress = () => {
     if (!item.location) return 'Address not available';
     
@@ -51,25 +52,12 @@ const PropertyDetails: React.FC<{ item: Property }> = ({ item }) => {
             </p>
           </div>
         </div>
-        <div className="flex items-center">
-          <Home className="w-4 h-4 mr-2 text-gray-500" />
-          <div>
-            <p className="text-sm text-gray-500">Bedrooms</p>
-            <p>{item.bedrooms || 0}</p>
-          </div>
-        </div>
-        <div className="flex items-center">
-          <Bath className="w-4 h-4 mr-2 text-gray-500" />
-          <div>
-            <p className="text-sm text-gray-500">Bathrooms</p>
-            <p>{item.bathrooms || 0}</p>
-          </div>
-        </div>
+ 
         <div className="flex items-center">
           <Users className="w-4 h-4 mr-2 text-gray-500" />
           <div>
-            <p className="text-sm text-gray-500">Maximum Guests</p>
-            <p>{item.maximumGuests || 0}</p>
+            <p className="text-sm text-gray-500">Maximum Rooms</p>
+            <p>{item.rooms || 0}</p>
           </div>
         </div>
         <div className="flex items-center">

@@ -14,7 +14,6 @@ interface PropertyEditFormProps {
 }
 
 const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => {
-  // console.log(item);
   const [formData, setFormData] = useState<Property>(item);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const amenities: PropertyAmenities[] = ["wifi", "pool", "gym", "spa", "restaurant", "parking", "airConditioning", "breakfast"];
@@ -22,17 +21,25 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
   const handleChange = (field: string, value: unknown) => {
     setFormData((prev) => {
       const keys = field.split(".");
-      const updated: Partial<Property> = { ...prev };
-      let temp: Record<string, unknown> = updated;
-  
+      // Create a deep copy of the previous state
+      const updated = JSON.parse(JSON.stringify(prev)) as Property;
+      
+      // Navigate to the right part of the object
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let current: any = updated;
       for (let i = 0; i < keys.length - 1; i++) {
-        if (!temp[keys[i]]) temp[keys[i]] = {};
-        temp[keys[i]] = { ...temp[keys[i]] as Record<string, unknown> };
-        temp = temp[keys[i]] as Record<string, unknown>;
+        // Ensure the path exists
+        if (!current[keys[i]]) {
+          current[keys[i]] = keys[i + 1].match(/^\d+$/) ? [] : {};
+        }
+        current = current[keys[i]];
       }
-  
-      temp[keys[keys.length - 1]] = value;
-      return updated as Property;
+      
+      // Set the value at the final key
+      const lastKey = keys[keys.length - 1];
+      current[lastKey] = value;
+      
+      return updated;
     });
   };
   
@@ -42,17 +49,15 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     if (!formData.title) newErrors.title = "Title is required";
     if (!formData.description) newErrors.description = "Description is required";
     if (!formData.type) newErrors.type = "Property type is required";
-    if (!formData.location.address) newErrors.address = "Address is required";
-    if (!formData.location.city) newErrors.city = "City is required";
-    if (!formData.location.state) newErrors.state = "State is required";
-    if (!formData.location.country) newErrors.country = "Country is required";
-    if (!formData.costing.price) newErrors.price = "Price is required";
-    if (!formData.costing.currency) newErrors.currency = "Currency is required";
-    if (!formData.bedrooms) newErrors.bedrooms = "Number of bedrooms is required";
-    if (!formData.bathrooms) newErrors.bathrooms = "Number of bathrooms is required";
-    if (!formData.maximumGuests) newErrors.maximumGuests = "Maximum guests is required";
+    if (!formData.location?.address) newErrors.address = "Address is required";
+    if (!formData.location?.city) newErrors.city = "City is required";
+    if (!formData.location?.state) newErrors.state = "State is required";
+    if (!formData.location?.country) newErrors.country = "Country is required";
+    if (!formData.costing?.price) newErrors.price = "Price is required";
+    if (!formData.costing?.currency) newErrors.currency = "Currency is required";
+    if (!formData.rooms) newErrors.rooms = "Number of rooms is required";
     if (!formData.bannerImage) newErrors.bannerImage = "Banner image is required";
-    if (formData.detailImages.length < 3) newErrors.detailImages = "At least 3 detail images are required";
+    if (!formData.detailImages || formData.detailImages.length < 3) newErrors.detailImages = "At least 3 detail images are required";
     if (!formData.startDate) newErrors.startDate = "Start date is required";
     if (!formData.endDate) newErrors.endDate = "End date is required";
 
@@ -61,6 +66,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
   };
 
   const handleSubmit = (e: React.FormEvent) => {
+    console.log(formData);
     e.preventDefault();
     if (validateForm()) {
       onSave(formData);
@@ -92,6 +98,19 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       </div>
 
       <div>
+        <label>Rating</label>
+        <Input
+          type="number"
+          name="rat"
+          value={formData.rat || '1'}
+          onChange={(e) => handleChange("rat", e.target.value)}
+          placeholder="Enter rating"
+          min="1"
+          max="5"
+        />
+      </div>
+
+      <div>
         <label>Property Type</label>
         <Select
           value={formData.type}
@@ -116,7 +135,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
           <label>Address</label>
           <Input
             name="location.address"
-            value={formData.location.address}
+            value={formData.location?.address || ''}
             onChange={(e) => handleChange("location.address", e.target.value)}
             placeholder="Enter address"
           />
@@ -126,7 +145,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
           <label>City</label>
           <Input
             name="location.city"
-            value={formData.location.city}
+            value={formData.location?.city || ''}
             onChange={(e) => handleChange("location.city", e.target.value)}
             placeholder="Enter city"
           />
@@ -136,7 +155,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
           <label>State</label>
           <Input
             name="location.state"
-            value={formData.location.state}
+            value={formData.location?.state || ''}
             onChange={(e) => handleChange("location.state", e.target.value)}
             placeholder="Enter state"
           />
@@ -146,7 +165,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
           <label>Country</label>
           <Input
             name="location.country"
-            value={formData.location.country}
+            value={formData.location?.country || ''}
             onChange={(e) => handleChange("location.country", e.target.value)}
             placeholder="Enter country"
           />
@@ -160,8 +179,8 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
           <Input
             type="number"
             name="costing.price"
-            value={formData.costing.price}
-            onChange={(e) => handleChange("costing.price", parseFloat(e.target.value))}
+            value={formData.costing?.price || ''}
+            onChange={(e) => handleChange("costing.price", parseFloat(e.target.value) || 0)}
             min={1}
           />
           {errors.price && <span className="text-red-500">{errors.price}</span>}
@@ -172,8 +191,8 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
           <Input
             type="number"
             name="costing.discountedPrice"
-            value={formData.costing.discountedPrice}
-            onChange={(e) => handleChange("costing.discountedPrice", parseFloat(e.target.value))}
+            value={formData.costing?.discountedPrice || ''}
+            onChange={(e) => handleChange("costing.discountedPrice", parseFloat(e.target.value) || 0)}
             min={0}
           />
         </div>
@@ -181,7 +200,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         <div>
           <label>Currency</label>
           <Select
-            value={formData.costing.currency}
+            value={formData.costing?.currency || ''}
             onValueChange={(value) => handleChange("costing.currency", value)}
           >
             <SelectTrigger>
@@ -201,61 +220,54 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
 
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <label>Bedrooms</label>
+          <label>Rooms</label>
           <Input
             type="number"
-            name="bedrooms"
-            value={formData.bedrooms}
-            onChange={(e) => handleChange("bedrooms", parseInt(e.target.value))}
+            name="rooms"
+            value={formData.rooms || ''}
+            onChange={(e) => handleChange("rooms", parseInt(e.target.value) || 0)}
             min={1}
           />
-          {errors.bedrooms && <span className="text-red-500">{errors.bedrooms}</span>}
+          {errors.rooms && <span className="text-red-500">{errors.rooms}</span>}
         </div>
-
         <div>
-          <label>Bathrooms</label>
+          <label>Total Rating</label>
           <Input
             type="number"
-            name="bathrooms"
-            value={formData.bathrooms}
-            onChange={(e) => handleChange("bathrooms", parseInt(e.target.value))}
-            min={1}
+            name="totalRating"
+            value={formData.totalRating || ''}
+            onChange={(e) => handleChange("totalRating", parseFloat(e.target.value) || 0)}
+            min={0}
+            max={5}
+            step={0.1}
           />
-          {errors.bathrooms && <span className="text-red-500">{errors.bathrooms}</span>}
-        </div>
-
-        <div>
-          <label>Maximum Guests</label>
-          <Input
-            type="number"
-            name="maximumGuests"
-            value={formData.maximumGuests}
-            onChange={(e) => handleChange("maximumGuests", parseInt(e.target.value))}
-            min={1}
-          />
-          {errors.maximumGuests && <span className="text-red-500">{errors.maximumGuests}</span>}
         </div>
       </div>
 
-      {amenities.map((amenity) => (
-        <div key={amenity} className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            id={amenity}
-            checked={formData.amenities.includes(amenity)}
-            onChange={(e) => {
-              if (e.target.checked) {
-                handleChange("amenities", [...formData.amenities, amenity]);
-              } else {
-                handleChange("amenities", formData.amenities.filter((a) => a !== amenity));
-              }
-            }}
-          />
-          <label htmlFor={amenity} className="text-sm capitalize">
-            {amenity === "airConditioning" ? "Air Conditioning" : amenity}
-          </label>
+      <div>
+        <label className="block mb-2">Amenities</label>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {amenities.map((amenity) => (
+            <div key={amenity} className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id={amenity}
+                checked={formData.amenities?.includes(amenity) || false}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    handleChange("amenities", [...(formData.amenities || []), amenity]);
+                  } else {
+                    handleChange("amenities", (formData.amenities || []).filter((a) => a !== amenity));
+                  }
+                }}
+              />
+              <label htmlFor={amenity} className="text-sm capitalize">
+                {amenity === "airConditioning" ? "Air Conditioning" : amenity}
+              </label>
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
 
       <div>
         <label>Banner Image</label>
@@ -271,7 +283,8 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         <label>Detail Images</label>
         <MultipleImageUpload
           label='detail images'
-          value={formData.detailImages}
+          key={formData.detailImages?.length}
+          value={formData.detailImages || []}
           onChange={(images) => handleChange("detailImages", images)}
           maxImages={10}
         />
@@ -284,8 +297,8 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
           <Input
             type="date"
             name="startDate"
-            value={formData.startDate}
-            onChange={(e) => handleChange("startDate",e.target.value)}
+            value={formData.startDate || ''}
+            onChange={(e) => handleChange("startDate", e.target.value)}
           />
           {errors.startDate && <span className="text-red-500">{errors.startDate}</span>}
         </div>
@@ -294,12 +307,41 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
           <Input
             type="date"
             name="endDate"
-            value={formData.endDate}
-            onChange={(e) => handleChange("endDate",e.target.value)}
+            value={formData.endDate || ''}
+            onChange={(e) => handleChange("endDate", e.target.value)}
           />
           {errors.endDate && <span className="text-red-500">{errors.endDate}</span>}
         </div>
       </div>
+
+      {/* Reviews Section (if needed) */}
+      {formData.review && formData.review.length > 0 && (
+        <div className="space-y-2">
+          <label className="block font-medium">Reviews</label>
+          {formData.review.map((review, index) => (
+            <div key={index} className="border p-3 rounded-md">
+              <div>
+                <label>Comment</label>
+                <Textarea
+                  value={review.comment}
+                  onChange={(e) => handleChange(`review.${index}.comment`, e.target.value)}
+                  placeholder="Review comment"
+                />
+              </div>
+              <div className="mt-2">
+                <label>Rating</label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={5}
+                  value={review.rating}
+                  onChange={(e) => handleChange(`review.${index}.rating`, parseInt(e.target.value))}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <Button type="submit">Save Changes</Button>
     </form>

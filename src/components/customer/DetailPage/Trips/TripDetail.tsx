@@ -22,6 +22,7 @@ export default function TripDetailPage() {
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [guestCount, setGuestCount] = useState(1);
+  const [days, setDays] = useState<number>(1);
   const reviewsPerPage = 3;
   
   // New state for booking confirmation
@@ -66,16 +67,16 @@ export default function TripDetailPage() {
           setSelectedImage(parsedTrip.bannerImage.url);
         }
 
-        // Set default check-in/check-out dates
-        const today = new Date();
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const dayAfterTomorrow = new Date(today);
-        dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+        // // Set default check-in/check-out dates
+        // const today = new Date();
+        // const tomorrow = new Date(today);
+        // tomorrow.setDate(tomorrow.getDate() + 1);
+        // const dayAfterTomorrow = new Date(today);
+        // dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
         
-        setCheckInDate(tomorrow);
-        setCheckOutDate(dayAfterTomorrow);
-        setGuestCount(1);
+        // setCheckInDate(tomorrow);
+        // setCheckOutDate(dayAfterTomorrow);
+        // setGuestCount(1);
       } catch (err) {
         setError('Error fetching trip details. Please try again later.');
         console.error(err);
@@ -86,6 +87,42 @@ export default function TripDetailPage() {
 
     fetchTripDetails();
   }, [params?.id]);
+
+
+    const validateDate = (selectedDate: string, startDate: string, endDate: string): Date => {
+      const date = new Date(selectedDate);
+      const minDate = new Date(startDate);
+      const maxDate = new Date(endDate);
+    
+      if (date < minDate) return minDate;
+      if (date > maxDate) return maxDate;
+    
+      return date;
+    };
+  
+    const handleCheckInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if(!trip) return;
+      const validatedCheckIn = validateDate(e.target.value, trip.startDate, trip.endDate);
+      setCheckInDate(validatedCheckIn);
+      setDays(Math.ceil((validatedCheckIn.getTime() - new Date(trip.startDate).getTime()) / (1000 * 3600 * 24)));
+  
+      // Adjust check-out date if necessary
+      if (checkOutDate && validatedCheckIn >= checkOutDate) {
+        setCheckOutDate(new Date(validatedCheckIn.getTime() + 86400000)); // Add 1 day
+      }
+    };
+  
+    const handleCheckOutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if(!trip) return;
+      const validatedCheckOut = validateDate(e.target.value, trip.startDate, trip.endDate);
+      setCheckOutDate(validatedCheckOut);
+      setDays(Math.ceil((validatedCheckOut.getTime() - new Date(trip.startDate).getTime()) / (1000 * 3600 * 24)));
+  
+      // Ensure check-out is after check-in
+      if (checkInDate && validatedCheckOut <= checkInDate) {
+        setCheckOutDate(new Date(checkInDate.getTime() + 86400000)); // Add 1 day
+      }
+    };
 
   // Set form data when user is loaded
   useEffect(() => {
@@ -103,6 +140,16 @@ export default function TripDetailPage() {
     setSelectedImage(imageUrl);
   };
 
+
+  const incrementGuests = () => {
+    setGuestCount(prev => prev + 1);
+  };
+
+  const decrementGuests = () => {
+    if (guestCount > 1) {
+      setGuestCount(prev => prev - 1);
+    }
+  };
 
 
   const handleBookNowClick = () => {
@@ -127,6 +174,11 @@ export default function TripDetailPage() {
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!trip || !checkInDate || !checkOutDate) return;
+
+    setBookingData(prev => ({
+      ...prev,
+      ['passengers']: guestCount,
+    }));
     
     setIsSubmitting(true);
     
@@ -148,7 +200,7 @@ export default function TripDetailPage() {
           guests: guestCount,
           price: trip.costing.discountedPrice,
           currency: trip.costing.currency,
-          totalPrice: trip.costing.discountedPrice * bookingData.passengers,
+          totalPrice: trip.costing.discountedPrice * days * guestCount,
         },
         guestDetails: bookingData,
         recipients: [bookingData.email, 'anshulgoyal589@gmail.com']
@@ -475,14 +527,14 @@ export default function TripDetailPage() {
                   <span className="text-gray-600">Price per night</span>
                   {trip.costing.price !== trip.costing.discountedPrice && (
                     <span className="line-through text-gray-500">
-                      {trip.costing.currency} {trip.costing.price.toLocaleString()}
+                      {trip.costing.currency} {(trip.costing.price*guestCount).toLocaleString()}
                     </span>
                   )}
                 </div>
                 <div className="flex items-baseline">
                   <span className="text-3xl font-bold text-blue-600">
                     {trip.costing.currency}{' '}
-                    {trip.costing.discountedPrice.toLocaleString()}
+                    {(trip.costing.discountedPrice*guestCount).toLocaleString()}
                   </span>
                   <span className="text-sm text-gray-600 ml-2">per night</span>
                 </div>
@@ -506,28 +558,33 @@ export default function TripDetailPage() {
                     <input
                       type="date"
                       value={checkInDate ? checkInDate.toISOString().split('T')[0] : ''}
-                      onChange={(e) => setCheckInDate(new Date(e.target.value))}
+                      onChange={handleCheckInChange}
                       className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      min={new Date().toISOString().split('T')[0]}
+                      min={new Date(trip.startDate).toISOString().split('T')[0]}
+                      max={new Date(trip.endDate).toISOString().split('T')[0]}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Check-out
-                    </label>
+                    <label>Check-out</label>
+                    <br />
                     <input
                       type="date"
                       value={checkOutDate ? checkOutDate.toISOString().split('T')[0] : ''}
-                      onChange={(e) => setCheckOutDate(new Date(e.target.value))}
+                      onChange={handleCheckOutChange}
                       className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      min={checkInDate 
-                        ? new Date(checkInDate.getTime() + 86400000).toISOString().split('T')[0]
-                        : new Date().toISOString().split('T')[0]}
+                      
+                      min={
+                        checkInDate
+                          ? new Date(checkInDate.getTime() + 86400000).toISOString().split('T')[0]
+                          : new Date(trip.startDate).toISOString().split('T')[0]
+                      }
+                      max={new Date(trip.endDate).toISOString().split('T')[0]}
                     />
                   </div>
                 </div>
 
-                {/* <div className="mb-4">
+                
+                <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Guests
                   </label>
@@ -549,7 +606,7 @@ export default function TripDetailPage() {
                     </div>
                     <button
                       onClick={incrementGuests}
-                      disabled={guestCount >= trip.maximumGuests}
+                      // disabled={guestCount >= trip.rooms*3}
                       className="px-3 py-2 text-blue-600 disabled:text-gray-400"
                     >
                       <svg
@@ -565,10 +622,7 @@ export default function TripDetailPage() {
                       </svg>
                     </button>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Maximum {trip.maximumGuests} guests
-                  </p>
-                </div> */}
+                </div>
               </div>
 
               {/* Price Calculation */}
@@ -577,7 +631,7 @@ export default function TripDetailPage() {
                   <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200 mt-2">
                     <span>Total</span>
                     <span>
-                      {trip.costing.currency} {(trip.costing.discountedPrice * bookingData.passengers).toLocaleString()}
+                      {trip.costing.currency} {(trip.costing.discountedPrice * guestCount * days).toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -591,7 +645,7 @@ export default function TripDetailPage() {
               </button>
 
               <p className="text-sm text-gray-500 text-center mt-2">
-                You won&apso;t be charged yet
+                You would not be charged yet
               </p>
             </div>
           </div>

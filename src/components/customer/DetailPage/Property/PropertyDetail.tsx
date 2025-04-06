@@ -21,7 +21,9 @@ export default function PropertyDetailPage() {
   const [currentReviewPage, setCurrentReviewPage] = useState(1);
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
-  const [guestCount, setGuestCount] = useState(1);
+  const [guestCount, setGuestCount] = useState<number>(1);
+  const [roomCount, setRoomCount] = useState<number>(1);
+  const [days, setDays] = useState<number>(1);
   const reviewsPerPage = 3;
   
   // New state for booking confirmation
@@ -32,11 +34,13 @@ export default function PropertyDetailPage() {
     email: '',
     phone: '',
     passengers: 1,
+    rooms : 1,
     specialRequests: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [loginRedirectWarning, setLoginRedirectWarning] = useState(false);
+
 
   useEffect(() => {
     const fetchPropertyDetails = async () => {
@@ -52,6 +56,8 @@ export default function PropertyDetailPage() {
         }
         
         const data = await response.json();
+
+  
         
         const parsedProperty: Property = {
           ...data,
@@ -67,14 +73,14 @@ export default function PropertyDetailPage() {
         }
 
         // Set default check-in/check-out dates
-        const today = new Date();
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const dayAfterTomorrow = new Date(today);
-        dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+        // const today = new Date();
+        // const tomorrow = new Date(today);
+        // tomorrow.setDate(tomorrow.getDate() + 1);
+        // const dayAfterTomorrow = new Date(today);
+        // dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
         
-        setCheckInDate(tomorrow);
-        setCheckOutDate(dayAfterTomorrow);
+        // setCheckInDate(tomorrow);
+        // setCheckOutDate(dayAfterTomorrow);
       } catch (err) {
         setError('Error fetching property details. Please try again later.');
         console.error(err);
@@ -85,6 +91,42 @@ export default function PropertyDetailPage() {
 
     fetchPropertyDetails();
   }, [params?.id]);
+
+  const validateDate = (selectedDate: string, startDate: string, endDate: string): Date => {
+    const date = new Date(selectedDate);
+    const minDate = new Date(startDate);
+    const maxDate = new Date(endDate);
+  
+    if (date < minDate) return minDate;
+    if (date > maxDate) return maxDate;
+  
+    return date;
+  };
+
+  const handleCheckInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if(!property) return;
+    const validatedCheckIn = validateDate(e.target.value, property.startDate, property.endDate);
+    setCheckInDate(validatedCheckIn);
+    setDays(Math.ceil((validatedCheckIn.getTime() - new Date(property.startDate).getTime()) / (1000 * 3600 * 24)));
+
+    // Adjust check-out date if necessary
+    if (checkOutDate && validatedCheckIn >= checkOutDate) {
+      setCheckOutDate(new Date(validatedCheckIn.getTime() + 86400000)); // Add 1 day
+    }
+  };
+
+  const handleCheckOutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if(!property) return;
+    const validatedCheckOut = validateDate(e.target.value, property.startDate, property.endDate);
+    setCheckOutDate(validatedCheckOut);
+    setDays(Math.ceil((validatedCheckOut.getTime() - new Date(property.startDate).getTime()) / (1000 * 3600 * 24)));
+
+    // Ensure check-out is after check-in
+    if (checkInDate && validatedCheckOut <= checkInDate) {
+      setCheckOutDate(new Date(checkInDate.getTime() + 86400000)); // Add 1 day
+    }
+  };
+  
 
   // Set form data when user is loaded
   useEffect(() => {
@@ -104,14 +146,30 @@ export default function PropertyDetailPage() {
 
 
   const incrementGuests = () => {
-    if (property && guestCount < property.maximumGuests) {
-      setGuestCount(prev => prev + 1);
-    }
+    setGuestCount(prev => prev + 1);
   };
 
   const decrementGuests = () => {
     if (guestCount > 1) {
       setGuestCount(prev => prev - 1);
+    }
+  };
+
+  useEffect(() => {
+    const minRoomsRequired = Math.ceil(guestCount / 3);
+    setRoomCount(Math.max(minRoomsRequired, roomCount));
+  }
+  , [guestCount, roomCount ]);
+
+  const incrementRooms = () => {
+    const minRoomsRequired = Math.ceil(guestCount / 3);
+    setRoomCount(Math.max(minRoomsRequired, roomCount+1));
+  };
+
+  const decrementRooms = () => {
+    if (roomCount > 1) {
+      const minRoomsRequired = Math.ceil(guestCount / 3);
+      setRoomCount(Math.max(minRoomsRequired, roomCount-1));
     }
   };
 
@@ -137,6 +195,12 @@ export default function PropertyDetailPage() {
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!property || !checkInDate || !checkOutDate) return;
+
+    setBookingData(prev => ({
+      ...prev,
+      ['passengers']: guestCount,
+      ['rooms']: roomCount
+    }));
     
     setIsSubmitting(true);
     
@@ -156,9 +220,10 @@ export default function PropertyDetailPage() {
           checkIn: checkInDate.toISOString(),
           checkOut: checkOutDate.toISOString(),
           guests: guestCount,
-          price: property.costing.discountedPrice,
+          rooms : roomCount,
+          price: property.costing.discountedPrice ,
           currency: property.costing.currency,
-          totalPrice: property.costing.discountedPrice * bookingData.passengers,
+          totalPrice: property.costing.discountedPrice*days*roomCount,
         },
         guestDetails: bookingData,
         recipients: [bookingData.email, 'anshulgoyal589@gmail.com']
@@ -364,22 +429,17 @@ export default function PropertyDetailPage() {
           {/* Left Column - Property Details */}
           <div className="lg:col-span-2">
             {/* Property Quick Info */}
-            <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center">
-                  <div className="text-gray-600 mb-1">Bedrooms</div>
-                  <div className="font-bold text-xl">{property.bedrooms}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-gray-600 mb-1">Bathrooms</div>
-                  <div className="font-bold text-xl">{property.bathrooms}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-gray-600 mb-1">Max Guests</div>
-                  <div className="font-bold text-xl">{property.maximumGuests}</div>
+            <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Property Details</h3>
+              <div className="grid grid-cols-3 gap-6">
+                {/* Rooms */}
+                <div className="flex flex-col items-center">
+                  <div className="text-gray-600 text-sm mb-2">Rooms Available</div>
+                  <div className="font-extrabold text-2xl text-blue-600">{property.rooms}</div>
                 </div>
               </div>
             </div>
+
             
             {/* Property Gallery */}
             {property.detailImages && property.detailImages.length > 0 && (
@@ -565,14 +625,14 @@ export default function PropertyDetailPage() {
                   <span className="text-gray-600">Price per night</span>
                   {property.costing.price !== property.costing.discountedPrice && (
                     <span className="line-through text-gray-500">
-                      {property.costing.currency} {property.costing.price.toLocaleString()}
+                      {property.costing.currency} {(property.costing.price * roomCount ).toLocaleString()}
                     </span>
                   )}
                 </div>
                 <div className="flex items-baseline">
                   <span className="text-3xl font-bold text-blue-600">
                     {property.costing.currency}{' '}
-                    {property.costing.discountedPrice.toLocaleString()}
+                    {(property.costing.discountedPrice*roomCount).toLocaleString()}
                   </span>
                   <span className="text-sm text-gray-600 ml-2">per night</span>
                 </div>
@@ -590,29 +650,31 @@ export default function PropertyDetailPage() {
               <div className="mb-6">
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Check-in
-                    </label>
+                    <label>Check-in</label><br />
                     <input
                       type="date"
                       value={checkInDate ? checkInDate.toISOString().split('T')[0] : ''}
-                      onChange={(e) => setCheckInDate(new Date(e.target.value))}
+                      onChange={handleCheckInChange}
                       className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      min={new Date().toISOString().split('T')[0]}
+                      
+                      min={new Date(property.startDate).toISOString().split('T')[0]}
+                      max={new Date(property.endDate).toISOString().split('T')[0]}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Check-out
-                    </label>
+                    <label>Check-out</label>
+                    <br />
                     <input
                       type="date"
                       value={checkOutDate ? checkOutDate.toISOString().split('T')[0] : ''}
-                      onChange={(e) => setCheckOutDate(new Date(e.target.value))}
+                      onChange={handleCheckOutChange}
                       className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      min={checkInDate 
-                        ? new Date(checkInDate.getTime() + 86400000).toISOString().split('T')[0]
-                        : new Date().toISOString().split('T')[0]}
+                      min={
+                        checkInDate
+                          ? new Date(checkInDate.getTime() + 86400000).toISOString().split('T')[0]
+                          : new Date(property.startDate).toISOString().split('T')[0]
+                      }
+                      max={new Date(property.endDate).toISOString().split('T')[0]}
                     />
                   </div>
                 </div>
@@ -639,7 +701,7 @@ export default function PropertyDetailPage() {
                     </div>
                     <button
                       onClick={incrementGuests}
-                      disabled={guestCount >= property.maximumGuests}
+                      disabled={guestCount >= property.rooms*3}
                       className="px-3 py-2 text-blue-600 disabled:text-gray-400"
                     >
                       <svg
@@ -655,9 +717,46 @@ export default function PropertyDetailPage() {
                       </svg>
                     </button>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Maximum {property.maximumGuests} guests
-                  </p>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Rooms
+                  </label>
+                  <div className="flex items-center border border-gray-300 rounded-md">
+                    <button
+                      onClick={decrementRooms}
+                      disabled={roomCount <= 1}
+                      className="px-3 py-2 text-blue-600 disabled:text-gray-400"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                    <div className="flex-1 text-center">
+                      <span className="font-medium">{roomCount}</span>
+                      <span className="text-gray-500 ml-1">
+                        {roomCount === 1 ? 'room' : 'rooms'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={incrementRooms}
+                      disabled={roomCount >= property.rooms}
+                      className="px-3 py-2 text-blue-600 disabled:text-gray-400"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -667,7 +766,7 @@ export default function PropertyDetailPage() {
                   <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200 mt-2">
                     <span>Total</span>
                     <span>
-                      {property.costing.currency} {(property.costing.discountedPrice * bookingData.passengers).toLocaleString()}
+                      {property.costing.currency} {(property.costing.discountedPrice * roomCount * days ).toLocaleString()}
                     </span>
                   </div>
                 </div>

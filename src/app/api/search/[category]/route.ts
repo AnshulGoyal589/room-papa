@@ -78,9 +78,9 @@ function buildCategoryQuery(searchParams: URLSearchParams, category: string): Fi
         }
       }
 
-      const bedrooms = searchParams.get('bedrooms');
-      if (bedrooms) {
-        query.bedrooms = { $gte: parseInt(bedrooms) };
+      const rooms = searchParams.get('rooms');
+      if (rooms) {
+        query.rooms = { $gte: parseInt(rooms) };
       }
 
       const propertyType = searchParams.get('propertyType');

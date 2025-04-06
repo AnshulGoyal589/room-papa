@@ -107,9 +107,7 @@ export default function SearchResults({ initialResults, category, searchParams }
         </Link>
         
         <div className="flex items-center mt-2 text-sm text-gray-600 mb-3">
-          <span className="mr-3">{property.bedrooms} Beds</span>
-          <span className="mr-3">{property.bathrooms} Baths</span>
-          <span>{property.maximumGuests} Guests</span>
+          <span>{property.rooms} Rooms</span>
         </div>
         
         <div className="flex justify-between items-center mt-4">
@@ -250,14 +248,9 @@ export default function SearchResults({ initialResults, category, searchParams }
               <option value="createdAt-asc">Oldest</option>
               <option value="costing.discountedPrice-asc">Price (Low to High)</option>
               <option value="costing.discountedPrice-desc">Price (High to Low)</option>
-              <option value="rat-desc">Highest Rated</option>
+              <option value="rat-asc">Highest Rated</option>
               
-              {category === 'property' && (
-                <>
-                  <option value="bedrooms-desc">Most Bedrooms</option>
-                  <option value="bathrooms-desc">Most Bathrooms</option>
-                </>
-              )}
+
               {category === 'trip' && (
                 <>
                   <option value="startDate-asc">Departure (Soonest)</option>

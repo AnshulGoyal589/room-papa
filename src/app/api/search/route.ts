@@ -83,7 +83,7 @@ function validateSearchParams(searchParams: URLSearchParams, category: string) {
   }
   
   const numericParams: Record<string, string[]> = {
-    'property': ['price', 'discountedPrice', 'bathrooms', 'bedrooms', 'maximumGuests'],
+    'property': ['price', 'discountedPrice', 'children', 'adults', 'rooms'],
     'trip': ['price', 'discountedPrice', 'priority'],
     'travelling': ['price', 'discountedPrice']
   };
@@ -200,9 +200,9 @@ function buildSearchQuery(searchParams: URLSearchParams) : QueryType {
 
 function addPropertyFilters(query: QueryType, searchParams: URLSearchParams) {
   addRangeFilter(query, searchParams, 'costing.discountedPrice', 'minPrice', 'maxPrice');
-  addMinFilter(query, searchParams, 'bedrooms');
-  addMinFilter(query, searchParams, 'bathrooms');
-  addMinFilter(query, searchParams, 'maximumGuests');
+  addMinFilter(query, searchParams, 'adults');
+  addMinFilter(query, searchParams, 'children');
+  addMinFilter(query, searchParams, 'rooms');
   addExactFilter(query, searchParams, 'type');
   addArrayFilter(query, searchParams, 'amenities');
   addDateRangeFilter(query, searchParams , "Property");

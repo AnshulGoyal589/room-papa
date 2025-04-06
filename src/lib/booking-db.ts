@@ -1,7 +1,7 @@
 // lib/booking-db.ts
 import { Collection, Db, Filter, ObjectId } from 'mongodb';
 import { getDb } from '@/lib/mongodb';
-import { Booking, BookingInput, PropertyBooking, TravellingBooking, TripBooking } from '@/lib/mongodb/models/booking';
+import { Booking, BookingInput, PropertyBooking, TravellingBooking, TripBooking } from '@/lib/mongodb/models/Booking';
 
 export class BookingRepository {
   private db: Db;

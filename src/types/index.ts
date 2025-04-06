@@ -64,6 +64,7 @@ export interface BookingFormData {
   email: string;
   phone: string;
   passengers: number;
+  rooms?: number;
   specialRequests: string;
 }
 
@@ -183,7 +184,5 @@ export interface PropertySearchParams extends SearchParams {
   minPrice?: number;
   maxPrice?: number;
   amenities?: PropertyAmenities[];
-  bedrooms?: number;
-  bathrooms?: number;
-  maxGuests?: number;
+  rooms?: number;
 }

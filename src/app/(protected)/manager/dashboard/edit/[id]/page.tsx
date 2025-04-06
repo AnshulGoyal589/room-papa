@@ -88,7 +88,7 @@ export default function ItemEdit({ params }: { params: Promise<{ id: string }> }
             state: '',
             country: '',
           },
-          amenities: foundItem.ammenities || [''],
+          amenities: foundItem.amenities || [''],
           startDate: foundItem.startDate,
           endDate: foundItem.endDate,
           bannerImage:{
@@ -104,9 +104,7 @@ export default function ItemEdit({ params }: { params: Promise<{ id: string }> }
             comment: review.comment,
             rating: review.rating
           })) || [],
-          bedrooms: foundItem.bedrooms || 0,
-          bathrooms: foundItem.bathrooms || 0,
-          maximumGuests: foundItem.maximumGuests || 0,
+          rooms: foundItem.rooms || 0,
           type: foundItem.type || 'hotel'
         });
       } else if (foundCategory === 'trips') {

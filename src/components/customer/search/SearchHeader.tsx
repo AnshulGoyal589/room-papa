@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, MapPin, Calendar, DollarSign, Plane, Hotel } from 'lucide-react';
+import { Search, MapPin, Calendar, DollarSign, Plane, Hotel , Users, Baby  } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { SearchHeaderProps } from '@/types';
@@ -13,6 +13,7 @@ export default function SearchHeader({ category, initialSearchParams = {} }: Sea
   const currentSearchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   
+  // General Filters
   const [searchQuery, setSearchQuery] = useState(initialSearchParams.title || '');
   const [location, setLocation] = useState(initialSearchParams.city || '');
   const [startDate, setStartDate] = useState<Date | null>(initialSearchParams.startDate ? new Date(initialSearchParams.startDate) : null);
@@ -23,8 +24,9 @@ export default function SearchHeader({ category, initialSearchParams = {} }: Sea
   const [selectedCategory, setSelectedCategory] = useState(initialSearchParams.category || category);
   
   // Property-specific filters
-  const [bedrooms, setBedrooms] = useState(initialSearchParams.bedrooms || '');
-  const [bathrooms, setBathrooms] = useState(initialSearchParams.bathrooms || '');
+  const [adults, setAdults] = useState<number>(1);
+  const [children, setChildren] = useState<number>(0);
+  const [rooms, setRooms] = useState<number>(1);
   const [amenities, setAmenities] = useState<string[]>(initialSearchParams.amenities ? initialSearchParams.amenities.split(',') : []);
   
   // Travelling-specific filters
@@ -44,8 +46,6 @@ export default function SearchHeader({ category, initialSearchParams = {} }: Sea
       setType(currentSearchParams.get('type') || '');
       
       // Property-specific
-      setBedrooms(currentSearchParams.get('bedrooms') || '');
-      setBathrooms(currentSearchParams.get('bathrooms') || '');
       setAmenities(currentSearchParams.get('amenities') ? (currentSearchParams.get('amenities') as string).split(',') : []);
       
       // Travelling-specific
@@ -53,6 +53,30 @@ export default function SearchHeader({ category, initialSearchParams = {} }: Sea
       // Trip-specific
     }
   }, [currentSearchParams, category]);
+
+  useEffect(() => {
+    const minRoomsRequired = Math.ceil(adults / 3);
+    if (rooms < minRoomsRequired) {
+      setRooms(minRoomsRequired);
+    }
+  }, [adults, rooms ]);
+
+  const handleAdultsChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value) || 0;
+    setAdults(Math.max(1, value)); // Ensure at least 1 adult
+  };
+  
+  
+  const handleChildrenChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value) || 0;
+    setChildren(Math.max(0, value));
+  };
+
+  const handleRoomsChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value) || 0;
+    const minRoomsRequired = Math.ceil(adults / 3);
+    setRooms(Math.max(minRoomsRequired, value));
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,13 +106,15 @@ export default function SearchHeader({ category, initialSearchParams = {} }: Sea
     
     
     if (selectedCategory === 'property') {
-      if (bedrooms) params.set('bedrooms', bedrooms);
-      if (bathrooms) params.set('bathrooms', bathrooms);
+      // if (adults) params.set('adults', adults.toString());
+      // if (children) params.set('children', children.toString());
+      if (rooms) params.set('rooms', rooms.toString());
       if (amenities.length > 0) params.set('amenities', amenities.join(','));
     } else if (selectedCategory === 'travelling') {
-      
+      if (rooms) params.delete('rooms');
     } else if (selectedCategory === 'trip') {
       if (domain) params.set('domain', domain);
+      if (rooms) params.delete('rooms');
       if (!domain) params.delete('domain');
     }
     
@@ -110,9 +136,8 @@ export default function SearchHeader({ category, initialSearchParams = {} }: Sea
     setSelectedCategory(newCategory);
     
     if (newCategory !== 'property') {
-      setBedrooms('');
-      setBathrooms('');
       setAmenities([]);
+
     }
     
     if (newCategory !== 'travelling') {
@@ -156,34 +181,7 @@ export default function SearchHeader({ category, initialSearchParams = {} }: Sea
               />
             </div>
           </div>
-          
-          <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Bedrooms</label>
-            <div className="relative">
-              <Hotel className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-              <input
-                type="number"
-                placeholder="Min bedrooms"
-                className="pl-10 pr-4 py-3 rounded-md w-full border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary"
-                value={bedrooms}
-                onChange={(e) => setBedrooms(e.target.value)}
-              />
-            </div>
-          </div>
-          
-          <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Bathrooms</label>
-            <div className="relative">
-              <input
-                type="number"
-                placeholder="Min bathrooms"
-                className="pl-10 pr-4 py-3 rounded-md w-full border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary"
-                value={bathrooms}
-                onChange={(e) => setBathrooms(e.target.value)}
-              />
-            </div>
-          </div>
-
+        
           <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-1">Property Type</label>
             <select
@@ -200,6 +198,7 @@ export default function SearchHeader({ category, initialSearchParams = {} }: Sea
             </select>
           </div>
 
+          {/* Amenities */}
           <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-1">Amenities</label>
             <select
@@ -225,7 +224,61 @@ export default function SearchHeader({ category, initialSearchParams = {} }: Sea
               <option value="breakfast">Breakfast</option>
             </select>
           </div>
+
+          {/* Adults input */}
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Number of Adults</label>
+            <div className="relative">
+              <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="number"
+                placeholder="Number of adults"
+                className="pl-10 pr-4 py-3 rounded-md w-full border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary"
+                value={adults}
+                onChange={handleAdultsChange}
+                min="1"
+              />
+            </div>
+          </div>
           
+          {/* Children input */}
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Number of Children</label>
+            <div className="relative">
+              <Baby className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="number"
+                placeholder="Number of children"
+                className="pl-10 pr-4 py-3 rounded-md w-full border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary"
+                value={children}
+                onChange={handleChildrenChange}
+                min="0"
+              />
+            </div>
+          </div>
+          
+          {/* Rooms input */}
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Number of Rooms</label>
+            <div className="relative">
+              <Hotel className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="number"
+                placeholder="Number of rooms"
+                className="pl-10 pr-4 py-3 rounded-md w-full border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary"
+                value={rooms}
+                onChange={handleRoomsChange}
+                min={Math.ceil(adults / 3)}
+              />
+            </div>
+            {rooms < Math.ceil(adults / 3) && (
+              <p className="text-red-500 text-sm mt-1">
+                Minimum {Math.ceil(adults / 3)} room(s) required for {adults} adults
+              </p>
+            )}
+          </div>
+              
+              
         </div>
       );
 
@@ -440,7 +493,7 @@ export default function SearchHeader({ category, initialSearchParams = {} }: Sea
                       startDate={startDate}
                       endDate={endDate}
                       selectsRange
-                      placeholderText="Min Arrival — Max Arrival"
+                      placeholderText="Check In — Check Out"
                       className="pl-10 pr-4 py-3 rounded-md w-full border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary"
                     />
                   </div>

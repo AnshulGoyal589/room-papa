@@ -74,9 +74,7 @@ function buildSearchQuery(params: { [key: string]: string }, category: string) {
         if (params.minPrice) query['costing.price'].$gte = parseInt(params.minPrice);
         if (params.maxPrice) query['costing.price'].$lte = parseInt(params.maxPrice);
       }
-      if (params.bedrooms) query.bedrooms = { $gte: parseInt(params.bedrooms) };
-      if (params.bathrooms) query.bathrooms = { $gte: parseInt(params.bathrooms) };
-      if (params.guests) query.maximumGuests = { $gte: parseInt(params.guests) };
+      if (params.rooms) query.rooms = { $gte: parseInt(params.rooms) };
       if (params.propertyType) query.type = params.propertyType;
       if (params.amenities) {
         const amenitiesList = params.amenities.split(',');

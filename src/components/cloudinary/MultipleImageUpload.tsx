@@ -89,7 +89,7 @@ const MultipleImageUpload: React.FC<MultipleImageUploadProps> = ({
       
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
         {value.map((image, index) => (
-          <div key={image.publicId} className="relative rounded-md overflow-hidden">
+          <div key={image.publicId || `${image.url}-${index}`} className="relative rounded-md overflow-hidden">
             <CldImage
               src={image.publicId || image.url}
               width={150}

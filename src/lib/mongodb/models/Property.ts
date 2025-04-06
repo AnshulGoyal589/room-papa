@@ -9,11 +9,11 @@ import { Image } from './Image';
 export interface Property {
   _id?: ObjectId;
   userId: string;
-  title: string; 
-  description: string; 
+  title: string;
+  description: string;
   rat ?: number | '1';
   type: PropertyType;
-  location: { 
+  location: {
     address: string;
     state: string;
     city: string;
@@ -26,19 +26,17 @@ export interface Property {
     discountedPrice: number;
     currency: string;
   };
-  totalRating?: number; 
+  totalRating?: number;
   review?: {
     comment: string;
     rating: number;
   }[];
-  amenities: PropertyAmenities[]; 
-  createdAt?: Date; 
+  amenities: PropertyAmenities[];
+  createdAt?: Date;
   updatedAt?: Date;
-  bannerImage: Image; 
-  detailImages: Image[]; 
-  bathrooms: number; 
-  bedrooms: number; 
-  maximumGuests: number; 
+  bannerImage: Image;
+  detailImages: Image[];
+  rooms: number;
 }
 
 
@@ -54,14 +52,12 @@ interface PropertyValidationInput {
   description: string;
   amenities: string[];
   pricePerNight: number;
-  maximumGuests: number;
-  bedrooms: number;
-  bathrooms: number;
+  rooms: number;
   [key: string]: unknown;
 }
 
 export function validateProperty(propertyData: PropertyValidationInput): boolean {
-  const requiredFields = ['name', 'type', 'location', 'description', 'amenities', 'pricePerNight', 'maximumGuests', 'bedrooms', 'bathrooms'];
+  const requiredFields = ['name', 'type', 'location', 'description', 'amenities', 'pricePerNight', 'rooms'];
   
   for (const field of requiredFields) {
     if (!propertyData[field]) {
@@ -96,17 +92,10 @@ export function validateProperty(propertyData: PropertyValidationInput): boolean
     throw new Error('Price per night must be greater than 0');
   }
   
-  if (propertyData.maximumGuests <= 0) {
+  if (propertyData.rooms <= 0) {
     throw new Error('Maximum guests must be greater than 0');
   }
-  
-  if (propertyData.bedrooms <= 0) {
-    throw new Error('Bedrooms must be greater than 0');
-  }
-  
-  if (propertyData.bathrooms <= 0) {
-    throw new Error('Bathrooms must be greater than 0');
-  }
+
   
   return true;
 }

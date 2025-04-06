@@ -87,9 +87,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
       discountedPrice: 80,
       currency: 'USD',
     },
-    bedrooms: 1,
-    bathrooms: 1,
-    maximumGuests: 2,
+    rooms: 1,
     startDate: new Date() ,
     endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) ,
     
@@ -387,34 +385,15 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
             
             <div className="grid grid-cols-3 gap-2">
               <FormItem>
-                <FormLabel>Bedrooms</FormLabel>
+                <FormLabel>Max Rooms</FormLabel>
                 <Input 
                   type="number"
-                  value={propertyData.bedrooms}
-                  onChange={(e) => handlePropertyChange('bedrooms', Number(e.target.value))}
+                  value={propertyData.rooms}
+                  onChange={(e) => handlePropertyChange('rooms', Number(e.target.value))}
                   min={1}
                 />
               </FormItem>
-              
-              <FormItem>
-                <FormLabel>Bathrooms</FormLabel>
-                <Input 
-                  type="number"
-                  value={propertyData.bathrooms}
-                  onChange={(e) => handlePropertyChange('bathrooms', Number(e.target.value))}
-                  min={1}
-                />
-              </FormItem>
-              
-              <FormItem>
-                <FormLabel>Max Guests</FormLabel>
-                <Input 
-                  type="number"
-                  value={propertyData.maximumGuests}
-                  onChange={(e) => handlePropertyChange('maximumGuests', Number(e.target.value))}
-                  min={1}
-                />
-              </FormItem>
+ 
             </div>
             
             <FormItem>

@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {useUser} from '@clerk/nextjs';
-import { BookingDetails } from '@/app/api/bookings/route';
+import { BookingDetails } from '@/lib/mongodb/models/Booking';
 // import { useToast } from '@/components/ui/use-toast';
 
 export default function ManagerAppointmentsPage() {
