@@ -37,9 +37,9 @@ export default function RoleProtection({
           // Redirect to customer dashboard and open sign-in popup
           router.push('/customer/dashboard');
           // Small delay to ensure navigation happens before opening the modal
-          setTimeout(() => {
-            openSignIn();
-          }, 100);
+          // setTimeout(() => {
+          //   openSignIn();
+          // }, 100);
         }
         setLoading(false);
         return;

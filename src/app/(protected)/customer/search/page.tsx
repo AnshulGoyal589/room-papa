@@ -3,7 +3,7 @@ import { Document, Filter, Sort } from 'mongodb';
 import clientPromise from '@/lib/mongodb/client';
 import SearchResults from '@/components/customer/search/SearchResults';
 import SearchLoading from '@/components/customer/search/SearchLoading';
-import SearchHeader from '@/components/customer/search/SearchHeader';
+import SearchHeader2 from '@/components/customer/SearchHeader2';
 
 export const dynamic = 'force-dynamic';
 
@@ -163,7 +163,8 @@ export default async function SearchPage({ searchParams }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <SearchHeader category={category} />
+
+      <SearchHeader2/>
       
       <main className="container mx-auto px-4 py-8">
         
