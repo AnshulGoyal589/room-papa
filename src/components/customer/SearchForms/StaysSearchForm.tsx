@@ -1,23 +1,106 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, ChevronDown, X, Plus, Minus } from 'lucide-react';
 
+// Define types for our component
+interface DateRange {
+  startDate: Date;
+  endDate: Date;
+}
+
+interface SearchParams {
+  location: string;
+  checkIn: string;
+  checkOut: string;
+  adults: number;
+  children: number;
+  rooms: number;
+  pets: boolean;
+}
+
 export default function StaysSearchForm() {
-  const [location, setLocation] = useState('');
-  const [startDate, setStartDate] = useState('18 Apr 2025');
-  const [endDate, setEndDate] = useState('23 May 2025');
-  const [adults, setAdults] = useState(2);
-  const [children, setChildren] = useState(0);
-  const [rooms, setRooms] = useState(1);
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [showGuests, setShowGuests] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(4); // April (0-indexed)
-  const [selectedYear, setSelectedYear] = useState(2025);
-  const [selectedDates, setSelectedDates] = useState([new Date(2025, 3, 18), new Date(2025, 4, 23)]); // [start, end]
-  const [hasPets, setHasPets] = useState(false);
-  const [selectionPhase, setSelectionPhase] = useState(0); // 0: no selection, 1: start date selected
+  // State variables with proper typing
+  const [location, setLocation] = useState<string>('');
+  const [dateRange, setDateRange] = useState<DateRange>({
+    startDate: new Date(2025, 3, 18), // April 18, 2025
+    endDate: new Date(2025, 4, 23)    // May 23, 2025
+  });
+  const [adults, setAdults] = useState<number>(2);
+  const [children, setChildren] = useState<number>(0);
+  const [rooms, setRooms] = useState<number>(1);
+  const [showCalendar, setShowCalendar] = useState<boolean>(false);
+  const [showGuests, setShowGuests] = useState<boolean>(false);
+  const [selectedMonth, setSelectedMonth] = useState<number>(4); // April (0-indexed)
+  const [selectedYear, setSelectedYear] = useState<number>(2025);
+  const [hasPets, setHasPets] = useState<boolean>(false);
+  const [selectionPhase, setSelectionPhase] = useState<number>(0); // 0: no selection, 1: start date selected
   
-  const calendarRef = useRef(null);
-  const guestsRef = useRef(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
+  const guestsRef = useRef<HTMLDivElement>(null);
+
+  // Format date for display
+  const formatDisplayDate = (date: Date): string => {
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    }).replace(',', '');
+  };
+
+  // Format date for URL parameters (YYYY-MM-DD)
+  const formatDateForURL = (date: Date): string => {
+    return date.toISOString().split('T')[0];
+  };
+
+  // Parse date from URL parameter
+  const parseDateFromURL = (dateString: string): Date => {
+    if (!dateString) return new Date();
+    return new Date(dateString);
+  };
+
+  // Get initial values from URL parameters
+  const setDefaultsFromURL = () => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      
+      // Get location
+      const locationParam = urlParams.get('location');
+      if (locationParam) setLocation(locationParam);
+      
+      // Get dates
+      const checkInParam = urlParams.get('checkIn');
+      const checkOutParam = urlParams.get('checkOut');
+      
+      const startDate = checkInParam ? parseDateFromURL(checkInParam) : new Date(2025, 3, 18);
+      const endDate = checkOutParam ? parseDateFromURL(checkOutParam) : new Date(2025, 4, 23);
+      
+      setDateRange({ startDate, endDate });
+      
+      // Set initial calendar view to check-in month
+      setSelectedMonth(startDate.getMonth());
+      setSelectedYear(startDate.getFullYear());
+      
+      // Get guest information
+      const adultsParam = urlParams.get('adults');
+      if (adultsParam) setAdults(parseInt(adultsParam, 10));
+      
+      const childrenParam = urlParams.get('children');
+      if (childrenParam) setChildren(parseInt(childrenParam, 10));
+      
+      const roomsParam = urlParams.get('rooms');
+      if (roomsParam) setRooms(parseInt(roomsParam, 10));
+      
+      const petsParam = urlParams.get('pets');
+      if (petsParam) setHasPets(petsParam === 'true');
+    } catch (error) {
+      console.error("Error parsing URL parameters:", error);
+      // Use defaults if there's an error
+    }
+  };
+  
+  // Initialize from URL parameters
+  useEffect(() => {
+    setDefaultsFromURL();
+  }, []);
 
   // Ensure minimum rooms based on adults count (max 3 adults per room)
   useEffect(() => {
@@ -27,50 +110,59 @@ export default function StaysSearchForm() {
     }
   }, [adults, rooms]);
 
+  // Handle search button click
   const handleSearch = () => {
     const params = new URLSearchParams();
+    
+    // Only add parameters that have values
     if (location) params.set('location', location);
     
-    // Format dates in ISO format (YYYY-MM-DD)
-    const isoStartDate = selectedDates[0].toISOString().split('T')[0];
-    const isoEndDate = selectedDates[1].toISOString().split('T')[0];
+    // Format dates consistently for URL parameters
+    params.set('checkIn', formatDateForURL(dateRange.startDate));
+    params.set('checkOut', formatDateForURL(dateRange.endDate));
     
-    params.set('checkIn', isoStartDate);
-    params.set('checkOut', isoEndDate);
     params.set('adults', adults.toString());
     params.set('children', children.toString());
     params.set('rooms', rooms.toString());
+    
     if (hasPets) params.set('pets', 'true');
 
-    // Redirect to the customer search page with params
+    // Redirect to the search page with params
     window.location.href = `/customer/search?${params.toString()}`;
   };
 
-  const handleDateClick = (date, month, year) => {
-    const newDate = new Date(year, month, date);
-    
-    if (selectionPhase === 0 || selectedDates.length === 2) {
+  // Handle date selection in calendar
+  const handleDateClick = (day: number, month: number, year: number) => {
+    const newDate = new Date(year, month, day);
+
+    if (selectionPhase === 0) {
       // Start new selection
-      setSelectedDates([newDate]);
+      setDateRange({ 
+        startDate: newDate,
+        endDate: new Date(year, month, day) // Initially set end date same as start date
+      });
       setSelectionPhase(1);
     } else if (selectionPhase === 1) {
       // Complete the selection
-      if (newDate.getTime() > selectedDates[0].getTime()) {
-        setSelectedDates([selectedDates[0], newDate]);
+      if (newDate.getTime() > dateRange.startDate.getTime()) {
+        setDateRange({ 
+          startDate: dateRange.startDate,
+          endDate: newDate
+        });
         setSelectionPhase(0);
-        
-        const options = { month: 'short', day: 'numeric', year: 'numeric' };
-        setStartDate(selectedDates[0].toLocaleDateString('en-US', options).replace(',', ''));
-        setEndDate(newDate.toLocaleDateString('en-US', options).replace(',', ''));
         setTimeout(() => setShowCalendar(false), 300);
       } else {
         // If clicked date is before the start date, make it the new start date
-        setSelectedDates([newDate]);
+        setDateRange({
+          startDate: newDate,
+          endDate: dateRange.endDate
+        });
         setSelectionPhase(1);
       }
     }
   };
 
+  // Calendar navigation
   const nextMonth = () => {
     if (selectedMonth === 11) {
       setSelectedMonth(0);
@@ -89,23 +181,24 @@ export default function StaysSearchForm() {
     }
   };
 
-  const generateCalendar = (month, year) => {
+  // Generate calendar data
+  const generateCalendar = (month: number, year: number) => {
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
-    const days = [];
+
+    const days: Array<number | null> = [];
     const monthName = new Date(year, month).toLocaleString('default', { month: 'long' });
-    
+
     // Add empty cells for beginning of month
     for (let i = 0; i < firstDay; i++) {
       days.push(null);
     }
-    
+
     // Add days
     for (let i = 1; i <= daysInMonth; i++) {
       days.push(i);
     }
-    
+
     return { days, monthName };
   };
 
@@ -115,46 +208,48 @@ export default function StaysSearchForm() {
     selectedMonth === 11 ? selectedYear + 1 : selectedYear
   );
 
-  const isDateSelected = (day, month, year) => {
+  // Date helpers for UI
+  const isDateInRange = (day: number | null, month: number, year: number): boolean => {
     if (!day) return false;
     
     const date = new Date(year, month, day);
+    const time = date.getTime();
     
-    if (selectedDates.length === 1) {
-      return date.getTime() === selectedDates[0].getTime();
-    }
-    
-    if (selectedDates.length === 2) {
-      const time = date.getTime();
-      return (
-        time === selectedDates[0].getTime() || 
-        time === selectedDates[1].getTime() ||
-        (time > selectedDates[0].getTime() && time < selectedDates[1].getTime())
-      );
-    }
-    
-    return false;
+    return (
+      time >= dateRange.startDate.getTime() && 
+      time <= dateRange.endDate.getTime()
+    );
   };
 
-  const isStartDate = (day, month, year) => {
+  const isStartDate = (day: number | null, month: number, year: number): boolean => {
     if (!day) return false;
     const date = new Date(year, month, day);
-    return selectedDates.length > 0 && date.getTime() === selectedDates[0].getTime();
+    return date.getTime() === dateRange.startDate.getTime();
   };
 
-  const isEndDate = (day, month, year) => {
+  const isEndDate = (day: number | null, month: number, year: number): boolean => {
     if (!day) return false;
     const date = new Date(year, month, day);
-    return selectedDates.length === 2 && date.getTime() === selectedDates[1].getTime();
+    return date.getTime() === dateRange.endDate.getTime();
   };
 
   // Close dropdowns when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        calendarRef.current &&
+        !calendarRef.current.contains(event.target as Node)
+      ) {
         setShowCalendar(false);
+        // Reset selection phase if calendar is closed
+        if (selectionPhase === 1) {
+          setSelectionPhase(0);
+        }
       }
-      if (guestsRef.current && !guestsRef.current.contains(event.target)) {
+      if (
+        guestsRef.current &&
+        !guestsRef.current.contains(event.target as Node)
+      ) {
         setShowGuests(false);
       }
     };
@@ -163,9 +258,10 @@ export default function StaysSearchForm() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [selectionPhase]);
 
-  const adjustGuests = (type, operation) => {
+  // Handle guest adjustments
+  const adjustGuests = (type: 'adults' | 'children' | 'rooms', operation: 'add' | 'subtract') => {
     if (operation === 'add') {
       if (type === 'adults') {
         const newAdults = adults + 1;
@@ -182,7 +278,6 @@ export default function StaysSearchForm() {
     } else {
       if (type === 'adults' && adults > 1) {
         setAdults(adults - 1);
-        // No need to adjust rooms down automatically
       }
       if (type === 'children' && children > 0) setChildren(children - 1);
       if (type === 'rooms' && rooms > 1) {
@@ -233,7 +328,9 @@ export default function StaysSearchForm() {
               </svg>
               <div className="text-sm">
                 <div>
-                  {selectionPhase === 1 ? 'Select end date' : `${startDate} — ${endDate}`}
+                  {selectionPhase === 1 
+                    ? 'Select end date' 
+                    : `${formatDisplayDate(dateRange.startDate)} — ${formatDisplayDate(dateRange.endDate)}`}
                 </div>
               </div>
             </div>
@@ -274,7 +371,7 @@ export default function StaysSearchForm() {
                       <div 
                         key={i} 
                         className={`text-center py-2 ${!day ? '' : 'cursor-pointer'} ${
-                          isDateSelected(day, selectedMonth, selectedYear) 
+                          isDateInRange(day, selectedMonth, selectedYear) 
                             ? 'bg-blue-600 text-white' 
                             : 'hover:bg-blue-100'
                         } ${
@@ -315,7 +412,7 @@ export default function StaysSearchForm() {
                         <div 
                           key={i} 
                           className={`text-center py-2 ${!day ? '' : 'cursor-pointer'} ${
-                            isDateSelected(day, nextMonth, nextYear) 
+                            isDateInRange(day, nextMonth, nextYear) 
                               ? 'bg-blue-600 text-white' 
                               : 'hover:bg-blue-100'
                           } ${

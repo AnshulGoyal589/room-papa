@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Building, 
   Plane, 
@@ -9,7 +9,7 @@ import {
   Landmark, 
 } from 'lucide-react';
 import StaysSearchForm from './SearchForms/StaysSearchForm';
-import FlightsSearchForm from './SearchForms/FlightsSearchForm';
+// import FlightsSearchForm from './SearchForms/FlightsSearchForm';
 // import FlightHotelSearchForm from './SearchForms/FlightHotelSearchForm';
 // import CarRentalsSearchForm from './SearchForms/CarRentalsSearchForm';
 // import AttractionsSearchForm from './SearchForms/AttractionsSearchForm';
@@ -19,6 +19,8 @@ export type SearchHeaderProps = 'stays' | 'flights' | 'flight+hotel' | 'car-rent
 
 export default function SearchHeader() {
   const [activeTab, setActiveTab] = useState<SearchHeaderProps>('stays');
+  const [searchParams, setSearchParams] = useState({}); // State to store search parameters
+  const [searchResults, setSearchResults] = useState(null); // State to store fetched search results
 
   // Define tab configurations with icons and labels
   const tabs = [
@@ -74,9 +76,9 @@ export default function SearchHeader() {
   const renderSearchForm = () => {
     switch (activeTab) {
       case 'stays':
-        return <StaysSearchForm />;
+        return <StaysSearchForm/>;
       case 'flights':
-        return <FlightsSearchForm />;
+        // return <FlightsSearchForm setSearchParams={setSearchParams} />;
       case 'flight+hotel':
         // return <FlightHotelSearchForm />;
         return <div className="bg-white rounded-lg p-6 shadow-lg text-gray-700">Flight + Hotel search form coming soon</div>;
@@ -94,11 +96,27 @@ export default function SearchHeader() {
     }
   };
 
+  // Fetch search results based on activeTab and searchParams
+  useEffect(() => {
+    const fetchResults = async () => {
+      try {
+        // Simulate an API call based on activeTab and searchParams
+        const response = await fetch(`/api/search?tab=${activeTab}&params=${JSON.stringify(searchParams)}`);
+        const data = await response.json();
+        setSearchResults(data);
+      } catch (error) {
+        console.error('Error fetching search results:', error);
+      }
+    };
+
+    fetchResults();
+  }, [activeTab, searchParams]); // Trigger fetch when activeTab or searchParams change
+
   const { title, subtitle } = getHeading();
 
   return (
-    <div className="bg-[#003580] text-white  ">
-      <div className="container mx-auto px-4 py-8 md:py-12 lg:py-16 w-[70vw] ">
+    <div className="bg-[#003580] text-white">
+      <div className="container mx-auto px-4 py-8 md:py-12 lg:py-16 w-[70vw]">
         {/* Navigation Tabs */}
         <div className="flex overflow-x-auto no-scrollbar mb-6 pb-2">
           {tabs.map((tab) => {
@@ -120,31 +138,17 @@ export default function SearchHeader() {
           })}
         </div>
 
-        {/* Main heading */}
+        {/* Heading */}
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2">{title}</h1>
-          <p className="text-lg text-white text-opacity-90">{subtitle}</p>
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">{title}</h1>
+          <p className="text-sm md:text-base lg:text-lg">{subtitle}</p>
         </div>
 
         {/* Search Form */}
-        <div className="relative z-10">
+        <div className="relative z-10 mb-8">
           {renderSearchForm()}
         </div>
-        
-        {/* Optional: Additional promotional content */}
-        {/* {activeTab === 'stays' && (
-          <div className="mt-8 bg-[#00224f] bg-opacity-40 p-4 rounded-lg">
-            <div className="flex items-center">
-              <div className="p-2 bg-[#0071c2] rounded-full mr-3">
-                <Building size={20} />
-              </div>
-              <div>
-                <p className="font-medium">Genius loyalty program</p>
-                <p className="text-sm text-white text-opacity-80">Get rewarded for your travels – unlock instant savings of 10% or more</p>
-              </div>
-            </div>
-          </div>
-        )} */}
+       
       </div>
     </div>
   );

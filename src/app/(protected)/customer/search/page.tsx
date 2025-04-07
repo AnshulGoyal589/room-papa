@@ -3,16 +3,16 @@ import { Document, Filter, Sort } from 'mongodb';
 import clientPromise from '@/lib/mongodb/client';
 import SearchResults from '@/components/customer/search/SearchResults';
 import SearchLoading from '@/components/customer/search/SearchLoading';
-import SearchHeader2 from '@/components/customer/SearchHeader2';
+import SearchHeader from '@/components/customer/SearchHeader';
+import SearchFilter from '@/components/customer/search/SearchFilter';
 
 export const dynamic = 'force-dynamic';
 
-// Define the PageProps interface for Next.js 15 compatibility
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-// Function to fetch initial search results based on searchParams
+// Fetching initial search results based on searchParams
 async function getInitialSearchResults(searchParams: { [key: string]: string }) {
   const client = await clientPromise;
   const db = client.db('travel-app');
@@ -164,10 +164,12 @@ export default async function SearchPage({ searchParams }: PageProps) {
   return (
     <div className="min-h-screen bg-gray-50">
 
-      <SearchHeader2/>
+      <SearchHeader/>
       
-      <main className="container mx-auto px-4 py-8">
-        
+      <main className="container mx-auto px-4 py-8 flex gap-8 ">
+
+        <SearchFilter />
+
           <Suspense fallback={<SearchLoading />}>
             <SearchResults 
               initialResults={plainResults} 
