@@ -32,7 +32,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import ImageUpload from '@/components/cloudinary/ImageUpload';
 import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
 import { Image } from '@/lib/mongodb/models/Image';
-import { PropertyType, TransportationType, TripType } from '@/types';
+import PropertyForm from './PropertyForm';
+import TripForm from './TripForm';
+import TravellingForm from './TravellingForm';
 import { useUser } from "@clerk/nextjs";
 
 interface AddItemModalProps {
@@ -51,8 +53,15 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bannerImage, setBannerImage] = useState<Image | null>(null);
   const [detailImages, setDetailImages] = useState<Image[]>([]);
-  const [userID , setUserID] = useState<string | null>(null);
+  const [userID, setUserID] = useState<string | null>(null);
   const { user, isLoaded } = useUser();
+
+  // Category specific state
+  const [propertyData, setPropertyData] = useState({});
+
+  const [tripData, setTripData] = useState({});
+
+  const [travellingData, setTravellingData] = useState({});
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -60,9 +69,6 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
     }
   }, [isLoaded, user]);
 
-
-  
-  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -72,109 +78,6 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
   });
 
   const selectedCategory = form.watch('category');
-
-  const [propertyData, setPropertyData] = useState({
-    type: 'hotel' as PropertyType,
-    location: {
-      address: '',
-      city: '',
-      state: '',
-      country: '',
-    },
-    amenities: ['wifi'],
-    costing:{
-      price: 100,
-      discountedPrice: 80,
-      currency: 'USD',
-    },
-    rooms: 1,
-    startDate: new Date() ,
-    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) ,
-    
-  });
-
-  const [tripData, setTripData] = useState({
-    destination: {
-      city: '',
-      state: '',
-      country: '',
-    },
-    startDate: new Date(),
-    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    type: 'domestic' as TripType,
-    costing: {
-      price: 1000,
-      discountedPrice : 800,
-      currency: 'USD',
-    },
-    domain: 'beach',
-    activityChoices: [] as string[],
-  });
-
-  const [travellingData, setTravellingData] = useState({
-  
-    transportation: {
-      type: 'flight' as TransportationType,
-      departureTime: new Date(),
-      arrivalTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-      from: 'Mumbai',
-      to: 'New York',
-    },
-    costing: {
-      price: 1000,
-      discountedPrice: 800,
-      currency: 'USD',
-    },
-    totalRating: 0
-  });
-
-  const handlePropertyChange = (field: string, value: unknown ) => {
-    // console.log(value);
-    // console.log(typeof(value));
-    if (field.includes('.')) {
-      const [parent, child] = field.split('.');
-      setPropertyData(prev => ({
-        ...prev,
-        [parent]: {
-          ...(prev[parent as keyof typeof prev] as Record<string, unknown>),
-          [child]: value
-        }
-      }));
-    } else {
-      setPropertyData(prev => ({ ...prev, [field]: value }));
-    }
-  };
-
-  const handleTripChange = (field: string, value: unknown) => {
-    if (field.includes('.')) {
-      const [parent, child] = field.split('.');
-      setTripData(prev => ({
-        ...prev,
-        [parent]: {
-          ...(prev[parent as keyof typeof prev] as Record<string, unknown>),
-          [child]: value
-        }
-      }));
-    } else {
-      setTripData(prev => ({ ...prev, [field]: value }));
-    }
-  };
-
-
-  const handleTravellingChange = (field: string, value: unknown) => {
-    if (field.includes('.')) {
-      const [parent, child] = field.split('.');
-      setTravellingData(prev => ({
-        ...prev,
-        [parent]: {
-          ...(prev[parent as keyof typeof prev] as Record<string, unknown>),
-          [child]: value
-        }
-      }));
-    } else {
-      setTravellingData(prev => ({ ...prev, [field]: value }));
-    }
-  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -209,7 +112,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
       } else if (selectedCategory === 'Travelling') {
         finalData = travellingData;
         apiRoute = 'travellings';
-      }else{
+      } else {
         finalData = propertyData;
         apiRoute = 'properties';
       }
@@ -230,10 +133,9 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
         detailImages,
         userId: userID,
       };
-
-      // console.log(finalData.startDate);
-      // console.log(typeof(finalData.startDate));
       
+      console.log(newItem);
+
       const response = await fetch(`/api/${apiRoute}`, {
         method: 'POST',
         headers: {
@@ -258,460 +160,42 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
     }
   };
 
-  const renderCategoryFields = () => {
-
+  const renderCategoryForm = () => {
     if (!isAdvancedMode) return null;
     
     switch (selectedCategory) {
-
       case 'Property':
         return (
-          <div className="space-y-4 max-h-96 overflow-y-auto p-2">
-            <FormItem>
-              <FormLabel>Property Type</FormLabel>
-              <Select
-                value={propertyData.type}
-                onValueChange={(value) => handlePropertyChange('type', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select property type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="hotel">Hotel</SelectItem>
-                  <SelectItem value="apartment">Apartment</SelectItem>
-                  <SelectItem value="villa">Villa</SelectItem>
-                  <SelectItem value="hostel">Hostel</SelectItem>
-                  <SelectItem value="resort">Resort</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormItem>
-            
-            <FormItem>
-              <FormLabel>Address</FormLabel>
-              <Input 
-                value={propertyData.location.address}
-                onChange={(e) => handlePropertyChange('location.address', e.target.value)}
-                placeholder="Enter address"
-              />
-            </FormItem>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormItem>
-                <FormLabel>Start Date</FormLabel>
-                <Input 
-                  type="date"
-                  value={propertyData.startDate.toISOString().split('T')[0] }
-                  onChange={(e) => handlePropertyChange('startDate',new Date(e.target.value))}
-                />
-              </FormItem>
-              
-              <FormItem>
-                <FormLabel>End Date</FormLabel>
-                <Input 
-                  type="date"
-                  value={propertyData.endDate.toISOString().split('T')[0] }
-                  onChange={(e) => handlePropertyChange('endDate',new Date(e.target.value))}
-                />
-              </FormItem>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormItem>
-                <FormLabel>City</FormLabel>
-                <Input 
-                  value={propertyData.location.city}
-                  onChange={(e) => handlePropertyChange('location.city', e.target.value)}
-                  placeholder="Enter city"
-                />
-              </FormItem>
-              <FormItem>
-                <FormLabel>State</FormLabel>
-                <Input 
-                  value={propertyData.location.state}
-                  onChange={(e) => handlePropertyChange('location.state', e.target.value)}
-                  placeholder="Enter State"
-                />
-              </FormItem>
-              
-              <FormItem>
-                <FormLabel>Country</FormLabel>
-                <Input 
-                  value={propertyData.location.country}
-                  onChange={(e) => handlePropertyChange('location.country', e.target.value)}
-                  placeholder="Enter country"
-                />
-              </FormItem>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormItem>
-                <FormLabel>Price per Night</FormLabel>
-                <Input 
-                  type="number"
-                  value={propertyData.costing.price}
-                  onChange={(e) => handlePropertyChange('costing.price', Number(e.target.value))}
-                  min={1}
-                />
-              </FormItem>
-              <FormItem>
-                <FormLabel>Discounted Price per Night</FormLabel>
-                <Input 
-                  type="number"
-                  value={propertyData.costing.discountedPrice}
-                  onChange={(e) => handlePropertyChange('costing.discountedPrice ', Number(e.target.value))}
-                  min={1}
-                />
-              </FormItem>
-              
-              <FormItem>
-                <FormLabel>Currency</FormLabel>
-                <Select
-                  value={propertyData.costing.currency}
-                  onValueChange={(value) => handlePropertyChange('costing.currency', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select currency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="INR">INR</SelectItem>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="GBP">GBP</SelectItem>
-                    <SelectItem value="JPY">JPY</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormItem>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-2">
-              <FormItem>
-                <FormLabel>Max Rooms</FormLabel>
-                <Input 
-                  type="number"
-                  value={propertyData.rooms}
-                  onChange={(e) => handlePropertyChange('rooms', Number(e.target.value))}
-                  min={1}
-                />
-              </FormItem>
- 
-            </div>
-            
-            <FormItem>
-              <FormLabel>Amenities</FormLabel>
-              <div className="grid grid-cols-2 gap-2">
-                {['wifi', 'pool', 'gym', 'spa', 'restaurant', 'parking', 'airConditioning', 'breakfast'].map((amenity) => (
-                  <div key={amenity} className="flex items-center space-x-2">
-                    <input 
-                      type="checkbox"
-                      id={amenity}
-                      checked={propertyData.amenities.includes(amenity)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          handlePropertyChange('amenities', [...propertyData.amenities, amenity]);
-                        } else {
-                          handlePropertyChange('amenities', propertyData.amenities.filter(a => a !== amenity));
-                        }
-                      }}
-                    />
-                    <label htmlFor={amenity} className="text-sm capitalize">
-                      {amenity === 'airConditioning' ? 'Air Conditioning' : amenity}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </FormItem>
-          </div>
+          <PropertyForm 
+            propertyData ={propertyData} 
+            setPropertyData={setPropertyData} 
+          />
         );
       
       case 'Trip':
         return (
-          <div className="space-y-4 overflow-y-auto p-2">
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormItem>
-                <FormLabel>Start Date</FormLabel>
-                <Input 
-                  type="date"
-                  value={tripData.startDate.toISOString().split('T')[0]  }
-                  onChange={(e) => handleTripChange('startDate', new Date(e.target.value))}
-                />
-              </FormItem>
-              
-              <FormItem>
-                <FormLabel>End Date</FormLabel>
-                <Input 
-                  type="date"
-                  value={tripData.endDate.toISOString().split('T')[0] }
-                  onChange={(e) => handleTripChange('endDate', new Date(e.target.value))}
-                />
-              </FormItem>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormItem>
-                <FormLabel>City</FormLabel>
-                <Input 
-                  value={tripData.destination.city}
-                  onChange={(e) => handleTripChange('destination.city', e.target.value)}
-                  placeholder="Enter city"
-                />
-              </FormItem>
-
-              <FormItem>
-                <FormLabel>State</FormLabel>
-                <Input 
-                  value={tripData.destination.state}
-                  onChange={(e) => handleTripChange('destination.state', e.target.value)}
-                  placeholder="Enter State"
-                />
-              </FormItem>
-              
-              <FormItem>
-                <FormLabel>Country</FormLabel>
-                <Input 
-                  value={tripData.destination.country}
-                  onChange={(e) => handleTripChange('destination.country', e.target.value)}
-                  placeholder="Enter country"
-                />
-              </FormItem>
-
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-              <FormItem>
-                <FormLabel>Major Domain</FormLabel>
-                <Select
-                  value={tripData.domain}
-                  onValueChange={(value) => handleTripChange('domain', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Domain" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="beach">Beach Getaway</SelectItem>
-                    <SelectItem value="mountain">Mountain Retreat</SelectItem>
-                    <SelectItem value="cultural">Cultural Experience</SelectItem>
-                    <SelectItem value="wildlife">Wildlife Adventure</SelectItem>
-                    <SelectItem value="city">City Exploration</SelectItem>
-                    <SelectItem value="heritage">Heritage Sites</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormItem>
-
-              <FormItem>
-                <FormLabel>Type</FormLabel>
-                <Select
-                  value={tripData.type}
-                  onValueChange={(value) => handleTripChange('type', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="domestic">Domestic</SelectItem>
-                    <SelectItem value="international">International</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormItem>
-
-            </div>
-
-
-            <FormItem>
-              <FormLabel>Activity Choices</FormLabel>
-              <div className="space-y-2">
-                {tripData.activityChoices.map((activity, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <Input 
-                      value={activity}
-                      onChange={(e) => {
-                        const newActivities = [...tripData.activityChoices];
-                        newActivities[index] = e.target.value;
-                        handleTripChange('activityChoices', newActivities);
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        const newActivities = tripData.activityChoices.filter((_, i) => i !== index);
-                        handleTripChange('activityChoices', newActivities);
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  onClick={() => {
-                    handleTripChange('activityChoices', [...tripData.activityChoices, '']);
-                  }}
-                >
-                  Add Activity Choice
-                </Button>
-              </div>
-            </FormItem>
-          
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormItem>
-                  <FormLabel>Total Price</FormLabel>
-                  <Input 
-                    type="number"
-                    value={tripData.costing.price}
-                    onChange={(e) => handleTripChange('costing.price', Number(e.target.value))}
-                    min={0}
-                  />
-                </FormItem>
-                <FormItem>
-                  <FormLabel>Discounted Price</FormLabel>
-                  <Input 
-                    type="number"
-                    value={tripData.costing.discountedPrice}
-                    onChange={(e) => handleTripChange('costing.discountedPrice', Number(e.target.value))}
-                    min={0}
-                  />
-                </FormItem>
-                
-                <FormItem>
-                  <FormLabel>Currency</FormLabel>
-                  <Select
-                    value={tripData.costing.currency}
-                    onValueChange={(value) => handleTripChange('costing.currency', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select currency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="INR">INR</SelectItem>
-                      <SelectItem value="USD">USD</SelectItem>
-                      <SelectItem value="EUR">EUR</SelectItem>
-                      <SelectItem value="GBP">GBP</SelectItem>
-                      <SelectItem value="JPY">JPY</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-            </div>
-
-          </div>
+          <TripForm 
+            tripData={tripData} 
+            setTripData={setTripData} 
+          />
         );
       
       case 'Travelling':
         return (
-          <div className="space-y-4 max-h-96 overflow-y-auto p-2">
-            <FormItem>
-              <FormLabel>Transportation Type</FormLabel>
-              <Select
-                value={travellingData.transportation.type}
-                onValueChange={(value) => handleTravellingChange('transportation.type', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select transportation type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="flight">Flight</SelectItem>
-                  <SelectItem value="train">Train</SelectItem>
-                  <SelectItem value="bus">Bus</SelectItem>
-                  <SelectItem value="car">Car</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormItem>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormItem>
-                <FormLabel>Departure Time</FormLabel>
-                <Input 
-                  type="date"
-                  value={travellingData.transportation.departureTime.toISOString().split('T')[0]}
-                  onChange={(e) => handleTravellingChange('transportation.departureTime', new Date(e.target.value))}
-                />
-              </FormItem>
-
-              <FormItem>
-                <FormLabel>Arrival Time</FormLabel>
-                <Input 
-                  type="date"
-                  value={travellingData.transportation.arrivalTime.toISOString().split('T')[0] }
-                  onChange={(e) => handleTravellingChange('transportation.arrivalTime', new Date(e.target.value))}
-                />
-              </FormItem>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormItem>
-                <FormLabel>From</FormLabel>
-                <Input 
-                  value={travellingData.transportation.from}
-                  onChange={(e) => handleTravellingChange('transportation.from', e.target.value)}
-                  placeholder="Enter departure location"
-                />
-              </FormItem>
-
-              <FormItem>
-                <FormLabel>To</FormLabel>
-                <Input 
-                  value={travellingData.transportation.to}
-                  onChange={(e) => handleTravellingChange('transportation.to', e.target.value)}
-                  placeholder="Enter arrival location"
-                />
-              </FormItem>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormItem>
-                <FormLabel>Price</FormLabel>
-                <Input 
-                  type="number"
-                  value={travellingData.costing.price}
-                  onChange={(e) => handleTravellingChange('costing.price', Number(e.target.value))}
-                  min={0}
-                />
-              </FormItem>
-
-              <FormItem>
-                <FormLabel>Discounted Price</FormLabel>
-                <Input 
-                  type="number"
-                  value={travellingData.costing.discountedPrice}
-                  onChange={(e) => handleTravellingChange('costing.discountedPrice', Number(e.target.value))}
-                  min={0}
-                />
-              </FormItem>
-
-              <FormItem>
-                <FormLabel>Currency</FormLabel>
-                <Select
-                  value={travellingData.costing.currency}
-                  onValueChange={(value) => handleTravellingChange('costing.currency', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select currency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="INR">INR</SelectItem>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="GBP">GBP</SelectItem>
-                    <SelectItem value="JPY">JPY</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormItem>
-            </div>
-
-          </div>
+          <TravellingForm 
+            travellingData={travellingData} 
+            setTravellingData={setTravellingData} 
+          />
         );
 
       default:
         return null;
-    
     }
   };
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[60vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Item</DialogTitle>
         </DialogHeader>
@@ -808,7 +292,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
               </label>
             </div>
             
-            {renderCategoryFields()}
+            {renderCategoryForm()}
             
             {form.formState.errors.root?.message && (
               <p className="text-red-500 text-sm">{form.formState.errors.root?.message}</p>

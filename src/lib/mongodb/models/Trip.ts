@@ -5,8 +5,8 @@ import { Image } from './Image';
 
 export interface Trip {
   _id?: ObjectId;
-  userId: string; // Reference to the user who created the trip i.e. manager ID
-  title: string; // Tagline of the Trip
+  userId?: string; // Reference to the user who created the trip i.e. manager ID
+  title?: string; // Tagline of the Trip
   description?: string; // Description of the trip
   domain?: string;
   destination: {
@@ -30,9 +30,21 @@ export interface Trip {
   rat ?: number | '1';
   createdAt?: Date;
   updatedAt?: Date;
-  bannerImage: Image; // Main featured image
-  detailImages: Image[]; // Trip gallery images
+  bannerImage?: Image; // Main featured image
+  detailImages?: Image[]; // Trip gallery images
   type : string; // Domestic or International
+  amenities: string[];
+  propertyAccessibility : string[];
+  roomAccessibility : string[];
+  popularFilters : string[];
+  funThingsToDo : string[];
+  meals : string[];
+  facilities : string[];
+  propertyRating : Number;
+  bedPreference : string[];
+  reservationPolicy : string[];
+  brands : string[];
+  roomFacilities : string[];
 }
 
 interface TripValidationInput {

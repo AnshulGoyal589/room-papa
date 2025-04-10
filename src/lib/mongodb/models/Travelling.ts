@@ -5,8 +5,8 @@ import { Image } from './Image';
 
 export interface Travelling {
   _id?: ObjectId;
-  userId: string;
-  title: string;
+  userId?: string;
+  title?: string;
   rat ?: number | '1';
   description?: string;
   transportation: {
@@ -26,11 +26,26 @@ export interface Travelling {
     comment: string;
     rating: number;
   }[];
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
   
-  bannerImage: Image;
-  detailImages: Image[];
+  bannerImage?: Image;
+  detailImages?: Image[];
+
+
+  amenities: string[];
+  travellingAccessibility : string[];
+  roomAccessibility : string[];
+  popularFilters : string[];
+  funThingsToDo : string[];
+  meals : string[];
+  facilities : string[];
+  travellingRating : Number;
+  bedPreference : string[];
+  reservationPolicy : string[];
+  brands : string[];
+  roomFacilities : string[];
+  
 }
 
 interface TravellingValidationInput {

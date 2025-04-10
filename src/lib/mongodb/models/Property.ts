@@ -2,15 +2,15 @@
 
 import { Collection, ObjectId } from 'mongodb';
 import { getDb } from '..';
-import { PropertyAmenities, PropertyType } from '@/types';
+import { PropertyAccessibility, PropertyAmenities, PropertyType, RoomAccessibility } from '@/types';
 import { Image } from './Image';
 
 
 export interface Property {
   _id?: ObjectId;
-  userId: string;
-  title: string;
-  description: string;
+  userId?: string;
+  title?: string;
+  description?: string;
   rat ?: number | '1';
   type: PropertyType;
   location: {
@@ -31,12 +31,26 @@ export interface Property {
     comment: string;
     rating: number;
   }[];
-  amenities: PropertyAmenities[];
   createdAt?: Date;
   updatedAt?: Date;
-  bannerImage: Image;
-  detailImages: Image[];
+  bannerImage?: Image;
+  detailImages?: Image[];
   rooms: number;
+
+  amenities: string[];
+  propertyAccessibility : string[];
+  roomAccessibility : string[];
+  popularFilters : string[];
+  funThingsToDo : string[];
+  meals : string[];
+  facilities : string[];
+  propertyRating : Number;
+  bedPreference : string[];
+  reservationPolicy : string[];
+  brands : string[];
+  roomFacilities : string[];
+  
+
 }
 
 

@@ -1,5 +1,5 @@
 export interface Image {
   url: string;
-  publicId: string;
+  publicId?: string;
   alt?: string;
 }
