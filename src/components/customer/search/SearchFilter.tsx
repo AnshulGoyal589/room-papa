@@ -3,22 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PropertyType, TransportationType } from '@/types';
+import { categoryOptions } from '../../../../public/assets/data';
 
-
-
-const categoryOptions = {
-  propertyAccessibility: ['Wheelchair Accessible', 'Elevator', 'Accessible Parking', 'Braille Signage', 'Accessible Bathroom', 'Roll-in Shower'],
-  roomAccessibility: ['Grab Bars', 'Lowered Amenities', 'Visual Alarms', 'Wide Doorways', 'Accessible Shower'],
-  popularFilters: ['Pet Friendly', 'Free Cancellation', 'Free Breakfast', 'Pool', 'Hot Tub', 'Ocean View', 'Family Friendly', 'Business Facilities'],
-  funThingsToDo: ['Beach', 'Hiking', 'Shopping', 'Nightlife', 'Local Tours', 'Museums', 'Theme Parks', 'Water Sports'],
-  meals: ['Breakfast', 'Lunch', 'Dinner', 'All-Inclusive', 'Buffet', 'À la carte', 'Room Service', 'Special Diets'],
-  facilities: ['Parking', 'WiFi', 'Swimming Pool', 'Fitness Center', 'Restaurant', 'Bar', 'Spa', 'Conference Room'],
-  bedPreference: ['King', 'Queen', 'Twin', 'Double', 'Single', 'Sofa Bed', 'Bunk Bed'],
-  reservationPolicy: ['Free Cancellation', 'Flexible', 'Moderate', 'Strict', 'Non-Refundable', 'Pay at Property', 'Pay Now'],
-  brands: ['Hilton', 'Marriott', 'Hyatt', 'Best Western', 'Accor', 'IHG', 'Wyndham', 'Choice Hotels'],
-  roomFacilities: ['Air Conditioning', 'TV', 'Mini Bar', 'Coffee Maker', 'Safe', 'Desk', 'Balcony', 'Bathtub', 'Shower'],
-  travellingAccessibility: ['Priority Boarding', 'Wheelchair Assistance', 'Accessible Seating', 'Special Meal Options', 'Medical Assistance']
-};
 
 export default function SearchFilter() {
   const router = useRouter();
@@ -332,7 +318,7 @@ export default function SearchFilter() {
           <div className="mb-4">
             <label className="block text-sm font-medium mb-2">Property Accessibility</label>
             <div className="space-y-2">
-              {categoryOptions.propertyAccessibility.map((item) => (
+              {categoryOptions.accessibility.map((item) => (
                 <label key={item} className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -465,7 +451,7 @@ export default function SearchFilter() {
           <div className="mb-4">
             <label className="block text-sm font-medium mb-2">Travel Accessibility</label>
             <div className="space-y-2">
-              {categoryOptions.travellingAccessibility.map((item) => (
+              {categoryOptions.accessibility.map((item) => (
                 <label key={item} className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -534,7 +520,7 @@ export default function SearchFilter() {
           <div className="mb-4">
             <label className="block text-sm font-medium mb-2">Trip Accessibility</label>
             <div className="space-y-2">
-              {categoryOptions.travellingAccessibility.map((item) => (
+              {categoryOptions.accessibility.map((item) => (
                 <label key={item} className="flex items-center space-x-2">
                   <input
                     type="checkbox"

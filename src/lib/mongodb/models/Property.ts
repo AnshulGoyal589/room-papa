@@ -36,6 +36,7 @@ export interface Property {
   bannerImage?: Image;
   detailImages?: Image[];
   rooms: number;
+  rating ?: Number;
 
   amenities: string[];
   accessibility : string[];
@@ -44,7 +45,6 @@ export interface Property {
   funThingsToDo : string[];
   meals : string[];
   facilities : string[];
-  rating : Number;
   propertyRating : Number;
   bedPreference : string[];
   reservationPolicy : string[];

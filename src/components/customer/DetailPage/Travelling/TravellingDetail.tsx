@@ -368,7 +368,7 @@ export default function TravellingDetailPage() {
       <div className="relative h-96 md:h-[500px] w-full">
         <Image
           src={selectedImage || '/images/placeholder-travelling.jpg'}
-          alt={travelling.title}
+          alt={travelling.title || ""}
           layout="fill"
           objectFit="cover"
           priority
@@ -432,7 +432,7 @@ export default function TravellingDetailPage() {
                     >
                       <Image
                         src={travelling.bannerImage.url}
-                        alt={travelling.bannerImage.alt || travelling.title}
+                        alt={ travelling.title || ""}
                         layout="fill"
                         objectFit="cover"
                         className="rounded-lg"
@@ -522,6 +522,141 @@ export default function TravellingDetailPage() {
                 <p>{travelling.description || 'No description available.'}</p>
               </div>
             </div>
+
+            <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">Amenities & Features</h2>
+                
+                {/* Main Amenities */}
+                {travelling.amenities && travelling.amenities.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold mb-3">General Amenities</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {travelling.amenities.map((amenity, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center bg-white p-4 rounded-lg shadow-sm"
+                        >
+                          <div className="bg-blue-100 p-2 rounded-full mr-3 text-blue-600">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16z" clipRule="evenodd" />
+                              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                            </svg>
+                          </div>
+                          <span>{amenity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Facilities */}
+                {travelling.facilities && travelling.facilities.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold mb-3">Facilities</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {travelling.facilities.map((facility, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center bg-white p-4 rounded-lg shadow-sm"
+                        >
+                          <div className="bg-green-100 p-2 rounded-full mr-3 text-green-600">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <span>{facility}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+ 
+                
+                {/* Accessibility Features */}
+                {travelling.accessibility && travelling.accessibility.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold mb-3">Accessibility</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {travelling.accessibility.map((feature, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center bg-white p-4 rounded-lg shadow-sm"
+                        >
+                          <div className="bg-blue-100 p-2 rounded-full mr-3 text-blue-600">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12zm-1-5a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1zm0-3a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <span>{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+   
+            </div>
+
+              {/* Fun Things To Do */}
+              {travelling.funThingsToDo && travelling.funThingsToDo.length > 0 && (
+                <div className="mb-8 bg-white p-6 rounded-lg shadow-lg">
+                  <h2 className="text-2xl font-bold mb-4">Fun Things To Do</h2>
+                  <ul className="list-disc pl-5 space-y-2">
+                    {travelling.funThingsToDo.map((activity, index) => (
+                      <li key={index} className="text-gray-700">{activity}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Meals & Dining */}
+              {travelling.meals && travelling.meals.length > 0 && (
+                <div className="mb-8 bg-white p-6 rounded-lg shadow-lg">
+                  <h2 className="text-2xl font-bold mb-4">Meals & Dining</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {travelling.meals.map((meal, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center bg-white p-4 rounded-lg shadow-sm border border-gray-100"
+                      >
+                        <div className="bg-yellow-100 p-2 rounded-full mr-3 text-yellow-600">
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" />
+                          </svg>
+                        </div>
+                        <span>{meal}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+
+
+              {/* Reservation Policy */}
+              {travelling.reservationPolicy && travelling.reservationPolicy.length > 0 && (
+                <div className="mb-8 bg-white p-6 rounded-lg shadow-lg">
+                  <h2 className="text-2xl font-bold mb-4">Reservation Policy</h2>
+                  <ul className="list-disc pl-5 space-y-2">
+                    {travelling.reservationPolicy.map((policy, index) => (
+                      <li key={index} className="text-gray-700">{policy}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Popular Filters */}
+              {travelling.popularFilters && travelling.popularFilters.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold mb-4">Popular Features</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {travelling.popularFilters.map((filter, index) => (
+                      <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                        {filter}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
             {/* Reviews Section */}
             {travelling.review && travelling.review.length > 0 && (
@@ -838,7 +973,7 @@ export default function TravellingDetailPage() {
                   <div className="relative h-16 w-16 mr-3">
                     <Image
                       src={travelling.bannerImage.url}
-                      alt={travelling.title}
+                      alt={travelling.title || ""}
                       layout="fill"
                       objectFit="cover"
                       className="rounded-md"

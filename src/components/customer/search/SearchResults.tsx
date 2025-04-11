@@ -71,7 +71,7 @@ export default function SearchResults() {
     <div 
       key={property.title} 
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow" 
-      onClick={() => router.push(`/customer/property/${property._id}`)}
+      onClick={() => router.push(`/customer/${category}/${property._id}`)}
     >
       <div className="relative h-48">
         {
@@ -96,7 +96,7 @@ export default function SearchResults() {
           </div>
           {property.totalRating && (
             <div className="flex items-center gap-1">
-              <span className="text-sm font-medium">{property.propertyRating.toString()}</span>
+              <span className="text-sm font-medium">{property.propertyRating?.toString()}</span>
               <Star size={16} className="text-yellow-500 mr-1" />
             </div>
           )}

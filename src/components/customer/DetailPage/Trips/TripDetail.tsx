@@ -388,12 +388,173 @@ export default function TripDetailPage() {
             )}
 
             {/* Trip Description */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-4">About This Trip</h2>
-              <div className="prose max-w-none">
-                <p>{trip.description}</p>
-              </div>
-            </div>
+<div className="mb-8">
+  <h2 className="text-2xl font-bold mb-4">About This Trip</h2>
+  <div className="prose max-w-none">
+    <p>{trip.description}</p>
+  </div>
+</div>
+
+{/* Trip Activities */}
+{trip.activities && trip.activities.length > 0 && (
+  <div className="mb-8">
+    <h2 className="text-2xl font-bold mb-4">Activities</h2>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {trip.activities.map((activity, index) => (
+        <div key={index} className="flex items-center bg-white p-4 rounded-lg shadow-sm">
+          <div className="bg-blue-100 p-2 rounded-full mr-3 text-blue-600">
+            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <span>{activity}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+{/* Trip Amenities */}
+{trip.amenities && trip.amenities.length > 0 && (
+  <div className="mb-8">
+    <h2 className="text-2xl font-bold mb-4">Amenities</h2>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {trip.amenities.map((amenity, index) => (
+        <div key={index} className="flex items-center bg-white p-4 rounded-lg shadow-sm">
+          <div className="bg-blue-100 p-2 rounded-full mr-3 text-blue-600">
+            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M5 2a1 1 0 011-1h8a1 1 0 011 1v10a1 1 0 01-1 1H6a1 1 0 01-1-1V2zm2 1a1 1 0 00-1 1v3a1 1 0 001 1h4a1 1 0 001-1V4a1 1 0 00-1-1H7z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <span>{amenity}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+{/* Trip Accessibility */}
+{trip.accessibility && trip.accessibility.length > 0 && (
+  <div className="mb-8">
+    <h2 className="text-2xl font-bold mb-4">Accessibility</h2>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {trip.accessibility.map((feature, index) => (
+        <div key={index} className="flex items-center bg-white p-4 rounded-lg shadow-sm">
+          <div className="bg-green-100 p-2 rounded-full mr-3 text-green-600">
+            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <span>{feature}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+{/* Popular Filters */}
+{trip.popularFilters && trip.popularFilters.length > 0 && (
+  <div className="mb-8">
+    <h2 className="text-2xl font-bold mb-4">Popular Features</h2>
+    <div className="flex flex-wrap gap-2">
+      {trip.popularFilters.map((filter, index) => (
+        <span key={index} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm">
+          {filter}
+        </span>
+      ))}
+    </div>
+  </div>
+)}
+
+{/* Fun Things To Do */}
+{trip.funThingsToDo && trip.funThingsToDo.length > 0 && (
+  <div className="mb-8">
+    <h2 className="text-2xl font-bold mb-4">Fun Things To Do</h2>
+    <div className="bg-white p-5 rounded-lg shadow-sm">
+      <ul className="space-y-2">
+        {trip.funThingsToDo.map((activity, index) => (
+          <li key={index} className="flex items-start">
+            <svg className="h-5 w-5 mr-2 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span>{activity}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+)}
+
+{/* Meals */}
+{trip.meals && trip.meals.length > 0 && (
+  <div className="mb-8">
+    <h2 className="text-2xl font-bold mb-4">Included Meals</h2>
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      {trip.meals.map((meal, index) => (
+        <div key={index} className="flex items-center bg-white p-3 rounded-lg shadow-sm">
+          <div className="bg-yellow-100 p-2 rounded-full mr-2 text-yellow-600">
+            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M3 3a1 1 0 000 2h11a1 1 0 100-2H3zM3 7a1 1 0 000 2h5a1 1 0 000-2H3zM3 11a1 1 0 100 2h4a1 1 0 100-2H3zM13 16a1 1 0 102 0v-5.586l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 101.414 1.414L13 10.414V16z" />
+            </svg>
+          </div>
+          <span>{meal}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+{/* Facilities */}
+{trip.facilities && trip.facilities.length > 0 && (
+  <div className="mb-8">
+    <h2 className="text-2xl font-bold mb-4">Facilities</h2>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {trip.facilities.map((facility, index) => (
+        <div key={index} className="flex items-center bg-white p-4 rounded-lg shadow-sm">
+          <div className="bg-purple-100 p-2 rounded-full mr-3 text-purple-600">
+            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <span>{facility}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+{/* Reservation Policy */}
+{trip.reservationPolicy && trip.reservationPolicy.length > 0 && (
+  <div className="mb-8">
+    <h2 className="text-2xl font-bold mb-4">Reservation Policy</h2>
+    <div className="bg-white p-5 rounded-lg shadow-sm">
+      <ul className="space-y-2">
+        {trip.reservationPolicy.map((policy, index) => (
+          <li key={index} className="flex items-start">
+            <svg className="h-5 w-5 mr-2 text-red-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+            <span>{policy}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+)}
+
+{/* Brands */}
+{trip.brands && trip.brands.length > 0 && (
+  <div className="mb-8">
+    <h2 className="text-2xl font-bold mb-4">Partnered With</h2>
+    <div className="flex flex-wrap gap-4 items-center">
+      {trip.brands.map((brand, index) => (
+        <div key={index} className="bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
+          <span className="font-medium text-gray-800">{brand}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
             {/* Trip Amenities */}
             {/* {trip.amenities && trip.amenities.length > 0 && (

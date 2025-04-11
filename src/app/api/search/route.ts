@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
       .toArray();
 
       
-      const plainResults = serializeDocuments(results);
-      console.log("Results: ",plainResults);
+    const plainResults = serializeDocuments(results);
+    // console.log("Results: ",plainResults);
     
     return NextResponse.json({ 
       results: plainResults, 
@@ -244,6 +244,7 @@ function addTripFilters(query: QueryType, searchParams: URLSearchParams) {
 function addCommonCategoryFilters(query: QueryType, searchParams: URLSearchParams) {
   // Add all common category filters
   addArrayFilterIfExists(query, searchParams, 'amenities');
+  addArrayFilterIfExists(query, searchParams, 'accessibility');
   addArrayFilterIfExists(query, searchParams, 'popularFilters');
   addArrayFilterIfExists(query, searchParams, 'funThingsToDo');
   addArrayFilterIfExists(query, searchParams, 'meals');
@@ -254,6 +255,7 @@ function addCommonCategoryFilters(query: QueryType, searchParams: URLSearchParam
 
 function addArrayFilterIfExists(query: QueryType, searchParams: URLSearchParams, field: string) {
   const value = searchParams.get(field);
+  // console.log("Value: ",value);
   if (value) {
     const items = value.split(',').filter(item => item.trim() !== '');
     if (items.length > 0) {

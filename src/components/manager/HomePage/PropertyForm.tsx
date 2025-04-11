@@ -14,20 +14,8 @@ import {
 import { X } from 'lucide-react';
 import { Property } from '@/lib/mongodb/models/Property';
 import { PropertyType } from '@/types';
+import { categoryOptions } from '../../../../public/assets/data';
 
-// Define options for each multi-select category
-const categoryOptions = {
-  propertyAccessibility: ['Wheelchair Accessible', 'Elevator', 'Accessible Parking', 'Braille Signage', 'Accessible Bathroom', 'Roll-in Shower'],
-  roomAccessibility: ['Grab Bars', 'Lowered Amenities', 'Visual Alarms', 'Wide Doorways', 'Accessible Shower'],
-  popularFilters: ['Pet Friendly', 'Free Cancellation', 'Free Breakfast', 'Pool', 'Hot Tub', 'Ocean View', 'Family Friendly', 'Business Facilities'],
-  funThingsToDo: ['Beach', 'Hiking', 'Shopping', 'Nightlife', 'Local Tours', 'Museums', 'Theme Parks', 'Water Sports'],
-  meals: ['Breakfast', 'Lunch', 'Dinner', 'All-Inclusive', 'Buffet', 'À la carte', 'Room Service', 'Special Diets'],
-  facilities: ['Parking', 'WiFi', 'Swimming Pool', 'Fitness Center', 'Restaurant', 'Bar', 'Spa', 'Conference Room'],
-  bedPreference: ['King', 'Queen', 'Twin', 'Double', 'Single', 'Sofa Bed', 'Bunk Bed'],
-  reservationPolicy: ['Free Cancellation', 'Flexible', 'Moderate', 'Strict', 'Non-Refundable', 'Pay at Property', 'Pay Now'],
-  brands: ['Hilton', 'Marriott', 'Hyatt', 'Best Western', 'Accor', 'IHG', 'Wyndham', 'Choice Hotels'],
-  roomFacilities: ['Air Conditioning', 'TV', 'Mini Bar', 'Coffee Maker', 'Safe', 'Desk', 'Balcony', 'Bathtub', 'Shower']
-};
 
 // Create a default/initial state for PropertyData
 const initialPropertyData: Property = {
@@ -38,7 +26,6 @@ const initialPropertyData: Property = {
     state: '',
     country: '',
   },
-  amenities: [],
   costing: {
     price: 0,
     discountedPrice: 0,
@@ -47,7 +34,9 @@ const initialPropertyData: Property = {
   rooms: 1,
   startDate: new Date().toISOString().split('T')[0],
   endDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0], // Default to 7 days from now
-  propertyAccessibility: [],
+  
+  amenities: [],
+  accessibility: [],
   roomAccessibility: [],
   popularFilters: [],
   funThingsToDo: [],

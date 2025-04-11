@@ -274,7 +274,7 @@ export default function PropertyDetailPage() {
     );
   };
 
-  const getAmenityIcon = (amenity: PropertyAmenities) => {
+  const getAmenityIcon = (amenity : PropertyAmenities) => {
     const icons: Record<PropertyAmenities, React.ReactNode> = {
       wifi: (
         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -437,8 +437,222 @@ export default function PropertyDetailPage() {
                   <div className="text-gray-600 text-sm mb-2">Rooms Available</div>
                   <div className="font-extrabold text-2xl text-blue-600">{property.rooms}</div>
                 </div>
+
+                {/* Property Rating */}
+                {property.propertyRating && (
+                  <div className="flex flex-col items-center">
+                    <div className="text-gray-600 text-sm mb-2">Property Rating</div>
+                    <div className="font-extrabold text-2xl text-blue-600">{property.propertyRating.toString()}</div>
+                  </div>
+                )}
+
+                {/* Brand */}
+                {property.brands && property.brands.length > 0 && (
+                  <div className="flex flex-col items-center">
+                    <div className="text-gray-600 text-sm mb-2">Brand</div>
+                    <div className="font-medium text-blue-600">{property.brands[0]}</div>
+                  </div>
+                )}
+
               </div>
             </div>
+
+            <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">Amenities & Features</h2>
+                
+                {/* Main Amenities */}
+                {property.amenities && property.amenities.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold mb-3">General Amenities</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {property.amenities.map((amenity, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center bg-white p-4 rounded-lg shadow-sm"
+                        >
+                          <div className="bg-blue-100 p-2 rounded-full mr-3 text-blue-600">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16z" clipRule="evenodd" />
+                              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                            </svg>
+                          </div>
+                          <span>{amenity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Facilities */}
+                {property.facilities && property.facilities.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold mb-3">Facilities</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {property.facilities.map((facility, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center bg-white p-4 rounded-lg shadow-sm"
+                        >
+                          <div className="bg-green-100 p-2 rounded-full mr-3 text-green-600">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <span>{facility}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Room Facilities */}
+                {property.roomFacilities && property.roomFacilities.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold mb-3">Room Facilities</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {property.roomFacilities.map((facility, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center bg-white p-4 rounded-lg shadow-sm"
+                        >
+                          <div className="bg-purple-100 p-2 rounded-full mr-3 text-purple-600">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+                            </svg>
+                          </div>
+                          <span>{facility}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Accessibility Features */}
+                {property.accessibility && property.accessibility.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold mb-3">Accessibility</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {property.accessibility.map((feature, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center bg-white p-4 rounded-lg shadow-sm"
+                        >
+                          <div className="bg-blue-100 p-2 rounded-full mr-3 text-blue-600">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12zm-1-5a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1zm0-3a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <span>{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Room Accessibility */}
+                {property.roomAccessibility && property.roomAccessibility.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold mb-3">Room Accessibility</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {property.roomAccessibility.map((feature, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center bg-white p-4 rounded-lg shadow-sm"
+                        >
+                          <div className="bg-indigo-100 p-2 rounded-full mr-3 text-indigo-600">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                            </svg>
+                          </div>
+                          <span>{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+            </div>
+
+              {/* Fun Things To Do */}
+              {property.funThingsToDo && property.funThingsToDo.length > 0 && (
+                <div className="mb-8 bg-white p-6 rounded-lg shadow-lg">
+                  <h2 className="text-2xl font-bold mb-4">Fun Things To Do</h2>
+                  <ul className="list-disc pl-5 space-y-2">
+                    {property.funThingsToDo.map((activity, index) => (
+                      <li key={index} className="text-gray-700">{activity}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Meals & Dining */}
+              {property.meals && property.meals.length > 0 && (
+                <div className="mb-8 bg-white p-6 rounded-lg shadow-lg">
+                  <h2 className="text-2xl font-bold mb-4">Meals & Dining</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {property.meals.map((meal, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center bg-white p-4 rounded-lg shadow-sm border border-gray-100"
+                      >
+                        <div className="bg-yellow-100 p-2 rounded-full mr-3 text-yellow-600">
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" />
+                          </svg>
+                        </div>
+                        <span>{meal}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Bed Preferences */}
+              {property.bedPreference && property.bedPreference.length > 0 && (
+                <div className="mb-8 bg-white p-6 rounded-lg shadow-lg">
+                  <h2 className="text-2xl font-bold mb-4">Bed Options</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {property.bedPreference.map((preference, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center bg-white p-4 rounded-lg shadow-sm border border-gray-100"
+                      >
+                        <div className="bg-pink-100 p-2 rounded-full mr-3 text-pink-600">
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v6a2 2 0 01-2 2H7a2 2 0 01-2-2V5zm0 8a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H7a2 2 0 01-2-2v-2zm12-8a1 1 0 00-1 1v6a1 1 0 001 1 1 1 0 100-2V7a1 1 0 000-2z" />
+                          </svg>
+                        </div>
+                        <span>{preference}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Reservation Policy */}
+              {property.reservationPolicy && property.reservationPolicy.length > 0 && (
+                <div className="mb-8 bg-white p-6 rounded-lg shadow-lg">
+                  <h2 className="text-2xl font-bold mb-4">Reservation Policy</h2>
+                  <ul className="list-disc pl-5 space-y-2">
+                    {property.reservationPolicy.map((policy, index) => (
+                      <li key={index} className="text-gray-700">{policy}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Popular Filters */}
+              {property.popularFilters && property.popularFilters.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold mb-4">Popular Features</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {property.popularFilters.map((filter, index) => (
+                      <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                        {filter}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
             
             {/* Property Gallery */}
@@ -506,9 +720,9 @@ export default function PropertyDetailPage() {
                       className="flex items-center bg-white p-4 rounded-lg shadow-sm"
                     >
                       <div className="bg-blue-100 p-2 rounded-full mr-3 text-blue-600">
-                        {getAmenityIcon(amenity)}
+                        {getAmenityIcon(amenity as PropertyAmenities)}
                       </div>
-                      <span>{formatAmenityName(amenity)}</span>
+                      <span>{formatAmenityName(amenity as PropertyAmenities)}</span>
                     </div>
                   ))}
                 </div>
@@ -838,7 +1052,7 @@ export default function PropertyDetailPage() {
                   <div className="relative h-16 w-16 mr-3">
                     <Image
                       src={property.bannerImage.url}
-                      alt={property.title}
+                      alt={property.title || ""}
                       layout="fill"
                       objectFit="cover"
                       className="rounded-md"
