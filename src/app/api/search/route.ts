@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const db = client.db('travel-app');
     const { searchParams } = request.nextUrl;
     
-    const category = searchParams.get('category') || 'travelling';
+    const category = searchParams.get('category') || 'property';
     
     const validationResult = validateSearchParams(searchParams, category);
     if (!validationResult.valid) {
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
-
+    // console.log("Query: ",query);
     const total = await db.collection(collectionName).countDocuments(query);
     const results = await db.collection(collectionName)
       .find(query)
@@ -40,9 +40,9 @@ export async function GET(request: NextRequest) {
       .limit(pageSize)
       .toArray();
 
-    // console.log("results: ", results);
-    
-    const plainResults = serializeDocuments(results);
+      
+      const plainResults = serializeDocuments(results);
+      console.log("Results: ",plainResults);
     
     return NextResponse.json({ 
       results: plainResults, 
@@ -72,82 +72,33 @@ function getCategoryCollection(category: string): string | null {
 }
 
 function validateSearchParams(searchParams: URLSearchParams, category: string) {
-  if (searchParams.has('startDate') || searchParams.has('endDate')) {
+  // Validate date inputs
+  if (searchParams.has('arrivalTime') || searchParams.has('departureTime')) {
     try {
-      if (searchParams.has('startDate')) new Date(searchParams.get('startDate') as string);
-      if (searchParams.has('endDate')) new Date(searchParams.get('endDate') as string);
-    } catch (_error) { // Added underscore for unused var
-      console.error(_error);
-      return { valid: false, error: 'Invalid date format' };
+      if (searchParams.has('arrivalTime')) new Date(searchParams.get('arrivalTime') as string);
+      if (searchParams.has('departureTime')) new Date(searchParams.get('departureTime') as string);
+    } catch (_error) {
+      return { valid: false, error: 'Invalid date format for arrival/departure time' };
     }
   }
   
-  const numericParams: Record<string, string[]> = {
-    'property': ['price', 'discountedPrice', 'children', 'adults', 'rooms'],
-    'trip': ['price', 'discountedPrice', 'priority'],
-    'travelling': ['price', 'discountedPrice']
-  };
+  // Validate numeric params
+  const numericParams = ['minPrice', 'maxPrice', 'totalRating', 'propertyRating', 'travellingRating'];
   
-  if (numericParams[category.toLowerCase()]) {
-    for (const param of numericParams[category.toLowerCase()]) {
-      if (searchParams.has(param) && isNaN(parseFloat(searchParams.get(param) as string))) {
-        return { valid: false, error: `Invalid value for ${param}` };
-      }
+  for (const param of numericParams) {
+    if (searchParams.has(param) && isNaN(parseFloat(searchParams.get(param) as string))) {
+      return { valid: false, error: `Invalid numeric value for ${param}` };
     }
   }
   
   return { valid: true };
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function addDateRangeFilter(query: Record<string, any>, searchParams: URLSearchParams, schemaType: 'Property' | 'Travelling' | 'Trip') {
-  const startDate = searchParams.get('startDate');
-  const endDate = searchParams.get('endDate');
 
-  if (startDate || endDate) {
-    query.$and = query.$and || [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const dateFilter: Record<string, any> = {};
-
-    // Determine the correct field based on schemaType
-    let dateField: string;
-    switch (schemaType) {
-      case 'Property':
-        dateField = 'startDate' as string; // For filtering properties by their start date
-        break;
-      case 'Travelling':
-        dateField = 'transportation.arrivalTime'; // For filtering travelling documents
-        break;
-      case 'Trip':
-        dateField = 'startDate' as string; // For filtering trips by their start date
-        break;
-      default:
-        throw new Error('Invalid schema type');
-    }
-
-    // Apply filters for startDate and endDate
-    if (startDate) {
-      dateFilter[dateField] = { $gte: startDate }; // Compare as strings
-    }
-    if (endDate) {
-      dateFilter[dateField] = {
-        ...dateFilter[dateField],
-        $lte: endDate, // Compare as strings
-      };
-    }
-
-    
-    query.$and.push(dateFilter);
-  }
-}
-
-
-
-
-function buildSearchQuery(searchParams: URLSearchParams) : QueryType {
+function buildSearchQuery(searchParams: URLSearchParams): QueryType {
   const query: QueryType = {};
-  const category = searchParams.get('category') || 'travelling';
+  const category = searchParams.get('category') || 'property';
 
-  
+  // Basic text search for general search input
   if (searchParams.has('title')) {
     const titleQuery = searchParams.get('title') as string;
     query.$or = [
@@ -164,27 +115,13 @@ function buildSearchQuery(searchParams: URLSearchParams) : QueryType {
       { 'activities': { $elemMatch: { $regex: titleQuery, $options: 'i' } } },
     ];
   }
-  if (searchParams.has('location')) {
-    const locationQuery = searchParams.get('location') as string;
-    query.$or = [
-      { 'destination.city': { $regex: locationQuery, $options: 'i' } },
-      { 'destination.state': { $regex: locationQuery, $options: 'i' } },
-      { 'destination.country': { $regex: locationQuery, $options: 'i' } },
-      { 'location.city': { $regex: locationQuery, $options: 'i' } },
-      { 'location.address': { $regex: locationQuery, $options: 'i' } },
-      { 'location.state': { $regex: locationQuery, $options: 'i' } },
-      { 'location.country': { $regex: locationQuery, $options: 'i' } },
-      { 'transportation.from': { $regex: locationQuery, $options: 'i' } },
-      { 'transportation.to': { $regex: locationQuery, $options: 'i' } },
-    ];
-  }
-  if (searchParams.has('tripStatus')) {
-    const locationQuery = searchParams.get('tripStatus') as string;
-    query.$or = [
-      { 'type': { $regex: locationQuery, $options: 'i' } },
-    ];
-  }
+
+  // Common filters across all categories
+  addPriceRangeFilter(query, searchParams);
+  // addCurrencyFilter(query, searchParams);
+  // addRatingFilter(query, searchParams);
   
+  // Apply category-specific filters
   const filterFunctions: Record<string, (q: QueryType, sp: URLSearchParams) => void> = {
     'property': addPropertyFilters,
     'travelling': addTravellingFilters,
@@ -195,75 +132,138 @@ function buildSearchQuery(searchParams: URLSearchParams) : QueryType {
     filterFunctions[category.toLowerCase()](query, searchParams);
   }
   
+  // Add common category filters for all modes
+  addCommonCategoryFilters(query, searchParams);
+  
   return query;
 }
 
+function addPriceRangeFilter(query: Record<string, any>, searchParams: URLSearchParams): void {
+
+  const minPrice = searchParams.get('minPrice');
+  const maxPrice = searchParams.get('maxPrice');
+
+  if (minPrice || maxPrice) {
+    query['costing.discountedPrice'] = {};
+
+    if (minPrice && !isNaN(parseFloat(minPrice))) {
+      query['costing.discountedPrice'].$gte = parseFloat(minPrice);
+    }
+
+    if (maxPrice && !isNaN(parseFloat(maxPrice))) {
+      query['costing.discountedPrice'].$lte = parseFloat(maxPrice);
+    }
+  }
+}
+
+
+
 function addPropertyFilters(query: QueryType, searchParams: URLSearchParams) {
-  addRangeFilter(query, searchParams, 'costing.discountedPrice', 'minPrice', 'maxPrice');
-  addMinFilter(query, searchParams, 'adults');
-  addMinFilter(query, searchParams, 'children');
-  addMinFilter(query, searchParams, 'rooms');
-  addExactFilter(query, searchParams, 'type');
-  addArrayFilter(query, searchParams, 'amenities');
-  addDateRangeFilter(query, searchParams , "Property");
-}
-
-function addTravellingFilters(query:QueryType, searchParams: URLSearchParams) {
-
-  addRangeFilter(query, searchParams, 'costing.discountedPrice', 'minPrice', 'maxPrice');
-  addExactFilter(query, searchParams, 'transportation.type');
-  addDateRangeFilter(query, searchParams , "Travelling");
-  // addRangeFilter(query, searchParams, 'costing.discountedPrice', 'minPrice', 'maxPrice');
-}
-
-function addTripFilters(query:QueryType, searchParams: URLSearchParams) {
-  addRangeFilter(query, searchParams, 'costing.discountedPrice', 'minPrice', 'maxPrice');
-  addExactFilter(query, searchParams, 'type');
-  addDateRangeFilter(query, searchParams , "Trip");
-  // addRangeFilter(query, searchParams, 'costing.discountedPrice', 'minBudget', 'maxBudget');
-  addArrayFilter(query, searchParams, 'activities');
-  addExactFilter(query, searchParams, 'domain');
-}
-
-function addRangeFilter(query: QueryType, searchParams: URLSearchParams, field: string, minParam: string, maxParam: string) {
-  const rangeQuery: Record<string, number> = {};
-  if (searchParams.has(minParam)) {
-    rangeQuery.$gte = parseFloat(searchParams.get(minParam) as string);
+  // Property type filter
+  const propertyType = searchParams.get('propertyType');
+  if (propertyType) {
+    query['type'] = propertyType;
   }
-  if (searchParams.has(maxParam)) {
-    rangeQuery.$lte = parseFloat(searchParams.get(maxParam) as string);
+  
+  // Property rating filter
+  const propertyRating = searchParams.get('propertyRating');
+  if (propertyRating && !isNaN(parseFloat(propertyRating))) {
+    query['propertyRating'] = { $gte: parseFloat(propertyRating) };
   }
-  if (Object.keys(rangeQuery).length > 0) {
-    query[field] = rangeQuery;
+  
+  // Property-specific category filters
+  addArrayFilterIfExists(query, searchParams, 'propertyAccessibility');
+  addArrayFilterIfExists(query, searchParams, 'roomAccessibility');
+  addArrayFilterIfExists(query, searchParams, 'bedPreference');
+  addArrayFilterIfExists(query, searchParams, 'roomFacilities');
+}
+
+function addTravellingFilters(query: QueryType, searchParams: URLSearchParams) {
+  // Transportation type filter
+  const transportationType = searchParams.get('transportationType');
+  if (transportationType) {
+    query['transportation.type'] = transportationType;
+  }
+  
+  // Travel rating filter
+  const travellingRating = searchParams.get('travellingRating');
+  if (travellingRating && !isNaN(parseFloat(travellingRating))) {
+    query['travellingRating'] = { $gte: parseFloat(travellingRating) };
+  }
+  
+  // Time filters
+  const arrivalTime = searchParams.get('arrivalTime');
+  if (arrivalTime) {
+    query['transportation.arrivalTime'] = arrivalTime;
+  }
+  
+  const departureTime = searchParams.get('departureTime');
+  if (departureTime) {
+    query['transportation.departureTime'] = departureTime;
+  }
+  
+  // Location filters
+  const fromLocation = searchParams.get('fromLocation');
+  if (fromLocation) {
+    query['transportation.from'] = { $regex: fromLocation, $options: 'i' };
+  }
+  
+  const toLocation = searchParams.get('toLocation');
+  if (toLocation) {
+    query['transportation.to'] = { $regex: toLocation, $options: 'i' };
+  }
+  
+  // Travelling-specific category filters
+  addArrayFilterIfExists(query, searchParams, 'travellingAccessibility');
+}
+
+function addTripFilters(query: QueryType, searchParams: URLSearchParams) {
+  // Trip type filter (Domestic/International)
+  const tripType = searchParams.get('tripType');
+  if (tripType) {
+    query['type'] = tripType;
+  }
+  
+  // Destination filters
+  const city = searchParams.get('city');
+  if (city) {
+    query['destination.city'] = { $regex: city, $options: 'i' };
+  }
+  
+  const state = searchParams.get('state');
+  if (state) {
+    query['destination.state'] = { $regex: state, $options: 'i' };
+  }
+  
+  const country = searchParams.get('country');
+  if (country) {
+    query['destination.country'] = { $regex: country, $options: 'i' };
   }
 }
 
-function addMinFilter(query: QueryType, searchParams: URLSearchParams, field: string) {
-  if (searchParams.has(field)) {
-    const value = parseFloat(searchParams.get(field) as string);
-    if (!isNaN(value)) query[field] = { $gte: value };
-  }
+function addCommonCategoryFilters(query: QueryType, searchParams: URLSearchParams) {
+  // Add all common category filters
+  addArrayFilterIfExists(query, searchParams, 'amenities');
+  addArrayFilterIfExists(query, searchParams, 'popularFilters');
+  addArrayFilterIfExists(query, searchParams, 'funThingsToDo');
+  addArrayFilterIfExists(query, searchParams, 'meals');
+  addArrayFilterIfExists(query, searchParams, 'facilities');
+  addArrayFilterIfExists(query, searchParams, 'reservationPolicy');
+  addArrayFilterIfExists(query, searchParams, 'brands');
 }
 
-function addExactFilter(query: QueryType, searchParams: URLSearchParams, field: string) {
-  if (searchParams.has(field)) {
-    query[field] = searchParams.get(field);
+function addArrayFilterIfExists(query: QueryType, searchParams: URLSearchParams, field: string) {
+  const value = searchParams.get(field);
+  if (value) {
+    const items = value.split(',').filter(item => item.trim() !== '');
+    if (items.length > 0) {
+      query[field] = { $all: items };
+    }
   }
 }
-
-function addArrayFilter(query: QueryType, searchParams: URLSearchParams, field: string) {
-  if (searchParams.has(field)) {
-    const list = (searchParams.get(field) as string).split(',');
-    query[field] = { $all: list };
-  }
-}
-
-
-
-
 
 function buildSortQuery(searchParams: URLSearchParams): Sort {
-  const sortField = searchParams.get('sortBy') || 'createdAt';
+  const sortField = searchParams.get('sortBy') || 'costing.discountedPrice';
   const sortOrder = searchParams.get('sortOrder') === 'asc' ? 1 : -1;
   return { [sortField]: sortOrder };
 }

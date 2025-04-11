@@ -101,12 +101,14 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
       
       let apiRoute = 'properties';
       let finalData;
+
+      // console.log(tripData);
       
       if (selectedCategory === 'Trip') {
-        const filteredActivities = tripData.activityChoices.filter(activity => activity.trim() !== '');
+        // const filteredActivities = tripData.activities.filter(activity => activity.trim() !== '');
         finalData = {
           ...tripData,
-          activityChoices: filteredActivities
+        //   activityChoices: filteredActivities
         };
         apiRoute = 'trips';
       } else if (selectedCategory === 'Travelling') {

@@ -16,7 +16,19 @@ interface PropertyEditFormProps {
 const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => {
   const [formData, setFormData] = useState<Property>(item);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Define options for various property features
   const amenities: PropertyAmenities[] = ["wifi", "pool", "gym", "spa", "restaurant", "parking", "airConditioning", "breakfast"];
+  const propertyAccessibilityOptions = ["wheelchair", "elevator", "braille", "audioGuide", "serviceAnimals"];
+  const roomAccessibilityOptions = ["wideDoorway", "loweredSink", "grabBars", "showerChair", "visualAlerts"];
+  const popularFiltersOptions = ["petFriendly", "familyFriendly", "businessReady", "ecofriendly", "luxury"];
+  const funThingsToDoOptions = ["beachAccess", "hiking", "skiing", "cityTour", "shopping", "nightlife"];
+  const mealsOptions = ["breakfast", "lunch", "dinner", "allInclusive", "roomService"];
+  const facilitiesOptions = ["swimmingPool", "fitness", "spa", "business", "childcare", "conferenceRoom"];
+  const bedPreferenceOptions = ["king", "queen", "twin", "single", "bunk"];
+  const reservationPolicyOptions = ["freeCancellation", "nonRefundable", "partialRefund"];
+  const brandsOptions = ["hilton", "marriott", "hyatt", "fourSeasons", "radisson"];
+  const roomFacilitiesOptions = ["minibar", "safeBox", "tv", "hairDryer", "ironBoard", "coffeeMaker"];
 
   const handleChange = (field: string, value: unknown) => {
     setFormData((prev) => {
@@ -25,7 +37,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       const updated = JSON.parse(JSON.stringify(prev)) as Property;
       
       // Navigate to the right part of the object
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let current: any = updated;
       for (let i = 0; i < keys.length - 1; i++) {
         // Ensure the path exists
@@ -60,6 +72,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     if (!formData.detailImages || formData.detailImages.length < 3) newErrors.detailImages = "At least 3 detail images are required";
     if (!formData.startDate) newErrors.startDate = "Start date is required";
     if (!formData.endDate) newErrors.endDate = "End date is required";
+    if (!formData.amenities || formData.amenities.length === 0) newErrors.amenities = "At least one amenity is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -72,6 +85,46 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       onSave(formData);
     }
   };
+
+  // Helper component for checkbox groups
+  const CheckboxGroup = ({ 
+    options, 
+    value = [], 
+    onChange, 
+    label, 
+    fieldName 
+  }: { 
+    options: string[], 
+    value: string[], 
+    onChange: (field: string, value: string[]) => void, 
+    label: string,
+    fieldName: string
+  }) => (
+    <div className="mb-4">
+      <label className="block mb-2 font-medium">{label}</label>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        {options.map((option) => (
+          <div key={option} className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id={`${fieldName}-${option}`}
+              checked={value.includes(option)}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  onChange(fieldName, [...value, option]);
+                } else {
+                  onChange(fieldName, value.filter((item) => item !== option));
+                }
+              }}
+            />
+            <label htmlFor={`${fieldName}-${option}`} className="text-sm capitalize">
+              {option.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+            </label>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -93,6 +146,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
           value={formData.description}
           onChange={(e) => handleChange("description", e.target.value)}
           placeholder="Enter description"
+          rows={5}
         />
         {errors.description && <span className="text-red-500">{errors.description}</span>}
       </div>
@@ -218,7 +272,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label>Rooms</label>
           <Input
@@ -242,53 +296,18 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
             step={0.1}
           />
         </div>
-      </div>
-
-      <div>
-        <label className="block mb-2">Amenities</label>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {amenities.map((amenity) => (
-            <div key={amenity} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id={amenity}
-                checked={formData.amenities?.includes(amenity) || false}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    handleChange("amenities", [...(formData.amenities || []), amenity]);
-                  } else {
-                    handleChange("amenities", (formData.amenities || []).filter((a) => a !== amenity));
-                  }
-                }}
-              />
-              <label htmlFor={amenity} className="text-sm capitalize">
-                {amenity === "airConditioning" ? "Air Conditioning" : amenity}
-              </label>
-            </div>
-          ))}
+        <div>
+          <label>Property Rating (Stars)</label>
+          <Input
+            type="number"
+            name="propertyRating"
+            value={formData.propertyRating || ''}
+            onChange={(e) => handleChange("propertyRating", parseFloat(e.target.value) || 0)}
+            min={0}
+            max={5}
+            step={0.5}
+          />
         </div>
-      </div>
-
-      <div>
-        <label>Banner Image</label>
-        <ImageUpload
-          label='banner image'
-          value={formData.bannerImage}
-          onChange={(image) => handleChange("bannerImage", image)}
-        />
-        {errors.bannerImage && <span className="text-red-500">{errors.bannerImage}</span>}
-      </div>
-
-      <div>
-        <label>Detail Images</label>
-        <MultipleImageUpload
-          label='detail images'
-          key={formData.detailImages?.length}
-          value={formData.detailImages || []}
-          onChange={(images) => handleChange("detailImages", images)}
-          maxImages={10}
-        />
-        {errors.detailImages && <span className="text-red-500">{errors.detailImages}</span>}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -312,6 +331,122 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
           />
           {errors.endDate && <span className="text-red-500">{errors.endDate}</span>}
         </div>
+      </div>
+
+      {/* Feature Sections */}
+      <div className="border p-4 rounded-md">
+        <h3 className="text-lg font-semibold mb-4">Property Features</h3>
+        
+        <CheckboxGroup
+          options={amenities}
+          value={formData.amenities || []}
+          onChange={handleChange}
+          label="Amenities"
+          fieldName="amenities"
+        />
+        {errors.amenities && <span className="text-red-500 block mb-4">{errors.amenities}</span>}
+        
+        <CheckboxGroup
+          options={propertyAccessibilityOptions}
+          value={formData.propertyAccessibility || []}
+          onChange={handleChange}
+          label="Property Accessibility"
+          fieldName="propertyAccessibility"
+        />
+        
+        <CheckboxGroup
+          options={roomAccessibilityOptions}
+          value={formData.roomAccessibility || []}
+          onChange={handleChange}
+          label="Room Accessibility"
+          fieldName="roomAccessibility"
+        />
+        
+        <CheckboxGroup
+          options={popularFiltersOptions}
+          value={formData.popularFilters || []}
+          onChange={handleChange}
+          label="Popular Filters"
+          fieldName="popularFilters"
+        />
+        
+        <CheckboxGroup
+          options={funThingsToDoOptions}
+          value={formData.funThingsToDo || []}
+          onChange={handleChange}
+          label="Fun Things To Do"
+          fieldName="funThingsToDo"
+        />
+        
+        <CheckboxGroup
+          options={mealsOptions}
+          value={formData.meals || []}
+          onChange={handleChange}
+          label="Meals"
+          fieldName="meals"
+        />
+        
+        <CheckboxGroup
+          options={facilitiesOptions}
+          value={formData.facilities || []}
+          onChange={handleChange}
+          label="Facilities"
+          fieldName="facilities"
+        />
+        
+        <CheckboxGroup
+          options={bedPreferenceOptions}
+          value={formData.bedPreference || []}
+          onChange={handleChange}
+          label="Bed Preferences"
+          fieldName="bedPreference"
+        />
+        
+        <CheckboxGroup
+          options={reservationPolicyOptions}
+          value={formData.reservationPolicy || []}
+          onChange={handleChange}
+          label="Reservation Policies"
+          fieldName="reservationPolicy"
+        />
+        
+        <CheckboxGroup
+          options={brandsOptions}
+          value={formData.brands || []}
+          onChange={handleChange}
+          label="Brands"
+          fieldName="brands"
+        />
+        
+        <CheckboxGroup
+          options={roomFacilitiesOptions}
+          value={formData.roomFacilities || []}
+          onChange={handleChange}
+          label="Room Facilities"
+          fieldName="roomFacilities"
+        />
+      </div>
+
+      <div>
+        <label>Banner Image</label>
+        <ImageUpload
+          label='banner image'
+          value={formData.bannerImage}
+          onChange={(image) => handleChange("bannerImage", image)}
+        />
+        {errors.bannerImage && <span className="text-red-500">{errors.bannerImage}</span>}
+      </div>
+
+      <div>
+        <label>Detail Images</label>
+        <MultipleImageUpload
+          label='detail images'
+          key={formData.detailImages?.length}
+          value={formData.detailImages || []}
+          onChange={(images) => handleChange("detailImages", images)}
+          maxImages={10}
+        />
+        {errors.detailImages && <span className="text-red-500">{errors.detailImages}</span>}
       </div>
 
       {/* Reviews Section (if needed) */}
@@ -343,7 +478,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         </div>
       )}
 
-      <Button type="submit">Save Changes</Button>
+      <Button type="submit" className="w-full">Save Changes</Button>
     </form>
   );
 };

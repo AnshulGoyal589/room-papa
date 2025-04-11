@@ -38,12 +38,13 @@ export interface Property {
   rooms: number;
 
   amenities: string[];
-  propertyAccessibility : string[];
+  accessibility : string[];
   roomAccessibility : string[];
   popularFilters : string[];
   funThingsToDo : string[];
   meals : string[];
   facilities : string[];
+  rating : Number;
   propertyRating : Number;
   bedPreference : string[];
   reservationPolicy : string[];

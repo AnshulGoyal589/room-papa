@@ -34,17 +34,17 @@ export interface Travelling {
 
 
   amenities: string[];
-  travellingAccessibility : string[];
-  roomAccessibility : string[];
+  accessibility : string[];
+  // roomAccessibility : string[];
   popularFilters : string[];
   funThingsToDo : string[];
   meals : string[];
   facilities : string[];
-  travellingRating : Number;
-  bedPreference : string[];
+  rating : Number;
+  // bedPreference : string[];
   reservationPolicy : string[];
   brands : string[];
-  roomFacilities : string[];
+  // roomFacilities : string[];
   
 }
 

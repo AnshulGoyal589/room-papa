@@ -9,40 +9,37 @@ import { Property } from '@/lib/mongodb/models/Property';
 import { Trip } from '@/lib/mongodb/models/Trip';
 import { Travelling } from '@/lib/mongodb/models/Travelling';
 
-interface SearchResultsProps {
-  initialResults: Trip[] | Property[] | Travelling[];
-  category: string;
-  searchParams: { [key: string]: string };
-}
 
-export default function SearchResults({ initialResults, category, searchParams }: SearchResultsProps) {
+export default function SearchResults() {
   const router = useRouter();
   const currentSearchParams = useSearchParams();
-  const [results, setResults] = useState(initialResults);
+  const searchParams : { [key: string]: string } = {};
+  const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sortBy, setSortBy] = useState(searchParams.sortBy || 'createdAt');
   const [sortOrder, setSortOrder] = useState(searchParams.sortOrder || 'desc');
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.page || '1'));
   const [totalPages, setTotalPages] = useState(1);
+  const [category , setCategory] = useState<string>(searchParams.category || 'property');
 
   useEffect(() => {
-    setResults(initialResults);
+
     setSortBy(searchParams.sortBy || 'createdAt');
     setSortOrder(searchParams.sortOrder || 'desc');
     setCurrentPage(parseInt(searchParams.page || '1'));
     
-    setTotalPages(Math.ceil(initialResults.length / 10) || 1);
-  }, [ initialResults, searchParams.sortBy, searchParams.sortOrder, searchParams.page ]);
+    // setTotalPages(Math.ceil(initialResults.length / 10) || 1);
+  }, [ searchParams.sortBy, searchParams.sortOrder, searchParams.page ]);
 
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      
+      setCategory(searchParams.category);
       const params = new URLSearchParams(currentSearchParams?.toString() || '');
-      params.set('sortBy', sortBy);
-      params.set('sortOrder', sortOrder);
-      params.set('page', currentPage.toString());
-      params.set('category', searchParams.category || 'property');
+      // params.set('sortBy', sortBy);
+      // params.set('sortOrder', sortOrder);
+      // params.set('page', currentPage.toString());
+      // params.set('category', searchParams.category || 'property');
       
       try {
         const response = await fetch(`/api/search?${params.toString()}`);
@@ -60,7 +57,7 @@ export default function SearchResults({ initialResults, category, searchParams }
     };
 
     loadData();
-  }, [sortBy, sortOrder, currentPage, router, currentSearchParams, searchParams.sortBy, searchParams.sortOrder, searchParams.page, searchParams.category]);
+  }, [sortBy, sortOrder, currentPage, router , currentSearchParams, searchParams.sortBy, searchParams.sortOrder, searchParams.page, searchParams.category]);
 
 
   const handlePageChange = (page: number) => {
@@ -77,12 +74,15 @@ export default function SearchResults({ initialResults, category, searchParams }
       onClick={() => router.push(`/customer/property/${property._id}`)}
     >
       <div className="relative h-48">
-        <Image 
-          src={property.bannerImage.url} 
-          alt={property.title || ""}
-          fill
-          style={{ objectFit: 'cover' }}
-        />
+        {
+          property.bannerImage && 
+            <Image 
+              src={property.bannerImage.url} 
+              alt={property.title || ""}
+              fill
+              style={{ objectFit: 'cover' }}
+            />
+        }
         <button className="absolute top-3 right-3 bg-white p-1.5 rounded-full">
           <Heart size={18} className="text-gray-500 hover:text-red-500" />
         </button>
@@ -95,9 +95,9 @@ export default function SearchResults({ initialResults, category, searchParams }
             <span className="text-sm text-gray-500">{property.location?.city}, {property.location?.country}</span>
           </div>
           {property.totalRating && (
-            <div className="flex items-center">
+            <div className="flex items-center gap-1">
+              <span className="text-sm font-medium">{property.propertyRating.toString()}</span>
               <Star size={16} className="text-yellow-500 mr-1" />
-              <span className="text-sm font-medium">{property.totalRating} ({property.totalRating || 0})</span>
             </div>
           )}
         </div>
@@ -112,7 +112,7 @@ export default function SearchResults({ initialResults, category, searchParams }
         
         <div className="flex justify-between items-center mt-4">
           <div>
-            <span className="text-lg font-bold">${property.costing.discountedPrice }</span>
+            <span className="text-lg font-bold">{property.costing.currency} {property.costing.discountedPrice }</span>
             <span className="text-gray-500"> / night</span>
           </div>
           <Link href={`/properties/${property._id}`} className="bg-primary text-white px-4 py-2 rounded-md text-sm">
@@ -132,14 +132,14 @@ export default function SearchResults({ initialResults, category, searchParams }
         {trip.bannerImage ? (
           <Image 
             src={trip.bannerImage.url || '/placeholder-trip.jpg'} 
-            alt={trip.title}
+            alt={trip.title || ""}
             fill
             style={{ objectFit: 'cover' }}
           />
         ) : (
           <Image 
             src="/placeholder-trip.jpg" 
-            alt={trip.title}
+            alt={trip.title || ""}
             fill
             style={{ objectFit: 'cover' }}
           />
@@ -190,14 +190,14 @@ export default function SearchResults({ initialResults, category, searchParams }
         {itinerary.bannerImage ? (
           <Image 
             src={itinerary.bannerImage.url || '/placeholder-itinerary.jpg'} 
-            alt={itinerary.title}
+            alt={itinerary.title || ""}
             fill
             style={{ objectFit: 'cover' }}
           />
         ) : (
           <Image 
             src="/placeholder-itinerary.jpg" 
-            alt={itinerary.title}
+            alt={itinerary.title || ""}
             fill
             style={{ objectFit: 'cover' }}
           />

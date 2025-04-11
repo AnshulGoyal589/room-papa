@@ -1,12 +1,11 @@
 import React from 'react';
-import { MapPin, Users, Tag, Star, Calendar } from 'lucide-react';
+import { MapPin, Users, Tag, Star, Calendar, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Property } from '@/lib/mongodb/models/Property';
 import Image from 'next/image';
 
 const PropertyDetails: React.FC<{ item: Property }> = ({ item }) => {
   // Function to get formatted address
-  // console.log(item);
   const getFormattedAddress = () => {
     if (!item.location) return 'Address not available';
     
@@ -23,6 +22,25 @@ const PropertyDetails: React.FC<{ item: Property }> = ({ item }) => {
   // Format the property type for display
   const formatPropertyType = (type: string) => {
     return type.charAt(0).toUpperCase() + type.slice(1);
+  };
+
+  // Helper to render a list of string items as badges
+  const renderBadges = (items: string[] | undefined, emptyMessage: string) => {
+    if (!items || items.length === 0 || (items.length === 1 && !items[0].trim())) {
+      return <p className="text-gray-500">{emptyMessage}</p>;
+    }
+
+    return (
+      <div className="flex flex-wrap gap-2">
+        {items.map((item, index) => (
+          <Badge key={index} variant="outline">
+            {typeof item === 'string' ? 
+              item.charAt(0).toUpperCase() + item.slice(1).replace(/([A-Z])/g, ' $1') : 
+              'Unknown Item'}
+          </Badge>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -72,7 +90,10 @@ const PropertyDetails: React.FC<{ item: Property }> = ({ item }) => {
           <Star className="w-4 h-4 mr-2 text-gray-500" />
           <div>
             <p className="text-sm text-gray-500">Rating</p>
-            <p>{item.totalRating || 0}/5 ({item.review?.length || 0} reviews)</p>
+            <p>
+              {item.totalRating || 0}/5 ({item.review?.length || 0} reviews)
+              {item.propertyRating && <span className="ml-2">Property Rating: {item.propertyRating.toString()}</span>}
+            </p>
           </div>
         </div>
 
@@ -86,24 +107,82 @@ const PropertyDetails: React.FC<{ item: Property }> = ({ item }) => {
             </p>
           </div>
         </div>
+
+        {item.rat && (
+          <div className="flex items-center">
+            <Check className="w-4 h-4 mr-2 text-gray-500" />
+            <div>
+              <p className="text-sm text-gray-500">RAT</p>
+              <p>{typeof item.rat === 'number' ? item.rat : item.rat}</p>
+            </div>
+          </div>
+        )}
       </div>
       
       {/* Amenities section */}
       <div className="mt-6">
         <h4 className="text-md font-medium mb-2">Amenities</h4>
-        <div className="flex flex-wrap gap-2">
-          {item.amenities && item.amenities.length > 0 ? (
-            item.amenities.map((amenity, index) => (
-              <Badge key={index} variant="outline">
-                {typeof amenity === 'string' ? 
-                  amenity.charAt(0).toUpperCase() + amenity.slice(1).replace(/([A-Z])/g, ' $1') : 
-                  'Unknown Amenity'}
-              </Badge>
-            ))
-          ) : (
-            <p className="text-gray-500">No amenities listed</p>
-          )}
-        </div>
+        {renderBadges(item.amenities, 'No amenities listed')}
+      </div>
+
+      {/* Property Accessibility */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Property Accessibility</h4>
+        {renderBadges(item.propertyAccessibility, 'No property accessibility features listed')}
+      </div>
+
+      {/* Room Accessibility */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Room Accessibility</h4>
+        {renderBadges(item.roomAccessibility, 'No room accessibility features listed')}
+      </div>
+
+      {/* Popular Filters */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Popular Filters</h4>
+        {renderBadges(item.popularFilters, 'No popular filters listed')}
+      </div>
+
+      {/* Fun Things To Do */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Fun Things To Do</h4>
+        {renderBadges(item.funThingsToDo, 'No fun activities listed')}
+      </div>
+
+      {/* Meals */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Meals</h4>
+        {renderBadges(item.meals, 'No meal options listed')}
+      </div>
+
+      {/* Facilities */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Facilities</h4>
+        {renderBadges(item.facilities, 'No facilities listed')}
+      </div>
+
+      {/* Bed Preference */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Bed Preference</h4>
+        {renderBadges(item.bedPreference, 'No bed preferences listed')}
+      </div>
+
+      {/* Reservation Policy */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Reservation Policy</h4>
+        {renderBadges(item.reservationPolicy, 'No reservation policies listed')}
+      </div>
+
+      {/* Brands */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Brands</h4>
+        {renderBadges(item.brands, 'No brands listed')}
+      </div>
+
+      {/* Room Facilities */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Room Facilities</h4>
+        {renderBadges(item.roomFacilities, 'No room facilities listed')}
       </div>
       
       {/* Banner Image */}

@@ -8,7 +8,7 @@ interface DateRange {
 }
 
 interface SearchParams {
-  location: string;
+  title: string;
   checkIn: string;
   checkOut: string;
   adults: number;
@@ -19,7 +19,7 @@ interface SearchParams {
 
 export default function StaysSearchForm() {
   // State variables with proper typing
-  const [location, setLocation] = useState<string>('');
+  const [title, setLocation] = useState<string>('');
   const [dateRange, setDateRange] = useState<DateRange>({
     startDate: new Date(2025, 3, 18), // April 18, 2025
     endDate: new Date(2025, 4, 23)    // May 23, 2025
@@ -62,9 +62,9 @@ export default function StaysSearchForm() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
       
-      // Get location
-      const locationParam = urlParams.get('location');
-      if (locationParam) setLocation(locationParam);
+      // Get title
+      const titleParam = urlParams.get('title');
+      if (titleParam) setLocation(titleParam);
       
       // Get dates
       const checkInParam = urlParams.get('checkIn');
@@ -115,7 +115,7 @@ export default function StaysSearchForm() {
     const params = new URLSearchParams();
     
     // Only add parameters that have values
-    if (location) params.set('location', location);
+    if (title) params.set('title', title);
     
     // Format dates consistently for URL parameters
     params.set('checkIn', formatDateForURL(dateRange.startDate));
@@ -304,10 +304,10 @@ export default function StaysSearchForm() {
                 type="text" 
                 placeholder="Where are you going?" 
                 className="flex-1 outline-none text-sm"
-                value={location}
+                value={title}
                 onChange={(e) => setLocation(e.target.value)}
               />
-              {location && (
+              {title && (
                 <button className="text-gray-400" onClick={() => setLocation('')}>
                   <X className="h-4 w-4" />
                 </button>

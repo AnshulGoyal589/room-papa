@@ -139,13 +139,13 @@ export default function SearchHeader() {
         </div>
 
         {/* Heading */}
-        <div className="mb-8">
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">{title}</h1>
-          <p className="text-sm md:text-base lg:text-lg">{subtitle}</p>
+        <div className="my-12 flex flex-col gap-4">
+          <h1 className="text-2xl md:text-4xl lg:text-6xl font-bold">{title}</h1>
+          <p className="text-base md:text-xl lg:text-2xl">{subtitle}</p>
         </div>
 
         {/* Search Form */}
-        <div className="relative z-10 mb-8">
+        <div className="relative z-10">
           {renderSearchForm()}
         </div>
        

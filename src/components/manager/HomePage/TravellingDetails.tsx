@@ -1,6 +1,7 @@
 import React from 'react';
-import { MapPin, Calendar, Banknote, Plane, Star } from 'lucide-react';
+import { MapPin, Calendar, Banknote, Plane, Star, Users, Tag, Check } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { Travelling } from '@/lib/mongodb/models/Travelling';
 import Image from 'next/image';
 
@@ -10,6 +11,25 @@ const formatTime = (date: Date) => {
 
 const formatDate = (date: Date) => {
   return date.toLocaleDateString();
+};
+
+// Helper to render a list of string items as badges
+const renderBadges = (items: string[] | undefined, emptyMessage: string) => {
+  if (!items || items.length === 0 || (items.length === 1 && !items[0].trim())) {
+    return <p className="text-gray-500">{emptyMessage}</p>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item, index) => (
+        <Badge key={index} variant="outline">
+          {typeof item === 'string' ? 
+            item.charAt(0).toUpperCase() + item.slice(1).replace(/([A-Z])/g, ' $1') : 
+            'Unknown Item'}
+        </Badge>
+      ))}
+    </div>
+  );
 };
 
 const TravellingDetails: React.FC<{ item: Travelling }> = ({ item }) => {
@@ -23,10 +43,12 @@ const TravellingDetails: React.FC<{ item: Travelling }> = ({ item }) => {
       
       {item.bannerImage && (
         <div className="mb-6 relative rounded-md overflow-hidden h-64">
-          <div className="absolute inset-0 bg-gray-200 flex items-center justify-center">
-            <Image src={item.bannerImage.url} alt={item.bannerImage.alt || "banner image" } fill className=" text-gray-400" />
-            <span className="ml-2 text-gray-500">Banner Image</span>
-          </div>
+          <Image 
+            src={item.bannerImage.url} 
+            alt={item.bannerImage.alt || "banner image" } 
+            fill 
+            className="object-cover" 
+          />
         </div>
       )}
       
@@ -35,14 +57,14 @@ const TravellingDetails: React.FC<{ item: Travelling }> = ({ item }) => {
           <Calendar className="w-4 h-4 mr-2 text-gray-500" />
           <div>
             <p className="text-sm text-gray-500">Created</p>
-            <p>{formatDate(item.createdAt)}</p>
+            <p>{item.createdAt ? formatDate(item.createdAt) : 'N/A'}</p>
           </div>
         </div>
         <div className="flex items-center">
           <Calendar className="w-4 h-4 mr-2 text-gray-500" />
           <div>
             <p className="text-sm text-gray-500">Updated</p>
-            <p>{formatDate(item.updatedAt)}</p>
+            <p>{item.updatedAt ? formatDate(item.updatedAt) : 'N/A'}</p>
           </div>
         </div>
         <div className="flex items-center">
@@ -52,8 +74,8 @@ const TravellingDetails: React.FC<{ item: Travelling }> = ({ item }) => {
             <p>
               {item.costing.currency} {item.costing.price.toLocaleString()}
               {item.costing.discountedPrice < item.costing.price && (
-                <span className="ml-2 line-through text-gray-400">
-                  {item.costing.currency} {item.costing.discountedPrice.toLocaleString()}
+                <span className="ml-2 text-green-600">
+                  Discounted: {item.costing.currency} {item.costing.discountedPrice.toLocaleString()}
                 </span>
               )}
             </p>
@@ -64,7 +86,18 @@ const TravellingDetails: React.FC<{ item: Travelling }> = ({ item }) => {
             <Star className="w-4 h-4 mr-2 text-gray-500" />
             <div>
               <p className="text-sm text-gray-500">Rating</p>
-              <p>{item.totalRating.toFixed(1)} / 5</p>
+              <p>{item.totalRating.toFixed(1)}/5 ({item.review?.length || 0} reviews)</p>
+              {item.travellingRating && <span className="ml-2">Travelling Rating: {item.travellingRating.toString()}</span>}
+            </div>
+          </div>
+        )}
+        
+        {item.rat && (
+          <div className="flex items-center">
+            <Check className="w-4 h-4 mr-2 text-gray-500" />
+            <div>
+              <p className="text-sm text-gray-500">RAT</p>
+              <p>{typeof item.rat === 'number' ? item.rat : item.rat}</p>
             </div>
           </div>
         )}
@@ -112,22 +145,84 @@ const TravellingDetails: React.FC<{ item: Travelling }> = ({ item }) => {
         </div>
       </div>
       
+      {/* Additional features sections (from Property component) */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Amenities</h4>
+        {renderBadges(item.amenities, 'No amenities listed')}
+      </div>
+
+      {/* Travelling Accessibility */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Travelling Accessibility</h4>
+        {renderBadges(item.travellingAccessibility, 'No travelling accessibility features listed')}
+      </div>
+
+      {/* Room Accessibility */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Room Accessibility</h4>
+        {renderBadges(item.roomAccessibility, 'No room accessibility features listed')}
+      </div>
+
+      {/* Popular Filters */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Popular Filters</h4>
+        {renderBadges(item.popularFilters, 'No popular filters listed')}
+      </div>
+
+      {/* Fun Things To Do */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Fun Things To Do</h4>
+        {renderBadges(item.funThingsToDo, 'No fun activities listed')}
+      </div>
+
+      {/* Meals */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Meals</h4>
+        {renderBadges(item.meals, 'No meal options listed')}
+      </div>
+
+      {/* Facilities */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Facilities</h4>
+        {renderBadges(item.facilities, 'No facilities listed')}
+      </div>
+
+      {/* Bed Preference */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Bed Preference</h4>
+        {renderBadges(item.bedPreference, 'No bed preferences listed')}
+      </div>
+
+      {/* Reservation Policy */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Reservation Policy</h4>
+        {renderBadges(item.reservationPolicy, 'No reservation policies listed')}
+      </div>
+
+      {/* Brands */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Brands</h4>
+        {renderBadges(item.brands, 'No brands listed')}
+      </div>
+
+      {/* Room Facilities */}
+      <div className="mt-6">
+        <h4 className="text-md font-medium mb-2">Room Facilities</h4>
+        {renderBadges(item.roomFacilities, 'No room facilities listed')}
+      </div>
+      
+      {/* Detail Images section */}
       {item.detailImages && item.detailImages.length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold mb-4">Gallery</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+        <div className="mt-6">
+          <h4 className="text-md font-medium mb-2">Gallery</h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {item.detailImages.map((image, index) => (
-              <div 
-                key={index} 
-                className="relative aspect-square overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300"
-              >
+              <div key={index} className="relative aspect-square overflow-hidden rounded-md">
                 <Image 
                   src={image.url} 
-                  fill={true}
-                  sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                  priority={index < 4}
-                  alt={image.alt || `Product detail ${index + 1}`}
-                  className="object-cover hover:scale-105 transition-transform duration-500"
+                  alt={image.alt || `Travel image ${index + 1}`} 
+                  fill
+                  className="object-cover"
                 />
               </div>
             ))}
@@ -135,13 +230,14 @@ const TravellingDetails: React.FC<{ item: Travelling }> = ({ item }) => {
         </div>
       )}
       
+      {/* Reviews section */}
       {item.review && item.review.length > 0 && (
-        <div>
-          <h3 className="text-lg font-medium mb-4">Reviews ({item.review.length})</h3>
+        <div className="mt-6">
+          <h4 className="text-md font-medium mb-2">Reviews</h4>
           <div className="space-y-4">
-            {item.review.map((review, index) => (
-              <div key={index} className="border rounded-md p-4">
-                <div className="flex justify-between mb-2">
+            {item.review.slice(0, 3).map((review, index) => (
+              <div key={index} className="bg-gray-50 p-4 rounded-md">
+                <div className="flex items-center mb-2">
                   <div className="flex">
                     {[...Array(5)].map((_, i) => (
                       <Star 
@@ -151,9 +247,12 @@ const TravellingDetails: React.FC<{ item: Travelling }> = ({ item }) => {
                     ))}
                   </div>
                 </div>
-                <p className="text-sm">{review.comment}</p>
+                <p className="text-gray-700">{review.comment}</p>
               </div>
             ))}
+            {item.review.length > 3 && (
+              <p className="text-sm text-gray-500">And {item.review.length - 3} more reviews</p>
+            )}
           </div>
         </div>
       )}

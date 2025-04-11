@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Calendar, Banknote, Star, Globe, Clock } from 'lucide-react';
+import { MapPin, Calendar, Banknote, Star, Globe, Clock, Check, Shield, Tag, Coffee, Utensils, Wifi, Bed, FileText, Building } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Trip } from '@/lib/mongodb/models/Trip';
@@ -24,13 +24,40 @@ const TripDetails: React.FC<{ item: Trip }> = ({ item }) => {
     }
   };
 
+  // Helper to render a section with array of items
+  const renderArraySection = (title: string, items: string[] | undefined, icon: React.ReactNode) => {
+    if (!items || items.length === 0 || (items.length === 1 && !items[0].trim())) {
+      return null;
+    }
+
+    return (
+      <div className="mb-6">
+        <div className="flex items-center mb-2">
+          {icon}
+          <h4 className="text-md font-medium ml-2">{title}</h4>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {items.map((item, index) => (
+            <Badge key={index} variant="outline">
+              {item}
+            </Badge>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div>
       <div className="flex items-center mb-4">
-        <Badge className={getStatusColor(item.type)}>
+        {/* <Badge className={getStatusColor(item.typdomaine)}>
           {item.type}
-        </Badge>
+        </Badge> */}
+        {item.rat && (
+          <Badge className="ml-2 bg-purple-100 text-purple-800">
+            RAT: {item.rat}
+          </Badge>
+        )}
       </div>
       
       {/* Banner Image */}
@@ -95,16 +122,16 @@ const TripDetails: React.FC<{ item: Trip }> = ({ item }) => {
           </div>
         </div>
         
-        {item.totalRating !== undefined && (
-          <div className="flex items-center">
-            <Star className="w-4 h-4 mr-2 text-gray-500" />
-            <div>
-              <p className="text-sm text-gray-500">Rating</p>
-              <p>{item.totalRating.toFixed(1)} / 5</p>
-            </div>
+        <div className="flex items-center">
+          <Star className="w-4 h-4 mr-2 text-gray-500" />
+          <div>
+            <p className="text-sm text-gray-500">Rating</p>
+            <p>{(item.totalRating !== undefined ? item.totalRating : 0).toFixed(1)} / 5</p>
+            {item.propertyRating !== undefined && (
+              <p className="text-xs text-gray-500">Property Rating: {item.propertyRating.toString()}</p>
+            )}
           </div>
-        )}
-        
+        </div>
         
         {item.updatedAt && (
           <div className="flex items-center">
@@ -130,20 +157,40 @@ const TripDetails: React.FC<{ item: Trip }> = ({ item }) => {
       <Separator className="my-6" />
 
       {/* Activities section */}
-      {item.activities && item.activities.length > 0 && (
-        <div className="mb-6">
-          <h4 className="text-md font-medium mb-2">Activities</h4>
-          <div className="bg-gray-50 p-4 rounded-md">
-            <ul className="space-y-2">
-              {item.activities.map((activity, index) => (
-                <li key={index} className="text-sm">
-                  • {activity}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
+      {renderArraySection('Activities', item.activities, <Tag className="w-4 h-4 text-gray-500" />)}
+
+      {/* Amenities section */}
+      {renderArraySection('Amenities', item.amenities, <Check className="w-4 h-4 text-gray-500" />)}
+
+      {/* Property Accessibility */}
+      {renderArraySection('Property Accessibility', item.propertyAccessibility, <Building className="w-4 h-4 text-gray-500" />)}
+
+      {/* Room Accessibility */}
+      {renderArraySection('Room Accessibility', item.roomAccessibility, <Bed className="w-4 h-4 text-gray-500" />)}
+
+      {/* Popular Filters */}
+      {renderArraySection('Popular Filters', item.popularFilters, <Tag className="w-4 h-4 text-gray-500" />)}
+
+      {/* Fun Things To Do */}
+      {renderArraySection('Fun Things To Do', item.funThingsToDo, <Tag className="w-4 h-4 text-gray-500" />)}
+
+      {/* Meals */}
+      {renderArraySection('Meals', item.meals, <Utensils className="w-4 h-4 text-gray-500" />)}
+
+      {/* Facilities */}
+      {renderArraySection('Facilities', item.facilities, <Wifi className="w-4 h-4 text-gray-500" />)}
+
+      {/* Bed Preference */}
+      {renderArraySection('Bed Preference', item.bedPreference, <Bed className="w-4 h-4 text-gray-500" />)}
+
+      {/* Reservation Policy */}
+      {renderArraySection('Reservation Policy', item.reservationPolicy, <FileText className="w-4 h-4 text-gray-500" />)}
+
+      {/* Brands */}
+      {renderArraySection('Brands', item.brands, <Building className="w-4 h-4 text-gray-500" />)}
+
+      {/* Room Facilities */}
+      {renderArraySection('Room Facilities', item.roomFacilities, <Bed className="w-4 h-4 text-gray-500" />)}
 
       {/* Detail Images Gallery - Enhanced version */}
       {item.detailImages && item.detailImages.length > 0 && (
