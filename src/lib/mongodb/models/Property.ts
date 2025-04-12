@@ -2,7 +2,7 @@
 
 import { Collection, ObjectId } from 'mongodb';
 import { getDb } from '..';
-import { PropertyAccessibility, PropertyAmenities, PropertyType, RoomAccessibility } from '@/types';
+import { PropertyAccessibility, PropertyAmenities, PropertyType, RoomAccessibility, RoomCategory } from '@/types';
 import { Image } from './Image';
 
 
@@ -11,7 +11,6 @@ export interface Property {
   userId?: string;
   title?: string;
   description?: string;
-  rat ?: number | '1';
   type: PropertyType;
   location: {
     address: string;
@@ -36,21 +35,21 @@ export interface Property {
   bannerImage?: Image;
   detailImages?: Image[];
   rooms: number;
-  rating ?: Number;
 
+  categoryRooms? : RoomCategory[]
   amenities: string[];
-  accessibility : string[];
-  roomAccessibility : string[];
-  popularFilters : string[];
-  funThingsToDo : string[];
-  meals : string[];
-  facilities : string[];
-  propertyRating : Number;
-  bedPreference : string[];
-  reservationPolicy : string[];
-  brands : string[];
-  roomFacilities : string[];
+  accessibility ?: string[];
+  roomAccessibility ?: string[];
+  popularFilters ?: string[];
+  funThingsToDo ?: string[];
+  meals ?: string[];
+  facilities ?: string[];
+  bedPreference ?: string[];
+  reservationPolicy ?: string[];
+  brands ?: string[];
+  roomFacilities ?: string[];
   
+  propertyRating ?: Number;
 
 }
 

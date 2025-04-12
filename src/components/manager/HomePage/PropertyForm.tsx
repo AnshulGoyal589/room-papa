@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FormItem,
   FormLabel,
@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { Property } from '@/lib/mongodb/models/Property';
 import { PropertyType } from '@/types';
 import { categoryOptions } from '../../../../public/assets/data';
@@ -26,15 +26,16 @@ const initialPropertyData: Property = {
     state: '',
     country: '',
   },
+  startDate: new Date().toISOString().split('T')[0],
+  endDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0], // Default to 7 days from now  
   costing: {
     price: 0,
     discountedPrice: 0,
     currency: 'USD',
   },
-  rooms: 1,
-  startDate: new Date().toISOString().split('T')[0],
-  endDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0], // Default to 7 days from now
-  
+  rooms: 0, // Will be calculated from room categories
+
+  categoryRooms: [], // Start with empty array
   amenities: [],
   accessibility: [],
   roomAccessibility: [],
@@ -42,11 +43,12 @@ const initialPropertyData: Property = {
   funThingsToDo: [],
   meals: [],
   facilities: [],
-  propertyRating: 0,
   bedPreference: [],
   reservationPolicy: [],
   brands: [],
   roomFacilities: [],
+  
+  propertyRating: 0,
 };
 
 interface PropertyFormProps {
@@ -58,7 +60,58 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
   propertyData = initialPropertyData, 
   setPropertyData 
 }) => {
+
+  const [newCategory, setNewCategory] = useState({
+    title: '',
+    qty: 1,
+    price: 0,
+    discountedPrice: 0,
+    currency: 'USD'
+  });
   
+  // Update the property costing based on room categories
+  useEffect(() => {
+    if (propertyData.categoryRooms && propertyData.categoryRooms.length > 0) {
+      // Find the minimum discounted price from all categories
+      const categories = [...propertyData.categoryRooms];
+      
+      // Sort categories by discounted price (or regular price if no discount)
+      categories.sort((a:any, b:any) => {
+        const aPrice = a.discountedPrice > 0 ? a.discountedPrice : a.price;
+        const bPrice = b.discountedPrice > 0 ? b.discountedPrice : b.price;
+        return aPrice - bPrice;
+      });
+      
+      // Use the first (minimum) category for property costing
+      const minCategory : any = categories[0];
+      
+      // Calculate total rooms from category quantities
+      const totalRooms = categories.reduce((sum, category:any) => sum + (category.qty || 0), 0);
+      
+      // Update the property costing and total rooms
+      setPropertyData(prev => ({
+        ...prev,
+        costing: {
+          price: minCategory.price,
+          discountedPrice: minCategory.discountedPrice,
+          currency: minCategory.currency
+        },
+        rooms: totalRooms // Set rooms based on sum of category quantities
+      }));
+    } else {
+      // Reset costing and rooms if no categories
+      setPropertyData(prev => ({
+        ...prev,
+        costing: {
+          price: 0,
+          discountedPrice: 0,
+          currency: 'USD'
+        },
+        rooms: 0 // Reset to 0 when no categories exist
+      }));
+    }
+  }, [propertyData.categoryRooms, setPropertyData]);
+
   const handlePropertyChange = (field: string, value: unknown) => {
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
@@ -97,6 +150,41 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
       currentArray.filter(i => i !== item)
     );
   };
+
+  const handleCategoryChange = (field: string, value: string | number) => {
+    setNewCategory(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleAddCategory = () => {
+    // Validate the new category
+    if (!newCategory.title.trim()) {
+      alert('Category title is required');
+      return;
+    }
+
+    // Add to property data
+    const updatedCategories = [...(propertyData.categoryRooms || []), {...newCategory}];
+    handlePropertyChange('categoryRooms', updatedCategories);
+
+    // Reset form
+    setNewCategory({
+      title: '',
+      qty: 1,
+      price: 0,
+      discountedPrice: 0,
+      currency: 'USD'
+    });
+  };
+
+  const handleRemoveCategory = (index: number) => {
+    const updatedCategories = [...(propertyData.categoryRooms || [])];
+    updatedCategories.splice(index, 1);
+    handlePropertyChange('categoryRooms', updatedCategories);
+  };
+
 
   const renderMultiSelect = (field: string, label: string) => {
     // Make sure we have an array to work with, even if property is undefined
@@ -168,7 +256,14 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
       ...initialPropertyData.costing,
       ...(propertyData?.costing || {}),
     },
+    categoryRooms: propertyData?.categoryRooms || [],
   };
+
+  // Calculate total rooms for display
+  const totalRooms = ensurePropertyData.categoryRooms.reduce(
+    (sum, category:any) => sum + (category.qty || 0), 
+    0
+  );
 
   return (
     <div className="space-y-4 max-h-96 overflow-y-auto p-2">
@@ -247,62 +342,23 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
           />
         </FormItem>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  
+      {/* Show Total Rooms as a read-only display instead of input */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormItem>
-          <FormLabel>Price per Night</FormLabel>
-          <Input 
-            type="number"
-            value={ensurePropertyData.costing.price}
-            onChange={(e) => handlePropertyChange('costing.price', Number(e.target.value) || 0)}
-            min={0}
-          />
-        </FormItem>
-        <FormItem>
-          <FormLabel>Discounted Price per Night</FormLabel>
-          <Input 
-            type="number"
-            value={ensurePropertyData.costing.discountedPrice}
-            onChange={(e) => handlePropertyChange('costing.discountedPrice', Number(e.target.value) || 0)}
-            min={0}
-          />
-        </FormItem>
-        
-        <FormItem>
-          <FormLabel>Currency</FormLabel>
-          <Select
-            value={ensurePropertyData.costing.currency}
-            onValueChange={(value) => handlePropertyChange('costing.currency', value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select currency" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="INR">INR</SelectItem>
-              <SelectItem value="USD">USD</SelectItem>
-              <SelectItem value="EUR">EUR</SelectItem>
-              <SelectItem value="GBP">GBP</SelectItem>
-              <SelectItem value="JPY">JPY</SelectItem>
-            </SelectContent>
-          </Select>
-        </FormItem>
-      </div>
-      
-      <div className="grid grid-cols-3 gap-2">
-        <FormItem>
-          <FormLabel>Max Rooms</FormLabel>
-          <Input 
-            type="number"
-            value={ensurePropertyData.rooms}
-            onChange={(e) => handlePropertyChange('rooms', Number(e.target.value) || 1)}
-            min={1}
-          />
+          <FormLabel>Total Rooms</FormLabel>
+          <div className="p-2 border rounded-md bg-gray-50">
+            {totalRooms} {totalRooms === 1 ? 'room' : 'rooms'}
+            <p className="text-xs text-gray-500 mt-1">
+              (Automatically calculated from room categories)
+            </p>
+          </div>
         </FormItem>
         
         <FormItem>
           <FormLabel>Property Rating</FormLabel>
           <Select
-            value={ensurePropertyData.propertyRating.toString()}
+            value={ ensurePropertyData.propertyRating ? ensurePropertyData.propertyRating.toString() : '1' }
             onValueChange={(value) => handlePropertyChange('propertyRating', Number(value))}
           >
             <SelectTrigger>
@@ -317,6 +373,145 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
             </SelectContent>
           </Select>
         </FormItem>
+      </div>
+
+      {/* Display property price information derived from room categories */}
+      {ensurePropertyData.categoryRooms && ensurePropertyData.categoryRooms.length > 0 && (
+        <div className="bg-blue-50 p-4 rounded-md">
+          <h3 className="text-md font-medium mb-2">Property Price Information</h3>
+          <p className="text-sm text-gray-700">
+            Base price: {ensurePropertyData.costing.currency} {ensurePropertyData.costing.price}
+            {ensurePropertyData.costing.discountedPrice > 0 && (
+              <span className="ml-1 text-green-600">
+                (Discounted: {ensurePropertyData.costing.currency} {ensurePropertyData.costing.discountedPrice})
+              </span>
+            )}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            This price is automatically set to the lowest price from your room categories.
+          </p>
+        </div>
+      )}
+
+      <div className="border-t pt-4 mt-4">
+        <h3 className="text-lg font-medium mb-4">Room Categories</h3>
+        
+        {/* List of existing categories */}
+        {ensurePropertyData.categoryRooms && ensurePropertyData.categoryRooms.length > 0 && (
+          <div className="mb-4 space-y-2">
+            <h4 className="text-sm font-medium">Added Categories:</h4>
+            
+            <div className="space-y-2">
+              {ensurePropertyData.categoryRooms.map((cat:any, index) => (
+                <div key={index} className="flex items-center p-3 bg-gray-50 rounded-md">
+                  <div className="flex-1 grid grid-cols-5 gap-2">
+                    <div className="col-span-2">
+                      <p className="font-medium">{cat.title}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Qty: {cat.qty}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">
+                        {cat.currency} {cat.price}
+                        {cat.discountedPrice > 0 && (
+                          <span className="ml-1 text-green-600">
+                            (-{cat.currency} {cat.discountedPrice})
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => handleRemoveCategory(index)}
+                    className="text-red-500 hover:text-red-700 ml-2"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Form to add new category */}
+        <div className="bg-gray-50 p-4 rounded-md">
+          <h4 className="text-sm font-medium mb-3">Add New Category:</h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <FormItem>
+              <FormLabel>Category Title</FormLabel>
+              <Input 
+                value={newCategory.title}
+                onChange={(e) => handleCategoryChange('title', e.target.value)}
+                placeholder="e.g. Deluxe Room, Suite, etc."
+              />
+            </FormItem>
+            
+            <FormItem>
+              <FormLabel>Quantity</FormLabel>
+              <Input 
+                type="number"
+                value={newCategory.qty}
+                onChange={(e) => handleCategoryChange('qty', Number(e.target.value) || 0)}
+                min={1}
+                placeholder="Number of rooms available"
+              />
+            </FormItem>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <FormItem>
+              <FormLabel>Price</FormLabel>
+              <Input 
+                type="number"
+                value={newCategory.price}
+                onChange={(e) => handleCategoryChange('price', Number(e.target.value) || 0)}
+                min={0}
+                placeholder="Regular price"
+              />
+            </FormItem>
+            
+            <FormItem>
+              <FormLabel>Discounted Price</FormLabel>
+              <Input 
+                type="number"
+                value={newCategory.discountedPrice}
+                onChange={(e) => handleCategoryChange('discountedPrice', Number(e.target.value) || 0)}
+                min={0}
+                placeholder="Discounted price (if any)"
+              />
+            </FormItem>
+            
+            <FormItem>
+              <FormLabel>Currency</FormLabel>
+              <Select
+                value={newCategory.currency} 
+                onValueChange={(value) => handleCategoryChange('currency', value)} 
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="INR">INR</SelectItem>
+                  <SelectItem value="USD">USD</SelectItem>
+                  <SelectItem value="EUR">EUR</SelectItem>
+                  <SelectItem value="GBP">GBP</SelectItem>
+                  <SelectItem value="JPY">JPY</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormItem>
+          </div>
+          
+          <button 
+            type="button"
+            onClick={handleAddCategory}
+            className="flex items-center justify-center w-full py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+          >
+            <Plus size={16} className="mr-2" /> Add Category
+          </button>
+        </div>
       </div>
       
       <FormItem>
@@ -344,20 +539,18 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
         </div>
       </FormItem>
       
-      {/* New categories with multi-select dropdowns */}
+      {/* Additional property categories with multi-select dropdowns */}
       <div className="border-t pt-4 mt-4">
         <h3 className="text-lg font-medium mb-4">Additional Property Categories</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {renderMultiSelect('propertyAccessibility', 'Property Accessibility')}
+          {renderMultiSelect('accessibility', 'Property Accessibility')}
           {renderMultiSelect('roomAccessibility', 'Room Accessibility')}
           {renderMultiSelect('popularFilters', 'Popular Filters')}
           {renderMultiSelect('funThingsToDo', 'Fun Things To Do')}
           {renderMultiSelect('meals', 'Meals')}
-          {/* {renderMultiSelect('landmarks', 'Landmarks')} */}
           {renderMultiSelect('facilities', 'Facilities')}
           {renderMultiSelect('bedPreference', 'Bed Preference')}
-          {/* {renderMultiSelect('neighborhood', 'Neighborhood')} */}
           {renderMultiSelect('reservationPolicy', 'Reservation Policy')}
           {renderMultiSelect('brands', 'Brands')}
           {renderMultiSelect('roomFacilities', 'Room Facilities')}

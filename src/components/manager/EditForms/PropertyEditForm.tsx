@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Property } from "@/lib/mongodb/models/Property";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import ImageUpload from "@/components/cloudinary/ImageUpload";
 import MultipleImageUpload from "@/components/cloudinary/MultipleImageUpload";
-import { PropertyAmenities } from "@/types";
+import { PropertyAmenities, RoomCategory } from "@/types";
+import { X, Plus, Edit, Check, AlertCircle } from "lucide-react"; // Added more icons
 
 interface PropertyEditFormProps {
   item: Property;
@@ -14,21 +15,62 @@ interface PropertyEditFormProps {
 }
 
 const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => {
+  // Initialize the form data from the item prop
   const [formData, setFormData] = useState<Property>(item);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  console.log("Item: ",item);
+  
+  // Initialize new category state for room categories
+  const [newCategory, setNewCategory] = useState<RoomCategory>({
+    title: "",
+    qty: 1,
+    price: 0,
+    discountedPrice: 0,
+    currency: item.costing?.currency || "INR"
+  });
+  
+  // State to track if we're editing an existing category
+  const [editingCategoryIndex, setEditingCategoryIndex] = useState<number | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
   
   // Define options for various property features
   const amenities: PropertyAmenities[] = ["wifi", "pool", "gym", "spa", "restaurant", "parking", "airConditioning", "breakfast"];
-  const propertyAccessibilityOptions = ["wheelchair", "elevator", "braille", "audioGuide", "serviceAnimals"];
-  const roomAccessibilityOptions = ["wideDoorway", "loweredSink", "grabBars", "showerChair", "visualAlerts"];
-  const popularFiltersOptions = ["petFriendly", "familyFriendly", "businessReady", "ecofriendly", "luxury"];
-  const funThingsToDoOptions = ["beachAccess", "hiking", "skiing", "cityTour", "shopping", "nightlife"];
-  const mealsOptions = ["breakfast", "lunch", "dinner", "allInclusive", "roomService"];
-  const facilitiesOptions = ["swimmingPool", "fitness", "spa", "business", "childcare", "conferenceRoom"];
-  const bedPreferenceOptions = ["king", "queen", "twin", "single", "bunk"];
-  const reservationPolicyOptions = ["freeCancellation", "nonRefundable", "partialRefund"];
-  const brandsOptions = ["hilton", "marriott", "hyatt", "fourSeasons", "radisson"];
-  const roomFacilitiesOptions = ["minibar", "safeBox", "tv", "hairDryer", "ironBoard", "coffeeMaker"];
+  
+  const accessibility = ['Wheelchair Accessible', 'Elevator', 'Accessible Parking', 'Braille Signage', 'Accessible Bathroom', 'Roll-in Shower'];
+  const roomAccessibilityOptions = ['Grab Bars', 'Lowered Amenities', 'Visual Alarms', 'Wide Doorways', 'Accessible Shower'];
+  const popularFilters = ['Pet Friendly', 'Free Cancellation', 'Free Breakfast', 'Pool', 'Hot Tub', 'Ocean View', 'Family Friendly', 'Business Facilities'];
+  const funThingsToDo = ['Beach', 'Hiking', 'Shopping', 'Nightlife', 'Local Tours', 'Museums', 'Theme Parks', 'Water Sports'];
+  const mealsOptions = ['Breakfast', 'Lunch', 'Dinner', 'All-Inclusive', 'Buffet', 'À la carte', 'Room Service', 'Special Diets'];
+  const facilitiesOptions = ['Parking', 'WiFi', 'Swimming Pool', 'Fitness Center', 'Restaurant', 'Bar', 'Spa', 'Conference Room'];
+  const bedPreferenceOptions = ['King', 'Queen', 'Twin', 'Double', 'Single', 'Sofa Bed', 'Bunk Bed'];
+  const reservationPolicyOptions =  ['Free Cancellation', 'Flexible', 'Moderate', 'Strict', 'Non-Refundable', 'Pay at Property', 'Pay Now'];
+  const brandsOptions =  ['Hilton', 'Marriott', 'Hyatt', 'Best Western', 'Accor', 'IHG', 'Wyndham', 'Choice Hotels'];
+  const roomFacilitiesOptions = ['Air Conditioning', 'TV', 'Mini Bar', 'Coffee Maker', 'Safe', 'Desk', 'Balcony', 'Bathtub', 'Shower']
+
+  // Update the form when the item prop changes
+  useEffect(() => {
+    setFormData(item);
+  }, [item]);
+
+  // Calculate derived values when room categories change
+  useEffect(() => {
+    if (formData.categoryRooms && formData.categoryRooms.length > 0) {
+      // No need to update formData since we're displaying these calculated values separately
+      // This could be uncommented if we want to actually update the formData with these values
+      /*
+      setFormData(prev => ({
+        ...prev,
+        rooms: totalRooms,
+        costing: {
+          ...prev.costing,
+          price: minRoomPrice,
+          currency: prev.categoryRooms && prev.categoryRooms.length > 0 ? prev.categoryRooms[0].currency : "INR"
+        }
+      }));
+      */
+    }
+  }, [formData.categoryRooms]);
 
   const handleChange = (field: string, value: unknown) => {
     setFormData((prev) => {
@@ -55,6 +97,108 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     });
   };
   
+  // Handle room category changes
+  const handleCategoryChange = (field: keyof RoomCategory, value: string | number) => {
+    setNewCategory(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Handle adding a new room category
+  const handleAddCategory = () => {
+    if (!newCategory.title) {
+      setErrors(prev => ({ ...prev, categoryTitle: "Category title is required" }));
+      return;
+    }
+    
+    if (newCategory.qty <= 0) {
+      setErrors(prev => ({ ...prev, categoryQty: "Quantity must be greater than 0" }));
+      return;
+    }
+    
+    if (newCategory.price <= 0) {
+      setErrors(prev => ({ ...prev, categoryPrice: "Price must be greater than 0" }));
+      return;
+    }
+
+    if (isEditMode && editingCategoryIndex !== null) {
+      // Update existing category
+      setFormData(prev => {
+        const updatedCategories = [...(prev.categoryRooms || [])];
+        updatedCategories[editingCategoryIndex] = { ...newCategory };
+        return {
+          ...prev,
+          categoryRooms: updatedCategories
+        };
+      });
+      
+      // Exit edit mode
+      setIsEditMode(false);
+      setEditingCategoryIndex(null);
+    } else {
+      // Add new category
+      setFormData(prev => ({
+        ...prev,
+        categoryRooms: [...(prev.categoryRooms || []), { ...newCategory }]
+      }));
+    }
+
+    // Reset the new category form
+    setNewCategory({
+      title: "",
+      qty: 1,
+      price: 0,
+      discountedPrice: 0,
+      currency: newCategory.currency
+    });
+    
+    // Clear any errors
+    setErrors(prev => {
+      const updated = { ...prev };
+      delete updated.categoryTitle;
+      delete updated.categoryQty;
+      delete updated.categoryPrice;
+      return updated;
+    });
+  };
+
+  // Handle editing a room category
+  const handleEditCategory = (index: number) => {
+    const categoryToEdit = formData.categoryRooms?.[index];
+    if (categoryToEdit) {
+      setNewCategory({ ...categoryToEdit });
+      setEditingCategoryIndex(index);
+      setIsEditMode(true);
+    }
+  };
+
+  // Handle canceling the edit mode
+  const handleCancelEdit = () => {
+    setNewCategory({
+      title: "",
+      qty: 1,
+      price: 0,
+      discountedPrice: 0,
+      currency: formData.costing?.currency || "INR"
+    });
+    setEditingCategoryIndex(null);
+    setIsEditMode(false);
+  };
+
+  // Handle removing a room category
+  const handleRemoveCategory = (index: number) => {
+    // If we're currently editing this category, exit edit mode
+    if (editingCategoryIndex === index) {
+      handleCancelEdit();
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      categoryRooms: prev.categoryRooms?.filter((_, i) => i !== index)
+    }));
+  };
+  
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -65,9 +209,12 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     if (!formData.location?.city) newErrors.city = "City is required";
     if (!formData.location?.state) newErrors.state = "State is required";
     if (!formData.location?.country) newErrors.country = "Country is required";
-    if (!formData.costing?.price) newErrors.price = "Price is required";
-    if (!formData.costing?.currency) newErrors.currency = "Currency is required";
-    if (!formData.rooms) newErrors.rooms = "Number of rooms is required";
+    
+    // Check if we have room categories instead of checking price directly
+    if (!formData.categoryRooms || formData.categoryRooms.length === 0) {
+      newErrors.categoryRooms = "At least one room category is required";
+    }
+    
     if (!formData.bannerImage) newErrors.bannerImage = "Banner image is required";
     if (!formData.detailImages || formData.detailImages.length < 3) newErrors.detailImages = "At least 3 detail images are required";
     if (!formData.startDate) newErrors.startDate = "Start date is required";
@@ -79,10 +226,26 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
   };
 
   const handleSubmit = (e: React.FormEvent) => {
-    console.log(formData);
     e.preventDefault();
     if (validateForm()) {
-      onSave(formData);
+      // Before saving, update the rooms and price based on categories
+      const updatedData = {
+        ...formData,
+        rooms: formData.categoryRooms && formData.categoryRooms.length > 0 
+          ? formData.categoryRooms.reduce((sum, cat) => sum + cat.qty, 0)
+          : formData.rooms,
+        costing: {
+          ...formData.costing,
+          price: formData.categoryRooms && formData.categoryRooms.length > 0 
+            ? Math.min(...formData.categoryRooms.map(cat => cat.price))
+            : formData.costing?.price || 0,
+          currency: formData.categoryRooms && formData.categoryRooms.length > 0 
+            ? formData.categoryRooms[0].currency 
+            : formData.costing?.currency || "INR"
+        }
+      };
+      
+      onSave(updatedData);
     }
   };
 
@@ -126,13 +289,23 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     </div>
   );
 
+  // Calculate the minimum price from all room categories
+  const minRoomPrice = formData.categoryRooms && formData.categoryRooms.length > 0 
+    ? Math.min(...formData.categoryRooms.map(cat => cat.price))
+    : formData.costing?.price || 0;
+  
+  // Calculate the total room count from all categories
+  const totalRooms = formData.categoryRooms && formData.categoryRooms.length > 0 
+    ? formData.categoryRooms.reduce((sum, cat) => sum + cat.qty, 0)
+    : formData.rooms || 0;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label>Title</label>
         <Input
           name="title"
-          value={formData.title}
+          value={formData.title || ''}
           onChange={(e) => handleChange("title", e.target.value)}
           placeholder="Enter title"
         />
@@ -143,7 +316,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         <label>Description</label>
         <Textarea
           name="description"
-          value={formData.description}
+          value={formData.description || ''}
           onChange={(e) => handleChange("description", e.target.value)}
           placeholder="Enter description"
           rows={5}
@@ -152,22 +325,9 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       </div>
 
       <div>
-        <label>Rating</label>
-        <Input
-          type="number"
-          name="rat"
-          value={formData.rat || '1'}
-          onChange={(e) => handleChange("rat", e.target.value)}
-          placeholder="Enter rating"
-          min="1"
-          max="5"
-        />
-      </div>
-
-      <div>
         <label>Property Type</label>
         <Select
-          value={formData.type}
+          value={formData.type || ''}
           onValueChange={(value) => handleChange("type", value)}
         >
           <SelectTrigger>
@@ -227,63 +387,73 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label>Price per Night</label>
-          <Input
-            type="number"
-            name="costing.price"
-            value={formData.costing?.price || ''}
-            onChange={(e) => handleChange("costing.price", parseFloat(e.target.value) || 0)}
-            min={1}
-          />
-          {errors.price && <span className="text-red-500">{errors.price}</span>}
+      {/* Pricing Information (Read-only, calculated from room categories) */}
+      <div className="bg-blue-50 p-4 rounded-md">
+        <div className="flex items-center gap-2 mb-4">
+          <AlertCircle size={16} className="text-blue-500" />
+          <span className="text-sm text-blue-700">
+            Price per night and total rooms are automatically calculated from room categories.
+          </span>
         </div>
-
-        <div>
-          <label>Discounted Price per Night</label>
-          <Input
-            type="number"
-            name="costing.discountedPrice"
-            value={formData.costing?.discountedPrice || ''}
-            onChange={(e) => handleChange("costing.discountedPrice", parseFloat(e.target.value) || 0)}
-            min={0}
-          />
-        </div>
-
-        <div>
-          <label>Currency</label>
-          <Select
-            value={formData.costing?.currency || ''}
-            onValueChange={(value) => handleChange("costing.currency", value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select currency" />
-            </SelectTrigger>
-            <SelectContent>
-              {["INR", "USD", "EUR", "GBP", "JPY"].map((currency) => (
-                <SelectItem key={currency} value={currency}>
-                  {currency}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.currency && <span className="text-red-500">{errors.currency}</span>}
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="text-sm font-medium">Price per Night (Minimum)</label>
+            <Input
+              type="number"
+              value={minRoomPrice}
+              disabled
+              className="bg-gray-100"
+            />
+            <span className="text-xs text-gray-500 mt-1">
+              Based on the lowest room category price
+            </span>
+          </div>
+          
+          <div>
+            <label className="text-sm font-medium">Total Rooms</label>
+            <Input
+              type="number"
+              value={totalRooms}
+              disabled
+              className="bg-gray-100"
+            />
+            <span className="text-xs text-gray-500 mt-1">
+              Sum of all room category quantities
+            </span>
+          </div>
+          
+          <div>
+            <label className="text-sm font-medium">Currency</label>
+            <Input
+              type="text"
+              value={formData.categoryRooms && formData.categoryRooms.length > 0 
+                ? formData.categoryRooms[0].currency 
+                : formData.costing?.currency || "INR"}
+              disabled
+              className="bg-gray-100"
+            />
+            <span className="text-xs text-gray-500 mt-1">
+              Based on the first room category
+            </span>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label>Rooms</label>
+          <label>Property Rating (Stars)</label>
           <Input
             type="number"
-            name="rooms"
-            value={formData.rooms || ''}
-            onChange={(e) => handleChange("rooms", parseInt(e.target.value) || 0)}
-            min={1}
+            name="propertyRating"
+            value={formData.propertyRating?.toString()}
+            onChange={(e) => handleChange("propertyRating", parseFloat(e.target.value) || 0)}
+            min={0}
+            max={5}
+            step={0.5}
           />
-          {errors.rooms && <span className="text-red-500">{errors.rooms}</span>}
         </div>
+        
         <div>
           <label>Total Rating</label>
           <Input
@@ -294,18 +464,6 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
             min={0}
             max={5}
             step={0.1}
-          />
-        </div>
-        <div>
-          <label>Property Rating (Stars)</label>
-          <Input
-            type="number"
-            name="propertyRating"
-            value={formData.propertyRating || ''}
-            onChange={(e) => handleChange("propertyRating", parseFloat(e.target.value) || 0)}
-            min={0}
-            max={5}
-            step={0.5}
           />
         </div>
       </div>
@@ -333,6 +491,169 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         </div>
       </div>
 
+      {/* Room Categories Section */}
+      <div className="border-t pt-4 mt-4">
+        <h3 className="text-lg font-medium mb-4">Room Categories</h3>
+        
+        {errors.categoryRooms && (
+          <div className="mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded-md">
+            {errors.categoryRooms}
+          </div>
+        )}
+        
+        {/* List of existing categories */}
+        {formData.categoryRooms && formData.categoryRooms.length > 0 && (
+          <div className="mb-4 space-y-2">
+            <h4 className="text-sm font-medium">Added Categories:</h4>
+            
+            <div className="space-y-2">
+              {formData.categoryRooms.map((cat, index) => (
+                <div key={index} className="flex items-center p-3 bg-gray-50 rounded-md">
+                  <div className="flex-1 grid grid-cols-5 gap-2">
+                    <div className="col-span-2">
+                      <p className="font-medium">{cat.title}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Qty: {cat.qty}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">
+                        {cat.currency} {cat.price}
+                        {cat.discountedPrice > 0 && (
+                          <span className="ml-1 text-green-600">
+                            (-{cat.currency} {cat.discountedPrice})
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button 
+                      type="button"
+                      onClick={() => handleEditCategory(index)}
+                      className="text-blue-500 hover:text-blue-700"
+                      disabled={isEditMode}
+                    >
+                      <Edit size={18} />
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => handleRemoveCategory(index)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Form to add new category or edit existing */}
+        <div className="bg-gray-50 p-4 rounded-md">
+          <h4 className="text-sm font-medium mb-3">
+            {isEditMode ? "Edit Category:" : "Add New Category:"}
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Category Title</label>
+              <Input 
+                value={newCategory.title}
+                onChange={(e) => handleCategoryChange('title', e.target.value)}
+                placeholder="e.g. Deluxe Room, Suite, etc."
+              />
+              {errors.categoryTitle && <span className="text-red-500">{errors.categoryTitle}</span>}
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Quantity</label>
+              <Input 
+                type="number"
+                value={newCategory.qty}
+                onChange={(e) => handleCategoryChange('qty', Number(e.target.value) || 0)}
+                min={1}
+                placeholder="Number of rooms available"
+              />
+              {errors.categoryQty && <span className="text-red-500">{errors.categoryQty}</span>}
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Price</label>
+              <Input 
+                type="number"
+                value={newCategory.price}
+                onChange={(e) => handleCategoryChange('price', Number(e.target.value) || 0)}
+                min={0}
+                placeholder="Regular price"
+              />
+              {errors.categoryPrice && <span className="text-red-500">{errors.categoryPrice}</span>}
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Discounted Price</label>
+              <Input 
+                type="number"
+                value={newCategory.discountedPrice}
+                onChange={(e) => handleCategoryChange('discountedPrice', Number(e.target.value) || 0)}
+                min={0}
+                placeholder="Discounted price (if any)"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Currency</label>
+              <Select
+                value={newCategory.currency} 
+                onValueChange={(value) => handleCategoryChange('currency', value)} 
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="INR">INR</SelectItem>
+                  <SelectItem value="USD">USD</SelectItem>
+                  <SelectItem value="EUR">EUR</SelectItem>
+                  <SelectItem value="GBP">GBP</SelectItem>
+                  <SelectItem value="JPY">JPY</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+            <button 
+              type="button"
+              onClick={handleAddCategory}
+              className="flex items-center justify-center py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+            >
+              {isEditMode ? (
+                <>
+                  <Check size={16} className="mr-2" /> Update Category
+                </>
+              ) : (
+                <>
+                  <Plus size={16} className="mr-2" /> Add Category
+                </>
+              )}
+            </button>
+            
+            {isEditMode && (
+              <button 
+                type="button"
+                onClick={handleCancelEdit}
+                className="flex items-center justify-center py-2 px-4 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+              >
+                <X size={16} className="mr-2" /> Cancel
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Feature Sections */}
       <div className="border p-4 rounded-md">
         <h3 className="text-lg font-semibold mb-4">Property Features</h3>
@@ -347,8 +668,8 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         {errors.amenities && <span className="text-red-500 block mb-4">{errors.amenities}</span>}
         
         <CheckboxGroup
-          options={propertyAccessibilityOptions}
-          value={formData.propertyAccessibility || []}
+          options={accessibility}
+          value={formData.accessibility || []}
           onChange={handleChange}
           label="Property Accessibility"
           fieldName="propertyAccessibility"
@@ -359,11 +680,11 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
           value={formData.roomAccessibility || []}
           onChange={handleChange}
           label="Room Accessibility"
-          fieldName="roomAccessibility"
+          fieldName="roomAccessibilityOptions"
         />
         
         <CheckboxGroup
-          options={popularFiltersOptions}
+          options={popularFilters}
           value={formData.popularFilters || []}
           onChange={handleChange}
           label="Popular Filters"
@@ -371,7 +692,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         />
         
         <CheckboxGroup
-          options={funThingsToDoOptions}
+          options={funThingsToDo}
           value={formData.funThingsToDo || []}
           onChange={handleChange}
           label="Fun Things To Do"
@@ -431,7 +752,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         <label>Banner Image</label>
         <ImageUpload
           label='banner image'
-          value={formData.bannerImage}
+          value={formData.bannerImage || null}
           onChange={(image) => handleChange("bannerImage", image)}
         />
         {errors.bannerImage && <span className="text-red-500">{errors.bannerImage}</span>}

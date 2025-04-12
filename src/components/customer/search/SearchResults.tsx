@@ -39,12 +39,13 @@ export default function SearchResults() {
       // params.set('sortBy', sortBy);
       // params.set('sortOrder', sortOrder);
       // params.set('page', currentPage.toString());
-      // params.set('category', searchParams.category || 'property');
+      params.set('category', searchParams.category || 'property');
       
       try {
         const response = await fetch(`/api/search?${params.toString()}`);
         const data = await response.json();
         setResults(data.results);
+        setCategory(searchParams.category);
         // console.log('Search results:', data.results);
         setTotalPages(Math.ceil(data.total / 10));
         
@@ -71,7 +72,7 @@ export default function SearchResults() {
     <div 
       key={property.title} 
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow" 
-      onClick={() => router.push(`/customer/${category}/${property._id}`)}
+      onClick={() => router.push(`/customer/property/${property._id}`)}
     >
       <div className="relative h-48">
         {

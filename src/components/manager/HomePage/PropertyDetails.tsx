@@ -1,10 +1,64 @@
 import React from 'react';
-import { MapPin, Users, Tag, Star, Calendar, Check } from 'lucide-react';
+import { MapPin, Users, Tag, Star, Calendar, Check, X, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Property } from '@/lib/mongodb/models/Property';
 import Image from 'next/image';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FormItem, FormLabel } from '@/components/ui/form';
 
-const PropertyDetails: React.FC<{ item: Property }> = ({ item }) => {
+const PropertyDetails: React.FC<{ item: Property; isEditable?: boolean }> = ({ item, isEditable = false }) => {
+  // console.log("Item: ", item);
+  // State for managing room categories
+  const [ensurePropertyData, setEnsurePropertyData] = React.useState<any>({
+    ...item,
+    categoryRooms: item.categoryRooms || []
+  });
+  
+  // State for new category
+  const [newCategory, setNewCategory] = React.useState({
+    title: '',
+    qty: 1,
+    price: 0,
+    discountedPrice: 0,
+    currency: 'USD'
+  });
+  
+  // Handle changes in the new category form
+  const handleCategoryChange = (field: string, value: string | number) => {
+    setNewCategory(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+  
+  // Add a new category
+  const handleAddCategory = () => {
+    if (!newCategory.title) return;
+    
+    setEnsurePropertyData((prev:any) => ({
+      ...prev,
+      categoryRooms: [...(prev.categoryRooms || []), newCategory]
+    }));
+    
+    // Reset form
+    setNewCategory({
+      title: '',
+      qty: 1,
+      price: 0,
+      discountedPrice: 0,
+      currency: 'USD'
+    });
+  };
+  
+  // Remove a category
+  const handleRemoveCategory = (index: number) => {
+    setEnsurePropertyData((prev:any) => ({
+      ...prev,
+      categoryRooms: prev.categoryRooms.filter((_: any, i: number) => i !== index)
+    }));
+  };
+
   // Function to get formatted address
   const getFormattedAddress = () => {
     if (!item.location) return 'Address not available';
@@ -91,7 +145,7 @@ const PropertyDetails: React.FC<{ item: Property }> = ({ item }) => {
           <div>
             <p className="text-sm text-gray-500">Rating</p>
             <p>
-              {item.totalRating || 0}/5 ({item.review?.length || 0} reviews)
+              {/* {item.totalRating || 0}/5 ({item.review?.length || 0} reviews) */}
               {item.propertyRating && <span className="ml-2">Property Rating: {item.propertyRating.toString()}</span>}
             </p>
           </div>
@@ -107,14 +161,130 @@ const PropertyDetails: React.FC<{ item: Property }> = ({ item }) => {
             </p>
           </div>
         </div>
-
-        {item.rat && (
-          <div className="flex items-center">
-            <Check className="w-4 h-4 mr-2 text-gray-500" />
-            <div>
-              <p className="text-sm text-gray-500">RAT</p>
-              <p>{typeof item.rat === 'number' ? item.rat : item.rat}</p>
+      </div>
+      
+      {/* Room Categories Section */}
+      <div className="border-t pt-4 mt-4">
+        <h3 className="text-lg font-medium mb-4">Room Categories</h3>
+        
+        {/* List of existing categories */}
+        {ensurePropertyData.categoryRooms && ensurePropertyData.categoryRooms.length > 0 && (
+          <div className="mb-4 space-y-2">
+            <h4 className="text-sm font-medium">Available Categories:</h4>
+            
+            <div className="space-y-2">
+              {ensurePropertyData.categoryRooms.map((cat: any, index: number) => (
+                <div key={index} className="flex items-center p-3 bg-gray-50 rounded-md">
+                  <div className="flex-1 grid grid-cols-5 gap-2">
+                    <div className="col-span-2">
+                      <p className="font-medium">{cat.title}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Qty: {cat.qty}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">
+                        {cat.currency} {cat.price}
+                        {cat.discountedPrice > 0 && (
+                          <span className="ml-1 text-green-600">
+                            (-{cat.currency} {cat.discountedPrice})
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  {isEditable && (
+                    <button 
+                      type="button"
+                      onClick={() => handleRemoveCategory(index)}
+                      className="text-red-500 hover:text-red-700 ml-2"
+                    >
+                      <X size={18} />
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
+          </div>
+        )}
+        
+        {/* Form to add new category - only shown in editable mode */}
+        {isEditable && (
+          <div className="bg-gray-50 p-4 rounded-md">
+            <h4 className="text-sm font-medium mb-3">Add New Category:</h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <FormItem>
+                <FormLabel>Category Title</FormLabel>
+                <Input 
+                  value={newCategory.title}
+                  onChange={(e) => handleCategoryChange('title', e.target.value)}
+                  placeholder="e.g. Deluxe Room, Suite, etc."
+                />
+              </FormItem>
+              
+              <FormItem>
+                <FormLabel>Quantity</FormLabel>
+                <Input 
+                  type="number"
+                  value={newCategory.qty}
+                  onChange={(e) => handleCategoryChange('qty', Number(e.target.value) || 0)}
+                  min={1}
+                  placeholder="Number of rooms available"
+                />
+              </FormItem>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <FormItem>
+                <FormLabel>Price</FormLabel>
+                <Input 
+                  type="number"
+                  value={newCategory.price}
+                  onChange={(e) => handleCategoryChange('price', Number(e.target.value) || 0)}
+                  min={0}
+                  placeholder="Regular price"
+                />
+              </FormItem>
+              
+              <FormItem>
+                <FormLabel>Discounted Price</FormLabel>
+                <Input 
+                  type="number"
+                  value={newCategory.discountedPrice}
+                  onChange={(e) => handleCategoryChange('discountedPrice', Number(e.target.value) || 0)}
+                  min={0}
+                  placeholder="Discounted price (if any)"
+                />
+              </FormItem>
+              
+              <FormItem>
+                <FormLabel>Currency</FormLabel>
+                <Select
+                  value={newCategory.currency} 
+                  onValueChange={(value) => handleCategoryChange('currency', value)} 
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="INR">INR</SelectItem>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                    <SelectItem value="GBP">GBP</SelectItem>
+                    <SelectItem value="JPY">JPY</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormItem>
+            </div>
+            
+            <button 
+              type="button"
+              onClick={handleAddCategory}
+              className="flex items-center justify-center w-full py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+            >
+              <Plus size={16} className="mr-2" /> Add Category
+            </button>
           </div>
         )}
       </div>
@@ -128,7 +298,7 @@ const PropertyDetails: React.FC<{ item: Property }> = ({ item }) => {
       {/* Property Accessibility */}
       <div className="mt-6">
         <h4 className="text-md font-medium mb-2">Property Accessibility</h4>
-        {renderBadges(item.propertyAccessibility, 'No property accessibility features listed')}
+        {renderBadges(item.accessibility, 'No property accessibility features listed')}
       </div>
 
       {/* Room Accessibility */}

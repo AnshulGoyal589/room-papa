@@ -33,15 +33,15 @@ export interface Travelling {
   detailImages?: Image[];
 
 
-  amenities: string[];
-  accessibility : string[];
-  popularFilters : string[];
-  funThingsToDo : string[];
-  meals : string[];
-  facilities : string[];
-  rating : Number;
-  reservationPolicy : string[];
-  brands : string[];
+  amenities ?: string[];
+  accessibility ?: string[];
+  popularFilters ?: string[];
+  funThingsToDo ?: string[];
+  meals ?: string[];
+  facilities ?: string[];
+  rating ?: Number;
+  reservationPolicy? : string[];
+  brands? : string[];
   
 }
 

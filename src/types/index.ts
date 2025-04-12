@@ -14,6 +14,16 @@ export interface SearchHeaderProps {
 }
 
 
+export interface RoomCategory {
+  title: string;
+  qty: number;
+  price: number;
+  discountedPrice: number;
+  currency: string;
+}
+
+
+
 export type DateFilter2 = {
   [key: string]: unknown;
   transportation: {

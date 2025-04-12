@@ -33,16 +33,16 @@ export interface Trip {
   bannerImage?: Image; // Main featured image
   detailImages?: Image[]; // Trip gallery images
   type : string; // Domestic or International
-  amenities: string[];
+  amenities?: string[];
 
-  accessibility : string[];
-  popularFilters : string[];
-  funThingsToDo : string[];
-  meals : string[];
-  facilities : string[];
-  rating : Number;
-  reservationPolicy : string[];
-  brands : string[];
+  accessibility ?: string[];
+  popularFilters ?: string[];
+  funThingsToDo ?: string[];
+  meals ?: string[];
+  facilities ?: string[];
+  rating ?: Number;
+  reservationPolicy ?: string[];
+  brands ?: string[];
 }
 
 interface TripValidationInput {

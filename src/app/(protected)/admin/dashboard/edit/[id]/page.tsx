@@ -75,38 +75,52 @@ export default function ItemEdit({ params }: { params: Promise<{ id: string }> }
       
       if (foundCategory === 'properties') {
         setPropertyDetails({
-          userId: foundItem.userId,
-          title: foundItem.title,
-          description: foundItem.description,
-          costing: {
-            price: foundItem.costing.price || 0,
-            discountedPrice: foundItem.costing.discountedPrice || 0,
-            currency: foundItem.costing.currency || 'USD'
-          },
-          location: foundItem.location || {
-            address: '',
-            city: '',
-            state: '',
-            country: '',
-          },
-          amenities: foundItem.amenities || [''],
-          startDate: foundItem.startDate,
-          endDate: foundItem.endDate,
-          bannerImage:{
-            url: foundItem.bannerImage.url,
-            publicId: foundItem.bannerImage.publicId,
-            alt: foundItem.bannerImage.alt
-          },
-          detailImages: foundItem.detailImages?.map((image: Image) => ({
-            url: image.url
-          })),
-          totalRating: foundItem.totalRating || 0,
-          review: foundItem.review?.map((review: Review) => ({
-            comment: review.comment,
-            rating: review.rating
-          })) || [],
-          rooms: foundItem.rooms || 1,
-          type: foundItem.type || 'hotel'
+           userId: foundItem.userId,
+                    title: foundItem.title,
+                    description: foundItem.description,
+                    type: foundItem.type || 'hotel',
+                    location: foundItem.location || {
+                      address: '',
+                      city: '',
+                      state: '',
+                      country: '',
+                    },
+                    startDate: foundItem.startDate,
+                    endDate: foundItem.endDate,
+                    costing: {
+                      price: foundItem.costing.price || 0,
+                      discountedPrice: foundItem.costing.discountedPrice || 0,
+                      currency: foundItem.costing.currency || 'USD'
+                    },
+                    totalRating: foundItem.totalRating || 0,
+                    review: foundItem.review?.map((review: Review) => ({
+                      comment: review.comment,
+                      rating: review.rating
+                    })) || [],
+                    bannerImage: {
+                      url: foundItem.bannerImage.url,
+                      publicId: foundItem.bannerImage.publicId,
+                      alt: foundItem.bannerImage.alt
+                    },
+                    detailImages: foundItem.detailImages?.map((image: Image) => ({
+                      url: image.url
+                    })),
+                    rooms: foundItem.rooms || 1,
+          
+                    categoryRooms : foundItem.categoryRooms || [''],
+                    amenities: foundItem.amenities || [''],
+                    accessibility : foundItem.accessibility || [''],
+                    roomAccessibility : foundItem.roomAccessibility || [''],
+                    popularFilters : foundItem.popularFilters || [''],
+                    funThingsToDo : foundItem.funThingsToDo || [''],
+                    meals : foundItem.meals || [''],
+                    facilities : foundItem.facilities || [''],
+                    bedPreference : foundItem.bedPreference || [''],
+                    reservationPolicy : foundItem.reservationPolicy || [''],
+                    brands : foundItem.brands || [''],
+                    roomFacilities : foundItem.roomFacilities || [''],
+          
+                    propertyRating : foundItem.propertyRating || 3,
         });
       } else if (foundCategory === 'trips') {
         setTripDetails({
