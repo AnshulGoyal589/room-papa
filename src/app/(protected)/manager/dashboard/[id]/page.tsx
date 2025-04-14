@@ -70,40 +70,34 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
         category: foundCategory === 'properties' ? 'Property' : 
                   foundCategory === 'trips' ? 'Trip' : 'Travelling'
       };
-      console.log("Found Item: ",foundItem);
+      // console.log("Found Item: ",foundItem);
       setItem(generalItem);
+      
       
       if (foundCategory === 'properties') {
         setPropertyDetails({
           userId: foundItem.userId,
           title: foundItem.title,
           description: foundItem.description,
-          rat: foundItem.rat || '1',
-          costing: {
-            price: foundItem.costing.price || 0,
-            discountedPrice: foundItem.costing.discountedPrice || 0,
-            currency: foundItem.costing.currency || 'USD'
-          },
+          type: foundItem.type || 'hotel',
           location: foundItem.location || {
             address: '',
             city: '',
             state: '',
             country: '',
           },
-          amenities: foundItem.amenities || [''],
-          propertyAccessibility: foundItem.propertyAccessibility || [''],
-          roomAccessibility: foundItem.roomAccessibility || [''],
-          popularFilters: foundItem.popularFilters || [''],
-          funThingsToDo: foundItem.funThingsToDo || [''],
-          meals: foundItem.meals || [''],
-          facilities: foundItem.facilities || [''],
-          propertyRating: foundItem.propertyRating || 0,
-          bedPreference: foundItem.bedPreference || [''],
-          reservationPolicy: foundItem.reservationPolicy || [''],
-          brands: foundItem.brands || [''],
-          roomFacilities: foundItem.roomFacilities || [''],
           startDate: foundItem.startDate,
           endDate: foundItem.endDate,
+          costing: {
+            price: foundItem.costing.price || 0,
+            discountedPrice: foundItem.costing.discountedPrice || 0,
+            currency: foundItem.costing.currency || 'USD'
+          },
+          totalRating: foundItem.totalRating || 0,
+          review: foundItem.review?.map((review: Review) => ({
+            comment: review.comment,
+            rating: review.rating
+          })) || [],
           bannerImage: {
             url: foundItem.bannerImage.url,
             publicId: foundItem.bannerImage.publicId,
@@ -112,21 +106,28 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
           detailImages: foundItem.detailImages?.map((image: Image) => ({
             url: image.url
           })),
-          totalRating: foundItem.totalRating || 0,
-          review: foundItem.review?.map((review: Review) => ({
-            comment: review.comment,
-            rating: review.rating
-          })) || [],
-          rooms: foundItem.rooms || 0,
-          type: foundItem.type || 'hotel'
+          rooms: foundItem.rooms || 1,
+
+          categoryRooms : foundItem.categoryRooms || [''],
+          amenities: foundItem.amenities || [''],
+          accessibility : foundItem.accessibility || [''],
+          roomAccessibility : foundItem.roomAccessibility || [''],
+          popularFilters : foundItem.popularFilters || [''],
+          funThingsToDo : foundItem.funThingsToDo || [''],
+          meals : foundItem.meals || [''],
+          facilities : foundItem.facilities || [''],
+          bedPreference : foundItem.bedPreference || [''],
+          reservationPolicy : foundItem.reservationPolicy || [''],
+          brands : foundItem.brands || [''],
+          roomFacilities : foundItem.roomFacilities || [''],
+
+          propertyRating : foundItem.propertyRating || 3,
         });
       } else if (foundCategory === 'trips') {
         setTripDetails({
           userId: foundItem.userId,
           title: foundItem.title,
           description: foundItem.description,
-          domain: foundItem.domain,
-          rat: foundItem.rat || '1',
           bannerImage: {
             url: foundItem.bannerImage.url,
             publicId: foundItem.bannerImage.publicId,
@@ -137,44 +138,32 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
           })),
           type: foundItem.type,
           activities: foundItem.activities || [''],
-          amenities: foundItem.amenities || [''],
-          propertyAccessibility: foundItem.propertyAccessibility || [''],
-          roomAccessibility: foundItem.roomAccessibility || [''],
-          popularFilters: foundItem.popularFilters || [''],
-          funThingsToDo: foundItem.funThingsToDo || [''],
-          meals: foundItem.meals || [''],
-          facilities: foundItem.facilities || [''],
-          propertyRating: foundItem.propertyRating || 0,
-          bedPreference: foundItem.bedPreference || [''],
-          reservationPolicy: foundItem.reservationPolicy || [''],
-          brands: foundItem.brands || [''],
-          roomFacilities: foundItem.roomFacilities || [''],
           destination: {
             city: foundItem.destination.city,
             country: foundItem.destination.country,
             state: foundItem.destination.state
           },
-          startDate: foundItem.startDate,
-          endDate: foundItem.endDate,
+          startDate:foundItem.startDate,
+          endDate:foundItem.endDate,
           costing: {
             price: foundItem.costing.price || 0,
             currency: foundItem.costing.currency || 'USD',
             discountedPrice: foundItem.costing.discountedPrice || 0
           },
-          totalRating: foundItem.totalRating || 0,
-          review: foundItem.review?.map((review: Review) => ({
-            comment: review.comment,
-            rating: review.rating
-          })),
-          createdAt: foundItem.createdAt ? new Date(foundItem.createdAt) : undefined,
-          updatedAt: foundItem.updatedAt ? new Date(foundItem.updatedAt) : undefined
+          updatedAt: new Date(foundItem.updatedAt),
+          accessibility : foundItem.accessibility || [''],
+          popularFilters : foundItem.popularFilters || [''],
+          funThingsToDo : foundItem.funThingsToDo || [''],
+          meals : foundItem.meals || [''],
+          facilities : foundItem.facilities || [''],
+          reservationPolicy : foundItem.reservationPolicy || [''],
+          brands : foundItem.brands || [''],
         });
       } else {
         setTravellingDetails({
           userId: foundItem.userId,
           title: foundItem.title,
           description: foundItem.description,
-          rat: foundItem.rat || '1',
           transportation: {
             type: foundItem.transportation.type,
             arrivalTime: foundItem.transportation.arrivalTime,
@@ -187,33 +176,29 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
             discountedPrice: foundItem.costing.discountedPrice,
             currency: foundItem.costing.currency
           },
-          totalRating: foundItem.totalRating || 0,
+          totalRating: foundItem.totalRating,
           review: foundItem.review?.map((review: Review) => ({
             comment: review.comment,
             rating: review.rating
           })),
-          amenities: foundItem.amenities || [''],
-          travellingAccessibility: foundItem.travellingAccessibility || [''],
-          roomAccessibility: foundItem.roomAccessibility || [''],
-          popularFilters: foundItem.popularFilters || [''],
-          funThingsToDo: foundItem.funThingsToDo || [''],
-          meals: foundItem.meals || [''],
-          facilities: foundItem.facilities || [''],
-          travellingRating: foundItem.travellingRating || 0,
-          bedPreference: foundItem.bedPreference || [''],
-          reservationPolicy: foundItem.reservationPolicy || [''],
-          brands: foundItem.brands || [''],
-          roomFacilities: foundItem.roomFacilities || [''],
-          createdAt: foundItem.createdAt ? new Date(foundItem.createdAt) : undefined,
-          updatedAt: foundItem.updatedAt ? new Date(foundItem.updatedAt) : undefined,
+          createdAt: new Date(foundItem.createdAt),
+          updatedAt: new Date(foundItem.updatedAt),
           bannerImage: {
             url: foundItem.bannerImage.url,
             publicId: foundItem.bannerImage.publicId,
-            alt: foundItem.bannerImage.alt
+            alt : foundItem.bannerImage.alt
           },
           detailImages: foundItem.detailImages?.map((image: Image) => ({
             url: image.url
           })),
+          amenities: foundItem.amenities || [''],
+          accessibility : foundItem.accessibility || [''],
+          popularFilters : foundItem.popularFilters || [''],
+          funThingsToDo : foundItem.funThingsToDo || [''],
+          meals : foundItem.meals || [''],
+          facilities : foundItem.facilities || [''],
+          reservationPolicy : foundItem.reservationPolicy || [''],
+          brands : foundItem.brands || [''],
         });
       }
       

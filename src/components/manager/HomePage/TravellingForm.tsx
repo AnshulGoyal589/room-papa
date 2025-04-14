@@ -14,20 +14,8 @@ import {
 import { X } from 'lucide-react';
 import { Travelling } from '@/lib/mongodb/models/Travelling';
 import { TransportationType } from '@/types';
+import { categoryOptions } from '../../../../public/assets/data';
 
-// Define options for each multi-select category
-const categoryOptions = {
-  travellingAccessibility: ['Wheelchair Accessible', 'Elevator', 'Accessible Parking', 'Braille Signage', 'Accessible Bathroom', 'Roll-in Shower'],
-  roomAccessibility: ['Grab Bars', 'Lowered Amenities', 'Visual Alarms', 'Wide Doorways', 'Accessible Shower'],
-  popularFilters: ['Pet Friendly', 'Free Cancellation', 'Free Food', 'Wifi', 'Entertainment', 'Window Seat', 'Family Friendly', 'Business Facilities'],
-  funThingsToDo: ['Movies', 'Reading', 'Games', 'Sleeping', 'Local Tours', 'Sightseeing', 'Entertainment', 'Shopping'],
-  meals: ['Breakfast', 'Lunch', 'Dinner', 'All-Inclusive', 'Buffet', 'À la carte', 'Room Service', 'Special Diets'],
-  facilities: ['Charging Ports', 'WiFi', 'Entertainment', 'Blankets', 'Food', 'Drinks', 'Extra Luggage', 'Private Cabin'],
-  bedPreference: ['Recliner', 'Flat Bed', 'Twin', 'Double', 'Single', 'Sofa Bed', 'Bunk Bed'],
-  reservationPolicy: ['Free Cancellation', 'Flexible', 'Moderate', 'Strict', 'Non-Refundable', 'Pay at Counter', 'Pay Now'],
-  brands: ['Air India', 'British Airways', 'Emirates', 'JetBlue', 'Southwest', 'Delta', 'IRCTC', 'Uber'],
-  roomFacilities: ['Air Conditioning', 'TV', 'Mini Bar', 'Coffee Maker', 'Safe', 'Power Outlet', 'Extra Space', 'Reading Light', 'Pillow']
-};
 
 // Create a default/initial state for TravellingData
 const initialTravellingData: Travelling = {
@@ -38,23 +26,21 @@ const initialTravellingData: Travelling = {
     from: '',
     to: '',
   },
-  amenities: [],
   costing: {
     price: 0,
     discountedPrice: 0,
     currency: 'USD',
   },
-  travellingAccessibility: [],
-  roomAccessibility: [],
+  amenities: [],
+  accessibility: [],
   popularFilters: [],
   funThingsToDo: [],
   meals: [],
   facilities: [],
-  travellingRating: 0,
-  bedPreference: [],
   reservationPolicy: [],
   brands: [],
-  roomFacilities: [],
+
+  totalRating: 0,
 };
 
 interface TravellingFormProps {
@@ -280,30 +266,12 @@ const TravellingForm: React.FC<TravellingFormProps> = ({
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormItem>
-          <FormLabel>Travel Rating</FormLabel>
-          <Select
-            value={ensureTravellingData.travellingRating.toString()}
-            onValueChange={(value) => handleTravellingChange('travellingRating', Number(value))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select rating" />
-            </SelectTrigger>
-            <SelectContent>
-              {[1, 2, 3, 4, 5].map((rating) => (
-                <SelectItem key={rating} value={rating.toString()}>
-                  {rating} {rating === 1 ? 'Star' : 'Stars'}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FormItem>
-        
+       
         <FormItem>
           <FormLabel>Total Rating</FormLabel>
           <Input 
             type="number"
-            value={ensureTravellingData.totalRating || 0}
+            value={ensureTravellingData.totalRating?.toString() || ""}
             onChange={(e) => handleTravellingChange('totalRating', Number(e.target.value) || 0)}
             min={0}
             max={5}
@@ -320,7 +288,7 @@ const TravellingForm: React.FC<TravellingFormProps> = ({
               <input 
                 type="checkbox"
                 id={amenity}
-                checked={ensureTravellingData.amenities.includes(amenity)}
+                checked={ensureTravellingData.amenities && ensureTravellingData.amenities.includes(amenity)}
                 onChange={(e) => {
                   if (e.target.checked) {
                     handleTravellingChange('amenities', [...(ensureTravellingData.amenities || []), amenity]);

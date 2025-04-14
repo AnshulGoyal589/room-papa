@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     
     const category = searchParams.get('category') || 'property';
     
-    const validationResult = validateSearchParams(searchParams, category);
+    const validationResult = validateSearchParams(searchParams);
     if (!validationResult.valid) {
       return NextResponse.json(
         { error: validationResult.error }, 
@@ -71,13 +71,14 @@ function getCategoryCollection(category: string): string | null {
   return collections[category.toLowerCase()] || null;
 }
 
-function validateSearchParams(searchParams: URLSearchParams, category: string) {
+function validateSearchParams(searchParams: URLSearchParams) {
   // Validate date inputs
   if (searchParams.has('arrivalTime') || searchParams.has('departureTime')) {
     try {
       if (searchParams.has('arrivalTime')) new Date(searchParams.get('arrivalTime') as string);
       if (searchParams.has('departureTime')) new Date(searchParams.get('departureTime') as string);
     } catch (_error) {
+      console.error(_error);
       return { valid: false, error: 'Invalid date format for arrival/departure time' };
     }
   }
@@ -111,11 +112,24 @@ function buildSearchQuery(searchParams: URLSearchParams): QueryType {
       { 'location.state': { $regex: titleQuery, $options: 'i' } },
       { 'location.country': { $regex: titleQuery, $options: 'i' } },
       { 'transportation.from': { $regex: titleQuery, $options: 'i' } },
-      { 'transportation.to': { $regex: titleQuery, $options: 'i' } },
       { 'activities': { $elemMatch: { $regex: titleQuery, $options: 'i' } } },
     ];
   }
-
+  if (searchParams.has('title2')) {
+    const titleQuery2 = searchParams.get('title2') as string;
+    query.$or = [
+      { 'title': { $regex: titleQuery2, $options: 'i' } },
+      { 'destination.city': { $regex: titleQuery2, $options: 'i' } },
+      { 'destination.state': { $regex: titleQuery2, $options: 'i' } },
+      { 'destination.country': { $regex: titleQuery2, $options: 'i' } },
+      { 'location.city': { $regex: titleQuery2, $options: 'i' } },
+      { 'location.address': { $regex: titleQuery2, $options: 'i' } },
+      { 'location.state': { $regex: titleQuery2, $options: 'i' } },
+      { 'location.country': { $regex: titleQuery2, $options: 'i' } },
+      { 'transportation.to': { $regex: titleQuery2, $options: 'i' } },
+      { 'activities': { $elemMatch: { $regex: titleQuery2, $options: 'i' } } },
+    ];
+  }
   // Common filters across all categories
   addPriceRangeFilter(query, searchParams);
   // addCurrencyFilter(query, searchParams);
@@ -137,7 +151,7 @@ function buildSearchQuery(searchParams: URLSearchParams): QueryType {
   
   return query;
 }
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function addPriceRangeFilter(query: Record<string, any>, searchParams: URLSearchParams): void {
 
   const minPrice = searchParams.get('minPrice');

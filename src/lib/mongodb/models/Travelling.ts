@@ -7,7 +7,6 @@ export interface Travelling {
   _id?: ObjectId;
   userId?: string;
   title?: string;
-  rat ?: number | '1';
   description?: string;
   transportation: {
     type: TransportationType;
@@ -21,7 +20,6 @@ export interface Travelling {
     discountedPrice: number;
     currency: string;
   };
-  totalRating?: number; 
   review?: {
     comment: string;
     rating: number;
@@ -39,9 +37,10 @@ export interface Travelling {
   funThingsToDo ?: string[];
   meals ?: string[];
   facilities ?: string[];
-  rating ?: Number;
   reservationPolicy? : string[];
   brands? : string[];
+
+  totalRating ?: number;
   
 }
 

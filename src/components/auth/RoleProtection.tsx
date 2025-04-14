@@ -57,9 +57,11 @@ export default function RoleProtection({
           const roleConfig = routeConfig.roleRoutes[role];
           
           // Allow access to public routes for all users
+          // console.log("hurrah: ",role);
           if (isPublicRoute) {
             setAuthorized(true);
           } 
+
           // For homepage, redirect to role-specific default route
           else if (pathname && pathname === '/') {
             router.push(roleConfig.defaultRoute);

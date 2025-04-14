@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Calendar, Banknote, Plane, Star, Users, Tag, Check } from 'lucide-react';
+import { MapPin, Calendar, Banknote, Plane, Star } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Travelling } from '@/lib/mongodb/models/Travelling';
@@ -87,20 +87,12 @@ const TravellingDetails: React.FC<{ item: Travelling }> = ({ item }) => {
             <div>
               <p className="text-sm text-gray-500">Rating</p>
               <p>{item.totalRating.toFixed(1)}/5 ({item.review?.length || 0} reviews)</p>
-              {item.travellingRating && <span className="ml-2">Travelling Rating: {item.travellingRating.toString()}</span>}
+              {item.totalRating && <span className="ml-2">Travelling Rating: {item.totalRating.toString()}</span>}
             </div>
           </div>
         )}
         
-        {item.rat && (
-          <div className="flex items-center">
-            <Check className="w-4 h-4 mr-2 text-gray-500" />
-            <div>
-              <p className="text-sm text-gray-500">RAT</p>
-              <p>{typeof item.rat === 'number' ? item.rat : item.rat}</p>
-            </div>
-          </div>
-        )}
+    
       </div>
       
       <Separator className="my-6" />
@@ -154,13 +146,7 @@ const TravellingDetails: React.FC<{ item: Travelling }> = ({ item }) => {
       {/* Travelling Accessibility */}
       <div className="mt-6">
         <h4 className="text-md font-medium mb-2">Travelling Accessibility</h4>
-        {renderBadges(item.travellingAccessibility, 'No travelling accessibility features listed')}
-      </div>
-
-      {/* Room Accessibility */}
-      <div className="mt-6">
-        <h4 className="text-md font-medium mb-2">Room Accessibility</h4>
-        {renderBadges(item.roomAccessibility, 'No room accessibility features listed')}
+        {renderBadges(item.accessibility, 'No travelling accessibility features listed')}
       </div>
 
       {/* Popular Filters */}
@@ -187,12 +173,6 @@ const TravellingDetails: React.FC<{ item: Travelling }> = ({ item }) => {
         {renderBadges(item.facilities, 'No facilities listed')}
       </div>
 
-      {/* Bed Preference */}
-      <div className="mt-6">
-        <h4 className="text-md font-medium mb-2">Bed Preference</h4>
-        {renderBadges(item.bedPreference, 'No bed preferences listed')}
-      </div>
-
       {/* Reservation Policy */}
       <div className="mt-6">
         <h4 className="text-md font-medium mb-2">Reservation Policy</h4>
@@ -203,12 +183,6 @@ const TravellingDetails: React.FC<{ item: Travelling }> = ({ item }) => {
       <div className="mt-6">
         <h4 className="text-md font-medium mb-2">Brands</h4>
         {renderBadges(item.brands, 'No brands listed')}
-      </div>
-
-      {/* Room Facilities */}
-      <div className="mt-6">
-        <h4 className="text-md font-medium mb-2">Room Facilities</h4>
-        {renderBadges(item.roomFacilities, 'No room facilities listed')}
       </div>
       
       {/* Detail Images section */}

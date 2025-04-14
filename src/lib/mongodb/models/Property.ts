@@ -2,7 +2,7 @@
 
 import { Collection, ObjectId } from 'mongodb';
 import { getDb } from '..';
-import { PropertyAccessibility, PropertyAmenities, PropertyType, RoomAccessibility, RoomCategory } from '@/types';
+import {  PropertyAmenities, PropertyType, RoomCategory } from '@/types';
 import { Image } from './Image';
 
 
@@ -49,72 +49,72 @@ export interface Property {
   brands ?: string[];
   roomFacilities ?: string[];
   
-  propertyRating ?: Number;
+  propertyRating ?: number;
 
 }
 
 
-interface PropertyValidationInput {
-  name: string;
-  type: string;
-  location: {
-    address: string;
-    city: string;
-    country: string;
+  interface PropertyValidationInput {
+    name: string;
+    type: string;
+    location: {
+      address: string;
+      city: string;
+      country: string;
+      [key: string]: unknown;
+    };
+    description: string;
+    amenities: string[];
+    pricePerNight: number;
+    rooms: number;
     [key: string]: unknown;
-  };
-  description: string;
-  amenities: string[];
-  pricePerNight: number;
-  rooms: number;
-  [key: string]: unknown;
-}
-
-export function validateProperty(propertyData: PropertyValidationInput): boolean {
-  const requiredFields = ['name', 'type', 'location', 'description', 'amenities', 'pricePerNight', 'rooms'];
-  
-  for (const field of requiredFields) {
-    if (!propertyData[field]) {
-      throw new Error(`Missing required field: ${field}`);
-    }
-  }
-  
-  // Validate location sub-fields
-  const requiredLocationFields = ['address', 'city', 'country'];
-  for (const field of requiredLocationFields) {
-    if (!propertyData.location[field]) {
-      throw new Error(`Missing required location field: ${field}`);
-    }
-  }
-  
-  // Validate property type
-  const validPropertyTypes: PropertyType[] = ['hotel', 'apartment', 'villa', 'hostel', 'resort'];
-  if (!validPropertyTypes.includes(propertyData.type as PropertyType)) {
-    throw new Error(`Invalid property type. Must be one of: ${validPropertyTypes.join(', ')}`);
-  }
-  
-  // Validate amenities
-  const validAmenities: PropertyAmenities[] = ['wifi', 'pool', 'gym', 'spa', 'restaurant', 'parking', 'airConditioning', 'breakfast'];
-  for (const amenity of propertyData.amenities) {
-    if (!validAmenities.includes(amenity as PropertyAmenities)) {
-      throw new Error(`Invalid amenity: ${amenity}. Valid amenities are: ${validAmenities.join(', ')}`);
-    }
-  }
-  
-  // Validate numeric values
-  if (propertyData.pricePerNight <= 0) {
-    throw new Error('Price per night must be greater than 0');
-  }
-  
-  if (propertyData.rooms <= 0) {
-    throw new Error('Maximum guests must be greater than 0');
   }
 
-  
-  return true;
-}
+  export function validateProperty(propertyData: PropertyValidationInput): boolean {
+    const requiredFields = ['name', 'type', 'location', 'description', 'amenities', 'pricePerNight', 'rooms'];
+    
+    for (const field of requiredFields) {
+      if (!propertyData[field]) {
+        throw new Error(`Missing required field: ${field}`);
+      }
+    }
+    
+    // Validate location sub-fields
+    const requiredLocationFields = ['address', 'city', 'country'];
+    for (const field of requiredLocationFields) {
+      if (!propertyData.location[field]) {
+        throw new Error(`Missing required location field: ${field}`);
+      }
+    }
+    
+    // Validate property type
+    const validPropertyTypes: PropertyType[] = ['hotel', 'apartment', 'villa', 'hostel', 'resort'];
+    if (!validPropertyTypes.includes(propertyData.type as PropertyType)) {
+      throw new Error(`Invalid property type. Must be one of: ${validPropertyTypes.join(', ')}`);
+    }
+    
+    // Validate amenities
+    const validAmenities: PropertyAmenities[] = ['wifi', 'pool', 'gym', 'spa', 'restaurant', 'parking', 'airConditioning', 'breakfast'];
+    for (const amenity of propertyData.amenities) {
+      if (!validAmenities.includes(amenity as PropertyAmenities)) {
+        throw new Error(`Invalid amenity: ${amenity}. Valid amenities are: ${validAmenities.join(', ')}`);
+      }
+    }
+    
+    // Validate numeric values
+    if (propertyData.pricePerNight <= 0) {
+      throw new Error('Price per night must be greater than 0');
+    }
+    
+    if (propertyData.rooms <= 0) {
+      throw new Error('Maximum guests must be greater than 0');
+    }
 
-export async function getPropertiesCollection(): Promise<Collection<Property>> {
+    
+    return true;
+  }
+
+  export async function getPropertiesCollection(): Promise<Collection<Property>> {
     const db = await getDb();
     // console.log(db);
     return db.collection<Property>('properties');

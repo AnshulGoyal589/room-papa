@@ -610,6 +610,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
                 value={newCategory.currency} 
                 onValueChange={(value) => handleCategoryChange('currency', value)} 
               >
+                
                 <SelectTrigger>
                   <SelectValue placeholder="Select currency" />
                 </SelectTrigger>

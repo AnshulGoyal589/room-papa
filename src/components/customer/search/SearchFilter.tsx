@@ -1,17 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PropertyType, TransportationType } from '@/types';
 import { categoryOptions } from '../../../../public/assets/data';
 
-
 export default function SearchFilter() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Filter mode (Property, Travelling, Trip)
-  const [filterMode, setFilterMode] = useState<'property' | 'travelling' | 'trip'>('property');
+  const [filterMode, setFilterMode] = useState<string>(searchParams.get('category') || 'property');
 
   // Common filters
   const [minPrice, setMinPrice] = useState<string>('');
@@ -49,89 +49,93 @@ export default function SearchFilter() {
   const [brands, setBrands] = useState<string[]>([]);
   const [amenities, setAmenities] = useState<string[]>([]);
 
-  // Handle filter changes and update URL params
+  // Handle filter changes and update URL params with debounce
   const updateFilters = () => {
-
-    
-    const scrollPosition = window.scrollY;
-
-
-    const params: { [key: string]: string | undefined } = {
-      category: filterMode,
-      minPrice: minPrice || undefined,
-      maxPrice: maxPrice || undefined,
-      currency: currency || undefined,
-    };
-
-
-    // Add mode-specific params
-    
-    if (filterMode === 'property') {
-      params.propertyType = propertyType || undefined;
-      params.propertyRating = propertyRating || undefined;
-      params.roomAccessibility = roomAccessibility.length > 0 ? roomAccessibility.join(',') : undefined;
-      params.bedPreference = bedPreference.length > 0 ? bedPreference.join(',') : undefined;
-      params.roomFacilities = roomFacilities.length > 0 ? roomFacilities.join(',') : undefined;
-    } else if (filterMode === 'travelling') {
-      params.transportationType = transportationType || undefined;
-      params.arrivalTime = arrivalTime || undefined;
-      params.departureTime = departureTime || undefined;
-      params.fromLocation = fromLocation || undefined;
-      params.toLocation = toLocation || undefined;
-    } else if (filterMode === 'trip') {
-      params.tripType = tripType || undefined;
-      params.city = city || undefined;
-      params.state = state || undefined;
-      params.country = country || undefined;
+    // Clear any existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
     
-    // Common category filters
-    params.accessibility = accessibility.length > 0 ? accessibility.join(',') : undefined;
-    params.popularFilters = popularFilters.length > 0 ? popularFilters.join(',') : undefined;
-    params.funThingsToDo = funThingsToDo.length > 0 ? funThingsToDo.join(',') : undefined;
-    params.meals = meals.length > 0 ? meals.join(',') : undefined;
-    params.facilities = facilities.length > 0 ? facilities.join(',') : undefined;
-    params.reservationPolicy = reservationPolicy.length > 0 ? reservationPolicy.join(',') : undefined;
-    params.brands = brands.length > 0 ? brands.join(',') : undefined;
-    params.amenities = amenities.length > 0 ? amenities.join(',') : undefined;
+    // Set a new timer that will execute after 3 seconds
+    debounceTimerRef.current = setTimeout(() => {
+      const scrollPosition = window.scrollY;
 
-    // Remove undefined values
-    Object.keys(params).forEach(key => {
-      if (params[key] === undefined) {
-        delete params[key];
+      const params: { [key: string]: string | undefined } = {
+        category: filterMode,
+        minPrice: minPrice || undefined,
+        maxPrice: maxPrice || undefined,
+        currency: currency || undefined,
+      };
+
+      // Add mode-specific params
+      if (filterMode === 'property') {
+        params.propertyType = propertyType || undefined;
+        params.propertyRating = propertyRating || undefined;
+        params.roomAccessibility = roomAccessibility.length > 0 ? roomAccessibility.join(',') : undefined;
+        params.bedPreference = bedPreference.length > 0 ? bedPreference.join(',') : undefined;
+        params.roomFacilities = roomFacilities.length > 0 ? roomFacilities.join(',') : undefined;
+      } else if (filterMode === 'travelling') {
+        params.transportationType = transportationType || undefined;
+        params.arrivalTime = arrivalTime || undefined;
+        params.departureTime = departureTime || undefined;
+        params.fromLocation = fromLocation || undefined;
+        params.toLocation = toLocation || undefined;
+      } else if (filterMode === 'trip') {
+        params.tripType = tripType || undefined;
+        params.city = city || undefined;
+        params.state = state || undefined;
+        params.country = country || undefined;
       }
-    });
+      
+      // Common category filters
+      params.accessibility = accessibility.length > 0 ? accessibility.join(',') : undefined;
+      params.popularFilters = popularFilters.length > 0 ? popularFilters.join(',') : undefined;
+      params.funThingsToDo = funThingsToDo.length > 0 ? funThingsToDo.join(',') : undefined;
+      params.meals = meals.length > 0 ? meals.join(',') : undefined;
+      params.facilities = facilities.length > 0 ? facilities.join(',') : undefined;
+      params.reservationPolicy = reservationPolicy.length > 0 ? reservationPolicy.join(',') : undefined;
+      params.brands = brands.length > 0 ? brands.join(',') : undefined;
+      params.amenities = amenities.length > 0 ? amenities.join(',') : undefined;
 
-    // Construct URL search params
-    const queryString = new URLSearchParams(params as Record<string, string>).toString();
-    router.push(`?${queryString}`);
-    window.scrollTo(0, scrollPosition);
+      // Remove undefined values
+      Object.keys(params).forEach(key => {
+        if (params[key] === undefined) {
+          delete params[key];
+        }
+      });
+
+      // Construct URL search params
+      const queryString = new URLSearchParams(params as Record<string, string>).toString();
+      router.push(`?${queryString}`);
+      window.scrollTo(0, scrollPosition);
+    }, 1000); // 3000 milliseconds = 3 seconds
   };
 
-  // Auto-update URL whenever filters change
+  // Trigger updateFilters whenever filters change
   useEffect(() => {
     updateFilters();
+    
+    // Cleanup function to clear any pending timers when component unmounts
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    filterMode, minPrice, maxPrice, currency,
-    propertyType, propertyRating, accessibility, roomAccessibility, bedPreference, roomFacilities,
-    transportationType, arrivalTime, departureTime, fromLocation, toLocation,
-    tripType, city, state, country,
-    popularFilters, funThingsToDo, meals, facilities, reservationPolicy, brands, amenities
+    filterMode, minPrice, maxPrice, currency, propertyType, propertyRating, accessibility, roomAccessibility, bedPreference, roomFacilities, transportationType, arrivalTime, departureTime, fromLocation, toLocation, tripType, city, state, country, popularFilters, funThingsToDo, meals, facilities, reservationPolicy, brands, amenities
   ]);
 
   // Sync state with URL params on mount
   useEffect(() => {
     if (searchParams) {
       // Get the filter mode
-      const mode = searchParams.get('mode');
-      if (mode === 'property' || mode === 'travelling' || mode === 'trip') {
-        setFilterMode(mode);
-      }
+      setFilterMode(searchParams.get('category') || 'property');
 
       // Common filters
       setMinPrice(searchParams.get('minPrice') || '');
       setMaxPrice(searchParams.get('maxPrice') || '');
-      setCurrency(searchParams.get('currency') || 'USD');
+      // setCurrency(searchParams.get('currency') || 'USD');
 
       // Property filters
       setPropertyType((searchParams.get('propertyType') as PropertyType) || '');
@@ -146,8 +150,6 @@ export default function SearchFilter() {
       setDepartureTime(searchParams.get('departureTime') || '');
       setFromLocation(searchParams.get('fromLocation') || '');
       setToLocation(searchParams.get('toLocation') || '');
-      // setTravellingRating(searchParams.get('travellingRating') || '');
-      // setTravellingAccessibility(searchParams.get('travellingAccessibility')?.split(',') || []);
       
       // Trip filters
       setTripType(searchParams.get('tripType') || '');
@@ -181,7 +183,7 @@ export default function SearchFilter() {
     // Common filters
     setMinPrice('');
     setMaxPrice('');
-    setCurrency('USD');
+    // setCurrency('USD');
 
     // Property filters
     setPropertyType('');
@@ -217,31 +219,6 @@ export default function SearchFilter() {
   return (
     <div className="w-full bg-white p-6 shadow-md rounded-lg">
       <h2 className="text-lg font-semibold mb-4">Filters</h2>
-
-      {/* Filter Mode Selection */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">Filter Type</label>
-        <div className="flex justify-between">
-          <button
-            onClick={() => setFilterMode('property')}
-            className={`px-4 py-2 rounded-md ${filterMode === 'property' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-          >
-            Property
-          </button>
-          <button
-            onClick={() => setFilterMode('travelling')}
-            className={`px-4 py-2 rounded-md ${filterMode === 'travelling' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-          >
-            Travel
-          </button>
-          <button
-            onClick={() => setFilterMode('trip')}
-            className={`px-4 py-2 rounded-md ${filterMode === 'trip' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-          >
-            Trip
-          </button>
-        </div>
-      </div>
 
       {/* Price Range Filter (Common) */}
       <div className="mb-4">
@@ -671,14 +648,6 @@ export default function SearchFilter() {
             className="bg-gray-200 text-gray-800 py-2 px-4 rounded-md w-full hover:bg-gray-300 transition-all mb-2"
           >
             Clear All Filters
-      </button>
-
-      {/* Apply Filters Button */}
-      <button
-            onClick={updateFilters}
-            className="bg-blue-500 text-white py-2 px-4 rounded-md w-full hover:bg-blue-600 transition-all"
-          >
-            Apply Filters
       </button>
     </div>
   );

@@ -149,7 +149,15 @@ export default function ItemEdit({ params }: { params: Promise<{ id: string }> }
             currency: foundItem.costing.currency || 'USD',
             discountedPrice: foundItem.costing.discountedPrice || 0
           },
-          updatedAt: new Date(foundItem.updatedAt)
+          updatedAt: new Date(foundItem.updatedAt),
+          amenities: foundItem.amenities || [''],
+          accessibility : foundItem.accessibility || [''],
+          popularFilters : foundItem.popularFilters || [''],
+          funThingsToDo : foundItem.funThingsToDo || [''],
+          meals : foundItem.meals || [''],
+          facilities : foundItem.facilities || [''],
+          reservationPolicy : foundItem.reservationPolicy || [''],
+          brands : foundItem.brands || [''],
         });
       } else {
         setTravellingDetails({
@@ -183,6 +191,15 @@ export default function ItemEdit({ params }: { params: Promise<{ id: string }> }
           detailImages: foundItem.detailImages?.map((image: Image) => ({
             url: image.url
           })),
+          amenities: foundItem.amenities || [''],
+          accessibility : foundItem.accessibility || [''],
+          popularFilters : foundItem.popularFilters || [''],
+          funThingsToDo : foundItem.funThingsToDo || [''],
+          meals : foundItem.meals || [''],
+          facilities : foundItem.facilities || [''],
+          reservationPolicy : foundItem.reservationPolicy || [''],
+          brands : foundItem.brands || [''],
+
         });
       }
       

@@ -18,17 +18,15 @@ const TripEditForm: React.FC<TripEditFormProps> = ({ item, onSave }) => {
   
   // Define options for various trip features
   const amenitiesOptions = ["wifi", "pool", "gym", "spa", "restaurant", "parking", "airConditioning", "breakfast"];
-  const propertyAccessibilityOptions = ["wheelchair", "elevator", "braille", "audioGuide", "serviceAnimals"];
-  const roomAccessibilityOptions = ["wideDoorway", "loweredSink", "grabBars", "showerChair", "visualAlerts"];
-  const popularFiltersOptions = ["petFriendly", "familyFriendly", "businessReady", "ecofriendly", "luxury"];
-  const funThingsToDoOptions = ["beachAccess", "hiking", "skiing", "cityTour", "shopping", "nightlife"];
-  const mealsOptions = ["breakfast", "lunch", "dinner", "allInclusive", "roomService"];
-  const facilitiesOptions = ["swimmingPool", "fitness", "spa", "business", "childcare", "conferenceRoom"];
-  const bedPreferenceOptions = ["king", "queen", "twin", "single", "bunk"];
-  const reservationPolicyOptions = ["freeCancellation", "nonRefundable", "partialRefund"];
-  const brandsOptions = ["hilton", "marriott", "hyatt", "fourSeasons", "radisson"];
-  const roomFacilitiesOptions = ["minibar", "safeBox", "tv", "hairDryer", "ironBoard", "coffeeMaker"];
-  const activitiesOptions = ["sightseeing", "adventure", "cultural", "relaxation", "entertainment", "sports"];
+  const propertyAccessibilityOptions =['Wheelchair Accessible', 'Elevator', 'Accessible Parking', 'Braille Signage', 'Accessible Bathroom', 'Roll-in Shower'];
+  // const roomAccessibilityOptions = ["wideDoorway", "loweredSink", "grabBars", "showerChair", "visualAlerts"];
+  const popularFiltersOptions =  ['Pet Friendly', 'Free Cancellation', 'Free Breakfast', 'Pool', 'Hot Tub', 'Ocean View', 'Family Friendly', 'Business Facilities'];
+  const funThingsToDoOptions = ['Beach', 'Hiking', 'Shopping', 'Nightlife', 'Local Tours', 'Museums', 'Theme Parks', 'Water Sports'];
+  const mealsOptions =['Breakfast', 'Lunch', 'Dinner', 'All-Inclusive', 'Buffet', 'À la carte', 'Room Service', 'Special Diets'];
+  const facilitiesOptions = ['Parking', 'WiFi', 'Swimming Pool', 'Fitness Center', 'Restaurant', 'Bar', 'Spa', 'Conference Room'];
+   const reservationPolicyOptions = ['Free Cancellation', 'Flexible', 'Moderate', 'Strict', 'Non-Refundable', 'Pay at Property', 'Pay Now'];
+  const brandsOptions =  ['Hilton', 'Marriott', 'Hyatt', 'Best Western', 'Accor', 'IHG', 'Wyndham', 'Choice Hotels'];
+ const activitiesOptions = ["sightseeing", "adventure", "cultural", "relaxation", "entertainment", "sports"];
 
   const handleChange = (field: string, value: unknown) => {
     setFormData((prev) => {
@@ -280,18 +278,6 @@ const TripEditForm: React.FC<TripEditFormProps> = ({ item, onSave }) => {
             step={0.1}
           />
         </div>
-        <div>
-          <label>Property Rating</label>
-          <Input
-            type="number"
-            name="propertyRating"
-            value={formData.propertyRating || ''}
-            onChange={(e) => handleChange("propertyRating", parseFloat(e.target.value) || 0)}
-            min={0}
-            max={5}
-            step={0.5}
-          />
-        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -342,18 +328,10 @@ const TripEditForm: React.FC<TripEditFormProps> = ({ item, onSave }) => {
         
         <CheckboxGroup
           options={propertyAccessibilityOptions}
-          value={formData.propertyAccessibility || []}
+          value={formData.accessibility || []}
           onChange={handleChange}
           label="Property Accessibility"
           fieldName="propertyAccessibility"
-        />
-        
-        <CheckboxGroup
-          options={roomAccessibilityOptions}
-          value={formData.roomAccessibility || []}
-          onChange={handleChange}
-          label="Room Accessibility"
-          fieldName="roomAccessibility"
         />
         
         <CheckboxGroup
@@ -387,15 +365,7 @@ const TripEditForm: React.FC<TripEditFormProps> = ({ item, onSave }) => {
           label="Facilities"
           fieldName="facilities"
         />
-        
-        <CheckboxGroup
-          options={bedPreferenceOptions}
-          value={formData.bedPreference || []}
-          onChange={handleChange}
-          label="Bed Preferences"
-          fieldName="bedPreference"
-        />
-        
+
         <CheckboxGroup
           options={reservationPolicyOptions}
           value={formData.reservationPolicy || []}
@@ -412,20 +382,13 @@ const TripEditForm: React.FC<TripEditFormProps> = ({ item, onSave }) => {
           fieldName="brands"
         />
         
-        <CheckboxGroup
-          options={roomFacilitiesOptions}
-          value={formData.roomFacilities || []}
-          onChange={handleChange}
-          label="Room Facilities"
-          fieldName="roomFacilities"
-        />
       </div>
 
       <div>
         <label>Banner Image</label>
         <ImageUpload
           label='banner image'
-          value={formData.bannerImage}
+          value={formData.bannerImage || null}
           onChange={(image) => handleChange("bannerImage", image)}
         />
         {errors.bannerImage && <span className="text-red-500">{errors.bannerImage}</span>}

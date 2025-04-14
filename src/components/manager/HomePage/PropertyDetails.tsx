@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Users, Tag, Star, Calendar, Check, X, Plus } from 'lucide-react';
+import { MapPin, Users, Tag, Star, Calendar, X, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Property } from '@/lib/mongodb/models/Property';
 import Image from 'next/image';
@@ -10,6 +10,7 @@ import { FormItem, FormLabel } from '@/components/ui/form';
 const PropertyDetails: React.FC<{ item: Property; isEditable?: boolean }> = ({ item, isEditable = false }) => {
   // console.log("Item: ", item);
   // State for managing room categories
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [ensurePropertyData, setEnsurePropertyData] = React.useState<any>({
     ...item,
     categoryRooms: item.categoryRooms || []
@@ -35,7 +36,7 @@ const PropertyDetails: React.FC<{ item: Property; isEditable?: boolean }> = ({ i
   // Add a new category
   const handleAddCategory = () => {
     if (!newCategory.title) return;
-    
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setEnsurePropertyData((prev:any) => ({
       ...prev,
       categoryRooms: [...(prev.categoryRooms || []), newCategory]
@@ -53,8 +54,10 @@ const PropertyDetails: React.FC<{ item: Property; isEditable?: boolean }> = ({ i
   
   // Remove a category
   const handleRemoveCategory = (index: number) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setEnsurePropertyData((prev:any) => ({
       ...prev,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       categoryRooms: prev.categoryRooms.filter((_: any, i: number) => i !== index)
     }));
   };
@@ -173,6 +176,7 @@ const PropertyDetails: React.FC<{ item: Property; isEditable?: boolean }> = ({ i
             <h4 className="text-sm font-medium">Available Categories:</h4>
             
             <div className="space-y-2">
+            {/*  eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {ensurePropertyData.categoryRooms.map((cat: any, index: number) => (
                 <div key={index} className="flex items-center p-3 bg-gray-50 rounded-md">
                   <div className="flex-1 grid grid-cols-5 gap-2">

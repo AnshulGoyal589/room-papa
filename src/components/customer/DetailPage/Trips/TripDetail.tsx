@@ -864,7 +864,7 @@ export default function TripDetailPage() {
                   <div className="relative h-16 w-16 mr-3">
                     <Image
                       src={trip.bannerImage.url}
-                      alt={trip.title}
+                      alt={trip.title || ""}
                       layout="fill"
                       objectFit="cover"
                       className="rounded-md"

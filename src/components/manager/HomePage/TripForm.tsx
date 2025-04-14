@@ -48,17 +48,12 @@ const initialTripData: Trip = {
   activities: [],
   type: 'Domestic',
   amenities: [],
-  propertyAccessibility: [],
-  roomAccessibility: [],
   popularFilters: [],
   funThingsToDo: [],
   meals: [],
   facilities: [],
-  propertyRating: 0,
-  bedPreference: [],
   reservationPolicy: [],
   brands: [],
-  roomFacilities: [],
 };
 
 interface TripFormProps {
@@ -299,24 +294,7 @@ const TripForm: React.FC<TripFormProps> = ({
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormItem>
-          <FormLabel>Property Rating</FormLabel>
-          <Select
-            value={ensureTripData.propertyRating.toString()}
-            onValueChange={(value) => handleTripChange('propertyRating', Number(value))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select rating" />
-            </SelectTrigger>
-            <SelectContent>
-              {[1, 2, 3, 4, 5].map((rating) => (
-                <SelectItem key={rating} value={rating.toString()}>
-                  {rating} {rating === 1 ? 'Star' : 'Stars'}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FormItem>
+        
         
         <FormItem>
           <FormLabel>Total Rating</FormLabel>
@@ -339,7 +317,7 @@ const TripForm: React.FC<TripFormProps> = ({
               <input 
                 type="checkbox"
                 id={amenity}
-                checked={ensureTripData.amenities.includes(amenity)}
+                checked={ensureTripData.amenities?.includes(amenity)}
                 onChange={(e) => {
                   if (e.target.checked) {
                     handleTripChange('amenities', [...(ensureTripData.amenities || []), amenity]);

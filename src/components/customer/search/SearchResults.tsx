@@ -4,52 +4,64 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MapPin, Calendar, Star, Bookmark, Heart } from 'lucide-react';
+import { MapPin, Calendar, Star, Bookmark, Heart, X } from 'lucide-react';
 import { Property } from '@/lib/mongodb/models/Property';
 import { Trip } from '@/lib/mongodb/models/Trip';
 import { Travelling } from '@/lib/mongodb/models/Travelling';
 
-
 export default function SearchResults() {
   const router = useRouter();
   const currentSearchParams = useSearchParams();
-  const searchParams : { [key: string]: string } = {};
+  const [searchParams, setSearchParams] = useState<{ [key: string]: string }>({});
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [sortBy, setSortBy] = useState(searchParams.sortBy || 'createdAt');
-  const [sortOrder, setSortOrder] = useState(searchParams.sortOrder || 'desc');
-  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.page || '1'));
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [category , setCategory] = useState<string>(searchParams.category || 'property');
+  const [category, setCategory] = useState<string>('property');
+  const [filterChips, setFilterChips] = useState<Array<{key: string, value: string}>>([]);
 
+  // Parse search parameters on component mount and when URL changes
   useEffect(() => {
-
-    setSortBy(searchParams.sortBy || 'createdAt');
-    setSortOrder(searchParams.sortOrder || 'desc');
-    setCurrentPage(parseInt(searchParams.page || '1'));
+    const params: { [key: string]: string } = {};
+    currentSearchParams?.forEach((value, key) => {
+      params[key] = value;
+    });
+    setSearchParams(params);
     
-    // setTotalPages(Math.ceil(initialResults.length / 10) || 1);
-  }, [ searchParams.sortBy, searchParams.sortOrder, searchParams.page ]);
+    // Set initial states from URL params
+    setSortBy(params.sortBy || 'createdAt');
+    setSortOrder(params.sortOrder || 'desc');
+    setCurrentPage(parseInt(params.page || '1'));
+    setCategory(params.category || 'property');
+    
+    // Create filter chips from URL params (excluding pagination, sorting, and category)
+    const chips: Array<{key: string, value: string}> = [];
+    Object.entries(params).forEach(([key, value]) => {
+      if (
+        key !== 'page' && 
+        key !== 'sortBy' && 
+        key !== 'sortOrder' && 
+        key !== 'category' &&
+        value
+      ) {
+        chips.push({ key, value });
+      }
+    });
+    setFilterChips(chips);
+  }, [currentSearchParams]);
 
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      setCategory(searchParams.category);
       const params = new URLSearchParams(currentSearchParams?.toString() || '');
-      // params.set('sortBy', sortBy);
-      // params.set('sortOrder', sortOrder);
-      // params.set('page', currentPage.toString());
-      params.set('category', searchParams.category || 'property');
       
       try {
         const response = await fetch(`/api/search?${params.toString()}`);
         const data = await response.json();
         setResults(data.results);
-        setCategory(searchParams.category);
-        // console.log('Search results:', data.results);
         setTotalPages(Math.ceil(data.total / 10));
-        
-        router.push(`/customer/search?${params.toString()}`, { scroll: false });
       } catch (error) {
         console.error('Error fetching search results:', error);
       } finally {
@@ -58,19 +70,59 @@ export default function SearchResults() {
     };
 
     loadData();
-  }, [sortBy, sortOrder, currentPage, router , currentSearchParams, searchParams.sortBy, searchParams.sortOrder, searchParams.page, searchParams.category]);
-
+  }, [currentSearchParams]);
 
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages) return;
-    setCurrentPage(page);
+    
+    const params = new URLSearchParams(currentSearchParams?.toString() || '');
+    params.set('page', page.toString());
+    router.push(`/customer/search?${params.toString()}`, { scroll: false });
     window.scrollTo(0, 0);
   };
 
+  const handleSortChange = (field: string, order: string) => {
+    const params = new URLSearchParams(currentSearchParams?.toString() || '');
+    params.set('sortBy', field);
+    params.set('sortOrder', order);
+    params.set('page', '1'); // Reset to first page when sorting changes
+    router.push(`/customer/search?${params.toString()}`, { scroll: false });
+  };
+
+  const handleRemoveFilter = (chipKey: string) => {
+    const params = new URLSearchParams(currentSearchParams?.toString() || '');
+    params.delete(chipKey);
+    params.set('page', '1'); // Reset to first page when filters change
+    router.push(`/customer/search?${params.toString()}`, { scroll: false });
+  };
+
+  // Format filter chip label for display
+  const formatChipLabel = (key: string, value: string): string => {
+    // Custom formatting for specific filter types
+    switch (key) {
+      case 'minPrice':
+        return `Price > ${value}`;
+      case 'maxPrice':
+        return `Price < ${value}`;
+      case 'rooms':
+        return `${value} Rooms`;
+      case 'city':
+      case 'country':
+        return value;
+      case 'startDate':
+        return `From: ${new Date(value).toLocaleDateString()}`;
+      case 'endDate':
+        return `To: ${new Date(value).toLocaleDateString()}`;
+      default:
+        // Format camelCase keys to readable text
+        const formattedKey = key.replace(/([A-Z])/g, ' $1').toLowerCase();
+        return `${formattedKey}: ${value}`;
+    }
+  };
 
   const renderPropertyCard = (property: Property) => (
     <div 
-      key={property.title} 
+      key={property._id?.toString()} 
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow" 
       onClick={() => router.push(`/customer/property/${property._id}`)}
     >
@@ -125,10 +177,10 @@ export default function SearchResults() {
   );
 
   const renderTripCard = (trip: Trip) => (
-    <div key={trip.title} 
+    <div key={trip._id?.toString()} 
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
       onClick={() => router.push(`/customer/trip/${trip._id}`)}
-      >
+    >
       <div className="relative h-48">
         {trip.bannerImage ? (
           <Image 
@@ -182,11 +234,11 @@ export default function SearchResults() {
   );
   
   const renderTravellingCard = (itinerary: Travelling) => (
-    
-    <div key={itinerary.title}
+
+    <div key={itinerary._id?.toString()}
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
       onClick={() => router.push(`/customer/travelling/${itinerary._id}`)}
-      >
+    >
       <div className="relative h-48">
         {itinerary.bannerImage ? (
           <Image 
@@ -220,13 +272,49 @@ export default function SearchResults() {
         <div className="flex items-center mt-2 text-sm text-gray-600">
           <Calendar size={16} className="mr-1" />
         </div>
-
       </div>
     </div>
   );
 
   return (
     <div>
+      {/* Filter Chips Section */}
+      {filterChips.length > 0 && (
+        <div className="mb-6">
+          <div className="flex flex-wrap gap-2">
+            {filterChips.map((chip) => (
+              <div 
+                key={chip.key}
+                className="flex items-center bg-gray-100 rounded-full px-3 py-1 text-sm"
+              >
+                <span>{formatChipLabel(chip.key, chip.value)}</span>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveFilter(chip.key);
+                  }}
+                  className="ml-2 text-gray-500 hover:text-gray-700"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+            {filterChips.length > 1 && (
+              <button 
+                onClick={() => {
+                  const params = new URLSearchParams();
+                  params.set('category', category);
+                  router.push(`/customer/search?${params.toString()}`);
+                }}
+                className="text-sm text-primary hover:underline"
+              >
+                Clear all filters
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">
           {results.length} {category === 'property' ? 'Properties' : category === 'trip' ? 'Trips' : 'Itineraries'} Found
@@ -240,8 +328,7 @@ export default function SearchResults() {
               value={`${sortBy}-${sortOrder}`}
               onChange={(e) => {
                 const [field, order] = e.target.value.split('-');
-                setSortBy(field);
-                setSortOrder(order);
+                handleSortChange(field, order);
               }}
               className="p-2 border rounded-md"
             >
@@ -251,7 +338,6 @@ export default function SearchResults() {
               <option value="costing.discountedPrice-desc">Price (High to Low)</option>
               <option value="rat-asc">Highest Rated</option>
               
-
               {category === 'trip' && (
                 <>
                   <option value="startDate-asc">Departure (Soonest)</option>
@@ -283,7 +369,7 @@ export default function SearchResults() {
               case 'trip':
                 return renderTripCard(item as Trip);
               case 'travelling':
-                return renderTravellingCard(item as Travelling);;
+                return renderTravellingCard(item as Travelling);
               default:
                 return renderPropertyCard(item as Property);
             }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Calendar, Banknote, Star, Globe, Clock, Check, Shield, Tag, Coffee, Utensils, Wifi, Bed, FileText, Building } from 'lucide-react';
+import { MapPin, Calendar, Banknote, Star, Globe, Clock, Check,  Tag,  Utensils, Wifi,  FileText, Building } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Trip } from '@/lib/mongodb/models/Trip';
@@ -12,17 +12,6 @@ const TripDetails: React.FC<{ item: Trip }> = ({ item }) => {
   // Get the currency to use
   const currency = item.costing.currency;
 
-  // Format status badge
-  const getStatusColor = (tripType: string) => {
-    switch (tripType.toLowerCase()) {
-      case 'domestic':
-        return 'bg-blue-100 text-blue-800';
-      case 'international':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   // Helper to render a section with array of items
   const renderArraySection = (title: string, items: string[] | undefined, icon: React.ReactNode) => {
@@ -121,17 +110,7 @@ const TripDetails: React.FC<{ item: Trip }> = ({ item }) => {
             </p>
           </div>
         </div>
-        
-        <div className="flex items-center">
-          <Star className="w-4 h-4 mr-2 text-gray-500" />
-          <div>
-            <p className="text-sm text-gray-500">Rating</p>
-            <p>{(item.totalRating !== undefined ? item.totalRating : 0).toFixed(1)} / 5</p>
-            {item.propertyRating !== undefined && (
-              <p className="text-xs text-gray-500">Property Rating: {item.propertyRating.toString()}</p>
-            )}
-          </div>
-        </div>
+
         
         {item.updatedAt && (
           <div className="flex items-center">
@@ -163,10 +142,7 @@ const TripDetails: React.FC<{ item: Trip }> = ({ item }) => {
       {renderArraySection('Amenities', item.amenities, <Check className="w-4 h-4 text-gray-500" />)}
 
       {/* Property Accessibility */}
-      {renderArraySection('Property Accessibility', item.propertyAccessibility, <Building className="w-4 h-4 text-gray-500" />)}
-
-      {/* Room Accessibility */}
-      {renderArraySection('Room Accessibility', item.roomAccessibility, <Bed className="w-4 h-4 text-gray-500" />)}
+      {renderArraySection('Property Accessibility', item.accessibility, <Building className="w-4 h-4 text-gray-500" />)}
 
       {/* Popular Filters */}
       {renderArraySection('Popular Filters', item.popularFilters, <Tag className="w-4 h-4 text-gray-500" />)}
@@ -180,17 +156,11 @@ const TripDetails: React.FC<{ item: Trip }> = ({ item }) => {
       {/* Facilities */}
       {renderArraySection('Facilities', item.facilities, <Wifi className="w-4 h-4 text-gray-500" />)}
 
-      {/* Bed Preference */}
-      {renderArraySection('Bed Preference', item.bedPreference, <Bed className="w-4 h-4 text-gray-500" />)}
-
       {/* Reservation Policy */}
       {renderArraySection('Reservation Policy', item.reservationPolicy, <FileText className="w-4 h-4 text-gray-500" />)}
 
       {/* Brands */}
       {renderArraySection('Brands', item.brands, <Building className="w-4 h-4 text-gray-500" />)}
-
-      {/* Room Facilities */}
-      {renderArraySection('Room Facilities', item.roomFacilities, <Bed className="w-4 h-4 text-gray-500" />)}
 
       {/* Detail Images Gallery - Enhanced version */}
       {item.detailImages && item.detailImages.length > 0 && (

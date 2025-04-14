@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { 
   Home, 
@@ -38,12 +38,10 @@ const RoleSelectionModal: React.FC<RoleModalProps> = ({
   onClose, 
   isSubmitting 
 }) => {
-  const [selectedRole, setSelectedRole] = useState<UserRole>('guest');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('customer');
 
   const handleContinue = () => {
-    if (selectedRole !== 'guest') {
-      onRoleSelect(selectedRole);
-    }
+    onRoleSelect(selectedRole);
   };
 
   return (
@@ -108,9 +106,9 @@ const RoleSelectionModal: React.FC<RoleModalProps> = ({
         <div className="flex flex-col space-y-3">
           <button
             onClick={handleContinue}
-            disabled={selectedRole === 'guest' || isSubmitting}
+            disabled={isSubmitting}
             className={`w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center transition-all ${
-              selectedRole !== 'guest' && !isSubmitting
+              !isSubmitting
                 ? 'bg-blue-600 text-white hover:bg-blue-700'
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}
@@ -144,62 +142,41 @@ const RoleSelectionModal: React.FC<RoleModalProps> = ({
 // Main Header Component
 export function Header() {
   const { isSignedIn, user, isLoaded } = useUser();
-  const { openSignUp, openSignIn } = useClerk(); 
+  const { openSignUp, openSignIn, signOut } = useClerk();
+  
   // State management
   const [role, setRole] = useState<UserRole>('guest');
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  // Use localStorage to persist the selected role between sign-up and callback
+  const [selectedRoleBeforeSignUp, setSelectedRoleBeforeSignUp] = useState<UserRole | null>(null);
+  
+  // Track if we've already attempted to save the role to avoid duplicate saves
+  const [roleSaved, setRoleSaved] = useState(false);
 
-  // Fetch user role on component mount or user sign-in
+  // Effect to listen for auth state changes
   useEffect(() => {
-    const fetchUserRole = async () => {
-      if (!isLoaded || !user) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(`/api/user-role?clerkId=${user.id}`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch user role');
-        }
-        
-        const data = await response.json();
-        // console.log('User rolgj bhfbjfnoe:', data.role);
-        // Ensure role is not 'guest' if user is signed in
-        const fetchedRole = data.role || 'guest';
-        
-        // If role is 'guest' but user is signed in, trigger role selection
-        if (fetchedRole === 'guest') {
-          setShowRoleModal(true);
-        }
-        
-        setRole(fetchedRole);
-      } catch (error) {
-        console.error('Error fetching user role:', error);
+    const handleAuthStateChange = () => {
+      if (isSignedIn === false) {
         setRole('guest');
-      } finally {
-        setLoading(false);
+        setRoleSaved(false);
       }
     };
 
-    fetchUserRole();
-  }, [isLoaded, user]);
-
-  // Handle sign up process
-  const handleSignUp = () => {
-    setShowRoleModal(true);
-  };
+    handleAuthStateChange();
+  }, [isSignedIn]);
 
   // Save user role to database
   const saveUserRoleToDatabase = async (
     clerkId: string, 
     userRole: UserRole, 
     email: string
-  ): Promise<void> => {
+  ): Promise<boolean> => {
     try {
+      // console.log("Saving role to database:", clerkId, userRole, email);
+      
       const response = await fetch('/api/user-role', {
         method: 'POST',
         headers: {
@@ -216,10 +193,85 @@ export function Header() {
         const error = await response.json();
         throw new Error(error.error || 'Failed to save user role');
       }
+      
+      console.log("Role saved successfully!");
+      return true;
     } catch (error) {
       console.error('Error saving user role:', error);
-      throw error;
+      return false;
     }
+  };
+
+  // Effect to save selected role to localStorage before sign-up
+  useEffect(() => {
+    if (selectedRoleBeforeSignUp) {
+      localStorage.setItem('pendingUserRole', selectedRoleBeforeSignUp);
+    }
+  }, [selectedRoleBeforeSignUp]);
+
+  // Effect to check for role in localStorage on mount and after sign-in
+  useEffect(() => {
+    const fetchAndSaveUserRole = async () => {
+      // Wait until Clerk is loaded
+      if (!isLoaded) return;
+      
+      const pendingRole = localStorage.getItem('pendingUserRole') as UserRole | null;
+      
+      // If user just got signed in and we have a pending role, save it
+      if (isSignedIn && user && pendingRole && !roleSaved) {
+        setIsSubmitting(true);
+        console.log("User signed in with pending role, saving role:", pendingRole);
+        
+        const saved = await saveUserRoleToDatabase(
+          user.id,
+          pendingRole,
+          user.primaryEmailAddress?.emailAddress || ''
+        );
+        
+        if (saved) {
+          setRole(pendingRole);
+          setRoleSaved(true);
+          localStorage.removeItem('pendingUserRole');
+        }
+        
+        setIsSubmitting(false);
+      }
+      
+      // If user is signed in, fetch their role
+      if (isSignedIn && user) {
+        setLoading(true);
+        try {
+          const response = await fetch(`/api/user-role?clerkId=${user.id}`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.role) {
+              setRole(data.role);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching user role:', error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+
+    fetchAndSaveUserRole();
+  }, [isLoaded, isSignedIn, user, roleSaved]);
+
+  // Handle sign up process
+  const handleSignUp = () => {
+    setShowRoleModal(true);
+  };
+
+  // Handle sign out
+  const handleSignOut = async () => {
+    await signOut();
+    setRole('guest');
+    setRoleSaved(false);
   };
 
   // Handle role selection
@@ -227,48 +279,35 @@ export function Header() {
     setIsSubmitting(true);
     
     try {
-      // If user is signed in, save role immediately
+      // If user is already signed in, save role immediately
       if (isSignedIn && user) {
-        await saveUserRoleToDatabase(
+        const saved = await saveUserRoleToDatabase(
           user.id, 
           selectedRole, 
           user.primaryEmailAddress?.emailAddress || ''
         );
-        setRole(selectedRole);
-        setShowRoleModal(false);
+        
+        if (saved) {
+          setRole(selectedRole);
+        }
       } else {
-        // If not signed in, store role to be saved after signup
-        setRole(selectedRole);
-        openSignUp();
+        // If not signed in, store the selected role in state and localStorage
+        setSelectedRoleBeforeSignUp(selectedRole);
+        
+        // Then open the sign-up form
+        openSignUp({
+          redirectUrl: window.location.href,
+          afterSignUpUrl: window.location.href
+        });
       }
     } catch (error) {
       console.error('Error in role selection:', error);
-      setRole('guest');
       alert('Failed to save your role. Please try again.');
     } finally {
       setIsSubmitting(false);
+      setShowRoleModal(false);
     }
   };
-
-  // Save role after successful sign up
-  useEffect(() => {
-    const saveRoleAfterSignUp = async () => {
-      if (isSignedIn && user && role !== 'guest') {
-        try {
-          await saveUserRoleToDatabase(
-            user.id, 
-            role, 
-            user.primaryEmailAddress?.emailAddress || ''
-          );
-        } catch (error) {
-          console.error('Error saving user role after sign up:', error);
-          setRole('guest');
-        }
-      }
-    };
-
-    saveRoleAfterSignUp();
-  }, [isSignedIn, user, role]);
 
   // Close role modal
   const closeRoleModal = () => {
@@ -277,7 +316,11 @@ export function Header() {
 
   // Render loading state if still loading
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-16">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+      </div>
+    );
   }
 
   return (
@@ -285,7 +328,7 @@ export function Header() {
       <header className="bg-white shadow-md">
         <div className="container mx-auto flex justify-between items-center p-4">
           {/* Logo with dynamic routing based on role */}
-          <Link href={role === 'customer' ? "/customer/dashboard" : role === 'manager' ? "/manager/dashboard" : "/"} 
+          <Link href={role === 'customer' ? "/customer/dashboard" : role === 'manager' ? "/manager/dashboard" : role === 'admin' ? "/admin/dashboard" : "/"} 
             className="text-2xl font-bold text-blue-600">
             Room Papa
           </Link>
@@ -327,7 +370,6 @@ export function Header() {
           {/* Manager Navigation */}
           {role === 'manager' && (
             <nav className="hidden md:flex space-x-6 items-center">
-              {/* Add manager-specific navigation links */}
               <Link 
                 href="/manager/dashboard"
                 className="flex items-center space-x-2 hover:text-blue-600 transition"
@@ -342,12 +384,12 @@ export function Header() {
                 <BookAIcon className="w-5 h-5" />
                 <span>Bookings</span>
               </Link>
-              {/* Add more manager navigation links as needed */}
             </nav>
           )}
+
+          {/* Admin Navigation */}
           {role === 'admin' && (
             <nav className="hidden md:flex space-x-6 items-center">
-              {/* Add manager-specific navigation links */}
               <Link 
                 href="/admin/dashboard"
                 className="flex items-center space-x-2 hover:text-blue-600 transition"
@@ -359,10 +401,9 @@ export function Header() {
                 href="/admin/managers"
                 className="flex items-center space-x-2 hover:text-blue-600 transition"
               >
-                <Home className="w-5 h-5" />
+                <Briefcase className="w-5 h-5" />
                 <span>Managers</span>
               </Link>
-              {/* Add more manager navigation links as needed */}
             </nav>
           )}
 
@@ -389,13 +430,15 @@ export function Header() {
               <div className="flex items-center gap-2">
                 {role && role !== 'guest' && (
                   <span className="hidden md:inline-block px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
-                    {role === 'customer' ? 'Customer' : role=='manager' ? 'Manager' : 'Admin'}
+                    {role === 'customer' ? 'Customer' : role === 'manager' ? 'Manager' : 'Admin'}
                   </span>
                 )}
-                <UserButton />
+                {/* Using basic UserButton without unsupported props */}
+                <UserButton afterSignOutUrl="/" />
               </div>
             </SignedIn>
 
+            {/* Mobile Menu Button */}
             <button className="md:hidden">
               <Menu className="w-6 h-6" />
             </button>

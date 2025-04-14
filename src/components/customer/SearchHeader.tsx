@@ -9,23 +9,52 @@ import {
   Landmark, 
 } from 'lucide-react';
 import StaysSearchForm from './SearchForms/StaysSearchForm';
-// import FlightsSearchForm from './SearchForms/FlightsSearchForm';
-// import FlightHotelSearchForm from './SearchForms/FlightHotelSearchForm';
-// import CarRentalsSearchForm from './SearchForms/CarRentalsSearchForm';
-// import AttractionsSearchForm from './SearchForms/AttractionsSearchForm';
-// import AirportTaxisSearchForm from './SearchForms/AirportTaxisSearchForm';
+import FlightsSearchForm from './SearchForms/FlightsSearchForm';
+import TripsSearchForm from './SearchForms/TripsSearchForm';
+import { useSearchParams } from 'next/navigation';
 
-export type SearchHeaderProps = 'stays' | 'flights' | 'flight+hotel' | 'car-rentals' | 'attractions' | 'airport-taxis';
+// Define visible tab IDs
+export type TabId = 'property' | 'travelling' | 'flight+hotel' | 'car-rentals' | 'attractions' | 'airport-taxis';
+
+// Define backend categories
+export type CategoryType = 'property' | 'trip' | 'travelling';
 
 export default function SearchHeader() {
-  const [activeTab, setActiveTab] = useState<SearchHeaderProps>('stays');
-  const [searchParams, setSearchParams] = useState({}); // State to store search parameters
-  const [searchResults, setSearchResults] = useState(null); // State to store fetched search results
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<TabId>(
+    (searchParams.get('tab') as TabId) || 'property'
+  );
+
+  // Map tabs to categories
+  const getCategory = (tabId: TabId): CategoryType => {
+    switch (tabId) {
+      case 'property':
+        return 'property';
+      case 'flight+hotel':
+      case 'attractions':
+        return 'trip';
+      case 'travelling':
+      case 'car-rentals':
+      case 'airport-taxis':
+        return 'travelling';
+      default:
+        return 'property';
+    }
+  };
+
+  useEffect(() => {
+    // Get the tab from URL parameters when component mounts
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab') as TabId;
+      if (tabParam) setActiveTab(tabParam);
+    }
+  }, []);
 
   // Define tab configurations with icons and labels
   const tabs = [
-    { id: 'stays', label: 'Stays', icon: Building },
-    { id: 'flights', label: 'Flights', icon: Plane },
+    { id: 'property', label: 'Stays', icon: Building },
+    { id: 'travelling', label: 'Flights', icon: Plane },
     { id: 'flight+hotel', label: 'Flight + Hotel', icon: Hotel },
     { id: 'car-rentals', label: 'Car Rentals', icon: Car },
     { id: 'attractions', label: 'Attractions', icon: Landmark },
@@ -35,12 +64,12 @@ export default function SearchHeader() {
   // Dynamic heading and subheading based on active tab
   const getHeading = () => {
     switch (activeTab) {
-      case 'stays':
+      case 'property':
         return {
           title: 'Find your next stay',
           subtitle: 'Search low prices on hotels, homes and much more...'
         };
-      case 'flights':
+      case 'travelling':
         return {
           title: 'Find flights to anywhere',
           subtitle: 'Compare and book flights with ease'
@@ -74,49 +103,47 @@ export default function SearchHeader() {
   };
 
   const renderSearchForm = () => {
-    switch (activeTab) {
-      case 'stays':
-        return <StaysSearchForm/>;
-      case 'flights':
-        // return <FlightsSearchForm setSearchParams={setSearchParams} />;
-      case 'flight+hotel':
-        // return <FlightHotelSearchForm />;
-        return <div className="bg-white rounded-lg p-6 shadow-lg text-gray-700">Flight + Hotel search form coming soon</div>;
-      case 'car-rentals':
-        // return <CarRentalsSearchForm />;
-        return <div className="bg-white rounded-lg p-6 shadow-lg text-gray-700">Car Rentals search form coming soon</div>;
-      case 'attractions':
-        // return <AttractionsSearchForm />;
-        return <div className="bg-white rounded-lg p-6 shadow-lg text-gray-700">Attractions search form coming soon</div>;
-      case 'airport-taxis':
-        // return <AirportTaxisSearchForm />;
-        return <div className="bg-white rounded-lg p-6 shadow-lg text-gray-700">Airport Taxis search form coming soon</div>;
-      default:
-        return null;
+    // Get the category for the current tab
+    const category = getCategory(activeTab);
+
+    // For trip category, use specific forms based on the active tab
+    if (category === 'trip') {
+      return <TripsSearchForm />;
     }
+    
+    // For travelling category, use specific forms based on the active tab
+    if (category === 'travelling') {
+        return <FlightsSearchForm />;
+    }
+    
+    // For property category
+    if (category === 'property') {
+      return <StaysSearchForm />;
+    }
+
+    return null;
   };
 
-  // Fetch search results based on activeTab and searchParams
+  // Update URL when activeTab changes
   useEffect(() => {
-    const fetchResults = async () => {
-      try {
-        // Simulate an API call based on activeTab and searchParams
-        const response = await fetch(`/api/search?tab=${activeTab}&params=${JSON.stringify(searchParams)}`);
-        const data = await response.json();
-        setSearchResults(data);
-      } catch (error) {
-        console.error('Error fetching search results:', error);
-      }
-    };
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', activeTab);
+      url.searchParams.set('category', getCategory(activeTab));
+      window.history.pushState({}, '', url);
+    }
+  }, [activeTab]);
 
-    fetchResults();
-  }, [activeTab, searchParams]); // Trigger fetch when activeTab or searchParams change
+  // Handle tab change
+  const handleTabChange = (tabId: TabId) => {
+    setActiveTab(tabId);
+  };
 
   const { title, subtitle } = getHeading();
 
   return (
-    <div className="bg-[#003580] text-white">
-      <div className="container mx-auto px-4 py-8 md:py-12 lg:py-16 w-[70vw]">
+    <div className="bg-[#003b95] text-white">
+      <div className="container mx-auto px-4 py-8 md:py-12 lg:py-16 w-full lg:w-[70vw]">
         {/* Navigation Tabs */}
         <div className="flex overflow-x-auto no-scrollbar mb-6 pb-2">
           {tabs.map((tab) => {
@@ -124,11 +151,11 @@ export default function SearchHeader() {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as SearchHeaderProps)}
+                onClick={() => handleTabChange(tab.id as TabId)}
                 className={`flex items-center px-4 py-2 mr-2 rounded-full whitespace-nowrap transition-all ${
                   activeTab === tab.id 
                     ? 'bg-[#0071c2] text-white font-medium shadow-md' 
-                    : ' bg-opacity-20 hover:bg-opacity-30 text-white'
+                    : 'bg-opacity-20 hover:bg-opacity-30 text-white'
                 }`}
               >
                 <Icon size={18} className="mr-2" />
@@ -140,15 +167,14 @@ export default function SearchHeader() {
 
         {/* Heading */}
         <div className="my-12 flex flex-col gap-4">
-          <h1 className="text-2xl md:text-4xl lg:text-6xl font-bold">{title}</h1>
-          <p className="text-base md:text-xl lg:text-2xl">{subtitle}</p>
+          <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold">{title}</h1>
+          <p className="text-base md:text-xl">{subtitle}</p>
         </div>
 
         {/* Search Form */}
         <div className="relative z-10">
           {renderSearchForm()}
         </div>
-       
       </div>
     </div>
   );

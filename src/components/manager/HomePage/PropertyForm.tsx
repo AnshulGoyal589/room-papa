@@ -76,6 +76,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
       const categories = [...propertyData.categoryRooms];
       
       // Sort categories by discounted price (or regular price if no discount)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
       categories.sort((a:any, b:any) => {
         const aPrice = a.discountedPrice > 0 ? a.discountedPrice : a.price;
         const bPrice = b.discountedPrice > 0 ? b.discountedPrice : b.price;
@@ -83,9 +84,11 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
       });
       
       // Use the first (minimum) category for property costing
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const minCategory : any = categories[0];
       
       // Calculate total rooms from category quantities
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const totalRooms = categories.reduce((sum, category:any) => sum + (category.qty || 0), 0);
       
       // Update the property costing and total rooms
@@ -261,6 +264,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
 
   // Calculate total rooms for display
   const totalRooms = ensurePropertyData.categoryRooms.reduce(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (sum, category:any) => sum + (category.qty || 0), 
     0
   );
@@ -402,6 +406,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
             <h4 className="text-sm font-medium">Added Categories:</h4>
             
             <div className="space-y-2">
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {ensurePropertyData.categoryRooms.map((cat:any, index) => (
                 <div key={index} className="flex items-center p-3 bg-gray-50 rounded-md">
                   <div className="flex-1 grid grid-cols-5 gap-2">

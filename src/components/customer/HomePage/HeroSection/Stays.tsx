@@ -11,7 +11,7 @@ export default function Stays() {
   const [activeTab, setActiveTab] = useState<SearchFormProps['defaultCategory']>('stays');
 
   return (
-    <div className="bg-[#003580] text-white">
+    <div className="bg-[#003b95] text-white">
       {/* Main content */}
       <div className="container mx-auto px-4 py-10 md:py-16">
         {/* Navigation tabs */}
@@ -170,7 +170,7 @@ export default function Stays() {
         {/* Checkbox */}
         <div className="mt-4 flex items-center">
           <input type="checkbox" id="workTrip" className="h-4 w-4 text-blue-600" />
-          <label htmlFor="workTrip" className="ml-2 text-sm">I'm traveling for work</label>
+          <label htmlFor="workTrip" className="ml-2 text-sm">I&apos;m traveling for work</label>
         </div>
       </div>
     </div>

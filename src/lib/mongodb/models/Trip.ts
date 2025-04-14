@@ -40,7 +40,7 @@ export interface Trip {
   funThingsToDo ?: string[];
   meals ?: string[];
   facilities ?: string[];
-  rating ?: Number;
+  rating ?: number;
   reservationPolicy ?: string[];
   brands ?: string[];
 }

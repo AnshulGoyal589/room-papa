@@ -38,6 +38,7 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const { user } = useUser();
+  const [managerStatus , setManagerStatus] = useState<Boolean>(false);
 
   
 
@@ -52,7 +53,7 @@ export default function Dashboard() {
         alert('You are not authorized to access this page.');          
         return;
       }
-      
+      setManagerStatus(true);
       const propertiesRes = await fetch(`/api/properties?userId=${user?.id}`);
       const properties = await propertiesRes.json();
       const formattedProperties = properties.map((prop: Property) => ({
@@ -84,7 +85,7 @@ export default function Dashboard() {
         description: travelling.description || '',
         category: 'Travelling' as ItemCategory,
         bannerImage: travelling.bannerImage,
-        createdAt: new Date(travelling.createdAt)
+        createdAt: travelling.createdAt
       }));
 
       
@@ -169,7 +170,7 @@ export default function Dashboard() {
         </TabsContent>
       </Tabs>
 
-      {isModalOpen && (
+      {isModalOpen && managerStatus && (
         <AddItemModal 
           onClose={() => setIsModalOpen(false)} 
           onAdd={handleAddItem} 

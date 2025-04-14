@@ -7,9 +7,10 @@ interface DateRange {
   endDate: Date;
 }
 
-export default function StaysSearchForm() {
+export default function FlightsSearchForm() {
   // State variables with proper typing
   const [title, setLocation] = useState<string>('');
+  const [title2, setLocation2] = useState<string>('');
   const [dateRange, setDateRange] = useState<DateRange>({
     startDate: new Date(2025, 3, 18), // April 18, 2025
     endDate: new Date(2025, 4, 23)    // May 23, 2025
@@ -55,6 +56,11 @@ export default function StaysSearchForm() {
       // Get title
       const titleParam = urlParams.get('title');
       if (titleParam) setLocation(titleParam);
+
+
+
+      const titleParam2 = urlParams.get('title2');
+      if (titleParam2) setLocation2(titleParam2);
       
       // Get dates
       const checkInParam = urlParams.get('checkIn');
@@ -90,7 +96,7 @@ export default function StaysSearchForm() {
   // Initialize from URL parameters
   useEffect(() => {
     setDefaultsFromURL();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+ // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Ensure minimum rooms based on adults count (max 3 adults per room)
@@ -107,6 +113,9 @@ export default function StaysSearchForm() {
     
     // Only add parameters that have values
     if (title) params.set('title', title);
+    if (title2) params.set('title2', title2);
+
+    params.set('category',"trip");
     
     // Format dates consistently for URL parameters
     params.set('checkIn', formatDateForURL(dateRange.startDate));
@@ -283,9 +292,9 @@ export default function StaysSearchForm() {
 
   return (
     <div className="bg-white text-black shadow-lg p-4 rounded-lg">
-      <div className="flex flex-wrap -mx-1">
+      <div className="flex flex-wrap items-center -mx-1">
         {/* Location Input */}
-        <div className="w-full md:w-1/3 p-1">
+        <div className="w-full md:w-1/5 p-1">
           <div className="relative">
             <div className="bg-white text-black p-4 rounded-md flex items-center border-2 border-blue-600 hover:border-blue-700">
               <svg className="w-5 h-5 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
@@ -306,9 +315,30 @@ export default function StaysSearchForm() {
             </div>
           </div>
         </div>
+        <div className="w-full md:w-1/5 p-1">
+          <div className="relative">
+            <div className="bg-white text-black p-4 rounded-md flex items-center border-2 border-blue-600 hover:border-blue-700">
+              <svg className="w-5 h-5 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12.5 3.247a1 1 0 0 0-1 0L4 7.577V20h4.5v-6a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v6H20V7.577l-7.5-4.33zm-2-1.732a3 3 0 0 1 3 0l7.5 4.33a2 2 0 0 1 1 1.732V21a1 1 0 0 1-1 1h-6.5a1 1 0 0 1-1-1v-6h-3v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7.577a2 2 0 0 1 1-1.732l7.5-4.33z"/>
+              </svg>
+              <input 
+                type="text" 
+                placeholder="Where are you going?" 
+                className="flex-1 outline-none text-sm"
+                value={title2}
+                onChange={(e) => setLocation2(e.target.value)}
+              />
+              {title2 && (
+                <button className="text-gray-400" onClick={() => setLocation2('')}>
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
         
         {/* Date Range */}
-        <div className="w-full md:w-1/3 p-1 relative">
+        <div className="w-full md:w-1/4 p-1 relative">
           <div 
             className="bg-white text-black p-4 rounded-md flex items-center justify-between border-2 border-blue-600 hover:border-blue-700 cursor-pointer"
             onClick={() => setShowCalendar(!showCalendar)}
@@ -571,7 +601,7 @@ export default function StaysSearchForm() {
         </div>
         
         {/* Search Button */}
-        <div className="w-full md:w-1/12 p-1">
+        <div className="w-full md:w-1/12 pl-1">
           <button 
             className="bg-blue-600 hover:bg-blue-700 text-white w-full py-4 rounded-md font-bold flex items-center justify-center"
             onClick={handleSearch}

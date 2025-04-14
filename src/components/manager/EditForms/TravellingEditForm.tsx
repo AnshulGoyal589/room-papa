@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import ImageUpload from "@/components/cloudinary/ImageUpload";
 import MultipleImageUpload from "@/components/cloudinary/MultipleImageUpload";
-import { TravellingAmenities } from "@/types";
+import { PropertyAmenities } from "@/types";
+
 
 // Define TransportationType
 type TransportationType = "air" | "train" | "bus" | "car" | "ship" | "other";
@@ -21,18 +22,15 @@ const TravellingEditForm: React.FC<TravellingEditFormProps> = ({ item, onSave })
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   // Define options for various travelling features
-  const amenities: TravellingAmenities[] = ["wifi", "pool", "gym", "spa", "restaurant", "parking", "airConditioning", "breakfast"];
-  const travellingAccessibilityOptions = ["wheelchair", "elevator", "braille", "audioGuide", "serviceAnimals"];
-  const roomAccessibilityOptions = ["wideDoorway", "loweredSink", "grabBars", "showerChair", "visualAlerts"];
-  const popularFiltersOptions = ["petFriendly", "familyFriendly", "businessReady", "ecofriendly", "luxury"];
-  const funThingsToDoOptions = ["beachAccess", "hiking", "skiing", "cityTour", "shopping", "nightlife"];
-  const mealsOptions = ["breakfast", "lunch", "dinner", "allInclusive", "roomService"];
-  const facilitiesOptions = ["swimmingPool", "fitness", "spa", "business", "childcare", "conferenceRoom"];
-  const bedPreferenceOptions = ["king", "queen", "twin", "single", "bunk"];
-  const reservationPolicyOptions = ["freeCancellation", "nonRefundable", "partialRefund"];
-  const brandsOptions = ["hilton", "marriott", "hyatt", "fourSeasons", "radisson"];
-  const roomFacilitiesOptions = ["minibar", "safeBox", "tv", "hairDryer", "ironBoard", "coffeeMaker"];
-  const transportationTypes: TransportationType[] = ["air", "train", "bus", "car", "ship", "other"];
+  const amenities: PropertyAmenities[] = ["wifi", "pool", "gym", "spa", "restaurant", "parking", "airConditioning", "breakfast"];
+  const travellingAccessibilityOptions = ['Wheelchair Accessible', 'Elevator', 'Accessible Parking', 'Braille Signage', 'Accessible Bathroom', 'Roll-in Shower'];
+  const popularFiltersOptions =  ['Pet Friendly', 'Free Cancellation', 'Free Breakfast', 'Pool', 'Hot Tub', 'Ocean View', 'Family Friendly', 'Business Facilities'];
+  const funThingsToDoOptions = ['Beach', 'Hiking', 'Shopping', 'Nightlife', 'Local Tours', 'Museums', 'Theme Parks', 'Water Sports'];
+  const mealsOptions =['Breakfast', 'Lunch', 'Dinner', 'All-Inclusive', 'Buffet', 'À la carte', 'Room Service', 'Special Diets'];
+  const facilitiesOptions = ['Parking', 'WiFi', 'Swimming Pool', 'Fitness Center', 'Restaurant', 'Bar', 'Spa', 'Conference Room'];
+   const reservationPolicyOptions = ['Free Cancellation', 'Flexible', 'Moderate', 'Strict', 'Non-Refundable', 'Pay at Property', 'Pay Now'];
+  const brandsOptions =  ['Hilton', 'Marriott', 'Hyatt', 'Best Western', 'Accor', 'IHG', 'Wyndham', 'Choice Hotels'];
+ const transportationTypes: TransportationType[] = ["air", "train", "bus", "car", "ship", "other"];
 
   const handleChange = (field: string, value: unknown) => {
     setFormData((prev) => {
@@ -152,18 +150,6 @@ const TravellingEditForm: React.FC<TravellingEditFormProps> = ({ item, onSave })
         {errors.description && <span className="text-red-500">{errors.description}</span>}
       </div>
 
-      <div>
-        <label>Rating</label>
-        <Input
-          type="number"
-          name="rat"
-          value={formData.rat || '1'}
-          onChange={(e) => handleChange("rat", e.target.value)}
-          placeholder="Enter rating"
-          min="1"
-          max="5"
-        />
-      </div>
 
       {/* Transportation Section */}
       <div className="border p-4 rounded-md">
@@ -291,23 +277,11 @@ const TravellingEditForm: React.FC<TravellingEditFormProps> = ({ item, onSave })
           <Input
             type="number"
             name="totalRating"
-            value={formData.totalRating || ''}
+            value={formData.totalRating?.toString() || ''}
             onChange={(e) => handleChange("totalRating", parseFloat(e.target.value) || 0)}
             min={0}
             max={5}
             step={0.1}
-          />
-        </div>
-        <div>
-          <label>Travelling Rating</label>
-          <Input
-            type="number"
-            name="travellingRating"
-            value={formData.travellingRating || ''}
-            onChange={(e) => handleChange("travellingRating", parseFloat(e.target.value) || 0)}
-            min={0}
-            max={5}
-            step={0.5}
           />
         </div>
       </div>
@@ -327,20 +301,12 @@ const TravellingEditForm: React.FC<TravellingEditFormProps> = ({ item, onSave })
         
         <CheckboxGroup
           options={travellingAccessibilityOptions}
-          value={formData.travellingAccessibility || []}
+          value={formData.accessibility || []}
           onChange={handleChange}
           label="Travelling Accessibility"
           fieldName="travellingAccessibility"
         />
-        
-        <CheckboxGroup
-          options={roomAccessibilityOptions}
-          value={formData.roomAccessibility || []}
-          onChange={handleChange}
-          label="Room Accessibility"
-          fieldName="roomAccessibility"
-        />
-        
+                
         <CheckboxGroup
           options={popularFiltersOptions}
           value={formData.popularFilters || []}
@@ -372,14 +338,7 @@ const TravellingEditForm: React.FC<TravellingEditFormProps> = ({ item, onSave })
           label="Facilities"
           fieldName="facilities"
         />
-        
-        <CheckboxGroup
-          options={bedPreferenceOptions}
-          value={formData.bedPreference || []}
-          onChange={handleChange}
-          label="Bed Preferences"
-          fieldName="bedPreference"
-        />
+
         
         <CheckboxGroup
           options={reservationPolicyOptions}
@@ -396,21 +355,14 @@ const TravellingEditForm: React.FC<TravellingEditFormProps> = ({ item, onSave })
           label="Brands"
           fieldName="brands"
         />
-        
-        <CheckboxGroup
-          options={roomFacilitiesOptions}
-          value={formData.roomFacilities || []}
-          onChange={handleChange}
-          label="Room Facilities"
-          fieldName="roomFacilities"
-        />
+      
       </div>
 
       <div>
         <label>Banner Image</label>
         <ImageUpload
           label='banner image'
-          value={formData.bannerImage}
+          value={formData.bannerImage || null}
           onChange={(image) => handleChange("bannerImage", image)}
         />
         {errors.bannerImage && <span className="text-red-500">{errors.bannerImage}</span>}
