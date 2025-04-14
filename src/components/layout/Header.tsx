@@ -7,7 +7,6 @@ import {
   Plane, 
   Hotel, 
   ShoppingBag, 
-  Menu,
   Briefcase,
   BookAIcon,
   Building
@@ -296,10 +295,7 @@ export function Header() {
             </div>
           </SignedIn>
 
-          {/* Mobile Menu Button */}
-          <button className="md:hidden">
-            <Menu className="w-6 h-6" />
-          </button>
+         
         </div>
       </div>
     </header>

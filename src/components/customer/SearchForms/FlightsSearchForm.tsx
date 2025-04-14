@@ -369,7 +369,7 @@ export default function FlightsSearchForm() {
                 <button className="text-blue-600" onClick={() => {setShowCalendar(false); setSelectionPhase(0);}}>
                   {selectionPhase === 1 ? 'Select end date' : 'Calendar'}
                 </button>
-                <button className="text-gray-400">I&apos;m flexible</button>
+                {/* <button className="text-gray-400">I&apos;m flexible</button> */}
               </div>
               
               <div className="flex space-x-4">
@@ -455,7 +455,7 @@ export default function FlightsSearchForm() {
                 </div>
               </div>
               
-              <div className="flex justify-between mt-4">
+              {/* <div className="flex justify-between mt-4">
                 <div className="flex space-x-2">
                   <button className="px-4 py-2 border border-blue-600 text-blue-600 rounded-full">Exact dates</button>
                   <button className="px-4 py-2 border border-gray-300 rounded-full">1 day</button>
@@ -463,7 +463,7 @@ export default function FlightsSearchForm() {
                   <button className="px-4 py-2 border border-gray-300 rounded-full">3 days</button>
                   <button className="px-4 py-2 border border-gray-300 rounded-full">7 days</button>
                 </div>
-              </div>
+              </div> */}
             </div>
           )}
         </div>

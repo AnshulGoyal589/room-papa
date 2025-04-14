@@ -64,7 +64,7 @@ export default function SearchFilter() {
         category: filterMode,
         minPrice: minPrice || undefined,
         maxPrice: maxPrice || undefined,
-        currency: currency || undefined,
+        // currency: currency || undefined,
       };
 
       // Add mode-specific params
@@ -135,6 +135,7 @@ export default function SearchFilter() {
       // Common filters
       setMinPrice(searchParams.get('minPrice') || '');
       setMaxPrice(searchParams.get('maxPrice') || '');
+
       // setCurrency(searchParams.get('currency') || 'USD');
 
       // Property filters

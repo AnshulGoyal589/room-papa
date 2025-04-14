@@ -55,12 +55,21 @@ export default function ExploreIndia() {
     }
   ];
 
+  const handleSearch2 = () => {
+    const params = new URLSearchParams(currentSearchParams?.toString() || '');
+    params.set('category', 'trip');
+    router.push(`/customer/search?${params.toString()}`);
+  };
+
   const handleSearch = (location: string) => {
     const params = new URLSearchParams(currentSearchParams?.toString() || '');
     if (location) params.set('location', location);
     params.set('category', 'trip');
+    
     router.push(`/customer/search?${params.toString()}`);
   };
+
+  
 
   return (
     <div className="bg-gradient-to-r from-blue-50 to-indigo-50  py-16 px-4">
@@ -95,7 +104,12 @@ export default function ExploreIndia() {
       </div>
       
       <div className="mt-8 text-center">
-        <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-300">
+        <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-300"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleSearch2();
+        }}
+        >
           Discover All of India
         </button>
       </div>
