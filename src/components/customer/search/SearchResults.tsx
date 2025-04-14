@@ -12,7 +12,7 @@ import { Travelling } from '@/lib/mongodb/models/Travelling';
 export default function SearchResults() {
   const router = useRouter();
   const currentSearchParams = useSearchParams();
-  const [searchParams, setSearchParams] = useState<{ [key: string]: string }>({});
+  // const [searchParams, setSearchParams] = useState<{ [key: string]: string }>({});
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sortBy, setSortBy] = useState('createdAt');
@@ -28,7 +28,7 @@ export default function SearchResults() {
     currentSearchParams?.forEach((value, key) => {
       params[key] = value;
     });
-    setSearchParams(params);
+    // setSearchParams(params);
     
     // Set initial states from URL params
     setSortBy(params.sortBy || 'createdAt');

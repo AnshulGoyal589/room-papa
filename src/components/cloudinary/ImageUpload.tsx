@@ -73,7 +73,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       {value ? (
         <div className="relative w-full rounded-md overflow-hidden">
           <CldImage
-            src={value.publicId}
+            src={value.publicId || ""}
             width={300}
             height={200}
             crop="fill"

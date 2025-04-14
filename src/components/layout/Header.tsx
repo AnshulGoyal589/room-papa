@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Home, 
@@ -8,12 +8,9 @@ import {
   Hotel, 
   ShoppingBag, 
   Menu,
-  X,
-  User,
   Briefcase,
-  ArrowRight,
-  ChevronLeft,
-  BookAIcon
+  BookAIcon,
+  Building
 } from 'lucide-react';
 import {
   SignedIn,
@@ -26,132 +23,15 @@ import {
 // Type definition for user role
 type UserRole = 'customer' | 'manager' | 'admin' | 'guest';
 
-// Role Selection Modal Component
-interface RoleModalProps {
-  onRoleSelect: (role: UserRole) => void;
-  onClose: () => void;
-  isSubmitting: boolean;
-}
-
-const RoleSelectionModal: React.FC<RoleModalProps> = ({ 
-  onRoleSelect, 
-  onClose, 
-  isSubmitting 
-}) => {
-  const [selectedRole, setSelectedRole] = useState<UserRole>('customer');
-
-  const handleContinue = () => {
-    onRoleSelect(selectedRole);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/40 bg-opacity-60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white p-6 rounded-xl shadow-xl max-w-md w-full">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">Choose Your Role</h2>
-          <button 
-            onClick={onClose}
-            className="p-1 rounded-full hover:bg-gray-100"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
-        
-        <p className="text-gray-600 mb-8">Please select how you&apos;ll use Room Papa:</p>
-        
-        <div className="flex flex-col space-y-4 mb-8">
-          {/* Customer Role Button */}
-          <button
-            onClick={() => setSelectedRole('customer')}
-            className={`flex items-center p-5 border rounded-xl transition-all duration-200 ${
-              selectedRole === 'customer' 
-                ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
-                : 'border-gray-200 hover:border-blue-200 hover:bg-blue-50'
-            }`}
-          >
-            <div className={`p-3 rounded-full mr-4 ${
-              selectedRole === 'customer' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
-            }`}>
-              <User className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="font-semibold text-lg">Customer</div>
-              <div className="text-sm text-gray-500">Search and book trips, manage your reservations</div>
-            </div>
-          </button>
-          
-          {/* Manager Role Button */}
-          <button
-            onClick={() => setSelectedRole('manager')}
-            className={`flex items-center p-5 border rounded-xl transition-all duration-200 ${
-              selectedRole === 'manager' 
-                ? 'border-green-500 bg-green-50 ring-2 ring-green-200' 
-                : 'border-gray-200 hover:border-green-200 hover:bg-green-50'
-            }`}
-          >
-            <div className={`p-3 rounded-full mr-4 ${
-              selectedRole === 'manager' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'
-            }`}>
-              <Briefcase className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="font-semibold text-lg">Manager</div>
-              <div className="text-sm text-gray-500">Manage listings, bookings and customer requests</div>
-            </div>
-          </button>
-        </div>
-        
-        {/* Continue and Go Back Buttons */}
-        <div className="flex flex-col space-y-3">
-          <button
-            onClick={handleContinue}
-            disabled={isSubmitting}
-            className={`w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center transition-all ${
-              !isSubmitting
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            }`}
-          >
-            {isSubmitting ? (
-              <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Processing...</span>
-              </div>
-            ) : (
-              <>
-                <span>Continue to Sign Up</span>
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </>
-            )}
-          </button>
-          
-          <button 
-            onClick={onClose}
-            className="text-gray-500 text-sm font-medium hover:text-gray-800 transition flex items-center justify-center"
-          >
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            <span>Go back</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Main Header Component
 export function Header() {
   const { isSignedIn, user, isLoaded } = useUser();
-  const { openSignUp, openSignIn, signOut } = useClerk();
+  const { openSignUp, openSignIn } = useClerk();
   
   // State management
   const [role, setRole] = useState<UserRole>('guest');
-  const [showRoleModal, setShowRoleModal] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
-  
-  // Use localStorage to persist the selected role between sign-up and callback
-  const [selectedRoleBeforeSignUp, setSelectedRoleBeforeSignUp] = useState<UserRole | null>(null);
   
   // Track if we've already attempted to save the role to avoid duplicate saves
   const [roleSaved, setRoleSaved] = useState(false);
@@ -175,8 +55,6 @@ export function Header() {
     email: string
   ): Promise<boolean> => {
     try {
-      // console.log("Saving role to database:", clerkId, userRole, email);
-      
       const response = await fetch('/api/user-role', {
         method: 'POST',
         headers: {
@@ -204,22 +82,13 @@ export function Header() {
 
   // Effect to save selected role to localStorage before sign-up
   useEffect(() => {
-    if (selectedRoleBeforeSignUp) {
-      localStorage.setItem('pendingUserRole', selectedRoleBeforeSignUp);
-    }
-  }, [selectedRoleBeforeSignUp]);
-
-  // Effect to check for role in localStorage on mount and after sign-in
-  useEffect(() => {
-    const fetchAndSaveUserRole = async () => {
-      // Wait until Clerk is loaded
-      if (!isLoaded) return;
-      
-      const pendingRole = localStorage.getItem('pendingUserRole') as UserRole | null;
-      
-      // If user just got signed in and we have a pending role, save it
-      if (isSignedIn && user && pendingRole && !roleSaved) {
-        setIsSubmitting(true);
+    // Get the pending role from localStorage (if any)
+    const pendingRole = localStorage.getItem('pendingUserRole') as UserRole | null;
+    
+    // If user is signed in and we have a pending role, save it
+    if (isLoaded && isSignedIn && user && pendingRole && !roleSaved) {
+      const savePendingRole = async () => {
+        // setIsSubmitting(true);
         console.log("User signed in with pending role, saving role:", pendingRole);
         
         const saved = await saveUserRoleToDatabase(
@@ -234,8 +103,18 @@ export function Header() {
           localStorage.removeItem('pendingUserRole');
         }
         
-        setIsSubmitting(false);
-      }
+        // setIsSubmitting(false);
+      };
+      
+      savePendingRole();
+    }
+  }, [isLoaded, isSignedIn, user, roleSaved]);
+
+  // Effect to fetch user role on mount and after sign-in
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      // Wait until Clerk is loaded
+      if (!isLoaded) return;
       
       // If user is signed in, fetch their role
       if (isSignedIn && user) {
@@ -259,60 +138,33 @@ export function Header() {
       }
     };
 
-    fetchAndSaveUserRole();
-  }, [isLoaded, isSignedIn, user, roleSaved]);
+    fetchUserRole();
+  }, [isLoaded, isSignedIn, user]);
 
-  // Handle sign up process
-  const handleSignUp = () => {
-    setShowRoleModal(true);
+  // Handle standard sign up process (as customer)
+  const handleCustomerSignUp = () => {
+    localStorage.setItem('pendingUserRole', 'customer');
+    openSignUp({
+      redirectUrl: window.location.href,
+      afterSignUpUrl: window.location.href
+    });
+  };
+
+  // Handle property listing sign up (as manager)
+  const handleManagerSignUp = () => {
+    localStorage.setItem('pendingUserRole', 'manager');
+    openSignUp({
+      redirectUrl: window.location.href,
+      afterSignUpUrl: window.location.href
+    });
   };
 
   // Handle sign out
-  const handleSignOut = async () => {
-    await signOut();
-    setRole('guest');
-    setRoleSaved(false);
-  };
-
-  // Handle role selection
-  const handleRoleSelect = async (selectedRole: UserRole) => {
-    setIsSubmitting(true);
-    
-    try {
-      // If user is already signed in, save role immediately
-      if (isSignedIn && user) {
-        const saved = await saveUserRoleToDatabase(
-          user.id, 
-          selectedRole, 
-          user.primaryEmailAddress?.emailAddress || ''
-        );
-        
-        if (saved) {
-          setRole(selectedRole);
-        }
-      } else {
-        // If not signed in, store the selected role in state and localStorage
-        setSelectedRoleBeforeSignUp(selectedRole);
-        
-        // Then open the sign-up form
-        openSignUp({
-          redirectUrl: window.location.href,
-          afterSignUpUrl: window.location.href
-        });
-      }
-    } catch (error) {
-      console.error('Error in role selection:', error);
-      alert('Failed to save your role. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-      setShowRoleModal(false);
-    }
-  };
-
-  // Close role modal
-  const closeRoleModal = () => {
-    setShowRoleModal(false);
-  };
+  // const handleSignOut = async () => {
+  //   await signOut();
+  //   setRole('guest');
+  //   setRoleSaved(false);
+  // };
 
   // Render loading state if still loading
   if (loading) {
@@ -324,136 +176,132 @@ export function Header() {
   }
 
   return (
-    <>
-      <header className="bg-white shadow-md">
-        <div className="container mx-auto flex justify-between items-center p-4">
-          {/* Logo with dynamic routing based on role */}
-          <Link href={role === 'customer' ? "/customer/dashboard" : role === 'manager' ? "/manager/dashboard" : role === 'admin' ? "/admin/dashboard" : "/"} 
-            className="text-2xl font-bold text-blue-600">
-            Room Papa
-          </Link>
+    <header className="bg-white shadow-md">
+      <div className="container mx-auto flex justify-between items-center p-4">
+        {/* Logo with dynamic routing based on role */}
+        <Link href={role === 'customer' ? "/customer/dashboard" : role === 'manager' ? "/manager/dashboard" : role === 'admin' ? "/admin/dashboard" : "/"} 
+          className="text-2xl font-bold text-blue-600">
+          Room Papa
+        </Link>
 
-          {/* Customer Navigation */}
-          {role === 'customer' && (
-            <nav className="hidden md:flex space-x-6 items-center">
-              <Link 
-                href="/customer/dashboard"
-                className="flex items-center space-x-2 hover:text-blue-600 transition"
-              >
-                <Home className="w-5 h-5" />
-                <span>Home</span>
-              </Link>
-              <Link 
-                href="/customer/search?category=trip" 
-                className="flex items-center space-x-2 hover:text-blue-600 transition"
-              >
-                <Plane className="w-5 h-5" />
-                <span>Trips</span>
-              </Link>
-              <Link 
-                href="/customer/search?category=property" 
-                className="flex items-center space-x-2 hover:text-blue-600 transition"
-              >
-                <Hotel className="w-5 h-5" />
-                <span>Properties</span>
-              </Link>
-              <Link 
-                href="/customer/search?category=travelling" 
-                className="flex items-center space-x-2 hover:text-blue-600 transition"
-              >
-                <ShoppingBag className="w-5 h-5" />
-                <span>Travelling</span>
-              </Link>
-            </nav>
-          )}
+        {/* Customer Navigation */}
+        {role === 'customer' && (
+          <nav className="hidden md:flex space-x-6 items-center">
+            <Link 
+              href="/customer/dashboard"
+              className="flex items-center space-x-2 hover:text-blue-600 transition"
+            >
+              <Home className="w-5 h-5" />
+              <span>Home</span>
+            </Link>
+            <Link 
+              href="/customer/search?category=trip" 
+              className="flex items-center space-x-2 hover:text-blue-600 transition"
+            >
+              <Plane className="w-5 h-5" />
+              <span>Trips</span>
+            </Link>
+            <Link 
+              href="/customer/search?category=property" 
+              className="flex items-center space-x-2 hover:text-blue-600 transition"
+            >
+              <Hotel className="w-5 h-5" />
+              <span>Properties</span>
+            </Link>
+            <Link 
+              href="/customer/search?category=travelling" 
+              className="flex items-center space-x-2 hover:text-blue-600 transition"
+            >
+              <ShoppingBag className="w-5 h-5" />
+              <span>Travelling</span>
+            </Link>
+          </nav>
+        )}
 
-          {/* Manager Navigation */}
-          {role === 'manager' && (
-            <nav className="hidden md:flex space-x-6 items-center">
-              <Link 
-                href="/manager/dashboard"
-                className="flex items-center space-x-2 hover:text-blue-600 transition"
-              >
-                <Home className="w-5 h-5" />
-                <span>Dashboard</span>
-              </Link>
-              <Link 
-                href="/manager/appointments"
-                className="flex items-center space-x-2 hover:text-blue-600 transition"
-              >
-                <BookAIcon className="w-5 h-5" />
-                <span>Bookings</span>
-              </Link>
-            </nav>
-          )}
+        {/* Manager Navigation */}
+        {role === 'manager' && (
+          <nav className="hidden md:flex space-x-6 items-center">
+            <Link 
+              href="/manager/dashboard"
+              className="flex items-center space-x-2 hover:text-blue-600 transition"
+            >
+              <Home className="w-5 h-5" />
+              <span>Dashboard</span>
+            </Link>
+            <Link 
+              href="/manager/appointments"
+              className="flex items-center space-x-2 hover:text-blue-600 transition"
+            >
+              <BookAIcon className="w-5 h-5" />
+              <span>Bookings</span>
+            </Link>
+          </nav>
+        )}
 
-          {/* Admin Navigation */}
-          {role === 'admin' && (
-            <nav className="hidden md:flex space-x-6 items-center">
-              <Link 
-                href="/admin/dashboard"
-                className="flex items-center space-x-2 hover:text-blue-600 transition"
-              >
-                <Home className="w-5 h-5" />
-                <span>Dashboard</span>
-              </Link>
-              <Link 
-                href="/admin/managers"
-                className="flex items-center space-x-2 hover:text-blue-600 transition"
-              >
-                <Briefcase className="w-5 h-5" />
-                <span>Managers</span>
-              </Link>
-            </nav>
-          )}
+        {/* Admin Navigation */}
+        {role === 'admin' && (
+          <nav className="hidden md:flex space-x-6 items-center">
+            <Link 
+              href="/admin/dashboard"
+              className="flex items-center space-x-2 hover:text-blue-600 transition"
+            >
+              <Home className="w-5 h-5" />
+              <span>Dashboard</span>
+            </Link>
+            <Link 
+              href="/admin/managers"
+              className="flex items-center space-x-2 hover:text-blue-600 transition"
+            >
+              <Briefcase className="w-5 h-5" />
+              <span>Managers</span>
+            </Link>
+          </nav>
+        )}
 
-          {/* Authentication and User Actions */}
-          <div className="flex items-center space-x-4">
-            <SignedOut>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => openSignIn()}
-                  className="flex items-center space-x-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full hover:bg-blue-100 transition"
-                >
-                  <span>Login</span>
-                </button>
-                <button 
-                  onClick={handleSignUp}
-                  className="hidden md:flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition"
-                >
-                  <span>Sign Up</span>
-                </button>
-              </div>
-            </SignedOut>
-            
-            <SignedIn>
-              <div className="flex items-center gap-2">
-                {role && role !== 'guest' && (
-                  <span className="hidden md:inline-block px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
-                    {role === 'customer' ? 'Customer' : role === 'manager' ? 'Manager' : 'Admin'}
-                  </span>
-                )}
-                {/* Using basic UserButton without unsupported props */}
-                <UserButton afterSignOutUrl="/" />
-              </div>
-            </SignedIn>
+        {/* Authentication and User Actions */}
+        <div className="flex items-center space-x-3">
+          <SignedOut>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => openSignIn()}
+                className="flex items-center space-x-1 bg-blue-50 text-blue-600 px-3 py-2 rounded-full hover:bg-blue-100 transition text-sm"
+              >
+                <span>Login</span>
+              </button>
+              <button 
+                onClick={handleCustomerSignUp}
+                className="hidden md:flex items-center space-x-1 bg-blue-600 text-white px-3 py-2 rounded-full hover:bg-blue-700 transition text-sm"
+              >
+                <span>Sign Up</span>
+              </button>
+              <button 
+                onClick={handleManagerSignUp}
+                className="flex items-center space-x-1 bg-green-600 text-white px-3 py-2 rounded-full hover:bg-green-700 transition text-sm"
+              >
+                <Building className="w-4 h-4 mr-1" />
+                <span>List Your Property</span>
+              </button>
+            </div>
+          </SignedOut>
+          
+          <SignedIn>
+            <div className="flex items-center gap-2">
+              {role && role !== 'guest' && (
+                <span className="hidden md:inline-block px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                  {role === 'customer' ? 'Customer' : role === 'manager' ? 'Manager' : 'Admin'}
+                </span>
+              )}
+              {/* Using basic UserButton */}
+              <UserButton afterSignOutUrl="/" />
+            </div>
+          </SignedIn>
 
-            {/* Mobile Menu Button */}
-            <button className="md:hidden">
-              <Menu className="w-6 h-6" />
-            </button>
-          </div>
+          {/* Mobile Menu Button */}
+          <button className="md:hidden">
+            <Menu className="w-6 h-6" />
+          </button>
         </div>
-      </header>
-
-      {/* Role Selection Modal */}
-      {showRoleModal && (
-        <RoleSelectionModal 
-          onRoleSelect={handleRoleSelect}
-          onClose={closeRoleModal}
-          isSubmitting={isSubmitting}
-        />
-      )}
-    </>
+      </div>
+    </header>
   );
 }

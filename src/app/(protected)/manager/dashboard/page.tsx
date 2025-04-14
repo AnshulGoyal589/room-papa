@@ -38,7 +38,7 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const { user } = useUser();
-  const [managerStatus , setManagerStatus] = useState<Boolean>(false);
+  const [managerStatus , setManagerStatus] = useState<boolean>(false);
 
   
 

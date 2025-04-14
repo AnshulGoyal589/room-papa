@@ -342,8 +342,8 @@ export default function PropertyDetailPage() {
     setIsSubmitting(true);
     setBookingError(null); // Clear previous errors
 
-    /// eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const selectedRoomDetails = Object.entries(selectedRooms).filter(([_, qty]) => qty > 0) // Only include categories with selected quantity > 0
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const selectedRoomDetails = Object.entries(selectedRooms).filter(([_, qty]) => qty > 0)
       .map(([title, qty]) => {
         const category = property.categoryRooms?.find(cat => cat.title === title);
         // Fallback price/currency if category somehow not found (shouldn't happen if state is consistent)

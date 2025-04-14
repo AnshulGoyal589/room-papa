@@ -36,6 +36,9 @@ import PropertyForm from './PropertyForm';
 import TripForm from './TripForm';
 import TravellingForm from './TravellingForm';
 import { useUser } from "@clerk/nextjs";
+import { Property } from '@/lib/mongodb/models/Property';
+import { Trip } from '@/lib/mongodb/models/Trip';
+import { Travelling } from '@/lib/mongodb/models/Travelling';
 
 interface AddItemModalProps {
   onClose: () => void;
@@ -169,7 +172,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
       case 'Property':
         return (
           <PropertyForm 
-            propertyData ={propertyData} 
+            propertyData ={propertyData as Property} 
             setPropertyData={setPropertyData} 
           />
         );
@@ -177,7 +180,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
       case 'Trip':
         return (
           <TripForm 
-            tripData={tripData} 
+            tripData={tripData as Trip} 
             setTripData={setTripData} 
           />
         );
@@ -185,7 +188,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
       case 'Travelling':
         return (
           <TravellingForm 
-            travellingData={travellingData} 
+            travellingData={travellingData as Travelling} 
             setTravellingData={setTravellingData} 
           />
         );
