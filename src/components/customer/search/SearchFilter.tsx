@@ -11,7 +11,7 @@ export default function SearchFilter() {
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Filter mode (Property, Travelling, Trip)
-  const [filterMode, setFilterMode] = useState<string>(searchParams.get('category') || 'property');
+  const [filterMode, setFilterMode] = useState<string>(searchParams?.get('category') || 'property');
 
   // Common filters
   const [minPrice, setMinPrice] = useState<string>('');

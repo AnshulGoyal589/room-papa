@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { 
   Home, 
@@ -29,7 +30,7 @@ export function Header() {
   
   // State management
   const [role, setRole] = useState<UserRole>('guest');
-  // const [isSubmitting, setIsSubmitting] = useState(false);
+  // const [isSubmitting, setIsSubmitting] = useState(false); // Commented out as in original
   const [loading, setLoading] = useState(true);
   
   // Track if we've already attempted to save the role to avoid duplicate saves
@@ -87,7 +88,7 @@ export function Header() {
     // If user is signed in and we have a pending role, save it
     if (isLoaded && isSignedIn && user && pendingRole && !roleSaved) {
       const savePendingRole = async () => {
-        // setIsSubmitting(true);
+        // setIsSubmitting(true); // Commented out as in original
         console.log("User signed in with pending role, saving role:", pendingRole);
         
         const saved = await saveUserRoleToDatabase(
@@ -102,7 +103,7 @@ export function Header() {
           localStorage.removeItem('pendingUserRole');
         }
         
-        // setIsSubmitting(false);
+        // setIsSubmitting(false); // Commented out as in original
       };
       
       savePendingRole();
@@ -158,7 +159,7 @@ export function Header() {
     });
   };
 
-  // Handle sign out
+  // Handle sign out - Commented out as in original
   // const handleSignOut = async () => {
   //   await signOut();
   //   setRole('guest');
@@ -168,48 +169,58 @@ export function Header() {
   // Render loading state if still loading
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-16">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+      // Adjusted loading state background and spinner color
+      <div className="flex justify-center items-center h-16 bg-[#003b95]">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
       </div>
     );
   }
 
   return (
-    <header className="bg-white shadow-md">
-      <div className="container mx-auto flex justify-between items-center p-4">
+    // Changed background color to #003b95 and removed shadow
+    <header className="bg-[#003b95] "> 
+      <div className="container mx-auto flex justify-between items-center"> {/* Added some padding */}
         {/* Logo with dynamic routing based on role */}
         <Link href={role === 'customer' ? "/customer/dashboard" : role === 'manager' ? "/manager/dashboard" : role === 'admin' ? "/admin/dashboard" : "/"} 
-          className="text-2xl font-bold text-blue-600">
-          Room Papa
+          // Changed logo text color to white for contrast
+          className="text-2xl font-bold text-white flex items-center"> 
+          <Image
+            src="/assets/logo.jpg" // Replace with your logo path
+            alt="Logo"
+            width={140} // Slightly adjusted size for potentially tighter space
+            height={140}
+            className="inline-block mr-2"
+          />
         </Link>
 
         {/* Customer Navigation */}
         {role === 'customer' && (
-          <nav className="hidden md:flex space-x-6 items-center">
+          // Adjusted text color to white and hover color for contrast
+          <nav className="hidden md:flex space-x-6 items-center text-white"> 
             <Link 
               href="/customer/dashboard"
-              className="flex items-center space-x-2 hover:text-blue-600 transition"
+              className="flex items-center space-x-2 hover:text-gray-300 transition"
             >
               <Home className="w-5 h-5" />
               <span>Home</span>
             </Link>
             <Link 
               href="/customer/search?category=trip" 
-              className="flex items-center space-x-2 hover:text-blue-600 transition"
+              className="flex items-center space-x-2 hover:text-gray-300 transition"
             >
               <Plane className="w-5 h-5" />
               <span>Trips</span>
             </Link>
             <Link 
               href="/customer/search?category=property" 
-              className="flex items-center space-x-2 hover:text-blue-600 transition"
+              className="flex items-center space-x-2 hover:text-gray-300 transition"
             >
               <Hotel className="w-5 h-5" />
               <span>Properties</span>
             </Link>
             <Link 
               href="/customer/search?category=travelling" 
-              className="flex items-center space-x-2 hover:text-blue-600 transition"
+              className="flex items-center space-x-2 hover:text-gray-300 transition"
             >
               <ShoppingBag className="w-5 h-5" />
               <span>Travelling</span>
@@ -219,17 +230,18 @@ export function Header() {
 
         {/* Manager Navigation */}
         {role === 'manager' && (
-          <nav className="hidden md:flex space-x-6 items-center">
+          // Adjusted text color to white and hover color for contrast
+          <nav className="hidden md:flex space-x-6 items-center text-white">
             <Link 
               href="/manager/dashboard"
-              className="flex items-center space-x-2 hover:text-blue-600 transition"
+              className="flex items-center space-x-2 hover:text-gray-300 transition"
             >
               <Home className="w-5 h-5" />
               <span>Dashboard</span>
             </Link>
             <Link 
               href="/manager/appointments"
-              className="flex items-center space-x-2 hover:text-blue-600 transition"
+              className="flex items-center space-x-2 hover:text-gray-300 transition"
             >
               <BookAIcon className="w-5 h-5" />
               <span>Bookings</span>
@@ -239,17 +251,18 @@ export function Header() {
 
         {/* Admin Navigation */}
         {role === 'admin' && (
-          <nav className="hidden md:flex space-x-6 items-center">
+          // Adjusted text color to white and hover color for contrast
+          <nav className="hidden md:flex space-x-6 items-center text-white">
             <Link 
               href="/admin/dashboard"
-              className="flex items-center space-x-2 hover:text-blue-600 transition"
+              className="flex items-center space-x-2 hover:text-gray-300 transition"
             >
               <Home className="w-5 h-5" />
               <span>Dashboard</span>
             </Link>
             <Link 
               href="/admin/managers"
-              className="flex items-center space-x-2 hover:text-blue-600 transition"
+              className="flex items-center space-x-2 hover:text-gray-300 transition"
             >
               <Briefcase className="w-5 h-5" />
               <span>Managers</span>
@@ -261,21 +274,24 @@ export function Header() {
         <div className="flex items-center space-x-3">
           <SignedOut>
             <div className="flex items-center gap-2">
+              {/* Adjusted Login Button Style */}
               <button 
                 onClick={() => openSignIn()}
-                className="flex items-center space-x-1 bg-blue-50 text-blue-600 px-3 py-2 rounded-full hover:bg-blue-100 transition text-sm"
+                className="flex items-center space-x-1 bg-white text-[#003b95] px-3 py-2 rounded-full hover:bg-gray-200 transition text-sm font-medium"
               >
                 <span>Login</span>
               </button>
+              {/* Adjusted Sign Up Button Style */}
               <button 
                 onClick={handleCustomerSignUp}
-                className="hidden md:flex items-center space-x-1 bg-blue-600 text-white px-3 py-2 rounded-full hover:bg-blue-700 transition text-sm"
+                className="hidden md:flex items-center space-x-1 bg-white text-[#003b95] px-3 py-2 rounded-full hover:bg-gray-200 transition text-sm font-medium"
               >
                 <span>Sign Up</span>
               </button>
+               {/* Kept List Property button green for distinction, ensured text contrast */}
               <button 
                 onClick={handleManagerSignUp}
-                className="flex items-center space-x-1 bg-green-600 text-white px-3 py-2 rounded-full hover:bg-green-700 transition text-sm"
+                className="flex items-center space-x-1 bg-green-500 text-white px-3 py-2 rounded-full hover:bg-green-600 transition text-sm font-medium" // Slightly brighter green
               >
                 <Building className="w-4 h-4 mr-1" />
                 <span>List Your Property</span>
@@ -286,11 +302,12 @@ export function Header() {
           <SignedIn>
             <div className="flex items-center gap-2">
               {role && role !== 'guest' && (
-                <span className="hidden md:inline-block px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                 // Adjusted Role Indicator Style for contrast
+                <span className="hidden md:inline-block px-2 py-1 bg-white text-[#003b95] rounded-full text-xs font-medium">
                   {role === 'customer' ? 'Customer' : role === 'manager' ? 'Manager' : 'Admin'}
                 </span>
               )}
-              {/* Using basic UserButton */}
+              {/* UserButton - Clerk's default styling should work, might need custom appearance props if needed */}
               <UserButton afterSignOutUrl="/" />
             </div>
           </SignedIn>

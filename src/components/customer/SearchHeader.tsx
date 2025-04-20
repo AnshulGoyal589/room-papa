@@ -22,7 +22,7 @@ export type CategoryType = 'property' | 'trip' | 'travelling';
 export default function SearchHeader() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabId>(
-    (searchParams.get('tab') as TabId) || 'property'
+    (searchParams?.get('tab') as TabId) || 'property'
   );
 
   // Map tabs to categories
@@ -143,7 +143,7 @@ export default function SearchHeader() {
 
   return (
     <div className="bg-[#003b95] text-white">
-      <div className="container mx-auto px-4 py-8 md:py-12 lg:py-16 w-full lg:w-[70vw]">
+      <div className="container mx-auto px-4 pt-2 pb-8 md:pt-4 lg:pt-8 md:pb-12 lg:pb-16 w-full lg:w-[70vw]">
         {/* Navigation Tabs */}
         <div className="flex overflow-x-auto no-scrollbar mb-6 pb-2">
           {tabs.map((tab) => {
