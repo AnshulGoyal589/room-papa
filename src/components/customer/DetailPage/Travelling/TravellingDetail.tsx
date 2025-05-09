@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
@@ -8,7 +8,35 @@ import { BookingFormData, TransportationType } from '@/types';
 import DummyReviews from './Reviews';
 import { useUser } from '@clerk/nextjs';
 import { Travelling } from '@/lib/mongodb/models/Travelling';
-// import { toast } from 'react-hot-toast';
+
+// --- Define Tax and Fee Constants for Travelling ---
+const SERVICE_FEE_TRAVELLING = 7; // Example: $7 fixed service fee
+const TAX_RATE_TRAVELLING_PERCENTAGE = 0.04; // Example: 4% tax rate
+
+// --- localStorage Key for Travelling ---
+const LOCAL_STORAGE_KEY_TRAVELLING = 'travellingBookingPreferences_v2'; // Updated key if schema changes
+
+// Helper function to calculate days between two dates
+const calculateDays = (start: Date | null, end: Date | null): number => {
+  if (!start || !end || end <= start) {
+    return 0; // Or 1 if a single day selection implies 1 day of service
+  }
+  const diffTime = Math.abs(end.getTime() - start.getTime());
+  // For travel, if checkIn and checkOut are the same day, it's often considered 1 day.
+  // If they are different, then it's the number of full 24-hour periods.
+  // Let's assume if start and end are on the same calendar day, it's 1 day for pricing.
+  // If end is the next day, it's 2 days for pricing if we count both days.
+  // For simplicity, let's use ceil for now, which implies overnight stays count as full days.
+  // If checkIn and checkOut are same calendar day after validation this will be 0, so adjust.
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  // If start and end date are the same, and it's a valid selection, count as 1 day.
+  if (diffDays === 0 && start.toDateString() === end.toDateString()) {
+    return 1;
+  }
+  return diffDays;
+};
+
 
 export default function TravellingDetailPage() {
   const router = useRouter();
@@ -19,13 +47,20 @@ export default function TravellingDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentReviewPage, setCurrentReviewPage] = useState(1);
-  const [checkInDate, setCheckInDate] = useState<Date | null>(null);
-  const [days, setDays] = useState<number>(1);
-  const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
+  const [checkInDate, setCheckInDate] = useState<Date | null>(null); // User selected "travel start date"
+  const [checkOutDate, setCheckOutDate] = useState<Date | null>(null); // User selected "travel end date"
   const [guestCount, setGuestCount] = useState(1);
   const reviewsPerPage = 3;
+
+  // Derived state for number of days based on user selection
+  const days = useMemo(() => calculateDays(checkInDate, checkOutDate), [checkInDate, checkOutDate]);
   
-  // Booking modal state
+  // --- Pricing State for Travelling ---
+  const [basePriceTotal, setBasePriceTotal] = useState<number>(0);
+  const [serviceChargeApplied, setServiceChargeApplied] = useState<number>(0);
+  const [taxesApplied, setTaxesApplied] = useState<number>(0);
+  const [grandTotalBookingPrice, setGrandTotalBookingPrice] = useState<number>(0);
+  
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingData, setBookingData] = useState<BookingFormData>({
     firstName: '',
@@ -38,8 +73,7 @@ export default function TravellingDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [loginRedirectWarning, setLoginRedirectWarning] = useState(false);
-
-  // setGuestCount(bookingData.passengers);
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTravellingDetails = async () => {
@@ -47,7 +81,7 @@ export default function TravellingDetailPage() {
       
       try {
         setLoading(true);
-
+        setError(null);
         const response = await fetch(`/api/travellings/${params.id}`);
         
         if (!response.ok) {
@@ -55,15 +89,13 @@ export default function TravellingDetailPage() {
         }
         
         const data = await response.json();
-        console.log('Fetched Travelling Data:', data);
         
-        // Convert string dates to Date objects
         const parsedTravelling: Travelling = {
           ...data,
           transportation: {
             ...data.transportation,
-            departureTime: new Date(data.transportation.departureTime),
-            arrivalTime: new Date(data.transportation.arrivalTime)
+            departureTime: new Date(data.transportation.departureTime), // This is the overall end of availability
+            arrivalTime: new Date(data.transportation.arrivalTime)     // This is the overall start of availability
           },
           createdAt: new Date(data.createdAt),
           updatedAt: new Date(data.updatedAt)
@@ -73,14 +105,6 @@ export default function TravellingDetailPage() {
         if (parsedTravelling.bannerImage) {
           setSelectedImage(parsedTravelling.bannerImage.url);
         }
-        // const today = new Date();
-        // const tomorrow = new Date(today);
-        // tomorrow.setDate(tomorrow.getDate() + 1);
-        // const dayAfterTomorrow = new Date(today);
-        // dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
-        
-        // setCheckInDate(tomorrow);
-        // setCheckOutDate(dayAfterTomorrow);
       } catch (err) {
         setError('Error fetching travelling details. Please try again later.');
         console.error(err);
@@ -92,43 +116,151 @@ export default function TravellingDetailPage() {
     fetchTravellingDetails();
   }, [params?.id]);
 
+  // Validate date against travelling's overall start (arrival) and end (departure) date
+  const validateUserSelectedDate = (selectedDateStr: string, productAvailableStartDate: Date, productAvailableEndDate: Date): Date => {
+    const date = new Date(selectedDateStr);
+    const minDate = new Date(productAvailableStartDate); // Use Date objects directly
+    minDate.setHours(0,0,0,0);
+    const maxDate = new Date(productAvailableEndDate);
+    maxDate.setHours(23,59,59,999);
+  
+    if (date < minDate) return minDate;
+    if (date > maxDate) return maxDate;
+    return date;
+  };
 
-    const validateDate = (selectedDate: string, startDate: string, endDate: string): Date => {
-      const date = new Date(selectedDate);
-      const minDate = new Date(startDate);
-      const maxDate = new Date(endDate);
-    
-      if (date < minDate) return minDate;
-      if (date > maxDate) return maxDate;
-    
-      return date;
-    };
-  
-    const handleCheckInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if(!travelling) return;
-      const validatedCheckIn = validateDate(e.target.value, travelling.transportation.arrivalTime, travelling.transportation.departureTime);
-      setCheckInDate(validatedCheckIn);
-      setDays(Math.ceil((validatedCheckIn.getTime() - new Date(travelling.transportation.arrivalTime).getTime()) / (1000 * 3600 * 24)));
-  
-      // Adjust check-out date if necessary
-      if (checkOutDate && validatedCheckIn >= checkOutDate) {
-        setCheckOutDate(new Date(validatedCheckIn.getTime() + 86400000)); // Add 1 day
-      }
-    };
-  
-    const handleCheckOutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if(!travelling) return;
-      const validatedCheckOut = validateDate(e.target.value, travelling.transportation.arrivalTime, travelling.transportation.departureTime);
-      setCheckOutDate(validatedCheckOut);
-      setDays(Math.ceil((validatedCheckOut.getTime() - new Date(travelling.transportation.arrivalTime).getTime()) / (1000 * 3600 * 24)));
-  
-      // Ensure check-out is after check-in
-      if (checkInDate && validatedCheckOut <= checkInDate) {
-        setCheckOutDate(new Date(checkInDate.getTime() + 86400000)); // Add 1 day
-      }
-    };
+  const handleCheckInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if(!travelling) return;
+    const selectedValue = e.target.value;
+    if (!selectedValue) {
+        setCheckInDate(null);
+        return;
+    }
+    // User's "travel start date" must be within the product's availability window
+    const validatedCheckIn = validateUserSelectedDate(selectedValue, new Date(travelling.transportation.arrivalTime), new Date(travelling.transportation.departureTime));
+    setCheckInDate(validatedCheckIn);
 
-  // Update booking data with user info when available
+    if (checkOutDate && validatedCheckIn >= checkOutDate) {
+      const nextDay = new Date(validatedCheckIn.getTime());
+      nextDay.setDate(validatedCheckIn.getDate() + 1); // Ensure at least one day duration
+      // nextDay must also be within the product's departureTime
+      if (nextDay <= new Date(travelling.transportation.departureTime)) {
+          setCheckOutDate(nextDay);
+      } else {
+          // If next day is beyond departure, maybe set checkout to the departure date itself if it's after check-in
+          const departureDate = new Date(travelling.transportation.departureTime);
+          setCheckOutDate(validatedCheckIn < departureDate ? departureDate : null);
+      }
+    }
+  };
+
+  const handleCheckOutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if(!travelling) return;
+    const selectedValue = e.target.value;
+    if (!selectedValue) {
+        setCheckOutDate(null);
+        return;
+    }
+    // Min checkout date is the day after check-in, or the product's arrival time if check-in not set
+    const minCheckOutDateForValidation = checkInDate 
+        ? new Date(new Date(checkInDate).setDate(new Date(checkInDate).getDate() + 1)) 
+        : new Date(travelling.transportation.arrivalTime);
+
+    const validatedCheckOut = validateUserSelectedDate(selectedValue, minCheckOutDateForValidation, new Date(travelling.transportation.departureTime));
+    
+    if (checkInDate && validatedCheckOut <= checkInDate) {
+      const dayAfterCheckIn = new Date(checkInDate.getTime());
+      dayAfterCheckIn.setDate(checkInDate.getDate() + 1);
+      if (dayAfterCheckIn <= new Date(travelling.transportation.departureTime)) {
+          setCheckOutDate(dayAfterCheckIn);
+      } else {
+           setCheckOutDate(checkInDate < new Date(travelling.transportation.departureTime) ? new Date(travelling.transportation.departureTime) : null);
+      }
+    } else {
+        setCheckOutDate(validatedCheckOut);
+    }
+  };
+
+  // --- Load preferences from localStorage for Travelling ---
+  useEffect(() => {
+    if (travelling && typeof window !== 'undefined') {
+      const storedPreferences = localStorage.getItem(LOCAL_STORAGE_KEY_TRAVELLING);
+      if (storedPreferences) {
+        try {
+          const parsedPrefs = JSON.parse(storedPreferences);
+          if (parsedPrefs.type === 'travelling') {
+            let loadedCheckInDate: Date | null = null;
+            if (parsedPrefs.checkInDate) {
+              const tempCheckIn = new Date(parsedPrefs.checkInDate);
+              loadedCheckInDate = validateUserSelectedDate(tempCheckIn.toISOString().split('T')[0], new Date(travelling.transportation.arrivalTime), new Date(travelling.transportation.departureTime));
+              setCheckInDate(loadedCheckInDate);
+            }
+
+            if (parsedPrefs.checkOutDate) {
+              const tempCheckOut = new Date(parsedPrefs.checkOutDate);
+              const minCheckoutValidation = loadedCheckInDate 
+                  ? new Date(new Date(loadedCheckInDate).setDate(new Date(loadedCheckInDate).getDate() + 1)) 
+                  : new Date(travelling.transportation.arrivalTime);
+              let validatedCheckOut = validateUserSelectedDate(tempCheckOut.toISOString().split('T')[0], minCheckoutValidation, new Date(travelling.transportation.departureTime));
+              
+              if (loadedCheckInDate && validatedCheckOut <= loadedCheckInDate) {
+                 const nextDay = new Date(loadedCheckInDate.getTime());
+                 nextDay.setDate(loadedCheckInDate.getDate() + 1);
+                 validatedCheckOut = (nextDay <= new Date(travelling.transportation.departureTime)) ? nextDay : new Date(travelling.transportation.departureTime);
+              }
+              setCheckOutDate(validatedCheckOut);
+            }
+
+            if (typeof parsedPrefs.guestCount === 'number' && parsedPrefs.guestCount >= 1) {
+              setGuestCount(parsedPrefs.guestCount);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to parse travelling booking preferences from localStorage", e);
+        }
+      }
+    }
+  }, [travelling]);
+
+  // --- Save preferences to localStorage for Travelling ---
+  useEffect(() => {
+    if (travelling && typeof window !== 'undefined' && !loading) {
+      const preferencesToSave = {
+        checkInDate: checkInDate ? checkInDate.toISOString() : null,
+        checkOutDate: checkOutDate ? checkOutDate.toISOString() : null,
+        guestCount,
+        type: 'travelling',
+      };
+      localStorage.setItem(LOCAL_STORAGE_KEY_TRAVELLING, JSON.stringify(preferencesToSave));
+    }
+  }, [checkInDate, checkOutDate, guestCount, travelling, loading]);
+
+  // Calculate all pricing components for Travelling
+  useEffect(() => {
+    if (travelling && travelling.costing && guestCount > 0 && days > 0) {
+      // For travel, 'days' might represent the number of tickets if it's a single-day event/transport.
+      // If it's multi-day travel where price is per day, then 'days' is correct.
+      // Assuming price is per passenger for the entire selected duration (days).
+      // Or, if price is per passenger per day:
+      const currentBasePriceTotal = travelling.costing.discountedPrice * guestCount * days;
+      setBasePriceTotal(currentBasePriceTotal);
+
+      const currentServiceCharge = SERVICE_FEE_TRAVELLING;
+      setServiceChargeApplied(currentServiceCharge);
+
+      const currentTaxes = (currentBasePriceTotal + currentServiceCharge) * TAX_RATE_TRAVELLING_PERCENTAGE;
+      setTaxesApplied(currentTaxes);
+
+      setGrandTotalBookingPrice(currentBasePriceTotal + currentServiceCharge + currentTaxes);
+    } else {
+      setBasePriceTotal(0);
+      setServiceChargeApplied(0);
+      setTaxesApplied(0);
+      setGrandTotalBookingPrice(0);
+    }
+  }, [travelling, guestCount, days]);
+
+
   useEffect(() => {
     if (isLoaded && isSignedIn && user) {
       setBookingData(prev => ({
@@ -138,13 +270,11 @@ export default function TravellingDetailPage() {
         email: user.primaryEmailAddress?.emailAddress || ''
       }));
     }
-    setGuestCount(2);
   }, [isLoaded, isSignedIn, user]);
 
   const handleImageClick = (imageUrl: string) => {
     setSelectedImage(imageUrl);
   };
-
 
   const incrementGuests = () => {
     setGuestCount(prev => prev + 1);
@@ -160,88 +290,41 @@ export default function TravellingDetailPage() {
     const diffTime = Math.abs(arrival.getTime() - departure.getTime());
     const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
     const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
-    
     return `${diffHours}h ${diffMinutes}min`;
   };
 
   const renderRatingStars = (rating: number) => {
     return (
       <div className="flex">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <svg
-            key={star}
-            className={`w-5 h-5 ${
-              star <= rating ? 'text-yellow-400' : 'text-gray-300'
-            }`}
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-          </svg>
-        ))}
+        {[1, 2, 3, 4, 5].map((star) => (<svg key={star} className={`w-5 h-5 ${star <= rating ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>))}
       </div>
     );
   };
 
   const getTransportationIcon = (type: TransportationType) => {
     switch (type) {
-      case 'flight':
-        return (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-          </svg>
-        );
-      case 'train':
-        return (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2c2.76 0 5 2.24 5 5v10H7V7c0-2.76 2.24-5 5-5zm-1 16h2m-1 0v2m-6-2h12" />
-          </svg>
-        );
-      case 'bus':
-        return (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14h6m-5-4h4M9 6h6m0 0v12a2 2 0 01-2 2H9a2 2 0 01-2-2V6a2 2 0 012-2h6a2 2 0 012 2z" />
-          </svg>
-        );
-      case 'car':
-        return (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 6l6 0M17 6a3 3 0 010 6H7a3 3 0 010-6h10zM7 16h10M7 20h10" />
-          </svg>
-        );
-      case 'ferry':
-        return (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12c-1.10 0-2-.9-2-2V7c0-1.10.9-2 2-2h14c1.10 0 2 .9 2 2v3c0 1.10-.9 2-2 2M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-          </svg>
-        );
-      default:
-        return (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        );
+      case 'flight': return (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>);
+      case 'train': return (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18M9 6l6 12M9 18l6-12M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>);
+      case 'bus': return (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-7m-4 0H9m0-14v14m10-14v14M7 6h10M7 10h10M7 14h10"/></svg>);
+      case 'car': return (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 17.75A6.75 6.75 0 0018.75 11H5.25A6.75 6.75 0 0012 17.75zm0-13.5A6.75 6.75 0 005.25 11h13.5A6.75 6.75 0 0012 4.25zm0 9a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z"/></svg>);
+      case 'ferry': return (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21.883 12.242L12 2l-9.883 10.242A10 10 0 1021.883 12.242zM12 15a3 3 0 100-6 3 3 0 000 6z"/></svg>);
+      default: return (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>);
     }
   };
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setBookingError(null);
     
-    if (!travelling || !checkInDate || !checkOutDate) return;
- 
-    if (!travelling) return;
-
-
-    setBookingData(prev => ({
-      ...prev,
-      ['passengers']: guestCount
-    }));
+    if (!travelling || !checkInDate || !checkOutDate || guestCount <= 0 || days <= 0) {
+        setBookingError("Booking details are incomplete. Please select valid dates and guest count.");
+        return;
+    }
     
     setIsSubmitting(true);
 
     try {
-      
-      const bookingDetails={
+      const bookingPayload={
         type : 'travelling',
         details: {
           id: params?.id,
@@ -255,50 +338,48 @@ export default function TravellingDetailPage() {
           checkIn: checkInDate.toISOString(),
           checkOut: checkOutDate.toISOString(),
           guests: guestCount,
-          price: travelling.costing.discountedPrice,
+          pricePerUnit: travelling.costing.discountedPrice, // e.g. price per passenger per day/trip
           currency: travelling.costing.currency,
-          totalPrice: travelling.costing.discountedPrice * days * guestCount,
+          numberOfDaysOrUnits: days, // Duration or number of units (e.g. tickets)
+          // --- Detailed pricing ---
+          subtotalPrice: basePriceTotal,
+          serviceFee: serviceChargeApplied,
+          taxes: taxesApplied,
+          totalPrice: grandTotalBookingPrice,
         },
-        guestDetails: bookingData,
+        guestDetails: {
+            firstName: bookingData.firstName,
+            lastName: bookingData.lastName,
+            email: bookingData.email,
+            phone: bookingData.phone,
+            specialRequests: bookingData.specialRequests
+        },
         recipients: [bookingData.email, 'anshulgoyal589@gmail.com']
       };
       
-      // Make API call to save booking
+      console.log("Travelling Booking Payload:", JSON.stringify(bookingPayload, null, 2));
+
       const response = await fetch('/api/bookings', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bookingDetails),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bookingPayload),
       });
       
       if (!response.ok) {
-        throw new Error('Failed to create booking');
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create travelling booking' }));
+        throw new Error(errorData.message || 'Failed to create travelling booking');
       }
       
-      // Send confirmation emails
-      await fetch('/api/send-booking-confirmation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...bookingDetails,
-          adminEmail: 'anshulgoyal589@gmail.com',
-        }),
-      });
-      
-      // toast.success('Booking confirmed! Check your email for details.');
-
       setBookingConfirmed(true);
       setShowBookingModal(false);
       
-      // Redirect to bookings page or show success message
-      // router.push('/customer/bookings');
-      
-    } catch (error) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(LOCAL_STORAGE_KEY_TRAVELLING);
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
       console.error('Booking error:', error);
-      // toast.error('Something went wrong. Please try again.');
+      setBookingError(`Booking failed: ${error.message}. Please try again.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -306,836 +387,190 @@ export default function TravellingDetailPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setBookingData(prev => ({
-      ...prev,
-      [name]: name === 'passengers' ? parseInt(value) : value,
-    }));
+    setBookingData(prev => ({...prev, [name]: name === 'passengers' ? parseInt(value) : value }));
   };
 
   const handleBookNowClick = () => {
     if (!isLoaded) return;
+    setBookingError(null);
     
     if (!isSignedIn) {
       setLoginRedirectWarning(true);
       return;
     }
+
+    if (!checkInDate || !checkOutDate) {
+      setBookingError("Please select travel start and end dates.");
+      return;
+    }
+    if (days <= 0) {
+      setBookingError("Travel end date must be after start date, or ensure selection is for at least one day.");
+      return;
+    }
+    if (guestCount <= 0) {
+      setBookingError("Please specify at least one passenger.");
+      return;
+    }
     
+    setBookingData(prev => ({...prev, passengers: guestCount }));
     setShowBookingModal(true);
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return (<div className="flex justify-center items-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div></div>);
   }
 
   if (error || !travelling) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <h2 className="text-2xl font-bold text-red-600">
-          {error || 'Travelling information not found'}
-        </h2>
-        <button
-          onClick={() => router.push('/customer/travellings')}
-          className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          Go Back to Travellings
-        </button>
+        <h2 className="text-2xl font-bold text-red-600 mb-4">{error || 'Travelling information not found'}</h2>
+        <button onClick={() => router.push('/travellings')} className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Go Back</button>
       </div>
     );
   }
 
-  // Calculate paginated reviews
-  const paginatedReviews = travelling.review
-    ? travelling.review.slice(
-        (currentReviewPage - 1) * reviewsPerPage,
-        currentReviewPage * reviewsPerPage
-      )
-    : [];
-
-  const totalReviewPages = travelling.review
-    ? Math.ceil(travelling.review.length / reviewsPerPage)
-    : 0;
-
-  // Calculate total price
-  // const totalPrice = travelling.costing.discountedPrice * bookingData.passengers;
+  const paginatedReviews = travelling.review ? travelling.review.slice((currentReviewPage - 1) * reviewsPerPage, currentReviewPage * reviewsPerPage) : [];
+  const totalReviewPages = travelling.review ? Math.ceil(travelling.review.length / reviewsPerPage) : 0;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
-      {/* Hero Section with Banner Image */}
       <div className="relative h-96 md:h-[500px] w-full">
         <Image
-          src={selectedImage || '/images/placeholder-travelling.jpg'}
+          src={selectedImage || travelling.bannerImage?.url || '/images/placeholder-travelling.jpg'}
           alt={travelling.title || ""}
           layout="fill"
           objectFit="cover"
           priority
           className="brightness-75"
+          onError={() => {
+            if (selectedImage !== travelling.bannerImage?.url && travelling.bannerImage?.url) setSelectedImage(travelling.bannerImage.url);
+            else if (selectedImage !== '/images/placeholder-travelling.jpg') setSelectedImage('/images/placeholder-travelling.jpg');
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end">
           <div className="container mx-auto px-4 py-8">
-            <div className="inline-block px-3 py-1 bg-blue-600 text-white text-sm rounded-full mb-2">
-              {travelling.transportation.type}
-            </div>
-            <h1 className="text-3xl md:text-5xl font-bold text-white mb-2">
-              {travelling.title}
-            </h1>
+            <div className="inline-block px-3 py-1 bg-blue-600 text-white text-sm rounded-full mb-2 capitalize">{travelling.transportation.type}</div>
+            <h1 className="text-3xl md:text-5xl font-bold text-white mb-2">{travelling.title}</h1>
             <div className="flex items-center text-white mb-4">
-              <svg
-                className="w-5 h-5 mr-1"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>
-                {travelling.transportation.from} to {travelling.transportation.to}
-              </span>
+              <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/></svg>
+              <span>{travelling.transportation.from} to {travelling.transportation.to}</span>
             </div>
-            {travelling.totalRating && (
-              <div className="flex items-center text-white">
-                {renderRatingStars(travelling.totalRating)}
-                <span className="ml-2">
-                  {travelling.totalRating.toFixed(1)} ({travelling.review?.length || 0}{' '}
-                  reviews)
-                </span>
-              </div>
-            )}
+            {travelling.totalRating && travelling.totalRating > 0 && (<div className="flex items-center text-white">{renderRatingStars(travelling.totalRating)}<span className="ml-2">{travelling.totalRating.toFixed(1)} ({travelling.review?.length || 0} reviews)</span></div>)}
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Travelling Details */}
           <div className="lg:col-span-2">
-            {/* Travel Gallery */}
             {travelling.detailImages && travelling.detailImages.length > 0 && (
               <div className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">Gallery</h2>
-                <div className="grid grid-cols-4 gap-2">
-                  {travelling.bannerImage && (
-                    <div
-                      className={`relative h-24 cursor-pointer ${
-                        selectedImage === travelling.bannerImage.url
-                          ? 'ring-2 ring-blue-600'
-                          : ''
-                      }`}
-                      onClick={() => handleImageClick(travelling.bannerImage!.url)}
-                    >
-                      <Image
-                        src={travelling.bannerImage.url}
-                        alt={ travelling.title || ""}
-                        layout="fill"
-                        objectFit="cover"
-                        className="rounded-lg"
-                      />
-                    </div>
-                  )}
-                  {travelling.detailImages.slice(0, 7).map((image, index) => (
-                    <div
-                      key={index}
-                      className={`relative h-24 cursor-pointer ${
-                        selectedImage === image.url ? 'ring-2 ring-blue-600' : ''
-                      }`}
-                      onClick={() => handleImageClick(image.url)}
-                    >
-                      <Image
-                        src={image.url}
-                        alt={image.alt || `${travelling.title} image ${index + 1}`}
-                        layout="fill"
-                        objectFit="cover"
-                        className="rounded-lg"
-                      />
-                    </div>
-                  ))}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {travelling.bannerImage && (<div className={`relative aspect-square cursor-pointer rounded-lg overflow-hidden ${selectedImage === travelling.bannerImage.url ? 'ring-2 ring-offset-2 ring-blue-600' : ''}`} onClick={() => handleImageClick(travelling.bannerImage!.url)}><Image src={travelling.bannerImage.url} alt={travelling.bannerImage.alt || travelling.title || ""} layout="fill" objectFit="cover" onError={(e) => e.currentTarget.src = '/images/placeholder-travelling.jpg'}/></div>)}
+                  {travelling.detailImages.slice(0, travelling.bannerImage ? 7 : 8).map((image, index) => (<div key={index} className={`relative aspect-square cursor-pointer rounded-lg overflow-hidden ${selectedImage === image.url ? 'ring-2 ring-offset-2 ring-blue-600' : ''}`} onClick={() => handleImageClick(image.url)}><Image src={image.url} alt={image.alt || `${travelling.title} image ${index + 1}`} layout="fill" objectFit="cover" onError={(e) => e.currentTarget.src = '/images/placeholder-travelling.jpg'}/></div>))}
                 </div>
               </div>
             )}
-
-            {/* Transportation Details */}
             <div className="mb-8">
               <h2 className="text-2xl font-bold mb-4">Transportation Details</h2>
               <div className="bg-white p-6 rounded-lg shadow-sm">
-                <div className="flex items-center mb-6">
-                  <div className="bg-blue-100 p-3 rounded-full mr-4">
-                    {getTransportationIcon(travelling.transportation.type)}
-                  </div>
-                  <div>
-                    <div className="text-xl font-bold">{travelling.transportation.type} Travel</div>
-                    <div className="text-gray-600">{travelling.transportation.from} to {travelling.transportation.to}</div>
-                  </div>
-                </div>
-                
+                <div className="flex items-center mb-6"><div className="bg-blue-100 p-3 rounded-full mr-4 text-blue-600">{getTransportationIcon(travelling.transportation.type)}</div><div><div className="text-xl font-bold capitalize">{travelling.transportation.type} Travel</div><div className="text-gray-600">{travelling.transportation.from} to {travelling.transportation.to}</div></div></div>
                 <div className="flex flex-col md:flex-row justify-between border-t border-gray-200 pt-6">
-                  <div className="mb-4 md:mb-0">
-                    <div className="text-sm text-gray-500">Departure</div>
-                    <div className="text-lg font-bold">
-                      {travelling.transportation.departureTime.toLocaleString() }
-                    </div>
-                    <div className="text-gray-600">
-                      {travelling.transportation.departureTime.toLocaleString() }
-                    </div>
-                    <div className="font-medium">{travelling.transportation.from}</div>
+                  <div className="mb-4 md:mb-0 md:text-left text-center"><div className="text-sm text-gray-500">Departure</div><div className="text-lg font-bold">{new Date(travelling.transportation.departureTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div><div className="text-gray-600">{new Date(travelling.transportation.departureTime).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</div><div className="font-medium">{travelling.transportation.from}</div></div>
+                  <div className="flex flex-col items-center justify-center my-4 md:my-0"><div className="text-sm text-gray-500 mb-1">Duration</div><div className="text-gray-800 font-medium">{calculateDuration(new Date(travelling.transportation.departureTime), new Date(travelling.transportation.arrivalTime))}</div><div className="relative w-full md:w-24 h-0.5 bg-gray-300 my-2"><div className="absolute -top-1 left-0 w-2.5 h-2.5 rounded-full bg-gray-400"></div><div className="absolute -top-1 right-0 w-2.5 h-2.5 rounded-full bg-gray-400"></div></div>
+                  {/* <div className="text-xs text-gray-500">{travelling.transportation.stops > 0 ? `${travelling.transportation.stops} stop(s)` : 'Direct'}</div> */}
                   </div>
-                  
-                  <div className="flex flex-col items-center justify-center my-4 md:my-0">
-                    <div className="text-sm text-gray-500 mb-2">Duration</div>
-                    <div className="text-gray-800 font-medium">
-                      {calculateDuration(
-                        new Date(travelling.transportation.departureTime),
-                        new Date(travelling.transportation.arrivalTime)
-                      )}
-                    </div>
-                    <div className="relative w-24 h-0.5 bg-gray-300 my-2">
-                      <div className="absolute -top-1.5 -right-1.5 w-3 h-3 rounded-full bg-gray-300"></div>
-                      <div className="absolute -top-1.5 -left-1.5 w-3 h-3 rounded-full bg-gray-300"></div>
-                    </div>
-                    <div className="text-xs text-gray-500">Direct</div>
-                  </div>
-                  
-                  <div>
-                    <div className="text-sm text-gray-500">Arrival</div>
-                    <div className="text-lg font-bold">
-                      {travelling.transportation.arrivalTime.toLocaleString()}
-                    </div>
-                    <div className="text-gray-600">
-                      {travelling.transportation.arrivalTime.toLocaleString()}
-                    </div>
-                    <div className="font-medium">{travelling.transportation.to}</div>
-                  </div>
+                  <div className="md:text-right text-center"><div className="text-sm text-gray-500">Arrival</div><div className="text-lg font-bold">{new Date(travelling.transportation.arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div><div className="text-gray-600">{new Date(travelling.transportation.arrivalTime).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</div><div className="font-medium">{travelling.transportation.to}</div></div>
                 </div>
               </div>
             </div>
-
-            {/* Travelling Description */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-4">About This Travel</h2>
-              <div className="prose max-w-none">
-                <p>{travelling.description || 'No description available.'}</p>
-              </div>
-            </div>
-
+            <div className="mb-8"><h2 className="text-2xl font-bold mb-4">About This Travel</h2><div className="prose max-w-none text-gray-700"><p>{travelling.description || 'No description available.'}</p></div></div>
             <div className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">Amenities & Features</h2>
-                
-                {/* Main Amenities */}
-                {travelling.amenities && travelling.amenities.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold mb-3">General Amenities</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {travelling.amenities.map((amenity, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center bg-white p-4 rounded-lg shadow-sm"
-                        >
-                          <div className="bg-blue-100 p-2 rounded-full mr-3 text-blue-600">
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16z" clipRule="evenodd" />
-                              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                            </svg>
-                          </div>
-                          <span>{amenity}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Facilities */}
-                {travelling.facilities && travelling.facilities.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold mb-3">Facilities</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {travelling.facilities.map((facility, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center bg-white p-4 rounded-lg shadow-sm"
-                        >
-                          <div className="bg-green-100 p-2 rounded-full mr-3 text-green-600">
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                          <span>{facility}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
- 
-                
-                {/* Accessibility Features */}
-                {travelling.accessibility && travelling.accessibility.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold mb-3">Accessibility</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {travelling.accessibility.map((feature, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center bg-white p-4 rounded-lg shadow-sm"
-                        >
-                          <div className="bg-blue-100 p-2 rounded-full mr-3 text-blue-600">
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12zm-1-5a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1zm0-3a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                          <span>{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-   
+                {travelling.amenities && travelling.amenities.length > 0 && (<div className="mb-6"><h3 className="text-xl font-semibold mb-3">General Amenities</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-4">{travelling.amenities.map((amenity, index) => (<div key={index} className="flex items-center bg-white p-4 rounded-lg shadow-sm"><div className="bg-blue-100 p-2 rounded-full mr-3 text-blue-600"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg></div><span>{amenity}</span></div>))}</div></div>)}
+                {travelling.facilities && travelling.facilities.length > 0 && (<div className="mb-6"><h3 className="text-xl font-semibold mb-3">Facilities</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-4">{travelling.facilities.map((facility, index) => (<div key={index} className="flex items-center bg-white p-4 rounded-lg shadow-sm"><div className="bg-green-100 p-2 rounded-full mr-3 text-green-600"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg></div><span>{facility}</span></div>))}</div></div>)}
+                {travelling.accessibility && travelling.accessibility.length > 0 && (<div className="mb-6"><h3 className="text-xl font-semibold mb-3">Accessibility</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-4">{travelling.accessibility.map((feature, index) => (<div key={index} className="flex items-center bg-white p-4 rounded-lg shadow-sm"><div className="bg-purple-100 p-2 rounded-full mr-3 text-purple-600"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 2a8 8 0 100-16 8 8 0 000 16zm0 14a6 6 0 110-12 6 6 0 010 12zm-1-5a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1zm0-3a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" /></svg></div><span>{feature}</span></div>))}</div></div>)}
             </div>
-
-              {/* Fun Things To Do */}
-              {travelling.funThingsToDo && travelling.funThingsToDo.length > 0 && (
-                <div className="mb-8 bg-white p-6 rounded-lg shadow-lg">
-                  <h2 className="text-2xl font-bold mb-4">Fun Things To Do</h2>
-                  <ul className="list-disc pl-5 space-y-2">
-                    {travelling.funThingsToDo.map((activity, index) => (
-                      <li key={index} className="text-gray-700">{activity}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Meals & Dining */}
-              {travelling.meals && travelling.meals.length > 0 && (
-                <div className="mb-8 bg-white p-6 rounded-lg shadow-lg">
-                  <h2 className="text-2xl font-bold mb-4">Meals & Dining</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {travelling.meals.map((meal, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center bg-white p-4 rounded-lg shadow-sm border border-gray-100"
-                      >
-                        <div className="bg-yellow-100 p-2 rounded-full mr-3 text-yellow-600">
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" />
-                          </svg>
-                        </div>
-                        <span>{meal}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-
-
-              {/* Reservation Policy */}
-              {travelling.reservationPolicy && travelling.reservationPolicy.length > 0 && (
-                <div className="mb-8 bg-white p-6 rounded-lg shadow-lg">
-                  <h2 className="text-2xl font-bold mb-4">Reservation Policy</h2>
-                  <ul className="list-disc pl-5 space-y-2">
-                    {travelling.reservationPolicy.map((policy, index) => (
-                      <li key={index} className="text-gray-700">{policy}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Popular Filters */}
-              {travelling.popularFilters && travelling.popularFilters.length > 0 && (
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold mb-4">Popular Features</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {travelling.popularFilters.map((filter, index) => (
-                      <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                        {filter}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-            {/* Reviews Section */}
+            {travelling.funThingsToDo && travelling.funThingsToDo.length > 0 && (<div className="mb-8 bg-white p-6 rounded-lg shadow-lg"><h2 className="text-2xl font-bold mb-4">Fun Things To Do (Nearby/Onboard)</h2><ul className="list-disc pl-5 space-y-2 text-gray-700">{travelling.funThingsToDo.map((activity, index) => (<li key={index}>{activity}</li>))}</ul></div>)}
+            {travelling.meals && travelling.meals.length > 0 && (<div className="mb-8 bg-white p-6 rounded-lg shadow-lg"><h2 className="text-2xl font-bold mb-4">Meals & Dining Options</h2><div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">{travelling.meals.map((meal, index) => (<div key={index} className="flex items-center bg-gray-50 p-3 rounded-md border border-gray-200"><div className="bg-yellow-100 p-2 rounded-full mr-3 text-yellow-600"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" /></svg></div><span>{meal}</span></div>))}</div></div>)}
+            {travelling.reservationPolicy && travelling.reservationPolicy.length > 0 && (<div className="mb-8 bg-white p-6 rounded-lg shadow-lg"><h2 className="text-2xl font-bold mb-4">Reservation Policy</h2><ul className="list-disc pl-5 space-y-2 text-gray-700">{travelling.reservationPolicy.map((policy, index) => (<li key={index}>{policy}</li>))}</ul></div>)}
+            {travelling.popularFilters && travelling.popularFilters.length > 0 && (<div className="mb-8"><h2 className="text-2xl font-bold mb-4">Popular Features</h2><div className="flex flex-wrap gap-2">{travelling.popularFilters.map((filter, index) => (<span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">{filter}</span>))}</div></div>)}
             {travelling.review && travelling.review.length > 0 && (
               <div className="mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-bold">
-                    Reviews ({travelling.review.length})
-                  </h2>
-                  <div className="flex items-center">
-                    {renderRatingStars(travelling.totalRating || 0)}
-                    <span className="ml-2 font-semibold">
-                      {travelling.totalRating?.toFixed(1) || '0.0'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {paginatedReviews.map((review, index) => (
-                    <div
-                      key={index}
-                      className="bg-white p-4 rounded-lg shadow-sm"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center">
-                          <div className="bg-gray-200 rounded-full h-10 w-10 flex items-center justify-center mr-3">
-                            <span className="font-bold text-gray-600">
-                              {String.fromCharCode(65 + index)}
-                            </span>
-                          </div>
-                          <div>
-                            <div className="font-semibold">Traveller</div>
-                            <div className="text-sm text-gray-500">
-                              {formatDistanceToNow(
-                                new Date(
-                                  Date.now() -
-                                    Math.floor(Math.random() * 30) * 86400000
-                                ),
-                                { addSuffix: true }
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div>{renderRatingStars(review.rating)}</div>
-                      </div>
-                      <p className="text-gray-700">{review.comment}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {totalReviewPages > 1 && (
-                  <div className="flex justify-center mt-6">
-                    <nav className="inline-flex">
-                      <button
-                        onClick={() =>
-                          setCurrentReviewPage((prev) => Math.max(prev - 1, 1))
-                        }
-                        disabled={currentReviewPage === 1}
-                        className={`px-3 py-1 rounded-l-md ${
-                          currentReviewPage === 1
-                            ? 'bg-gray-200 text-gray-500'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
-                      >
-                        Prev
-                      </button>
-                      {Array.from({ length: totalReviewPages }).map(
-                        (_, index) => (
-                          <button
-                            key={index}
-                            onClick={() => setCurrentReviewPage(index + 1)}
-                            className={`px-3 py-1 ${
-                              currentReviewPage === index + 1
-                                ? 'bg-blue-700 text-white'
-                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                            }`}
-                          >
-                            {index + 1}
-                          </button>
-                        )
-                      )}
-                      <button
-                        onClick={() =>
-                          setCurrentReviewPage((prev) =>
-                            Math.min(prev + 1, totalReviewPages)
-                          )
-                        }
-                        disabled={currentReviewPage === totalReviewPages}
-                        className={`px-3 py-1 rounded-r-md ${
-                          currentReviewPage === totalReviewPages
-                            ? 'bg-gray-200 text-gray-500'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
-                      >
-                        Next
-                      </button>
-                    </nav>
-                  </div>
-                )}
+                <div className="flex items-center justify-between mb-4"><h2 className="text-2xl font-bold">Reviews ({travelling.review.length})</h2><div className="flex items-center">{renderRatingStars(travelling.totalRating || 0)}<span className="ml-2 font-semibold">{travelling.totalRating?.toFixed(1) || '0.0'}</span></div></div>
+                <div className="space-y-4">{paginatedReviews.map((review, index) => (<div key={index} className="bg-white p-4 rounded-lg shadow-sm"><div className="flex items-center justify-between mb-2"><div className="flex items-center"><div className="bg-gray-200 rounded-full h-10 w-10 flex items-center justify-center mr-3"><span className="font-bold text-gray-600">{String.fromCharCode(65 + index)}</span></div><div><div className="font-semibold">Traveller</div><div className="text-sm text-gray-500">{formatDistanceToNow(new Date(Date.now() - Math.floor(Math.random() * 30) * 86400000),{ addSuffix: true })}</div></div></div><div>{renderRatingStars(review.rating)}</div></div><p className="text-gray-700">{review.comment}</p></div>))}</div>
+                {totalReviewPages > 1 && (<div className="flex justify-center mt-6"><nav className="inline-flex"><button onClick={() => setCurrentReviewPage((prev) => Math.max(prev - 1, 1))} disabled={currentReviewPage === 1} className={`px-3 py-1 rounded-l-md ${currentReviewPage === 1 ? 'bg-gray-200 text-gray-500' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>Prev</button>{Array.from({ length: totalReviewPages }).map((_, index) => (<button key={index} onClick={() => setCurrentReviewPage(index + 1)} className={`px-3 py-1 ${currentReviewPage === index + 1 ? 'bg-blue-700 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>{index + 1}</button>))}<button onClick={() => setCurrentReviewPage((prev) => Math.min(prev + 1, totalReviewPages))} disabled={currentReviewPage === totalReviewPages} className={`px-3 py-1 rounded-r-md ${currentReviewPage === totalReviewPages ? 'bg-gray-200 text-gray-500' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>Next</button></nav></div>)}
               </div>
             )}
           </div>
 
-          {/* Right Column - Booking Info */}
           <div className="lg:col-span-1">
             <div className="bg-white p-6 rounded-lg shadow-lg sticky top-8">
-              <div className="mb-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-600">Price</span>
-                  {travelling.costing.price !== travelling.costing.discountedPrice && (
-                    <span className="line-through text-gray-500">
-                      {travelling.costing.currency} {travelling.costing.price.toLocaleString()}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-baseline">
-                  <span className="text-3xl font-bold text-blue-600">
-                    {travelling.costing.currency}{' '}
-                    {travelling.costing.discountedPrice.toLocaleString()}
-                  </span>
-                  <span className="text-sm text-gray-600 ml-2">per passenger</span>
-                </div>
-                {travelling.costing.price !== travelling.costing.discountedPrice && (
-                  <div className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm inline-block mt-2">
-                    Save{' '}
-                    {Math.round(
-                      ((travelling.costing.price - travelling.costing.discountedPrice) /
-                        travelling.costing.price) *
-                        100
-                    )}
-                    %
-                  </div>
-                )}
+              <div className="mb-4 pb-4 border-b border-gray-200">
+                <div className="flex justify-between items-center mb-1"><span className="text-sm text-gray-600">Price per passenger {days > 0 ? `/ ${days}-day travel` : ''}</span>{travelling.costing.price !== travelling.costing.discountedPrice && (<span className="line-through text-gray-500 text-sm">{travelling.costing.currency} {travelling.costing.price.toLocaleString()}</span>)}</div>
+                <div className="flex items-baseline"><span className="text-2xl font-bold text-blue-600">{travelling.costing.currency} {travelling.costing.discountedPrice.toLocaleString()}</span></div>
+                {travelling.costing.price !== travelling.costing.discountedPrice && (<div className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs inline-block mt-2">Save {Math.round(((travelling.costing.price - travelling.costing.discountedPrice) / travelling.costing.price) * 100)}%</div>)}
+                <p className="text-xs text-gray-500 mt-1">Select dates and passengers to see total.</p>
               </div>
-
-              {/* <div className="border-t border-b border-gray-200 py-4 my-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-semibold">Journey Duration</span>
-                  <span>
-                    {calculateDuration(
-                      new Date(travelling.transportation.departureTime), 
-                      new Date(travelling.transportation.arrivalTime)
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold">Departure</span>
-                  <span>
-                    {travelling.transportation.departureTime.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center mt-2">
-                  <span className="font-semibold">Arrival</span>
-                  <span>
-                    {travelling.transportation.arrivalTime.toLocaleString()}
-                  </span>
-                </div>
-              </div> */}
-
-
-              {/* Booking Form */}
               <div className="mb-6">
                 <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label>Arrival Time</label><br />
-                    <input
-                      type="date"
-                      value={checkInDate ? checkInDate.toISOString().split('T')[0] : ''}
-                      onChange={handleCheckInChange}
-                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      
-                      min={new Date(travelling.transportation.arrivalTime).toISOString().split('T')[0]}
-                      max={new Date(travelling.transportation.departureTime).toISOString().split('T')[0]}
-                    />
-                  </div>
-                  <div>
-                    <label>Departure Time</label>
-                    <br />
-                    <input
-                      type="date"
-                      value={checkOutDate ? checkOutDate.toISOString().split('T')[0] : ''}
-                      onChange={handleCheckOutChange}
-                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      min={
-                        checkInDate
-                          ? new Date(checkInDate.getTime() + 86400000).toISOString().split('T')[0]
-                          : new Date(travelling.transportation.arrivalTime).toISOString().split('T')[0]
-                      }
-                      max={new Date(travelling.transportation.departureTime).toISOString().split('T')[0]}
-                    />
-                  </div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Travel Start Date</label><input type="date" value={checkInDate ? checkInDate.toISOString().split('T')[0] : ''} onChange={handleCheckInChange} className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm" min={new Date(travelling.transportation.arrivalTime).toISOString().split('T')[0]} max={new Date(travelling.transportation.departureTime).toISOString().split('T')[0]} required/></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Travel End Date</label><input type="date" value={checkOutDate ? checkOutDate.toISOString().split('T')[0] : ''} onChange={handleCheckOutChange} className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm" min={checkInDate ? new Date(new Date(checkInDate).setDate(new Date(checkInDate).getDate())).toISOString().split('T')[0] : new Date(travelling.transportation.arrivalTime).toISOString().split('T')[0]} max={new Date(travelling.transportation.departureTime).toISOString().split('T')[0]} required disabled={!checkInDate}/></div>
                 </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Guests
-                  </label>
-                  <div className="flex items-center border border-gray-300 rounded-md">
-                    <button
-                      onClick={decrementGuests}
-                      disabled={guestCount <= 1}
-                      className="px-3 py-2 text-blue-600 disabled:text-gray-400"
-                    >
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                    <div className="flex-1 text-center">
-                      <span className="font-medium">{guestCount}</span>
-                      <span className="text-gray-500 ml-1">
-                        {guestCount === 1 ? 'guest' : 'guests'}
-                      </span>
-                    </div>
-                    <button
-                      onClick={incrementGuests}
-                      // disabled={guestCount >= travelling.rooms*3}
-                      className="px-3 py-2 text-blue-600 disabled:text-gray-400"
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
+                <div className="mb-4"><label className="block text-sm font-medium text-gray-700 mb-1">Passengers</label><div className="flex items-center border border-gray-300 rounded-md"><button type="button" onClick={decrementGuests} disabled={guestCount <= 1} className="px-3 py-2 text-blue-600 disabled:text-gray-400 disabled:cursor-not-allowed"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg></button><div className="flex-1 text-center text-sm"><span className="font-medium">{guestCount}</span><span className="text-gray-500 ml-1">{guestCount === 1 ? 'passenger' : 'passengers'}</span></div><button type="button" onClick={incrementGuests} className="px-3 py-2 text-blue-600 disabled:text-gray-400"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg></button></div></div>
               </div>
 
-              {/* Price Calculation */}
-              {checkInDate && checkOutDate && (
-                <div className="border-t border-gray-200 pt-4 mb-6">         
-                  <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200 mt-2">
-                    <span>Total</span>
-                    <span>
-                      {travelling.costing.currency} {(travelling.costing.discountedPrice * guestCount * days ).toLocaleString()}
-                    </span>
-                  </div>
+              {checkInDate && checkOutDate && days > 0 && guestCount > 0 && travelling.costing && (
+                <div className="border-t border-gray-200 pt-4 mb-6 space-y-2">
+                    <div className="flex justify-between text-sm"><span className="text-gray-700">Base ({guestCount} {guestCount === 1 ? 'pass.' : 'pass.'} x {days} {days === 1 ? 'day' : 'days'})</span><span className="text-gray-900">{travelling.costing.currency} {basePriceTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-gray-700">Service Fee</span><span className="text-gray-900">{travelling.costing.currency} {serviceChargeApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-gray-700">Taxes (approx. {TAX_RATE_TRAVELLING_PERCENTAGE * 100}%)</span><span className="text-gray-900">{travelling.costing.currency} {taxesApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                    <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200 mt-2"><span>Total</span><span>{travelling.costing.currency} {grandTotalBookingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
                 </div>
               )}
-
-              <button 
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition duration-300 mb-4"
-                onClick={handleBookNowClick}
-              >
-                Book Now
-              </button>
-              <p className="text-sm text-gray-500 text-center mt-2">
-                You won&apos;t be charged yet
-              </p>
-             
-
+              {bookingError && (<div className="my-3 p-3 bg-red-100 text-red-700 text-sm rounded-md">{bookingError}</div>)}
+              <button onClick={handleBookNowClick} disabled={!checkInDate || !checkOutDate || days <= 0 || guestCount <= 0} className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed">Book Now</button>
+              <p className="text-sm text-gray-500 text-center mt-2">You won&apos;t be charged yet</p>
             </div>
           </div>
-
         </div>
         <DummyReviews />
       </div>
 
-         {/* Login Warning Modal */}
-         {loginRedirectWarning && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-lg max-w-md w-full p-6">
-                <h3 className="text-xl font-bold mb-4">Login Required</h3>
-                <p className="mb-6">
-                  You need to be logged in to make a booking. Would you like to login now?
-                </p>
-                <div className="flex justify-end space-x-3">
-                  <button
-                    onClick={() => setLoginRedirectWarning(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      router.push(`/sign-in?redirect=${encodeURIComponent(window.location.pathname)}`);
-                    }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  >
-                    Login
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-
-      {/* Booking Modal */}
-      {showBookingModal && (
+      {loginRedirectWarning && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"><div className="bg-white rounded-lg max-w-md w-full p-6 text-center"><h3 className="text-xl font-bold mb-4">Login Required</h3><p className="mb-6 text-gray-600">You need to be logged in to make a booking. Please login to continue.</p><div className="flex justify-end space-x-3"><button onClick={() => setLoginRedirectWarning(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100">Cancel</button><button onClick={() => { setLoginRedirectWarning(false); router.push(`/sign-in?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);}} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Login</button></div></div></div>)}
+      {showBookingModal && travelling && travelling.costing && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-xl w-full p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">Complete Your Booking</h3>
-              <button
-                onClick={() => setShowBookingModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
+            <div className="flex justify-between items-center mb-4 pb-3 border-b"><h3 className="text-xl font-bold">Complete Your Booking</h3><button onClick={() => setShowBookingModal(false)} className="text-gray-500 hover:text-gray-700"><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button></div>
             <div className="mb-6">
-              <div className="flex items-center mb-4">
-                {travelling.bannerImage && (
-                  <div className="relative h-16 w-16 mr-3">
-                    <Image
-                      src={travelling.bannerImage.url}
-                      alt={travelling.title || ""}
-                      layout="fill"
-                      objectFit="cover"
-                      className="rounded-md"
-                    />
-                  </div>
-                )}
-                <div>
-                  <h4 className="font-semibold">{travelling.title}</h4>
-                  <p className="text-sm text-gray-600">{travelling.transportation.from}, {travelling.transportation.to}</p>
-                </div>
+              <div className="flex items-center mb-4">{travelling.bannerImage && (<div className="relative h-16 w-24 mr-3 rounded-md overflow-hidden flex-shrink-0"><Image src={travelling.bannerImage.url} alt={travelling.title || ""} layout="fill" objectFit="cover" /></div>)}<div><h4 className="font-semibold">{travelling.title}</h4><p className="text-sm text-gray-600">{travelling.transportation.from} to {travelling.transportation.to}</p>{travelling.totalRating && travelling.totalRating > 0 && (<div className="flex items-center mt-1">{renderRatingStars(travelling.totalRating)}<span className="text-xs ml-1 text-gray-600">({travelling.totalRating.toFixed(1)})</span></div>)}</div></div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-4 p-4 bg-gray-50 rounded-lg text-sm">
+                <div><div className="text-xs text-gray-600">Travel Start</div><div className="font-medium">{checkInDate?.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</div></div>
+                <div><div className="text-xs text-gray-600">Travel End</div><div className="font-medium">{checkOutDate?.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</div></div>
+                <div><div className="text-xs text-gray-600">Duration</div><div className="font-medium">{days} {days === 1 ? 'day' : 'days'}</div></div>
+                <div><div className="text-xs text-gray-600">Passengers</div><div className="font-medium">{guestCount} {guestCount === 1 ? 'passenger' : 'passengers'}</div></div>
               </div>
-              
-              <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <div className="text-sm text-gray-600">Arrival Time</div>
-                  <div className="font-medium">
-                    {checkInDate?.toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric'
-                    })}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-600">Departure Time</div>
-                  <div className="font-medium">
-                    {checkOutDate?.toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric'
-                    })}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-600">Guests</div>
-                  <div className="font-medium">{guestCount} {guestCount === 1 ? 'guest' : 'guests'}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-600">Total</div>
-                  <div className="font-medium">
-                    {travelling.costing.currency} {(travelling.costing.discountedPrice * bookingData.passengers).toLocaleString()}
-                  </div>
-                </div>
+              <div className="flex flex-col space-y-1 mb-4 p-4 bg-gray-100 rounded-lg">
+                  <div className="flex justify-between text-sm"><span>Base Price ({guestCount} {guestCount === 1 ? 'pass.' : 'pass.'} x {days} {days === 1 ? 'day' : 'days'})</span><span>{travelling.costing.currency} {basePriceTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                  <div className="flex justify-between text-sm"><span>Service Fee</span><span>{travelling.costing.currency} {serviceChargeApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                  <div className="flex justify-between text-sm"><span>Taxes (approx. {TAX_RATE_TRAVELLING_PERCENTAGE * 100}%)</span><span>{travelling.costing.currency} {taxesApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
               </div>
+              <div className="flex justify-between font-bold text-lg p-4 bg-blue-50 rounded-lg"><span>Grand Total</span><span>{travelling.costing.currency} {grandTotalBookingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
             </div>
-            
             <form onSubmit={handleBookingSubmit}>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    name="firstName"
-                    value={bookingData.firstName}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    value={bookingData.lastName}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={bookingData.email}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={bookingData.phone}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Special Requests (Optional)
-                </label>
-                <textarea
-                  name="specialRequests"
-                  value={bookingData.specialRequests}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                ></textarea>
-              </div>
-              
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-400"
-              >
-                {isSubmitting ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing...
-                  </span>
-                ) : (
-                  "Confirm Booking"
-                )}
-              </button>
+              <h4 className="text-md font-semibold mb-3">Your Information</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4"><div><label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="firstName">First Name</label><input id="firstName" type="text" name="firstName" value={bookingData.firstName} onChange={handleInputChange} required className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"/></div><div><label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="lastName">Last Name</label><input id="lastName" type="text" name="lastName" value={bookingData.lastName} onChange={handleInputChange} required className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"/></div></div>
+              <div className="mb-4"><label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">Email</label><input id="email" type="email" name="email" value={bookingData.email} onChange={handleInputChange} required className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"/></div>
+              <div className="mb-4"><label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="phone">Phone Number</label><input id="phone" type="tel" name="phone" value={bookingData.phone} onChange={handleInputChange} required className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"/></div>
+              <div className="mb-6"><label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="specialRequests">Special Requests (Optional)</label><textarea id="specialRequests" name="specialRequests" value={bookingData.specialRequests} onChange={handleInputChange} rows={3} className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., meal preferences, assistance needed"></textarea></div>
+              {bookingError && (<div className="my-4 p-3 bg-red-100 text-red-700 text-sm rounded-md">{bookingError}</div>)}
+              <button type="submit" disabled={isSubmitting} className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-400 disabled:cursor-wait">{isSubmitting ? (<span className="flex items-center justify-center"><svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Processing...</span>) : ("Confirm Booking")}</button>
             </form>
           </div>
         </div>
       )}
-            {/* Booking Confirmation Modal */}
-            {bookingConfirmed && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                <div className="bg-white rounded-lg max-w-md w-full p-6 text-center">
-                  <div className="mb-4">
-                    <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                      <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">Booking Confirmed!</h3>
-                  <p className="mb-6 text-gray-600">
-                    Your booking for {travelling.title} has been confirmed. A confirmation has been sent to your email.
-                  </p>
-                  <button
-                    onClick={() => setBookingConfirmed(false)}
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700"
-                  >
-                    Done
-                  </button>
-                </div>
-              </div>
-            )}
+      {bookingConfirmed && travelling && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]"><div className="bg-white rounded-lg max-w-md w-full p-6 text-center"><div className="mb-4"><div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center"><svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg></div></div><h3 className="text-xl font-bold mb-2">Booking Confirmed!</h3><p className="mb-6 text-gray-600">Your booking for {travelling.title} has been confirmed. A confirmation email has been sent to {bookingData.email}.</p><button onClick={() => { setBookingConfirmed(false);}} className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700">Done</button></div></div>)}
     </div>
   );
 }

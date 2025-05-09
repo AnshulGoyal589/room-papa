@@ -153,6 +153,17 @@ const PropertyDetails: React.FC<{ item: Property; isEditable?: boolean }> = ({ i
             </p>
           </div>
         </div>
+        
+        <div className="flex items-center">
+          <Star className="w-4 h-4 mr-2 text-gray-500" />
+          <div>
+            <p className="text-sm text-gray-500">Google Maps</p>
+            <p>
+              {/* {item.totalRating || 0}/5 ({item.review?.length || 0} reviews) */}
+              {item.googleMaps && <span className="ml-2">Property Google Maps: {item.googleMaps}</span>}
+            </p>
+          </div>
+        </div>
 
         <div className="flex items-center">
           <Calendar className="w-4 h-4 mr-2 text-gray-500" />

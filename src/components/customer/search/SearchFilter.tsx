@@ -22,6 +22,7 @@ export default function SearchFilter() {
   // Basic property filters
   const [propertyType, setPropertyType] = useState<PropertyType | ''>('');
   const [propertyRating, setPropertyRating] = useState<string>('');
+  // const [googleMaps, setGoogleMaps] = useState<string>('');
   const [roomAccessibility, setRoomAccessibility] = useState<string[]>([]);
   const [bedPreference, setBedPreference] = useState<string[]>([]);
   const [roomFacilities, setRoomFacilities] = useState<string[]>([]);
@@ -71,6 +72,7 @@ export default function SearchFilter() {
       if (filterMode === 'property') {
         params.propertyType = propertyType || undefined;
         params.propertyRating = propertyRating || undefined;
+        // params.googleMaps = googleMaps || undefined;
         params.roomAccessibility = roomAccessibility.length > 0 ? roomAccessibility.join(',') : undefined;
         params.bedPreference = bedPreference.length > 0 ? bedPreference.join(',') : undefined;
         params.roomFacilities = roomFacilities.length > 0 ? roomFacilities.join(',') : undefined;
@@ -141,6 +143,7 @@ export default function SearchFilter() {
       // Property filters
       setPropertyType((searchParams.get('propertyType') as PropertyType) || '');
       setPropertyRating(searchParams.get('propertyRating') || '');
+      // setGoogleMaps(searchParams.get('googleMaps') || '');
       setRoomAccessibility(searchParams.get('roomAccessibility')?.split(',') || []);
       setBedPreference(searchParams.get('bedPreference')?.split(',') || []);
       setRoomFacilities(searchParams.get('roomFacilities')?.split(',') || []);
@@ -189,6 +192,7 @@ export default function SearchFilter() {
     // Property filters
     setPropertyType('');
     setPropertyRating('');
+    // setGoogleMaps('');
     setRoomAccessibility([]);
     setBedPreference([]);
     setRoomFacilities([]);

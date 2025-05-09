@@ -49,6 +49,7 @@ const initialPropertyData: Property = {
   roomFacilities: [],
   
   propertyRating: 0,
+  googleMaps: '',
 };
 
 interface PropertyFormProps {
@@ -376,6 +377,15 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
               ))}
             </SelectContent>
           </Select>
+        </FormItem>
+
+        <FormItem>
+          <FormLabel>Property Google Maps</FormLabel>
+          <Input 
+            value={ensurePropertyData.googleMaps}
+            onChange={(e) => handlePropertyChange('googleMaps', e.target.value)}
+            placeholder="Google Maps link"
+          />
         </FormItem>
       </div>
 

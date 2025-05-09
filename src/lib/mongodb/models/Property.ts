@@ -50,6 +50,7 @@ export interface Property {
   roomFacilities ?: string[];
   
   propertyRating ?: number;
+  googleMaps ?: string;
 
 }
 

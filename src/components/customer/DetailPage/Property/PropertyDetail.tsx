@@ -20,6 +20,13 @@ const calculateDays = (start: Date | null, end: Date | null): number => {
   return diffDays;
 };
 
+// --- Define Tax and Fee Constants ---
+const SERVICE_FEE_FIXED = 10; // Example: $10 fixed service fee per booking
+const TAX_RATE_PERCENTAGE = 0.05; // Example: 5% tax rate on (subtotal + service fee)
+
+// --- localStorage Key ---
+const LOCAL_STORAGE_KEY = 'propertyBookingPreferences';
+
 export default function PropertyDetailPage() {
   const { openSignIn } = useClerk();
   const router = useRouter();
@@ -36,73 +43,75 @@ export default function PropertyDetailPage() {
   // --- Room Selection State ---
   const [selectedRooms, setSelectedRooms] = useState<Record<string, number>>({}); // Key: category title, Value: quantity
   const [totalSelectedRooms, setTotalSelectedRooms] = useState<number>(0);
+  // --- Pricing State ---
   const [totalBookingPricePerNight, setTotalBookingPricePerNight] = useState<number>(0);
-  // --- End Room Selection State ---
+  const [subtotalNights, setSubtotalNights] = useState<number>(0);
+  const [serviceCharge, setServiceCharge] = useState<number>(0);
+  const [taxesApplied, setTaxesApplied] = useState<number>(0);
+  const [totalBookingPricing, setTotalBookingPricing] = useState<number>(0);
 
   const reviewsPerPage = 3;
   const MAX_COMBINED_ROOMS = 5;
 
-  // New state for booking confirmation
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingData, setBookingData] = useState<BookingFormData>({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
-    passengers: 1, // Will be updated from guestCount
-    rooms: 0, // Will be updated from totalSelectedRooms
+    passengers: 1,
+    rooms: 0,
     specialRequests: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
-  // const [loginRedirectWarning, setLoginRedirectWarning] = useState(false);
-  const [bookingError, setBookingError] = useState<string | null>(null); // For user feedback
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
-  // Derived state for number of days
   const days = useMemo(() => calculateDays(checkInDate, checkOutDate), [checkInDate, checkOutDate]);
+
+  const validateDate = (selectedDateStr: string, propertyStartDateStr: string, propertyEndDateStr: string): Date => {
+    const date = new Date(selectedDateStr);
+    const minDate = new Date(propertyStartDateStr);
+    const maxDate = new Date(propertyEndDateStr);
+    maxDate.setHours(23, 59, 59, 999); // Compare against end of day for maxDate
+    minDate.setHours(0,0,0,0); // Compare against start of day for minDate
+
+    if (date < minDate) return minDate;
+    if (date > maxDate) return maxDate;
+    return date;
+  };
 
   useEffect(() => {
     const fetchPropertyDetails = async () => {
       if (!params?.id) return;
-
       try {
         setLoading(true);
-        setError(null); // Reset error on new fetch
+        setError(null);
         const response = await fetch(`/api/properties/${params.id}`);
-
         if (!response.ok) {
           throw new Error(`Failed to fetch property details (${response.status})`);
         }
-
         const data = await response.json();
-
-        // Basic validation
         if (!data || typeof data !== 'object') {
             throw new Error('Invalid property data received');
         }
-
-        // Ensure dates are valid before parsing
         const startDate = data.startDate ? new Date(data.startDate) : new Date();
         const endDate = data.endDate ? new Date(data.endDate) : new Date();
         const createdAt = data.createdAt ? new Date(data.createdAt) : new Date();
         const updatedAt = data.updatedAt ? new Date(data.updatedAt) : new Date();
-
-
         const parsedProperty: Property = {
           ...data,
-          startDate: startDate.toISOString(), // Store as ISO string
-          endDate: endDate.toISOString(),     // Store as ISO string
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
           createdAt: createdAt,
           updatedAt: updatedAt,
-          // Ensure categoryRooms is an array, default to empty if missing/invalid
           categoryRooms: Array.isArray(data.categoryRooms) ? data.categoryRooms : []
         };
-
         setProperty(parsedProperty);
         if (parsedProperty.bannerImage?.url) {
           setSelectedImage(parsedProperty.bannerImage.url);
         } else if (parsedProperty.detailImages && parsedProperty.detailImages.length > 0 && parsedProperty.detailImages[0].url) {
-          setSelectedImage(parsedProperty.detailImages[0].url); // Fallback to first detail image
+          setSelectedImage(parsedProperty.detailImages[0].url);
         }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
@@ -112,21 +121,115 @@ export default function PropertyDetailPage() {
         setLoading(false);
       }
     };
-
     fetchPropertyDetails();
   }, [params?.id]);
 
-  // Calculate total selected rooms and total price per night whenever selection changes
+  // --- Load preferences from localStorage ---
+  useEffect(() => {
+    if (property && typeof window !== 'undefined') {
+      const storedPreferences = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (storedPreferences) {
+        try {
+          const parsedPrefs = JSON.parse(storedPreferences);
+
+          if (parsedPrefs.propertyType === 'property') {
+            let loadedCheckInDate: Date | null = null;
+            if (parsedPrefs.checkInDate) {
+              const tempCheckIn = new Date(parsedPrefs.checkInDate);
+              // Validate against the current property's availability
+              loadedCheckInDate = validateDate(tempCheckIn.toISOString().split('T')[0], property.startDate, property.endDate);
+              setCheckInDate(loadedCheckInDate);
+            } else {
+              setCheckInDate(null);
+            }
+
+            if (parsedPrefs.checkOutDate) {
+              const tempCheckOut = new Date(parsedPrefs.checkOutDate);
+              const minCheckOutDateForValidation = loadedCheckInDate
+                  ? new Date(loadedCheckInDate.getTime() + 86400000).toISOString().split('T')[0] // Day after loaded check-in
+                  : property.startDate; // Fallback to property start date
+
+              let validatedCheckOut = validateDate(tempCheckOut.toISOString().split('T')[0], minCheckOutDateForValidation, property.endDate);
+
+              // Ensure checkout is strictly after check-in
+              if (loadedCheckInDate && validatedCheckOut <= loadedCheckInDate) {
+                const nextDay = new Date(loadedCheckInDate.getTime());
+                nextDay.setDate(loadedCheckInDate.getDate() + 1);
+                // Ensure nextDay is also within property's end date
+                validatedCheckOut = (nextDay <= new Date(property.endDate)) ? nextDay : new Date(property.endDate);
+              }
+              setCheckOutDate(validatedCheckOut);
+            } else {
+              setCheckOutDate(null);
+            }
+
+            if (typeof parsedPrefs.guestCount === 'number' && parsedPrefs.guestCount >= 1) {
+              setGuestCount(parsedPrefs.guestCount);
+            }
+
+            if (typeof parsedPrefs.selectedRooms === 'object' && parsedPrefs.selectedRooms !== null && property.categoryRooms) {
+              const validSelectedRooms: Record<string, number> = {};
+              let currentTotalRoomsFromStorage = 0;
+              for (const [title, qty] of Object.entries(parsedPrefs.selectedRooms)) {
+                if (typeof qty === 'number' && qty > 0) {
+                  const categoryInfo = property.categoryRooms.find(cat => cat.title === title);
+                  if (categoryInfo) { // Only load if room category exists for THIS property
+                    const qtyToSelect = Math.min(qty, categoryInfo.qty);
+                    if (currentTotalRoomsFromStorage + qtyToSelect <= MAX_COMBINED_ROOMS) {
+                      validSelectedRooms[title] = qtyToSelect;
+                      currentTotalRoomsFromStorage += qtyToSelect;
+                    } else {
+                      const remainingCapacity = MAX_COMBINED_ROOMS - currentTotalRoomsFromStorage;
+                      if (remainingCapacity > 0) {
+                          validSelectedRooms[title] = Math.min(qtyToSelect, remainingCapacity);
+                          // currentTotalRoomsFromStorage += validSelectedRooms[title]; // No need to update, loop will break
+                      }
+                      break; // Max combined rooms reached
+                    }
+                  }
+                }
+              }
+              setSelectedRooms(validSelectedRooms);
+            } else {
+                setSelectedRooms({}); // Reset if no valid rooms or categories
+            }
+          }
+        } catch (e) {
+          console.error("Failed to parse booking preferences from localStorage", e);
+          // localStorage.removeItem(LOCAL_STORAGE_KEY); // Optionally clear corrupted data
+        }
+      }
+    }
+  }, [property]); // Runs when property data is loaded/changed
+
+  // --- Save preferences to localStorage ---
+  useEffect(() => {
+    // Ensure property is loaded and is of type 'property' before saving
+    if (property && typeof window !== 'undefined' && !loading) {
+      const preferencesToSave = {
+        checkInDate: checkInDate ? checkInDate.toISOString() : null,
+        checkOutDate: checkOutDate ? checkOutDate.toISOString() : null,
+        guestCount,
+        selectedRooms,
+        propertyType: 'property', // To identify these preferences later
+      };
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(preferencesToSave));
+    }
+  }, [checkInDate, checkOutDate, guestCount, selectedRooms, property, loading]);
+
+
   useEffect(() => {
     if (!property?.categoryRooms) {
       setTotalSelectedRooms(0);
       setTotalBookingPricePerNight(0);
+      setSubtotalNights(0);
+      setServiceCharge(0);
+      setTaxesApplied(0);
+      setTotalBookingPricing(0);
       return;
     }
-
     let currentTotalRooms = 0;
     let currentTotalPricePerNight = 0;
-
     Object.entries(selectedRooms).forEach(([title, qty]) => {
       if (qty > 0) {
         const category = property.categoryRooms?.find(cat => cat.title === title);
@@ -137,28 +240,23 @@ export default function PropertyDetailPage() {
         }
       }
     });
-
     setTotalSelectedRooms(currentTotalRooms);
     setTotalBookingPricePerNight(currentTotalPricePerNight);
-
-  }, [selectedRooms, property?.categoryRooms]);
-
-
-  const validateDate = (selectedDate: string, startDateStr: string, endDateStr: string): Date => {
-    const date = new Date(selectedDate);
-    const minDate = new Date(startDateStr);
-    // Set maxDate to the *end* of the day for comparison
-    const maxDate = new Date(endDateStr);
-    maxDate.setHours(23, 59, 59, 999);
-
-    // Clear time component for minDate comparison
-    minDate.setHours(0,0,0,0);
-
-    if (date < minDate) return minDate;
-    if (date > maxDate) return maxDate;
-
-    return date;
-  };
+    if (currentTotalPricePerNight > 0 && days > 0) {
+        const currentSubtotalNights = currentTotalPricePerNight * days;
+        setSubtotalNights(currentSubtotalNights);
+        const currentServiceCharge = SERVICE_FEE_FIXED;
+        setServiceCharge(currentServiceCharge);
+        const currentTaxes = (currentSubtotalNights + currentServiceCharge) * TAX_RATE_PERCENTAGE;
+        setTaxesApplied(currentTaxes);
+        setTotalBookingPricing(currentSubtotalNights + currentServiceCharge + currentTaxes);
+    } else {
+        setSubtotalNights(0);
+        setServiceCharge(0);
+        setTaxesApplied(0);
+        setTotalBookingPricing(0);
+    }
+  }, [selectedRooms, property?.categoryRooms, days]);
 
   const handleCheckInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if(!property) return;
@@ -169,23 +267,17 @@ export default function PropertyDetailPage() {
     }
     const validatedCheckIn = validateDate(selectedValue, property.startDate, property.endDate);
     setCheckInDate(validatedCheckIn);
-
-    // Adjust check-out date if necessary (must be at least one day after check-in)
     if (checkOutDate && validatedCheckIn >= checkOutDate) {
       const nextDay = new Date(validatedCheckIn.getTime());
       nextDay.setDate(validatedCheckIn.getDate() + 1);
-      // Ensure the adjusted check-out date is within the allowed range
       const maxEndDate = new Date(property.endDate);
       if (nextDay <= maxEndDate) {
           setCheckOutDate(nextDay);
       } else {
-          // If next day is beyond end date, maybe clear checkout or handle differently?
-          // For now, we just won't update it if it becomes invalid.
-          // Or maybe set it to the max end date if check-in is the max end date?
           if (validatedCheckIn.toDateString() === maxEndDate.toDateString()) {
-             setCheckOutDate(null); // Cannot check out after the last available day
+             setCheckOutDate(null);
           } else {
-             setCheckOutDate(maxEndDate); // Allow check-out on the last day
+             setCheckOutDate(maxEndDate);
           }
       }
     }
@@ -198,27 +290,16 @@ export default function PropertyDetailPage() {
         setCheckOutDate(null);
         return;
     }
-    // Use property start date as minimum only if check-in is not set
     const minCheckOutDateStr = checkInDate
-        ? new Date(checkInDate.getTime() + 86400000).toISOString().split('T')[0] // Day after check-in
+        ? new Date(checkInDate.getTime() + 86400000).toISOString().split('T')[0]
         : property.startDate;
-
     const validatedCheckOut = validateDate(selectedValue, minCheckOutDateStr, property.endDate);
-
-    // Ensure check-out is strictly after check-in if check-in is set
     if (checkInDate && validatedCheckOut <= checkInDate) {
-      // If user selects a date equal or before check-in, don't update, or reset?
-      // Let's prevent setting an invalid date. We could show an error, or just ignore.
-      // Silently ignoring might be confusing. Let's enforce minimum based on input element's min attr.
-      // The validateDate function already handles the overall range.
-      // We just need to ensure checkout > checkin specifically.
        const dayAfterCheckIn = new Date(checkInDate.getTime());
        dayAfterCheckIn.setDate(checkInDate.getDate() + 1);
        if (validatedCheckOut >= dayAfterCheckIn) {
            setCheckOutDate(validatedCheckOut);
        } else {
-           // Optionally provide feedback: alert("Check-out date must be after check-in date.");
-           // Or automatically set it to the earliest valid date:
            setCheckOutDate(dayAfterCheckIn <= new Date(property.endDate) ? dayAfterCheckIn : null);
        }
     } else {
@@ -226,7 +307,6 @@ export default function PropertyDetailPage() {
     }
   };
 
-  // Set form data when user is loaded
   useEffect(() => {
     if (isLoaded && isSignedIn && user) {
       setBookingData(prev => ({
@@ -242,11 +322,8 @@ export default function PropertyDetailPage() {
     setSelectedImage(imageUrl);
   };
 
-
   const incrementGuests = () => {
     setGuestCount(prev => prev + 1);
-    // Note: We are no longer automatically adjusting rooms based on guests.
-    // Consider adding a warning if guest count exceeds likely capacity of selected rooms.
   };
 
   const decrementGuests = () => {
@@ -255,47 +332,33 @@ export default function PropertyDetailPage() {
     }
   };
 
-  // --- Function to handle room quantity changes ---
   const handleRoomQuantityChange = (categoryTitle: string, change: number) => {
     if (!property?.categoryRooms) return;
-
     const category = property.categoryRooms.find(cat => cat.title === categoryTitle);
     if (!category) return;
-
     const currentQty = selectedRooms[categoryTitle] || 0;
     const newQty = currentQty + change;
-
-    // Check constraints
-    if (newQty < 0) return; // Cannot go below 0
-    if (newQty > category.qty) return; // Cannot exceed available quantity
-
-    // Check total room constraint only when increasing
+    if (newQty < 0) return;
+    if (newQty > category.qty) return;
     if (change > 0 && totalSelectedRooms >= MAX_COMBINED_ROOMS) {
-      // Optionally show a temporary message/alert
       setBookingError(`You can book a maximum of ${MAX_COMBINED_ROOMS} rooms in total.`);
-      setTimeout(() => setBookingError(null), 3000); // Clear error after 3s
+      setTimeout(() => setBookingError(null), 3000);
       return;
     }
-
     setSelectedRooms(prev => ({
       ...prev,
       [categoryTitle]: newQty
     }));
-    setBookingError(null); // Clear error if adjustment is successful
+    setBookingError(null);
   };
-  // --- End function ---
 
   const handleBookNowClick = () => {
-    if (!isLoaded) return; // Wait for Clerk
-    setBookingError(null); // Clear previous errors
-
+    if (!isLoaded) return;
+    setBookingError(null);
     if (!isSignedIn) {
       openSignIn();
-      // setLoginRedirectWarning(true);
       return;
     }
-
-    // Validation before showing modal
     if (!checkInDate || !checkOutDate) {
       setBookingError("Please select check-in and check-out dates.");
       return;
@@ -309,18 +372,14 @@ export default function PropertyDetailPage() {
       return;
     }
      if (totalSelectedRooms > MAX_COMBINED_ROOMS) {
-      // This should ideally be prevented by the +/- buttons, but double-check
        setBookingError(`You cannot book more than ${MAX_COMBINED_ROOMS} rooms.`);
        return;
     }
-
-    // Pre-fill booking data based on current selections
      setBookingData(prev => ({
         ...prev,
         passengers: guestCount,
-        rooms: totalSelectedRooms // Total rooms selected
+        rooms: totalSelectedRooms
       }));
-
     setShowBookingModal(true);
   };
 
@@ -335,29 +394,28 @@ export default function PropertyDetailPage() {
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!property || !checkInDate || !checkOutDate || totalSelectedRooms <= 0) {
-        alert("Booking details are incomplete."); // Or use a more sophisticated error display
+        alert("Booking details are incomplete.");
         return;
     };
-
     setIsSubmitting(true);
-    setBookingError(null); // Clear previous errors
-
+    setBookingError(null);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const selectedRoomDetails = Object.entries(selectedRooms).filter(([_, qty]) => qty > 0)
       .map(([title, qty]) => {
         const category = property.categoryRooms?.find(cat => cat.title === title);
-        // Fallback price/currency if category somehow not found (shouldn't happen if state is consistent)
         const price = category ? (category.discountedPrice > 0 ? category.discountedPrice : category.price) : 0;
         const currency = category ? category.currency : property.costing.currency;
         return {
           title: title,
           qty: qty,
-          pricePerNight: price, // Price per night for this category
+          pricePerNight: price,
           currency: currency
         };
       });
-    // --- End preparing details ---
-
+    const payloadSubtotal = subtotalNights;
+    const payloadServiceFee = serviceCharge;
+    const payloadTaxes = taxesApplied;
+    const payloadGrandTotal = totalBookingPricing;
     try {
         const bookingPayload = {
             type: "property",
@@ -373,25 +431,26 @@ export default function PropertyDetailPage() {
                 checkIn: checkInDate.toISOString(),
                 checkOut: checkOutDate.toISOString(),
                 guests: guestCount,
-                totalRooms: totalSelectedRooms, // Total number of rooms
-                roomsDetail: selectedRoomDetails, // Array with details of each selected room category
-                pricePerNightBreakdown: totalBookingPricePerNight, // Sum of (price * qty) for selected rooms per night
-                currency: property.costing.currency, // Assuming a primary currency for the property total
+                totalRooms: totalSelectedRooms,
+                roomsDetail: selectedRoomDetails,
+                pricePerNightBreakdown: totalBookingPricePerNight,
+                currency: property.costing.currency,
                 numberOfNights: days,
-                totalPrice: totalBookingPricePerNight * days, // Final total price
+                subtotal: payloadSubtotal,
+                serviceFee: payloadServiceFee,
+                taxes: payloadTaxes,
+                totalPrice: payloadGrandTotal,
             },
-            guestDetails: { // Keep guest details separate
+            guestDetails: {
                 firstName: bookingData.firstName,
                 lastName: bookingData.lastName,
                 email: bookingData.email,
                 phone: bookingData.phone,
                 specialRequests: bookingData.specialRequests
             },
-            recipients: [bookingData.email, 'anshulgoyal589@gmail.com'] // Replace with dynamic owner email if needed
+            recipients: [bookingData.email, 'anshulgoyal589@gmail.com']
         };
-
-        console.log("Booking Payload:", JSON.stringify(bookingPayload, null, 2)); // For debugging
-
+        console.log("Booking Payload:", JSON.stringify(bookingPayload, null, 2));
         const response = await fetch('/api/bookings', {
             method: 'POST',
             headers: {
@@ -399,33 +458,26 @@ export default function PropertyDetailPage() {
             },
             body: JSON.stringify(bookingPayload),
         });
-
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ message: 'Failed to send booking confirmation' }));
             throw new Error(errorData.message || 'Failed to send booking confirmation');
         }
-
         setBookingConfirmed(true);
         setShowBookingModal(false);
-        // Reset selections after successful booking? Optional.
-        // setSelectedRooms({});
-        // setCheckInDate(null);
-        // setCheckOutDate(null);
-        // setGuestCount(1);
+        // Clear localStorage after successful booking
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem(LOCAL_STORAGE_KEY);
+        }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
         console.error('Error submitting booking:', error);
         setBookingError(`Booking failed: ${error.message}. Please try again.`);
-        // Keep modal open if submission fails
     } finally {
         setIsSubmitting(false);
     }
 };
 
-
-  // --- Rendering functions (Rating Stars, Amenity Icons) remain the same ---
    const renderRatingStars = (rating: number) => {
-    // ... (keep existing implementation)
      return (
       <div className="flex">
         {[1, 2, 3, 4, 5].map((star) => (
@@ -445,7 +497,6 @@ export default function PropertyDetailPage() {
   };
 
   const getAmenityIcon = (amenity : PropertyAmenities) => {
-    // ... (keep existing implementation)
         const icons: Record<PropertyAmenities, React.ReactNode> = {
       wifi: (
         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -489,12 +540,10 @@ export default function PropertyDetailPage() {
         </svg>
       )
     };
-
     return icons[amenity];
   };
 
   const formatAmenityName = (amenity: PropertyAmenities): string => {
-    // ... (keep existing implementation)
      const formattedNames: Record<PropertyAmenities, string> = {
       wifi: 'WiFi',
       parking: 'Parking',
@@ -505,12 +554,10 @@ export default function PropertyDetailPage() {
       restaurant: 'Restaurant',
       breakfast: 'Breakfast',
     };
-
-    return formattedNames[amenity] || amenity; // Fallback to original name
+    return formattedNames[amenity] || amenity;
   };
 
   if (loading) {
-    // ... (keep existing loading state)
       return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
@@ -519,7 +566,6 @@ export default function PropertyDetailPage() {
   }
 
   if (error || !property) {
-    // ... (keep existing error state)
      return (
       <div className="container mx-auto px-4 py-16 text-center">
         <h2 className="text-2xl font-bold text-red-600 mb-4">
@@ -536,8 +582,6 @@ export default function PropertyDetailPage() {
     );
   }
 
-
-  // Calculate paginated reviews (Remains the same)
   const paginatedReviews = property.review
     ? property.review.slice(
         (currentReviewPage - 1) * reviewsPerPage,
@@ -549,14 +593,11 @@ export default function PropertyDetailPage() {
     ? Math.ceil(property.review.length / reviewsPerPage)
     : 0;
 
-
-  // --- JSX Structure ---
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       {/* Hero Section */}
       <div className="relative h-96 md:h-[500px] w-full">
          <Image
-            // Use selectedImage or a fallback
            src={selectedImage || property.bannerImage?.url || '/images/placeholder-property.jpg'}
            alt={property.title || 'Property Image'}
            layout="fill"
@@ -564,7 +605,6 @@ export default function PropertyDetailPage() {
            priority
            className="brightness-75"
            onError={() => {
-               // If selected image fails, try banner, then placeholder
                if (selectedImage !== property.bannerImage?.url && property.bannerImage?.url) {
                   setSelectedImage(property.bannerImage.url);
                } else if (selectedImage !== '/images/placeholder-property.jpg') {
@@ -572,7 +612,6 @@ export default function PropertyDetailPage() {
                }
            }}
          />
-         {/* ... (rest of Hero Section content remains the same) ... */}
          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end">
           <div className="container mx-auto px-4 py-8">
             <div className="inline-block px-3 py-1 bg-blue-600 text-white text-sm rounded-full mb-2">
@@ -615,46 +654,41 @@ export default function PropertyDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Property Details */}
           <div className="lg:col-span-2">
-            {/* ... (Keep existing Property Quick Info, Amenities, Features, Gallery, Description, etc.) ... */}
-             {/* Property Quick Info */}
-            <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
+             <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Property Overview</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 text-center">
-                {/* Type */}
-                 <div className="flex flex-col items-center">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                 <div className="flex flex-col items-center text-center">
                    <div className="text-gray-600 text-sm mb-1">Type</div>
                    <div className="font-semibold text-lg text-blue-600 capitalize">{property.type}</div>
                  </div>
-
-                {/* Total Rooms (if categories exist) */}
                 {property.categoryRooms && property.categoryRooms.length > 0 && (
-                    <div className="flex flex-col items-center">
+                    <div className="flex flex-col items-center text-center">
                     <div className="text-gray-600 text-sm mb-1">Total Rooms</div>
                     <div className="font-extrabold text-2xl text-blue-600">
                         {property.categoryRooms.reduce((sum, cat) => sum + cat.qty, 0)}
                     </div>
                     </div>
                 )}
-
-                {/* Property Rating */}
                 {property.propertyRating && (
-                  <div className="flex flex-col items-center">
+                  <div className="flex flex-col items-center text-center">
                     <div className="text-gray-600 text-sm mb-1">Property Rating</div>
                     <div className="font-extrabold text-2xl text-blue-600">{property.propertyRating.toString()}</div>
                   </div>
                 )}
-
-     
-
+                {property.googleMaps && (
+                  <div className="col-span-2 sm:col-span-3">
+                    <div className="text-gray-700 text-sm font-medium mb-2 text-center sm:text-left">Location</div>
+                    <div
+                      className="w-[35vw] flex items-center justify-center h-64 md:h-80 rounded-lg overflow-hidden border border-gray-200 shadow-sm"
+                      dangerouslySetInnerHTML={{ __html: property.googleMaps }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
-             {/* Amenities & Features Section */}
-             {/* ... (Keep existing sections for General Amenities, Facilities, Room Facilities, Accessibility, etc.) ... */}
             <div className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">Amenities & Features</h2>
-
-                {/* Main Amenities */}
                 {property.amenities && property.amenities.length > 0 && (
                   <div className="mb-6">
                     <h3 className="text-xl font-semibold mb-3">General Amenities</h3>
@@ -675,9 +709,7 @@ export default function PropertyDetailPage() {
                     </div>
                   </div>
                 )}
-
-                                {/* Facilities */}
-                                {property.facilities && property.facilities.length > 0 && (
+                {property.facilities && property.facilities.length > 0 && (
                   <div className="mb-6">
                     <h3 className="text-xl font-semibold mb-3">Facilities</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -697,8 +729,6 @@ export default function PropertyDetailPage() {
                     </div>
                   </div>
                 )}
-                
-                {/* Room Facilities */}
                 {property.roomFacilities && property.roomFacilities.length > 0 && (
                   <div className="mb-6">
                     <h3 className="text-xl font-semibold mb-3">Room Facilities</h3>
@@ -719,8 +749,6 @@ export default function PropertyDetailPage() {
                     </div>
                   </div>
                 )}
-                
-                {/* Accessibility Features */}
                 {property.accessibility && property.accessibility.length > 0 && (
                   <div className="mb-6">
                     <h3 className="text-xl font-semibold mb-3">Accessibility</h3>
@@ -732,7 +760,7 @@ export default function PropertyDetailPage() {
                         >
                           <div className="bg-blue-100 p-2 rounded-full mr-3 text-blue-600">
                             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12zm-1-5a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1zm0-3a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                              <path fillRule="evenodd" d="M10 2a8 8 0 100-16 8 8 0 000 16zm0 14a6 6 0 110-12 6 6 0 010 12zm-1-5a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1zm0-3a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
                             </svg>
                           </div>
                           <span>{feature}</span>
@@ -741,8 +769,6 @@ export default function PropertyDetailPage() {
                     </div>
                   </div>
                 )}
-                
-                {/* Room Accessibility */}
                 {property.roomAccessibility && property.roomAccessibility.length > 0 && (
                   <div className="mb-6">
                     <h3 className="text-xl font-semibold mb-3">Room Accessibility</h3>
@@ -763,8 +789,6 @@ export default function PropertyDetailPage() {
                     </div>
                   </div>
                 )}
-                 {/* ... other feature sections ... */}
-                  {/* Fun Things To Do */}
                 {property.funThingsToDo && property.funThingsToDo.length > 0 && (
                     <div className="mb-8 bg-white p-6 rounded-lg shadow-lg">
                     <h2 className="text-2xl font-bold mb-4">Fun Things To Do</h2>
@@ -775,8 +799,6 @@ export default function PropertyDetailPage() {
                     </ul>
                     </div>
                 )}
-
-                {/* Meals & Dining */}
                 {property.meals && property.meals.length > 0 && (
                     <div className="mb-8 bg-white p-6 rounded-lg shadow-lg">
                     <h2 className="text-2xl font-bold mb-4">Meals & Dining</h2>
@@ -797,7 +819,6 @@ export default function PropertyDetailPage() {
                     </div>
                     </div>
                 )}
-
                 {property.bedPreference && property.bedPreference.length > 0 && (
                 <div className="mb-8 bg-white p-6 rounded-lg shadow-lg">
                   <h2 className="text-2xl font-bold mb-4">Bed Options</h2>
@@ -818,8 +839,6 @@ export default function PropertyDetailPage() {
                   </div>
                 </div>
               )}
-
-              {/* Reservation Policy */}
               {property.reservationPolicy && property.reservationPolicy.length > 0 && (
                 <div className="mb-8 bg-white p-6 rounded-lg shadow-lg">
                   <h2 className="text-2xl font-bold mb-4">Reservation Policy</h2>
@@ -830,8 +849,6 @@ export default function PropertyDetailPage() {
                   </ul>
                 </div>
               )}
-
-              {/* Popular Filters */}
               {property.popularFilters && property.popularFilters.length > 0 && (
                 <div className="mb-8">
                   <h2 className="text-2xl font-bold mb-4">Popular Features</h2>
@@ -844,12 +861,8 @@ export default function PropertyDetailPage() {
                   </div>
                 </div>
               )}
-                 {/* ... other sections like Bed Options, Policy, Filters ... */}
             </div>
 
-
-            {/* Property Gallery */}
-            {/* ... (Keep existing Gallery logic) ... */}
              {property.detailImages && property.detailImages.length > 0 && (
               <div className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">Gallery</h2>
@@ -868,11 +881,10 @@ export default function PropertyDetailPage() {
                         alt={property.bannerImage.alt || "Property Banner"}
                         layout="fill"
                         objectFit="cover"
-                         onError={(e) => e.currentTarget.src = '/images/placeholder-property.jpg'} // Fallback on error
+                         onError={(e) => e.currentTarget.src = '/images/placeholder-property.jpg'}
                       />
                     </div>
                   )}
-                  {/* Limit gallery preview */}
                   {property.detailImages.slice(0, property.bannerImage ? 7 : 8).map((image, index) => (
                     <div
                       key={index}
@@ -886,7 +898,7 @@ export default function PropertyDetailPage() {
                         alt={image.alt || `Property image ${index + 1}`}
                         layout="fill"
                         objectFit="cover"
-                        onError={(e) => e.currentTarget.src = '/images/placeholder-property.jpg'} // Fallback on error
+                        onError={(e) => e.currentTarget.src = '/images/placeholder-property.jpg'}
                       />
                     </div>
                   ))}
@@ -894,9 +906,6 @@ export default function PropertyDetailPage() {
               </div>
             )}
 
-
-            {/* Property Description */}
-            {/* ... (Keep existing Description) ... */}
              <div className="mb-8">
               <h2 className="text-2xl font-bold mb-4">About This Property</h2>
               <div className="prose max-w-none text-gray-700">
@@ -904,8 +913,6 @@ export default function PropertyDetailPage() {
               </div>
             </div>
 
-
-            {/* Property Amenities */}
             {property.amenities && property.amenities.length > 0 && (
               <div className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">
@@ -927,7 +934,6 @@ export default function PropertyDetailPage() {
               </div>
             )}
 
-            {/* Reviews Section */}
             {property.review && property.review.length > 0 && (
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4">
@@ -975,7 +981,6 @@ export default function PropertyDetailPage() {
                   ))}
                 </div>
 
-                {/* Pagination */}
                 {totalReviewPages > 1 && (
                   <div className="flex justify-center mt-6">
                     <nav className="inline-flex">
@@ -1027,14 +1032,11 @@ export default function PropertyDetailPage() {
                 )}
               </div>
             )}
-
-
           </div>
 
           {/* Right Column - Booking Info */}
           <div className="lg:col-span-1">
             <div className="bg-white p-6 rounded-lg shadow-lg sticky top-8">
-               {/* Display Base Price Info (Optional) */}
                {property.costing && (
                    <div className="mb-4 pb-4 border-b border-gray-200">
                        <span className="text-sm text-gray-600">Starting from</span>
@@ -1052,14 +1054,11 @@ export default function PropertyDetailPage() {
                               </span>
                             )}
                        </div>
-                       {/* You might want to clarify this is the base price */}
                        <p className="text-xs text-gray-500 mt-1">Select rooms below to see final price.</p>
                    </div>
                )}
 
-              {/* Booking Form */}
               <div className="mb-6">
-                {/* Date Pickers */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Check-in</label>
@@ -1082,17 +1081,16 @@ export default function PropertyDetailPage() {
                       className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
                       min={
                         checkInDate
-                          ? new Date(checkInDate.getTime() + 86400000).toISOString().split('T')[0] // Day after check-in
+                          ? new Date(checkInDate.getTime() + 86400000).toISOString().split('T')[0]
                           : new Date(property.startDate).toISOString().split('T')[0]
                       }
                       max={new Date(property.endDate).toISOString().split('T')[0]}
                       required
-                      disabled={!checkInDate} // Disable until check-in is selected
+                      disabled={!checkInDate}
                     />
                   </div>
                 </div>
 
-                {/* Guest Counter */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Guests
@@ -1115,8 +1113,8 @@ export default function PropertyDetailPage() {
                     <button
                       type="button"
                       onClick={incrementGuests}
-                      // Add a sensible upper limit if needed, e.g., max capacity
-                      disabled={guestCount >= (property.rooms * 3)} // Old logic based on total rooms
+                      // Consider max capacity if available from property data
+                      // disabled={guestCount >= (property.maxGuestsPerBooking || 20)}
                       className="px-3 py-2 text-blue-600 disabled:text-gray-400"
                     >
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
@@ -1124,7 +1122,6 @@ export default function PropertyDetailPage() {
                   </div>
                 </div>
 
-                {/* --- Room Category Selection --- */}
                 <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Select Rooms (Max {MAX_COMBINED_ROOMS} total)
@@ -1149,7 +1146,7 @@ export default function PropertyDetailPage() {
                                                         </span>
                                                     )}
                                                 </p>
-                                                 <p className="text-xs text-gray-500">{cat.qty} available</p>
+                                                 <p className="text-xs text-gray-500">{cat.qty - selectedQty} available</p>
                                             </div>
                                              <div className="flex items-center border border-gray-300 rounded-md bg-white">
                                                 <button
@@ -1179,40 +1176,45 @@ export default function PropertyDetailPage() {
                         </div>
                     ) : (
                         <p className="text-sm text-gray-500 italic">No specific room types available for selection.</p>
-                        // Decide if booking should be possible without categories. If not, disable Book Now button.
                     )}
-                     {/* Display total selected rooms */}
                     <div className="mt-3 text-sm text-right">
                          Total Selected Rooms: <span className="font-semibold">{totalSelectedRooms}</span> / {MAX_COMBINED_ROOMS}
                     </div>
                 </div>
-                {/* --- End Room Category Selection --- */}
-
               </div>
 
-              {/* Price Calculation */}
-              {checkInDate && checkOutDate && days > 0 && totalSelectedRooms > 0 && (
+              {checkInDate && checkOutDate && days > 0 && totalSelectedRooms > 0 && property.costing && (
                 <div className="border-t border-gray-200 pt-4 mb-6 space-y-2">
-                    {/* Breakdown per night */}
                     <div className="flex justify-between text-sm">
-                        <span className="text-gray-700">{property.costing.currency} {totalBookingPricePerNight.toLocaleString()} x {days} {days === 1 ? 'night' : 'nights'}</span>
-                        <span className="text-gray-900">{property.costing.currency} {(totalBookingPricePerNight * days).toLocaleString()}</span>
+                        <span className="text-gray-700">
+                            {property.costing.currency} {totalBookingPricePerNight.toLocaleString()} x {days} {days === 1 ? 'night' : 'nights'}
+                        </span>
+                        <span className="text-gray-900">
+                            {property.costing.currency} {subtotalNights.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
                     </div>
-                     {/* Optional: Add lines for taxes or fees if applicable */}
-                    {/* <div className="flex justify-between text-sm">
-                        <span className="text-gray-700">Taxes & Fees</span>
-                        <span className="text-gray-900">{property.costing.currency} ...</span>
-                    </div> */}
-                  <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200 mt-2">
-                    <span>Total</span>
-                    <span>
-                      {property.costing.currency} {(totalBookingPricePerNight * days).toLocaleString()}
-                    </span>
-                  </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-gray-700">Service Fee</span>
+                        <span className="text-gray-900">
+                            {property.costing.currency} {serviceCharge.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-gray-700">Taxes (approx. {TAX_RATE_PERCENTAGE * 100}%)</span>
+                        <span className="text-gray-900">
+                            {property.costing.currency} {taxesApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                    </div>
+                    <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200 mt-2">
+                        <span>Total</span>
+                        <span>
+                            {property.costing.currency} {totalBookingPricing.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                    </div>
                 </div>
               )}
 
-              {/* Booking Error Message */}
+
                {bookingError && (
                    <div className="my-3 p-3 bg-red-100 text-red-700 text-sm rounded-md">
                        {bookingError}
@@ -1221,27 +1223,24 @@ export default function PropertyDetailPage() {
 
               <button
                 onClick={handleBookNowClick}
-                disabled={!checkInDate || !checkOutDate || days <= 0 || totalSelectedRooms <= 0 || totalSelectedRooms > MAX_COMBINED_ROOMS || !(property.categoryRooms && property.categoryRooms.length > 0)} // Disable if no categories defined or basic conditions not met
+                disabled={!checkInDate || !checkOutDate || days <= 0 || totalSelectedRooms <= 0 || totalSelectedRooms > MAX_COMBINED_ROOMS || !(property.categoryRooms && property.categoryRooms.length > 0)}
                 className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 Book Now
               </button>
 
               <p className="text-sm text-gray-500 text-center mt-2">
-                You won&apso;t be charged yet
+                You won&apos;t be charged yet
               </p>
             </div>
           </div>
         </div>
-         {/* DummyReviews Component - Assuming it exists and is used */}
         <DummyReviews/>
       </div>
 
-      {/* --- Booking Modal --- */}
-      {showBookingModal && (
+      {showBookingModal && property && property.costing && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-xl w-full p-6 max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
             <div className="flex justify-between items-center mb-4 pb-3 border-b">
               <h3 className="text-xl font-bold">Complete Your Booking</h3>
               <button
@@ -1252,7 +1251,6 @@ export default function PropertyDetailPage() {
               </button>
             </div>
 
-            {/* Booking Summary */}
             <div className="mb-6">
               <div className="flex items-center mb-4">
                  {property.bannerImage && (
@@ -1272,7 +1270,6 @@ export default function PropertyDetailPage() {
                   </div>
               </div>
 
-              {/* Dates, Guests, Rooms Summary */}
               <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-4 p-4 bg-gray-50 rounded-lg text-sm">
                 <div>
                   <div className="text-xs text-gray-600">Check-in</div>
@@ -1296,7 +1293,6 @@ export default function PropertyDetailPage() {
                 </div>
               </div>
 
-                {/* --- Selected Rooms Breakdown --- */}
                 <div className="mb-4 p-4 border border-gray-200 rounded-lg">
                     <h5 className="text-sm font-semibold mb-2">Selected Rooms ({totalSelectedRooms} total)</h5>
                     <div className="space-y-1">
@@ -1319,20 +1315,29 @@ export default function PropertyDetailPage() {
                          <span>{property.costing.currency} {totalBookingPricePerNight.toLocaleString()}</span>
                     </div>
                 </div>
-                {/* --- End Selected Rooms Breakdown --- */}
 
-
-              {/* Total Price Summary */}
+              <div className="flex flex-col space-y-1 mb-4 p-4 bg-gray-100 rounded-lg">
+                  <div className="flex justify-between text-sm">
+                      <span>Subtotal ({days} {days === 1 ? 'night' : 'nights'})</span>
+                      <span>{property.costing.currency} {subtotalNights.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                      <span>Service Fee</span>
+                      <span>{property.costing.currency} {serviceCharge.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                      <span>Taxes (approx. {TAX_RATE_PERCENTAGE * 100}%)</span>
+                      <span>{property.costing.currency} {taxesApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+              </div>
               <div className="flex justify-between font-bold text-lg p-4 bg-blue-50 rounded-lg">
-                 <span>Total Price</span>
-                 <span>{property.costing.currency} {(totalBookingPricePerNight * days).toLocaleString()}</span>
+                 <span>Grand Total</span>
+                 <span>{property.costing.currency} {totalBookingPricing.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
 
-            {/* Guest Details Form */}
             <form onSubmit={handleBookingSubmit}>
               <h4 className="text-md font-semibold mb-3">Your Information</h4>
-              {/* ... (Keep existing form fields: First Name, Last Name, Email, Phone, Special Requests) ... */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="firstName">
@@ -1363,7 +1368,6 @@ export default function PropertyDetailPage() {
                     />
                     </div>
                 </div>
-
                  <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">
                     Email
@@ -1378,7 +1382,6 @@ export default function PropertyDetailPage() {
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                     />
                 </div>
-
                 <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="phone">
                     Phone Number
@@ -1393,7 +1396,6 @@ export default function PropertyDetailPage() {
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                     />
                 </div>
-
                  <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="specialRequests">
                     Special Requests (Optional)
@@ -1408,20 +1410,16 @@ export default function PropertyDetailPage() {
                     placeholder="e.g., late check-in, dietary needs"
                     ></textarea>
                 </div>
-
-              {/* Display Booking Error in Modal */}
               {bookingError && (
                 <div className="my-4 p-3 bg-red-100 text-red-700 text-sm rounded-md">
                   {bookingError}
                 </div>
               )}
-
               <button
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-400 disabled:cursor-wait"
               >
-                 {/* ... (Keep existing submitting indicator) ... */}
                  {isSubmitting ? (
                   <span className="flex items-center justify-center">
                     <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -1438,14 +1436,10 @@ export default function PropertyDetailPage() {
           </div>
         </div>
       )}
-      {/* --- End Booking Modal --- */}
 
-      {/* Booking Confirmation Modal */}
-      {/* ... (Keep existing Booking Confirmation Modal) ... */}
-      {bookingConfirmed && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]"> {/* Higher z-index */}
+      {bookingConfirmed && property && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
           <div className="bg-white rounded-lg max-w-md w-full p-6 text-center">
-             {/* ... confirmation content ... */}
              <div className="mb-4">
               <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
                 <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1458,7 +1452,11 @@ export default function PropertyDetailPage() {
               Your booking for {property.title} has been confirmed. A confirmation email has been sent to {bookingData.email}.
             </p>
             <button
-              onClick={() => setBookingConfirmed(false)}
+              onClick={() => {
+                setBookingConfirmed(false);
+                // Optionally reset form fields or redirect
+                // For now, just closes the modal. localStorage was cleared on successful booking.
+              }}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700"
             >
               Done
@@ -1466,7 +1464,6 @@ export default function PropertyDetailPage() {
           </div>
         </div>
       )}
-
-    </div> // End Main Container
+    </div>
   );
 }

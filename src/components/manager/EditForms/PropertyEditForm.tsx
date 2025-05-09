@@ -453,6 +453,15 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
             step={0.5}
           />
         </div>
+        <div>
+          <label>Property Google Maps</label>
+          <Input
+            type="string"
+            name="googleMaps"
+            value={formData.googleMaps}
+            onChange={(e) => handleChange("googleMaps", e.target.value || "")}
+          />
+        </div>
         
         <div>
           <label>Total Rating</label>

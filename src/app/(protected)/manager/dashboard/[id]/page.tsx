@@ -122,6 +122,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
           roomFacilities : foundItem.roomFacilities || [''],
 
           propertyRating : foundItem.propertyRating || 3,
+          googleMaps : foundItem.googleMaps || 3,
         });
       } else if (foundCategory === 'trips') {
         setTripDetails({
