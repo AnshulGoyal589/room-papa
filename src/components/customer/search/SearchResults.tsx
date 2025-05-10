@@ -15,8 +15,8 @@ export default function SearchResults() {
   // const [searchParams, setSearchParams] = useState<{ [key: string]: string }>({});
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [sortBy, setSortBy] = useState('createdAt');
-  const [sortOrder, setSortOrder] = useState('desc');
+  // const [sortBy, setSortBy] = useState('createdAt');
+  // const [sortOrder, setSortOrder] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [category, setCategory] = useState<string>('property');
@@ -31,8 +31,8 @@ export default function SearchResults() {
     // setSearchParams(params);
     
     // Set initial states from URL params
-    setSortBy(params.sortBy || 'createdAt');
-    setSortOrder(params.sortOrder || 'desc');
+    // setSortBy(params.sortBy || 'createdAt');
+    // setSortOrder(params.sortOrder || 'desc');
     setCurrentPage(parseInt(params.page || '1'));
     setCategory(params.category || 'property');
     
@@ -81,13 +81,13 @@ export default function SearchResults() {
     window.scrollTo(0, 0);
   };
 
-  const handleSortChange = (field: string, order: string) => {
-    const params = new URLSearchParams(currentSearchParams?.toString() || '');
-    params.set('sortBy', field);
-    params.set('sortOrder', order);
-    params.set('page', '1'); // Reset to first page when sorting changes
-    router.push(`/customer/search?${params.toString()}`, { scroll: false });
-  };
+  // const handleSortChange = (field: string, order: string) => {
+  //   const params = new URLSearchParams(currentSearchParams?.toString() || '');
+  //   params.set('sortBy', field);
+  //   params.set('sortOrder', order);
+  //   params.set('page', '1'); // Reset to first page when sorting changes
+  //   router.push(`/customer/search?${params.toString()}`, { scroll: false });
+  // };
 
   const handleRemoveFilter = (chipKey: string) => {
     const params = new URLSearchParams(currentSearchParams?.toString() || '');
