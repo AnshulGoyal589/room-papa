@@ -304,7 +304,7 @@ const TravellingEditForm: React.FC<TravellingEditFormProps> = ({ item, onSave })
           value={formData.accessibility || []}
           onChange={handleChange}
           label="Travelling Accessibility"
-          fieldName="travellingAccessibility"
+          fieldName="accessibility"
         />
                 
         <CheckboxGroup

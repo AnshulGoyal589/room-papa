@@ -158,19 +158,6 @@ const TripEditForm: React.FC<TripEditFormProps> = ({ item, onSave }) => {
       </div>
 
       <div>
-        <label>Rating</label>
-        <Input
-          type="number"
-          name="rat"
-          value={formData.rat || '1'}
-          onChange={(e) => handleChange("rat", e.target.value)}
-          placeholder="Enter rating"
-          min="1"
-          max="5"
-        />
-      </div>
-
-      <div>
         <label>Trip Type</label>
         <Select
           value={formData.type}
@@ -330,8 +317,8 @@ const TripEditForm: React.FC<TripEditFormProps> = ({ item, onSave }) => {
           options={propertyAccessibilityOptions}
           value={formData.accessibility || []}
           onChange={handleChange}
-          label="Property Accessibility"
-          fieldName="propertyAccessibility"
+          label="Trip Accessibility"
+          fieldName="accessibility"
         />
         
         <CheckboxGroup

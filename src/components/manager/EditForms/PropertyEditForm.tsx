@@ -682,7 +682,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
           value={formData.accessibility || []}
           onChange={handleChange}
           label="Property Accessibility"
-          fieldName="propertyAccessibility"
+          fieldName="accessibility"
         />
         
         <CheckboxGroup
@@ -690,7 +690,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
           value={formData.roomAccessibility || []}
           onChange={handleChange}
           label="Room Accessibility"
-          fieldName="roomAccessibilityOptions"
+          fieldName="roomAccessibility"
         />
         
         <CheckboxGroup
