@@ -181,8 +181,8 @@ function addPropertyFilters(query: QueryType, searchParams: URLSearchParams) {
   
   // Property rating filter
   const propertyRating = searchParams.get('propertyRating');
-  if (propertyRating && !isNaN(parseFloat(propertyRating))) {
-    query['propertyRating'] = { $gte: parseFloat(propertyRating) };
+  if (propertyRating && parseFloat(propertyRating)!=0 && !isNaN(parseFloat(propertyRating))) {
+    query['propertyRating'] = parseFloat(propertyRating) ;
   }
   
   // Property-specific category filters

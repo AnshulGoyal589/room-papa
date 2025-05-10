@@ -561,7 +561,7 @@ export default function FlightsSearchForm() {
                 </div>
                 
                 {/* Pets */}
-                <div className="flex justify-between items-center">
+                {/* <div className="flex justify-between items-center">
                   <div>
                     <div className="font-medium">Travelling with pets?</div>
                     <div className="text-xs text-blue-600">
@@ -587,7 +587,7 @@ export default function FlightsSearchForm() {
                       <span className={`block w-6 h-6 rounded-full bg-white shadow transform ${hasPets ? 'translate-x-4' : 'translate-x-0'} transition-transform duration-200 ease-in-out`}></span>
                     </label>
                   </div>
-                </div>
+                </div> */}
                 
                 <button 
                   className="w-full py-3 bg-blue-600 text-white rounded-md font-medium"

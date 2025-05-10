@@ -320,7 +320,7 @@ export default function SearchResults() {
           {results.length} {category === 'property' ? 'Properties' : category === 'trip' ? 'Trips' : 'Itineraries'} Found
         </h2>
         
-        <div className="flex items-center space-x-4">
+        {/* <div className="flex items-center space-x-4">
           <div>
             <label htmlFor="sortBy" className="mr-2 text-sm">Sort by:</label>
             <select
@@ -353,7 +353,7 @@ export default function SearchResults() {
               )}
             </select>
           </div>
-        </div>
+        </div> */}
       </div>
       
       {isLoading ? (
