@@ -1,225 +1,284 @@
 import React, { useState, useEffect } from "react";
-import { Property } from "@/lib/mongodb/models/Property";
+import { Property } from "@/lib/mongodb/models/Property"; // Assuming Review is part of Property model/type
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { 
+  Select, 
+  SelectTrigger, 
+  SelectValue, 
+  SelectContent, 
+  SelectItem 
+} from "@/components/ui/select";
 import ImageUpload from "@/components/cloudinary/ImageUpload";
 import MultipleImageUpload from "@/components/cloudinary/MultipleImageUpload";
-import { PropertyAmenities, RoomCategory } from "@/types";
-import { X, Plus, Edit, Check, AlertCircle } from "lucide-react"; // Added more icons
+import { 
+ 
+  RoomCategory as StoredRoomCategory, // This should be your updated type with detailed pricing and id
+  RoomCategoryPricing, 
+  PropertyType 
+} from "@/types"; // Ensure these types are correctly defined and imported
+import { 
+  X, 
+  Plus, 
+  Edit, 
+  Check, 
+  AlertCircle, 
+  Users, 
+  Baby, 
+  DollarSign, 
+  Home, 
+  MapPin, 
+  BedDouble, 
+  ListChecks, 
+  // ShieldCheck,
+  Image as ImageIcon,
+  // MessageSquare
+} from "lucide-react";
+
+// Helper to generate unique IDs
+const generateId = () => Math.random().toString(36).substr(2, 9);
+
+// Initial state for the form to add/edit a new room category
+const initialNewCategoryState = {
+  id: '', // Will be set when editing
+  title: "",
+  qty: 1,
+  currency: "USD", // Default, can be updated
+  pricing: {
+    singleOccupancyAdultPrice: 0,
+    discountedSingleOccupancyAdultPrice: 0, // Use 0 or undefined for no discount
+    doubleOccupancyAdultPrice: 0,
+    discountedDoubleOccupancyAdultPrice: 0,
+    tripleOccupancyAdultPrice: 0,
+    discountedTripleOccupancyAdultPrice: 0,
+    child5to12Price: 0,
+    discountedChild5to12Price: 0,
+    child12to18Price: 0,
+    discountedChild12to18Price: 0,
+  }
+};
 
 interface PropertyEditFormProps {
-  item: Property;
+  item: Property; // This item should conform to the Property type with StoredRoomCategory[]
   onSave: (updatedProperty: Property) => void;
 }
 
 const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => {
-  // Initialize the form data from the item prop
   const [formData, setFormData] = useState<Property>(item);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  console.log("Item: ",item);
-  
-  // Initialize new category state for room categories
-  const [newCategory, setNewCategory] = useState<RoomCategory>({
-    title: "",
-    qty: 1,
-    price: 0,
-    discountedPrice: 0,
-    currency: item.costing?.currency || "INR"
+  const [newCategory, setNewCategory] = useState<{
+    id?: string;
+    title: string;
+    qty: number;
+    currency: string;
+    pricing: RoomCategoryPricing;
+  }>({
+    ...initialNewCategoryState,
+    currency: item.costing?.currency || "USD"
   });
   
-  // State to track if we're editing an existing category
-  const [editingCategoryIndex, setEditingCategoryIndex] = useState<number | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false); 
   
   // Define options for various property features
-  const amenities: PropertyAmenities[] = ["wifi", "pool", "gym", "spa", "restaurant", "parking", "airConditioning", "breakfast"];
-  
-  const accessibility = ['Wheelchair Accessible', 'Elevator', 'Accessible Parking', 'Braille Signage', 'Accessible Bathroom', 'Roll-in Shower'];
-  const roomAccessibilityOptions = ['Grab Bars', 'Lowered Amenities', 'Visual Alarms', 'Wide Doorways', 'Accessible Shower'];
-  const popularFilters = ['Pet Friendly', 'Free Cancellation', 'Free Breakfast', 'Pool', 'Hot Tub', 'Ocean View', 'Family Friendly', 'Business Facilities'];
-  const funThingsToDo = ['Beach', 'Hiking', 'Shopping', 'Nightlife', 'Local Tours', 'Museums', 'Theme Parks', 'Water Sports'];
-  const mealsOptions = ['Breakfast', 'Lunch', 'Dinner', 'All-Inclusive', 'Buffet', 'À la carte', 'Room Service', 'Special Diets'];
-  const facilitiesOptions = ['Parking', 'WiFi', 'Swimming Pool', 'Fitness Center', 'Restaurant', 'Bar', 'Spa', 'Conference Room'];
-  const bedPreferenceOptions = ['King', 'Queen', 'Twin', 'Double', 'Single', 'Sofa Bed', 'Bunk Bed'];
-  const reservationPolicyOptions =  ['Free Cancellation', 'Flexible', 'Moderate', 'Strict', 'Non-Refundable', 'Pay at Property', 'Pay Now'];
-  const brandsOptions =  ['Hilton', 'Marriott', 'Hyatt', 'Best Western', 'Accor', 'IHG', 'Wyndham', 'Choice Hotels'];
-  const roomFacilitiesOptions = ['Air Conditioning', 'TV', 'Mini Bar', 'Coffee Maker', 'Safe', 'Desk', 'Balcony', 'Bathtub', 'Shower']
+  // const amenitiesOptions = ["wifi", "pool", "gym", "spa", "restaurant", "parking", "airConditioning", "breakfastIncluded", "petFriendly", "roomService", "barLounge", "laundryService"];
+  const accessibilityOptions = ['Wheelchair Accessible', 'Elevator', 'Accessible Parking', 'Braille Signage', 'Accessible Bathroom', 'Roll-in Shower'];
+  const roomAccessibilityOptionsList = ['Grab Bars', 'Lowered Amenities', 'Visual Alarms', 'Wide Doorways', 'Accessible Shower'];
+  const popularFiltersOptions = ['Pet Friendly', 'Free Cancellation', 'Free Breakfast', 'Pool', 'Hot Tub', 'Ocean View', 'Family Friendly', 'Business Facilities'];
+  const funThingsToDoOptions = ['Beach', 'Hiking', 'Shopping', 'Nightlife', 'Local Tours', 'Museums', 'Theme Parks', 'Water Sports'];
+  const mealsOptionsList = ['Breakfast', 'Lunch', 'Dinner', 'All-Inclusive', 'Buffet', 'À la carte', 'Room Service', 'Special Diets'];
+  const facilitiesOptionsList = ['Parking', 'WiFi', 'Swimming Pool', 'Fitness Center', 'Restaurant', 'Bar', 'Spa', 'Conference Room'];
+  const bedPreferenceOptionsList = ['King', 'Queen', 'Twin', 'Double', 'Single', 'Sofa Bed', 'Bunk Bed'];
+  const reservationPolicyOptionsList =  ['Free Cancellation', 'Flexible', 'Moderate', 'Strict', 'Non-Refundable', 'Pay at Property', 'Pay Now'];
+  const brandsOptionsList =  ['Hilton', 'Marriott', 'Hyatt', 'Best Western', 'Accor', 'IHG', 'Wyndham', 'Choice Hotels'];
+  const roomFacilitiesOptionsList = ['Air Conditioning', 'TV', 'Mini Bar', 'Coffee Maker', 'Safe', 'Desk', 'Balcony', 'Bathtub', 'Shower'];
 
-  // Update the form when the item prop changes
+
   useEffect(() => {
-    setFormData(item);
-  }, [item]);
+    // Deep clone item to prevent direct mutation if item is complex
+    const clonedItem = JSON.parse(JSON.stringify(item));
+    setFormData(clonedItem);
+    if (!isEditMode) {
+        setNewCategory(prev => ({ ...prev, currency: clonedItem.costing?.currency || "USD" }));
+    }
+  }, [item, isEditMode]);
 
-  // Calculate derived values when room categories change
   useEffect(() => {
     if (formData.categoryRooms && formData.categoryRooms.length > 0) {
-      // No need to update formData since we're displaying these calculated values separately
-      // This could be uncommented if we want to actually update the formData with these values
-      /*
+      let minOverallPrice = Infinity;
+      let minOverallDiscountedPrice = Infinity;
+      let leadCurrency = formData.categoryRooms[0].currency || "USD";
+
+      formData.categoryRooms.forEach(cat => {
+        const prices: number[] = [];
+        const discountedPrices: number[] = [];
+
+        prices.push(cat.pricing.singleOccupancyAdultPrice);
+        discountedPrices.push(cat.pricing.discountedSingleOccupancyAdultPrice && cat.pricing.discountedSingleOccupancyAdultPrice > 0 ? cat.pricing.discountedSingleOccupancyAdultPrice : cat.pricing.singleOccupancyAdultPrice);
+
+        if (cat.pricing.doubleOccupancyAdultPrice > 0) {
+          prices.push(cat.pricing.doubleOccupancyAdultPrice / 2);
+          discountedPrices.push(cat.pricing.discountedDoubleOccupancyAdultPrice && cat.pricing.discountedDoubleOccupancyAdultPrice > 0 ? cat.pricing.discountedDoubleOccupancyAdultPrice / 2 : cat.pricing.doubleOccupancyAdultPrice / 2);
+        }
+        
+        if (cat.pricing.tripleOccupancyAdultPrice > 0) {
+          prices.push(cat.pricing.tripleOccupancyAdultPrice / 3);
+          discountedPrices.push(cat.pricing.discountedTripleOccupancyAdultPrice && cat.pricing.discountedTripleOccupancyAdultPrice > 0 ? cat.pricing.discountedTripleOccupancyAdultPrice / 3 : cat.pricing.tripleOccupancyAdultPrice / 3);
+        }
+        
+        const currentCatMinPrice = Math.min(...prices.filter(p => p > 0 && isFinite(p)));
+        const currentCatMinDiscountedPrice = Math.min(...discountedPrices.filter(p => p > 0 && isFinite(p)));
+
+        if (currentCatMinPrice < minOverallPrice) {
+          minOverallPrice = currentCatMinPrice;
+          leadCurrency = cat.currency;
+        }
+        if (currentCatMinDiscountedPrice < minOverallDiscountedPrice) {
+          minOverallDiscountedPrice = currentCatMinDiscountedPrice;
+        }
+      });
+      
+      const totalRooms = formData.categoryRooms.reduce((sum, category) => sum + (category.qty || 0), 0);
+      
+      // Use functional update to avoid stale closures if other effects modify formData
       setFormData(prev => ({
         ...prev,
-        rooms: totalRooms,
         costing: {
-          ...prev.costing,
-          price: minRoomPrice,
-          currency: prev.categoryRooms && prev.categoryRooms.length > 0 ? prev.categoryRooms[0].currency : "INR"
-        }
+          price: minOverallPrice === Infinity ? 0 : parseFloat(minOverallPrice.toFixed(2)),
+          discountedPrice: minOverallDiscountedPrice === Infinity ? 0 : parseFloat(minOverallDiscountedPrice.toFixed(2)),
+          currency: leadCurrency
+        },
+        rooms: totalRooms
       }));
-      */
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        costing: { price: 0, discountedPrice: 0, currency: prev.costing?.currency || 'USD' },
+        rooms: 0
+      }));
     }
-  }, [formData.categoryRooms]);
+  }, [formData.categoryRooms]); // Only re-run if categoryRooms changes
 
   const handleChange = (field: string, value: unknown) => {
     setFormData((prev) => {
       const keys = field.split(".");
-      // Create a deep copy of the previous state
-      const updated = JSON.parse(JSON.stringify(prev)) as Property;
-      
-      // Navigate to the right part of the object
+      const updated = JSON.parse(JSON.stringify(prev)) as Property; // Deep copy
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let current: any = updated;
       for (let i = 0; i < keys.length - 1; i++) {
-        // Ensure the path exists
-        if (!current[keys[i]]) {
-          current[keys[i]] = keys[i + 1].match(/^\d+$/) ? [] : {};
-        }
+        if (!current[keys[i]]) current[keys[i]] = keys[i + 1].match(/^\d+$/) ? [] : {};
         current = current[keys[i]];
       }
-      
-      // Set the value at the final key
-      const lastKey = keys[keys.length - 1];
-      current[lastKey] = value;
-      
+      current[keys[keys.length - 1]] = value;
       return updated;
     });
   };
   
-  // Handle room category changes
-  const handleCategoryChange = (field: keyof RoomCategory, value: string | number) => {
+  const handleNewCategoryFieldChange = (field: keyof Omit<typeof newCategory, 'pricing' | 'id'>, value: string | number) => {
+    setNewCategory(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleNewCategoryPricingChange = (field: keyof RoomCategoryPricing, value: string | number) => {
+    const numericValue = Number(value);
     setNewCategory(prev => ({
       ...prev,
-      [field]: value
+      pricing: {
+        ...prev.pricing,
+        [field]: numericValue < 0 ? 0 : numericValue
+      }
     }));
   };
 
-  // Handle adding a new room category
-  const handleAddCategory = () => {
-    if (!newCategory.title) {
-      setErrors(prev => ({ ...prev, categoryTitle: "Category title is required" }));
-      return;
+  const handleAddOrUpdateCategory = () => {
+    if (!newCategory.title.trim()) { alert('Category title is required.'); return; }
+    if (newCategory.qty <= 0) { alert('Quantity must be greater than 0.'); return; }
+    if (newCategory.pricing.singleOccupancyAdultPrice <= 0 && newCategory.pricing.doubleOccupancyAdultPrice <= 0 && newCategory.pricing.tripleOccupancyAdultPrice <=0) { 
+        alert('At least one adult occupancy price must be greater than 0.'); return; 
     }
-    
-    if (newCategory.qty <= 0) {
-      setErrors(prev => ({ ...prev, categoryQty: "Quantity must be greater than 0" }));
-      return;
-    }
-    
-    if (newCategory.price <= 0) {
-      setErrors(prev => ({ ...prev, categoryPrice: "Price must be greater than 0" }));
-      return;
-    }
+    // Example discount validation
+    if (newCategory.pricing.discountedSingleOccupancyAdultPrice && newCategory.pricing.discountedSingleOccupancyAdultPrice > newCategory.pricing.singleOccupancyAdultPrice) {
+        alert('Discounted price for 1 Adult cannot be greater than regular price.'); return;
+    } // Add more for other occupancies and children
 
-    if (isEditMode && editingCategoryIndex !== null) {
-      // Update existing category
-      setFormData(prev => {
-        const updatedCategories = [...(prev.categoryRooms || [])];
-        updatedCategories[editingCategoryIndex] = { ...newCategory };
-        return {
-          ...prev,
-          categoryRooms: updatedCategories
-        };
-      });
-      
-      // Exit edit mode
-      setIsEditMode(false);
-      setEditingCategoryIndex(null);
-    } else {
-      // Add new category
+    const categoryData: StoredRoomCategory = {
+      id: isEditMode && newCategory.id ? newCategory.id : generateId(),
+      title: newCategory.title,
+      qty: newCategory.qty,
+      currency: newCategory.currency,
+      pricing: { ...newCategory.pricing }
+    };
+
+    if (isEditMode && newCategory.id) {
       setFormData(prev => ({
         ...prev,
-        categoryRooms: [...(prev.categoryRooms || []), { ...newCategory }]
+        categoryRooms: (prev.categoryRooms || []).map(cat => cat.id === newCategory.id ? categoryData : cat)
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        categoryRooms: [...(prev.categoryRooms || []), categoryData]
       }));
     }
-
-    // Reset the new category form
-    setNewCategory({
-      title: "",
-      qty: 1,
-      price: 0,
-      discountedPrice: 0,
-      currency: newCategory.currency
-    });
-    
-    // Clear any errors
-    setErrors(prev => {
-      const updated = { ...prev };
-      delete updated.categoryTitle;
-      delete updated.categoryQty;
-      delete updated.categoryPrice;
-      return updated;
-    });
+    handleCancelEditCategory();
   };
 
-  // Handle editing a room category
-  const handleEditCategory = (index: number) => {
-    const categoryToEdit = formData.categoryRooms?.[index];
-    if (categoryToEdit) {
-      setNewCategory({ ...categoryToEdit });
-      setEditingCategoryIndex(index);
-      setIsEditMode(true);
-    }
+  const handleEditCategory = (category: StoredRoomCategory) => {
+    // Deep copy category to avoid mutating the one in formData directly
+    const categoryToEdit = JSON.parse(JSON.stringify(category));
+    setNewCategory({ ...categoryToEdit }); 
+    setIsEditMode(true);
   };
 
-  // Handle canceling the edit mode
-  const handleCancelEdit = () => {
+  const handleCancelEditCategory = () => {
     setNewCategory({
-      title: "",
-      qty: 1,
-      price: 0,
-      discountedPrice: 0,
-      currency: formData.costing?.currency || "INR"
+        ...initialNewCategoryState,
+        currency: formData.costing?.currency || "USD"
     });
-    setEditingCategoryIndex(null);
     setIsEditMode(false);
   };
 
-  // Handle removing a room category
-  const handleRemoveCategory = (index: number) => {
-    // If we're currently editing this category, exit edit mode
-    if (editingCategoryIndex === index) {
-      handleCancelEdit();
+  const handleRemoveCategory = (id: string) => {
+    if (isEditMode && newCategory.id === id) {
+      handleCancelEditCategory();
     }
-    
     setFormData(prev => ({
       ...prev,
-      categoryRooms: prev.categoryRooms?.filter((_, i) => i !== index)
+      categoryRooms: prev.categoryRooms?.filter(cat => cat.id !== id)
     }));
   };
   
-  const validateForm = () => {
+  const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-
-    if (!formData.title) newErrors.title = "Title is required";
-    if (!formData.description) newErrors.description = "Description is required";
+    if (!formData.title?.trim()) newErrors.title = "Title is required";
+    if (!formData.description?.trim()) newErrors.description = "Description is required";
     if (!formData.type) newErrors.type = "Property type is required";
-    if (!formData.location?.address) newErrors.address = "Address is required";
-    if (!formData.location?.city) newErrors.city = "City is required";
-    if (!formData.location?.state) newErrors.state = "State is required";
-    if (!formData.location?.country) newErrors.country = "Country is required";
-    
-    // Check if we have room categories instead of checking price directly
+    if (!formData.location?.address?.trim()) newErrors.address = "Address is required";
+    if (!formData.location?.city?.trim()) newErrors.city = "City is required";
+    if (!formData.location?.state?.trim()) newErrors.state = "State/Province is required";
+    if (!formData.location?.country?.trim()) newErrors.country = "Country is required";
     if (!formData.categoryRooms || formData.categoryRooms.length === 0) {
-      newErrors.categoryRooms = "At least one room category is required";
+      newErrors.categoryRooms = "At least one room category is required.";
+    } else {
+        const invalidCategory = formData.categoryRooms.some(cat => 
+            cat.pricing.singleOccupancyAdultPrice <= 0 && 
+            cat.pricing.doubleOccupancyAdultPrice <= 0 && 
+            cat.pricing.tripleOccupancyAdultPrice <= 0
+        );
+        if (invalidCategory) {
+            newErrors.categoryRooms = "One or more room categories has no valid adult pricing.";
+        }
     }
-    
-    if (!formData.bannerImage) newErrors.bannerImage = "Banner image is required";
-    if (!formData.detailImages || formData.detailImages.length < 3) newErrors.detailImages = "At least 3 detail images are required";
+    if (!formData.bannerImage?.url) newErrors.bannerImage = "Banner image is required";
+    if (!formData.detailImages || formData.detailImages.length < 3 || formData.detailImages.some(img => !img.url)) {
+      newErrors.detailImages = "At least 3 detail images are required";
+    }
     if (!formData.startDate) newErrors.startDate = "Start date is required";
     if (!formData.endDate) newErrors.endDate = "End date is required";
-    if (!formData.amenities || formData.amenities.length === 0) newErrors.amenities = "At least one amenity is required";
+    if (formData.startDate && formData.endDate && formData.startDate > formData.endDate) {
+        newErrors.endDate = "End date cannot be before start date.";
+    }
+    if (!formData.amenities || formData.amenities.length === 0) newErrors.amenities = "At least one amenity must be selected";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -228,59 +287,30 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      // Before saving, update the rooms and price based on categories
-      const updatedData = {
-        ...formData,
-        rooms: formData.categoryRooms && formData.categoryRooms.length > 0 
-          ? formData.categoryRooms.reduce((sum, cat) => sum + cat.qty, 0)
-          : formData.rooms,
-        costing: {
-          ...formData.costing,
-          price: formData.categoryRooms && formData.categoryRooms.length > 0 
-            ? Math.min(...formData.categoryRooms.map(cat => cat.price))
-            : formData.costing?.price || 0,
-          currency: formData.categoryRooms && formData.categoryRooms.length > 0 
-            ? formData.categoryRooms[0].currency 
-            : formData.costing?.currency || "INR"
-        }
-      };
-      
-      onSave(updatedData);
+      onSave(formData); // formData is already up-to-date due to useEffect
+    } else {
+        alert("Please correct the errors in the form.");
     }
   };
 
-  // Helper component for checkbox groups
-  const CheckboxGroup = ({ 
-    options, 
-    value = [], 
-    onChange, 
-    label, 
-    fieldName 
-  }: { 
+  const CheckboxGroup: React.FC<{ 
     options: string[], 
     value: string[], 
     onChange: (field: string, value: string[]) => void, 
     label: string,
     fieldName: string
-  }) => (
+  }> = ({ options, value = [], onChange, label, fieldName }) => (
     <div className="mb-4">
-      <label className="block mb-2 font-medium">{label}</label>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <label className="block mb-1.5 font-medium text-gray-700">{label}</label>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2">
         {options.map((option) => (
           <div key={option} className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id={`${fieldName}-${option}`}
-              checked={value.includes(option)}
+            <input type="checkbox" id={`${fieldName}-${option.replace(/\s+/g, '-')}`} checked={value.includes(option)}
               onChange={(e) => {
-                if (e.target.checked) {
-                  onChange(fieldName, [...value, option]);
-                } else {
-                  onChange(fieldName, value.filter((item) => item !== option));
-                }
-              }}
-            />
-            <label htmlFor={`${fieldName}-${option}`} className="text-sm capitalize">
+                const newValues = e.target.checked ? [...value, option] : value.filter((item) => item !== option);
+                onChange(fieldName, newValues);
+              }} className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"/>
+            <label htmlFor={`${fieldName}-${option.replace(/\s+/g, '-')}`} className="text-sm text-gray-600 capitalize cursor-pointer">
               {option.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
             </label>
           </div>
@@ -289,527 +319,306 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     </div>
   );
 
-  // Calculate the minimum price from all room categories
-  const minRoomPrice = formData.categoryRooms && formData.categoryRooms.length > 0 
-    ? Math.min(...formData.categoryRooms.map(cat => cat.price))
-    : formData.costing?.price || 0;
-  
-  // Calculate the total room count from all categories
-  const totalRooms = formData.categoryRooms && formData.categoryRooms.length > 0 
-    ? formData.categoryRooms.reduce((sum, cat) => sum + cat.qty, 0)
-    : formData.rooms || 0;
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label>Title</label>
-        <Input
-          name="title"
-          value={formData.title || ''}
-          onChange={(e) => handleChange("title", e.target.value)}
-          placeholder="Enter title"
-        />
-        {errors.title && <span className="text-red-500">{errors.title}</span>}
-      </div>
-
-      <div>
-        <label>Description</label>
-        <Textarea
-          name="description"
-          value={formData.description || ''}
-          onChange={(e) => handleChange("description", e.target.value)}
-          placeholder="Enter description"
-          rows={5}
-        />
-        {errors.description && <span className="text-red-500">{errors.description}</span>}
-      </div>
-
-      <div>
-        <label>Property Type</label>
-        <Select
-          value={formData.type || ''}
-          onValueChange={(value) => handleChange("type", value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select property type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="hotel">Hotel</SelectItem>
-            <SelectItem value="apartment">Apartment</SelectItem>
-            <SelectItem value="villa">Villa</SelectItem>
-            <SelectItem value="hostel">Hostel</SelectItem>
-            <SelectItem value="resort">Resort</SelectItem>
-          </SelectContent>
-        </Select>
-        {errors.type && <span className="text-red-500">{errors.type}</span>}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <form onSubmit={handleSubmit} className="space-y-8 p-6 bg-white shadow-xl rounded-lg">
+      {/* Section: Basic Information */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><Home className="mr-3 h-6 w-6 text-primary"/>Basic Information</h2>
         <div>
-          <label>Address</label>
-          <Input
-            name="location.address"
-            value={formData.location?.address || ''}
-            onChange={(e) => handleChange("location.address", e.target.value)}
-            placeholder="Enter address"
-          />
-          {errors.address && <span className="text-red-500">{errors.address}</span>}
+          <label className="font-medium text-gray-700">Title</label>
+          <Input value={formData.title || ''} onChange={(e) => handleChange("title", e.target.value)} placeholder="Property Title" />
+          {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
         </div>
         <div>
-          <label>City</label>
-          <Input
-            name="location.city"
-            value={formData.location?.city || ''}
-            onChange={(e) => handleChange("location.city", e.target.value)}
-            placeholder="Enter city"
-          />
-          {errors.city && <span className="text-red-500">{errors.city}</span>}
+          <label className="font-medium text-gray-700">Description</label>
+          <Textarea value={formData.description || ''} onChange={(e) => handleChange("description", e.target.value)} placeholder="Detailed description of the property" rows={5} />
+          {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
         </div>
         <div>
-          <label>State</label>
-          <Input
-            name="location.state"
-            value={formData.location?.state || ''}
-            onChange={(e) => handleChange("location.state", e.target.value)}
-            placeholder="Enter state"
-          />
-          {errors.state && <span className="text-red-500">{errors.state}</span>}
-        </div>
-        <div>
-          <label>Country</label>
-          <Input
-            name="location.country"
-            value={formData.location?.country || ''}
-            onChange={(e) => handleChange("location.country", e.target.value)}
-            placeholder="Enter country"
-          />
-          {errors.country && <span className="text-red-500">{errors.country}</span>}
+          <label className="font-medium text-gray-700">Property Type</label>
+          <Select value={formData.type || ''} onValueChange={(value) => handleChange("type", value as PropertyType)}>
+            <SelectTrigger><SelectValue placeholder="Select property type" /></SelectTrigger>
+            <SelectContent>{['Hotel', 'Apartment', 'Villa', 'Hostel', 'Resort'].map(type => <SelectItem key={type} value={type.toLowerCase() as PropertyType}>{type}</SelectItem>)}</SelectContent>
+          </Select>
+          {errors.type && <p className="text-red-500 text-xs mt-1">{errors.type}</p>}
         </div>
       </div>
 
-      {/* Pricing Information (Read-only, calculated from room categories) */}
-      <div className="bg-blue-50 p-4 rounded-md">
-        <div className="flex items-center gap-2 mb-4">
-          <AlertCircle size={16} className="text-blue-500" />
-          <span className="text-sm text-blue-700">
-            Price per night and total rooms are automatically calculated from room categories.
-          </span>
+      {/* Section: Location */}
+      <div className="space-y-4 pt-6 border-t">
+        <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><MapPin className="mr-3 h-6 w-6 text-primary"/>Location</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+            <label className="font-medium text-gray-700">Address</label>
+            <Input value={formData.location?.address || ''} onChange={(e) => handleChange("location.address", e.target.value)} placeholder="Full Address" />
+            {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
+            </div>
+            <div>
+            <label className="font-medium text-gray-700">City</label>
+            <Input value={formData.location?.city || ''} onChange={(e) => handleChange("location.city", e.target.value)} placeholder="City" />
+            {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
+            </div>
+            <div>
+            <label className="font-medium text-gray-700">State/Province</label>
+            <Input value={formData.location?.state || ''} onChange={(e) => handleChange("location.state", e.target.value)} placeholder="State or Province" />
+            {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
+            </div>
+            <div>
+            <label className="font-medium text-gray-700">Country</label>
+            <Input value={formData.location?.country || ''} onChange={(e) => handleChange("location.country", e.target.value)} placeholder="Country" />
+            {errors.country && <p className="text-red-500 text-xs mt-1">{errors.country}</p>}
+            </div>
         </div>
+      </div>
+      
+      {/* Section: Property Pricing & Room Overview (Read-only) */}
+      <div className="space-y-4 pt-6 border-t">
+        <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><DollarSign className="mr-3 h-6 w-6 text-primary"/>Property Pricing & Room Overview</h2>
+         <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div className="flex items-start gap-2 mb-3">
+            <AlertCircle size={20} className="text-blue-600 mt-0.5 shrink-0" />
+            <p className="text-sm text-blue-700">
+                The following values are automatically calculated based on your room categories. Ensure each category has valid pricing.
+            </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Starting Price (per adult)</label>
+                <Input value={`${formData.costing?.currency || 'N/A'} ${formData.costing?.price.toLocaleString() || '0'}`} disabled className="bg-gray-100 font-bold text-gray-800 mt-1" />
+            </div>
+            {(formData.costing?.discountedPrice ?? 0) > 0 && formData.costing.discountedPrice < formData.costing.price && (
+                <div>
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Discounted Start Price</label>
+                <Input value={`${formData.costing.currency} ${formData.costing.discountedPrice.toLocaleString()}`} disabled className="bg-gray-100 font-bold text-green-600 mt-1" />
+                </div>
+            )}
+            <div>
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Rooms</label>
+                <Input value={formData.rooms || 0} type="number" disabled className="bg-gray-100 font-bold text-gray-800 mt-1" />
+            </div>
+            </div>
+        </div>
+      </div>
+
+      {/* Section: Property Details */}
+      <div className="space-y-4 pt-6 border-t">
+        <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3">Other Property Details</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label className="font-medium text-gray-700">Property Rating (Stars)</label>
+                <Input type="number" value={formData.propertyRating || 0} onChange={(e) => handleChange("propertyRating", parseFloat(e.target.value) || 0)} min={0} max={5} step={0.5} />
+            </div>
+            <div>
+                <label className="font-medium text-gray-700">Google Maps Link (Optional)</label>
+                <Input value={formData.googleMaps || ""} onChange={(e) => handleChange("googleMaps", e.target.value || "")} placeholder="https://maps.app.goo.gl/..." />
+            </div>
+            <div>
+                <label className="font-medium text-gray-700">Availability Start Date</label>
+                <Input type="date" value={formData.startDate || ''} onChange={(e) => handleChange("startDate", e.target.value)} />
+                {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>}
+            </div>
+            <div>
+                <label className="font-medium text-gray-700">Availability End Date</label>
+                <Input type="date" value={formData.endDate || ''} onChange={(e) => handleChange("endDate", e.target.value)} />
+                {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>}
+            </div>
+        </div>
+      </div>
+
+      {/* Section: Room Categories */}
+      <div className="space-y-4 pt-6 border-t">
+        <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><BedDouble className="mr-3 h-6 w-6 text-primary"/>Manage Room Categories</h2>
+        {errors.categoryRooms && <div className="my-2 p-3 bg-red-100 text-red-700 border border-red-300 rounded-md">{errors.categoryRooms}</div>}
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="text-sm font-medium">Price per Night (Minimum)</label>
-            <Input
-              type="number"
-              value={minRoomPrice}
-              disabled
-              className="bg-gray-100"
-            />
-            <span className="text-xs text-gray-500 mt-1">
-              Based on the lowest room category price
-            </span>
-          </div>
-          
-          <div>
-            <label className="text-sm font-medium">Total Rooms</label>
-            <Input
-              type="number"
-              value={totalRooms}
-              disabled
-              className="bg-gray-100"
-            />
-            <span className="text-xs text-gray-500 mt-1">
-              Sum of all room category quantities
-            </span>
-          </div>
-          
-          <div>
-            <label className="text-sm font-medium">Currency</label>
-            <Input
-              type="text"
-              value={formData.categoryRooms && formData.categoryRooms.length > 0 
-                ? formData.categoryRooms[0].currency 
-                : formData.costing?.currency || "INR"}
-              disabled
-              className="bg-gray-100"
-            />
-            <span className="text-xs text-gray-500 mt-1">
-              Based on the first room category
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label>Property Rating (Stars)</label>
-          <Input
-            type="number"
-            name="propertyRating"
-            value={formData.propertyRating?.toString()}
-            onChange={(e) => handleChange("propertyRating", parseFloat(e.target.value) || 0)}
-            min={0}
-            max={5}
-            step={0.5}
-          />
-        </div>
-        <div>
-          <label>Property Google Maps</label>
-          <Input
-            type="string"
-            name="googleMaps"
-            value={formData.googleMaps}
-            onChange={(e) => handleChange("googleMaps", e.target.value || "")}
-          />
-        </div>
-        
-        <div>
-          <label>Total Rating</label>
-          <Input
-            type="number"
-            name="totalRating"
-            value={formData.totalRating || ''}
-            onChange={(e) => handleChange("totalRating", parseFloat(e.target.value) || 0)}
-            min={0}
-            max={5}
-            step={0.1}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label>Start Date</label>
-          <Input
-            type="date"
-            name="startDate"
-            value={formData.startDate || ''}
-            onChange={(e) => handleChange("startDate", e.target.value)}
-          />
-          {errors.startDate && <span className="text-red-500">{errors.startDate}</span>}
-        </div>
-        <div>
-          <label>End Date</label>
-          <Input
-            type="date"
-            name="endDate"
-            value={formData.endDate || ''}
-            onChange={(e) => handleChange("endDate", e.target.value)}
-          />
-          {errors.endDate && <span className="text-red-500">{errors.endDate}</span>}
-        </div>
-      </div>
-
-      {/* Room Categories Section */}
-      <div className="border-t pt-4 mt-4">
-        <h3 className="text-lg font-medium mb-4">Room Categories</h3>
-        
-        {errors.categoryRooms && (
-          <div className="mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded-md">
-            {errors.categoryRooms}
-          </div>
-        )}
-        
-        {/* List of existing categories */}
-        {formData.categoryRooms && formData.categoryRooms.length > 0 && (
-          <div className="mb-4 space-y-2">
-            <h4 className="text-sm font-medium">Added Categories:</h4>
-            
-            <div className="space-y-2">
-              {formData.categoryRooms.map((cat, index) => (
-                <div key={index} className="flex items-center p-3 bg-gray-50 rounded-md">
-                  <div className="flex-1 grid grid-cols-5 gap-2">
-                    <div className="col-span-2">
-                      <p className="font-medium">{cat.title}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Qty: {cat.qty}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">
-                        {cat.currency} {cat.price}
-                        {cat.discountedPrice > 0 && (
-                          <span className="ml-1 text-green-600">
-                            (-{cat.currency} {cat.discountedPrice})
-                          </span>
-                        )}
-                      </p>
-                    </div>
+        {(formData.categoryRooms || []).length > 0 && (
+          <div className="mb-6 space-y-4">
+            <h3 className="text-xl font-medium text-gray-700">Current Room Categories:</h3>
+            {(formData.categoryRooms || []).map((cat) => (
+              <div key={cat.id} className="p-4 bg-white border border-gray-200 rounded-lg shadow">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="font-bold text-gray-800 text-xl">{cat.title} <span className="text-base text-gray-500 font-normal">({cat.qty} rooms)</span></p>
+                    <p className="text-sm text-gray-500">Currency: {cat.currency}</p>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <button 
-                      type="button"
-                      onClick={() => handleEditCategory(index)}
-                      className="text-blue-500 hover:text-blue-700"
-                      disabled={isEditMode}
-                    >
+                  <div className="flex space-x-2">
+                    <Button variant="outline" size="icon" type="button" onClick={() => handleEditCategory(cat)} disabled={isEditMode && newCategory.id === cat.id} aria-label={`Edit ${cat.title}`}>
                       <Edit size={18} />
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => handleRemoveCategory(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
+                    </Button>
+                    <Button variant="destructive" size="icon" type="button" onClick={() => handleRemoveCategory(cat.id)} aria-label={`Remove ${cat.title}`}>
                       <X size={18} />
-                    </button>
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
+                 <div className="space-y-3 text-sm text-gray-600">
+                  <div>
+                    <p className="font-semibold text-gray-700 flex items-center"><Users className="inline h-4 w-4 mr-1.5"/>Adult Pricing (Total Room Price):</p>
+                    <ul className="list-disc list-inside pl-6 mt-1 space-y-0.5">
+                      <li>1 Adult: {cat.currency} {cat.pricing.singleOccupancyAdultPrice.toLocaleString()}
+                          {cat.pricing.discountedSingleOccupancyAdultPrice && cat.pricing.discountedSingleOccupancyAdultPrice > 0 && cat.pricing.discountedSingleOccupancyAdultPrice < cat.pricing.singleOccupancyAdultPrice ? <span className="text-green-600 font-medium"> (Disc: {cat.pricing.discountedSingleOccupancyAdultPrice.toLocaleString()})</span> : ''}
+                      </li>
+                      <li>2 Adults: {cat.currency} {cat.pricing.doubleOccupancyAdultPrice.toLocaleString()}
+                          {cat.pricing.discountedDoubleOccupancyAdultPrice && cat.pricing.discountedDoubleOccupancyAdultPrice > 0 && cat.pricing.discountedDoubleOccupancyAdultPrice < cat.pricing.doubleOccupancyAdultPrice ? <span className="text-green-600 font-medium"> (Disc: {cat.pricing.discountedDoubleOccupancyAdultPrice.toLocaleString()})</span> : ''}
+                      </li>
+                      <li>3 Adults: {cat.currency} {cat.pricing.tripleOccupancyAdultPrice.toLocaleString()}
+                          {cat.pricing.discountedTripleOccupancyAdultPrice && cat.pricing.discountedTripleOccupancyAdultPrice > 0 && cat.pricing.discountedTripleOccupancyAdultPrice < cat.pricing.tripleOccupancyAdultPrice ? <span className="text-green-600 font-medium"> (Disc: {cat.pricing.discountedTripleOccupancyAdultPrice.toLocaleString()})</span> : ''}
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-700 flex items-center mt-2"><Baby className="inline h-4 w-4 mr-1.5"/>Child Pricing (Per Child, Sharing):</p>
+                    <ul className="list-disc list-inside pl-6 mt-1 space-y-0.5">
+                      <li>5-12 yrs: {cat.currency} {cat.pricing.child5to12Price.toLocaleString()}
+                           {cat.pricing.discountedChild5to12Price && cat.pricing.discountedChild5to12Price > 0 && cat.pricing.discountedChild5to12Price < cat.pricing.child5to12Price ? <span className="text-green-600 font-medium"> (Disc: {cat.pricing.discountedChild5to12Price.toLocaleString()})</span> : ''}
+                      </li>
+                      <li>12-18 yrs: {cat.currency} {cat.pricing.child12to18Price.toLocaleString()}
+                          {cat.pricing.discountedChild12to18Price && cat.pricing.discountedChild12to18Price > 0 && cat.pricing.discountedChild12to18Price < cat.pricing.child12to18Price ? <span className="text-green-600 font-medium"> (Disc: {cat.pricing.discountedChild12to18Price.toLocaleString()})</span> : ''}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
         
-        {/* Form to add new category or edit existing */}
-        <div className="bg-gray-50 p-4 rounded-md">
-          <h4 className="text-sm font-medium mb-3">
-            {isEditMode ? "Edit Category:" : "Add New Category:"}
-          </h4>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Category Title</label>
-              <Input 
-                value={newCategory.title}
-                onChange={(e) => handleCategoryChange('title', e.target.value)}
-                placeholder="e.g. Deluxe Room, Suite, etc."
-              />
-              {errors.categoryTitle && <span className="text-red-500">{errors.categoryTitle}</span>}
+        <div className="p-6 bg-gray-50 border border-gray-200 rounded-lg space-y-6 shadow">
+          <h3 className="text-xl font-semibold text-gray-700">{isEditMode ? `Editing: ${newCategory.title || 'Category Details'}` : "Add New Room Category"}</h3>
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-1">
+              <label className="font-medium text-gray-700">Category Title</label>
+              <Input value={newCategory.title} onChange={(e) => handleNewCategoryFieldChange('title', e.target.value)} placeholder="e.g., Deluxe Double Room" />
             </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Quantity</label>
-              <Input 
-                type="number"
-                value={newCategory.qty}
-                onChange={(e) => handleCategoryChange('qty', Number(e.target.value) || 0)}
-                min={1}
-                placeholder="Number of rooms available"
-              />
-              {errors.categoryQty && <span className="text-red-500">{errors.categoryQty}</span>}
+            <div>
+              <label className="font-medium text-gray-700">Quantity (No. of these rooms)</label>
+              <Input type="number" value={newCategory.qty} onChange={(e) => handleNewCategoryFieldChange('qty', Number(e.target.value))} min={1} />
             </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Price</label>
-              <Input 
-                type="number"
-                value={newCategory.price}
-                onChange={(e) => handleCategoryChange('price', Number(e.target.value) || 0)}
-                min={0}
-                placeholder="Regular price"
-              />
-              {errors.categoryPrice && <span className="text-red-500">{errors.categoryPrice}</span>}
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Discounted Price</label>
-              <Input 
-                type="number"
-                value={newCategory.discountedPrice}
-                onChange={(e) => handleCategoryChange('discountedPrice', Number(e.target.value) || 0)}
-                min={0}
-                placeholder="Discounted price (if any)"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Currency</label>
-              <Select
-                value={newCategory.currency} 
-                onValueChange={(value) => handleCategoryChange('currency', value)} 
-              >
-                
-                <SelectTrigger>
-                  <SelectValue placeholder="Select currency" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="INR">INR</SelectItem>
-                  <SelectItem value="USD">USD</SelectItem>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                  <SelectItem value="GBP">GBP</SelectItem>
-                  <SelectItem value="JPY">JPY</SelectItem>
-                </SelectContent>
+            <div>
+              <label className="font-medium text-gray-700">Currency for this Category</label>
+              <Select value={newCategory.currency} onValueChange={(value) => handleNewCategoryFieldChange('currency', value)}>
+                <SelectTrigger><SelectValue placeholder="Currency" /></SelectTrigger>
+                <SelectContent>{['USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
               </Select>
             </div>
           </div>
-          
-          <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-            <button 
-              type="button"
-              onClick={handleAddCategory}
-              className="flex items-center justify-center py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-            >
-              {isEditMode ? (
-                <>
-                  <Check size={16} className="mr-2" /> Update Category
-                </>
-              ) : (
-                <>
-                  <Plus size={16} className="mr-2" /> Add Category
-                </>
-              )}
-            </button>
-            
+
+          <div className="pt-4 border-t border-gray-300">
+            <label className="text-lg font-semibold text-gray-700 mb-3 block flex items-center"><Users className="inline h-5 w-5 mr-2"/>Adult Pricing (Total Room Price)</label>
+            {[
+              { occupancy: 1, base: 'singleOccupancyAdultPrice', disc: 'discountedSingleOccupancyAdultPrice', label: '1 Adult' },
+              { occupancy: 2, base: 'doubleOccupancyAdultPrice', disc: 'discountedDoubleOccupancyAdultPrice', label: '2 Adults' },
+              { occupancy: 3, base: 'tripleOccupancyAdultPrice', disc: 'discountedTripleOccupancyAdultPrice', label: '3 Adults' },
+            ].map(p => (
+              <div key={p.occupancy} className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 mb-4 items-end">
+                <div>
+                  <label className="text-sm font-medium text-gray-600">{p.label} - Base Price</label>
+                  <Input type="number" value={newCategory.pricing[p.base as keyof RoomCategoryPricing]} onChange={(e) => handleNewCategoryPricingChange(p.base as keyof RoomCategoryPricing, e.target.value)} placeholder="0.00" min="0" step="0.01" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">{p.label} - Discounted Price (Optional)</label>
+                  <Input type="number" value={newCategory.pricing[p.disc as keyof RoomCategoryPricing] || ''} onChange={(e) => handleNewCategoryPricingChange(p.disc as keyof RoomCategoryPricing, e.target.value)} placeholder="0.00 (if any)" min="0" step="0.01" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="pt-4 border-t border-gray-300">
+            <label className="text-lg font-semibold text-gray-700 mb-3 block flex items-center"><Baby className="inline h-5 w-5 mr-2"/>Child Pricing (Per Child, when sharing)</label>
+            <p className="text-xs text-gray-500 mb-3">Note: Max 3 occupants (adults + paying children) per room. Children below 5 are usually free if not taking an extra bed.</p>
+            {[
+              { age: '5-12 yrs', base: 'child5to12Price', disc: 'discountedChild5to12Price' },
+              { age: '12-18 yrs', base: 'child12to18Price', disc: 'discountedChild12to18Price' },
+            ].map(p => (
+              <div key={p.age} className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 mb-4 items-end">
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Child ({p.age}) - Base Price</label>
+                  <Input type="number" value={newCategory.pricing[p.base as keyof RoomCategoryPricing]} onChange={(e) => handleNewCategoryPricingChange(p.base as keyof RoomCategoryPricing, e.target.value)} placeholder="0.00" min="0" step="0.01" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Child ({p.age}) - Discounted Price (Optional)</label>
+                  <Input type="number" value={newCategory.pricing[p.disc as keyof RoomCategoryPricing] || ''} onChange={(e) => handleNewCategoryPricingChange(p.disc as keyof RoomCategoryPricing, e.target.value)} placeholder="0.00 (if any)" min="0" step="0.01" />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 mt-4">
+            <Button type="button" onClick={handleAddOrUpdateCategory} className="flex-1 py-2.5">
+              {isEditMode ? <><Check size={18} className="mr-2" /> Update Category</> : <><Plus size={18} className="mr-2" /> Add This Category</>}
+            </Button>
             {isEditMode && (
-              <button 
-                type="button"
-                onClick={handleCancelEdit}
-                className="flex items-center justify-center py-2 px-4 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
-              >
-                <X size={16} className="mr-2" /> Cancel
-              </button>
+              <Button type="button" variant="outline" onClick={handleCancelEditCategory} className="flex-1 py-2.5">
+                <X size={18} className="mr-2" /> Cancel Edit
+              </Button>
             )}
           </div>
         </div>
       </div>
-
-      {/* Feature Sections */}
-      <div className="border p-4 rounded-md">
-        <h3 className="text-lg font-semibold mb-4">Property Features</h3>
-        
-        <CheckboxGroup
-          options={amenities}
-          value={formData.amenities || []}
-          onChange={handleChange}
-          label="Amenities"
-          fieldName="amenities"
-        />
-        {errors.amenities && <span className="text-red-500 block mb-4">{errors.amenities}</span>}
-        
-        <CheckboxGroup
-          options={accessibility}
-          value={formData.accessibility || []}
-          onChange={handleChange}
-          label="Property Accessibility"
-          fieldName="accessibility"
-        />
-        
-        <CheckboxGroup
-          options={roomAccessibilityOptions}
-          value={formData.roomAccessibility || []}
-          onChange={handleChange}
-          label="Room Accessibility"
-          fieldName="roomAccessibility"
-        />
-        
-        <CheckboxGroup
-          options={popularFilters}
-          value={formData.popularFilters || []}
-          onChange={handleChange}
-          label="Popular Filters"
-          fieldName="popularFilters"
-        />
-        
-        <CheckboxGroup
-          options={funThingsToDo}
-          value={formData.funThingsToDo || []}
-          onChange={handleChange}
-          label="Fun Things To Do"
-          fieldName="funThingsToDo"
-        />
-        
-        <CheckboxGroup
-          options={mealsOptions}
-          value={formData.meals || []}
-          onChange={handleChange}
-          label="Meals"
-          fieldName="meals"
-        />
-        
-        <CheckboxGroup
-          options={facilitiesOptions}
-          value={formData.facilities || []}
-          onChange={handleChange}
-          label="Facilities"
-          fieldName="facilities"
-        />
-        
-        <CheckboxGroup
-          options={bedPreferenceOptions}
-          value={formData.bedPreference || []}
-          onChange={handleChange}
-          label="Bed Preferences"
-          fieldName="bedPreference"
-        />
-        
-        <CheckboxGroup
-          options={reservationPolicyOptions}
-          value={formData.reservationPolicy || []}
-          onChange={handleChange}
-          label="Reservation Policies"
-          fieldName="reservationPolicy"
-        />
-        
-        <CheckboxGroup
-          options={brandsOptions}
-          value={formData.brands || []}
-          onChange={handleChange}
-          label="Brands"
-          fieldName="brands"
-        />
-        
-        <CheckboxGroup
-          options={roomFacilitiesOptions}
-          value={formData.roomFacilities || []}
-          onChange={handleChange}
-          label="Room Facilities"
-          fieldName="roomFacilities"
-        />
+      
+      {/* Section: Property Features & Policies */}
+      <div className="pt-6 border-t">
+        <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><ListChecks className="mr-3 h-6 w-6 text-primary"/>Property Features & Policies</h2>
+        {/* <CheckboxGroup options={amenitiesOptions} value={formData.amenities || []} onChange={handleChange} label="Amenities" fieldName="amenities" /> */}
+        {/* {errors.amenities && <p className="text-red-500 text-xs mt-1 block mb-4">{errors.amenities}</p>} */}
+        <CheckboxGroup options={accessibilityOptions} value={formData.accessibility || []} onChange={handleChange} label="Property Accessibility" fieldName="accessibility" />
+        <CheckboxGroup options={roomAccessibilityOptionsList} value={formData.roomAccessibility || []} onChange={handleChange} label="Room Accessibility" fieldName="roomAccessibility" />
+        <CheckboxGroup options={popularFiltersOptions} value={formData.popularFilters || []} onChange={handleChange} label="Popular Filters" fieldName="popularFilters" />
+        <CheckboxGroup options={funThingsToDoOptions} value={formData.funThingsToDo || []} onChange={handleChange} label="Fun Things To Do" fieldName="funThingsToDo" />
+        <CheckboxGroup options={mealsOptionsList} value={formData.meals || []} onChange={handleChange} label="Meals" fieldName="meals" />
+        <CheckboxGroup options={facilitiesOptionsList} value={formData.facilities || []} onChange={handleChange} label="Facilities" fieldName="facilities" />
+        <CheckboxGroup options={bedPreferenceOptionsList} value={formData.bedPreference || []} onChange={handleChange} label="Bed Preferences" fieldName="bedPreference" />
+        <CheckboxGroup options={reservationPolicyOptionsList} value={formData.reservationPolicy || []} onChange={handleChange} label="Reservation Policies" fieldName="reservationPolicy" />
+        <CheckboxGroup options={brandsOptionsList} value={formData.brands || []} onChange={handleChange} label="Brands" fieldName="brands" />
+        <CheckboxGroup options={roomFacilitiesOptionsList} value={formData.roomFacilities || []} onChange={handleChange} label="Room Facilities" fieldName="roomFacilities" />
       </div>
 
-      <div>
-        <label>Banner Image</label>
-        <ImageUpload
-          label='banner image'
-          value={formData.bannerImage || null}
-          onChange={(image) => handleChange("bannerImage", image)}
-        />
-        {errors.bannerImage && <span className="text-red-500">{errors.bannerImage}</span>}
+      {/* Section: Images */}
+      <div className="space-y-4 pt-6 border-t">
+        <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><ImageIcon className="mr-3 h-6 w-6 text-primary"/>Images</h2>
+        <div>
+          <label className="font-medium text-gray-700">Banner Image</label>
+          <ImageUpload label='banner image' value={formData.bannerImage || null} onChange={(image) => handleChange("bannerImage", image)} />
+          {errors.bannerImage && <p className="text-red-500 text-xs mt-1">{errors.bannerImage}</p>}
+        </div>
+        <div>
+          <label className="font-medium text-gray-700">Detail Images (minimum 3)</label>
+          <MultipleImageUpload 
+            label='detail images' 
+            key={formData.detailImages?.map(img => img?.publicId || '').join(',') || 'empty-details'} // More robust key
+            value={formData.detailImages || []} 
+            onChange={(images) => handleChange("detailImages", images)} 
+            maxImages={10} 
+          />
+          {errors.detailImages && <p className="text-red-500 text-xs mt-1">{errors.detailImages}</p>}
+        </div>
       </div>
 
-      <div>
-        <label>Detail Images</label>
-        <MultipleImageUpload
-          label='detail images'
-          key={formData.detailImages?.length}
-          value={formData.detailImages || []}
-          onChange={(images) => handleChange("detailImages", images)}
-          maxImages={10}
-        />
-        {errors.detailImages && <span className="text-red-500">{errors.detailImages}</span>}
-      </div>
-
-      {/* Reviews Section (if needed) */}
-      {formData.review && formData.review.length > 0 && (
-        <div className="space-y-2">
-          <label className="block font-medium">Reviews</label>
+      {/* Section: Reviews (Basic Editing/Display) */}
+      {/* {formData.review && formData.review.length > 0 && (
+        <div className="space-y-4 pt-6 border-t">
+          <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><MessageSquare className="mr-3 h-6 w-6 text-primary"/>Reviews</h2>
           {formData.review.map((review, index) => (
-            <div key={index} className="border p-3 rounded-md">
+            <div key={review._id || index} className="border p-4 rounded-lg bg-gray-50 shadow-sm">
+              <div className="flex justify-between items-center mb-2">
+                <p className="text-sm text-gray-500"><strong>User:</strong> {review.userId?.toString().slice(-6) || 'Anonymous User'}</p>
+                <p className="text-sm text-gray-500"><strong>Rating:</strong> <span className="font-semibold text-amber-500">{review.rating}/5</span></p>
+              </div>
               <div>
-                <label>Comment</label>
+                <label className="font-medium text-sm text-gray-700">Comment:</label>
                 <Textarea
                   value={review.comment}
                   onChange={(e) => handleChange(`review.${index}.comment`, e.target.value)}
                   placeholder="Review comment"
-                />
-              </div>
-              <div className="mt-2">
-                <label>Rating</label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={5}
-                  value={review.rating}
-                  onChange={(e) => handleChange(`review.${index}.rating`, parseInt(e.target.value))}
+                  rows={2}
+                  className="text-sm mt-1"
                 />
               </div>
             </div>
           ))}
         </div>
-      )}
+      )} */}
 
-      <Button type="submit" className="w-full">Save Changes</Button>
+      <Button type="submit" className="w-full py-3 text-lg font-semibold mt-8">
+        <Check className="mr-2 h-5 w-5"/> Save Property Changes
+      </Button>
     </form>
   );
 };

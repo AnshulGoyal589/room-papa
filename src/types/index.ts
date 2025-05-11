@@ -14,14 +14,27 @@ export interface SearchHeaderProps {
 }
 
 
-export interface RoomCategory {
-  title: string;
-  qty: number;
-  price: number;
-  discountedPrice: number;
-  currency: string;
+// In your types.ts or directly in PropertyForm if not shared
+export interface RoomCategoryPricing {
+  singleOccupancyAdultPrice: number;
+  discountedSingleOccupancyAdultPrice?: number;
+  doubleOccupancyAdultPrice: number; // Total room price for 2 adults
+  discountedDoubleOccupancyAdultPrice?: number;
+  tripleOccupancyAdultPrice: number;  // Total room price for 3 adults
+  discountedTripleOccupancyAdultPrice?: number;
+  child5to12Price: number;  // Price for one child 5-12 (per child, occupying a slot)
+  discountedChild5to12Price?: number;
+  child12to18Price: number; // Price for one child 12-18 (per child, occupying a slot)
+  discountedChild12to18Price?: number;
 }
 
+export interface RoomCategory { // This is what's stored in propertyData.categoryRooms
+  id: string; // Added for unique key in rendering
+  title: string;
+  qty: number;
+  currency: string;
+  pricing: RoomCategoryPricing;
+}
 
 
 export type DateFilter2 = {

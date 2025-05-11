@@ -26,12 +26,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Checkbox } from "@/components/ui/checkbox"; // Added
+import { Label } from "@/components/ui/label"; // Added
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import ImageUpload from '@/components/cloudinary/ImageUpload';
 import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
-import { Image } from '@/lib/mongodb/models/Image';
+import { Image as CustomImage } from '@/lib/mongodb/models/Image'; // Renamed to avoid conflict with HTMLImageElement
 import PropertyForm from './PropertyForm';
 import TripForm from './TripForm';
 import TravellingForm from './TravellingForm';
@@ -54,16 +56,13 @@ const formSchema = z.object({
 const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
   const [isAdvancedMode, setIsAdvancedMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [bannerImage, setBannerImage] = useState<Image | null>(null);
-  const [detailImages, setDetailImages] = useState<Image[]>([]);
+  const [bannerImage, setBannerImage] = useState<CustomImage | null>(null);
+  const [detailImages, setDetailImages] = useState<CustomImage[]>([]);
   const [userID, setUserID] = useState<string | null>(null);
   const { user, isLoaded } = useUser();
 
-  // Category specific state
   const [propertyData, setPropertyData] = useState({});
-
   const [tripData, setTripData] = useState({});
-
   const [travellingData, setTravellingData] = useState({});
 
   useEffect(() => {
@@ -104,15 +103,9 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
       
       let apiRoute = 'properties';
       let finalData;
-
-      // console.log(tripData);
       
       if (selectedCategory === 'Trip') {
-        // const filteredActivities = tripData.activities.filter(activity => activity.trim() !== '');
-        finalData = {
-          ...tripData,
-        //   activityChoices: filteredActivities
-        };
+        finalData = { ...tripData };
         apiRoute = 'trips';
       } else if (selectedCategory === 'Travelling') {
         finalData = travellingData;
@@ -166,33 +159,14 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
   };
 
   const renderCategoryForm = () => {
-    if (!isAdvancedMode) return null;
-    
+    // No need to check isAdvancedMode here, it's checked by the caller
     switch (selectedCategory) {
       case 'Property':
-        return (
-          <PropertyForm 
-            propertyData ={propertyData as Property} 
-            setPropertyData={setPropertyData} 
-          />
-        );
-      
+        return <PropertyForm propertyData={propertyData as Property} setPropertyData={setPropertyData} />;
       case 'Trip':
-        return (
-          <TripForm 
-            tripData={tripData as Trip} 
-            setTripData={setTripData} 
-          />
-        );
-      
+        return <TripForm tripData={tripData as Trip} setTripData={setTripData} />;
       case 'Travelling':
-        return (
-          <TravellingForm 
-            travellingData={travellingData as Travelling} 
-            setTravellingData={setTravellingData} 
-          />
-        );
-
+        return <TravellingForm travellingData={travellingData as Travelling} setTravellingData={setTravellingData} />;
       default:
         return null;
     }
@@ -206,62 +180,70 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
         </DialogHeader>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Enter title" autoFocus />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-2 pb-4 px-1">
             
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} placeholder="Enter description" className="min-h-[100px]" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select
-                    value={field.value}
-                    onValueChange={(value: unknown) => {
-                      field.onChange(value);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Property">Property</SelectItem>
-                      <SelectItem value="Trip">Trip</SelectItem>
-                      <SelectItem value="Travelling">Travelling</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
+            {/* Section 1: Basic Information */}
             <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Enter title" autoFocus />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} placeholder="Enter description" className="min-h-[100px]" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={(value: z.infer<typeof formSchema>['category']) => {
+                        field.onChange(value);
+                      }}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Property">Property</SelectItem>
+                        <SelectItem value="Trip">Trip</SelectItem>
+                        <SelectItem value="Travelling">Travelling</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            {/* Section 2: Media Uploads */}
+            <div className="space-y-4 pt-6 border-t">
+              <h3 className="text-lg font-semibold text-foreground tracking-tight">Media</h3>
               <FormItem>
                 <FormLabel>Banner Image</FormLabel>
                 <ImageUpload
@@ -269,46 +251,69 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
                   value={bannerImage}
                   onChange={(image) => setBannerImage(image)}
                 />
-                {form.formState.errors.root?.message && (
-                  <p className="text-red-500 text-sm">{form.formState.errors.root?.message}</p>
-                )}
+                {/* Specific banner image errors (like 'required') are handled by form.setError('root') and shown below */}
               </FormItem>
               
               <FormItem>
-                <FormLabel>Detail Images (min 3)</FormLabel>
+                <FormLabel>Detail Images (minimum 3)</FormLabel>
                 <MultipleImageUpload
                   label='detail images'
                   value={detailImages}
                   onChange={(images) => setDetailImages(images)}
                   maxImages={10}
                 />
+                {/* Specific detail images errors (like 'min 3') are handled by form.setError('root') and shown below */}
               </FormItem>
             </div>
             
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="advanced-mode"
-                checked={isAdvancedMode}
-                onChange={() => setIsAdvancedMode(!isAdvancedMode)}
-              />
-              <label htmlFor="advanced-mode" className="text-sm">
-                Show Advanced Options
-              </label>
+            {/* Section 3: Advanced Category Options */}
+            <div className="pt-6 border-t">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="advanced-mode-checkbox"
+                  checked={isAdvancedMode}
+                  onCheckedChange={(checked) => setIsAdvancedMode(Boolean(checked))}
+                />
+                <Label htmlFor="advanced-mode-checkbox" className="text-sm font-medium cursor-pointer select-none">
+                  Configure Advanced Options
+                </Label>
+              </div>
+
+              {isAdvancedMode && (
+                <div className="mt-4">
+                  {selectedCategory ? (
+                    <div className="p-4 border rounded-lg bg-muted/50">
+                      <h3 className="text-md font-semibold mb-4 text-foreground">
+                        {`Advanced ${selectedCategory} Details`}
+                      </h3>
+                      {renderCategoryForm()}
+                    </div>
+                  ) : (
+                    <div className="p-4 border border-dashed rounded-lg bg-muted/20 text-center">
+                      <p className="text-sm text-muted-foreground">
+                        Please select a category above to configure its advanced options.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
-            {renderCategoryForm()}
-            
+            {/* Form-level error message (includes image validation errors from onSubmit) */}
             {form.formState.errors.root?.message && (
-              <p className="text-red-500 text-sm">{form.formState.errors.root?.message}</p>
+              <div className="mt-4 p-3 bg-destructive/10 border border-destructive/30 rounded-md">
+                <p className="text-sm font-medium text-destructive">
+                  {form.formState.errors.root?.message}
+                </p>
+              </div>
             )}
             
-            <DialogFooter>
+            <DialogFooter className="pt-6">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : 'Save'}
+                {isSubmitting ? 'Saving...' : 'Save Item'}
               </Button>
             </DialogFooter>
           </form>
