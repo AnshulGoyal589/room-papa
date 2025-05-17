@@ -39,7 +39,7 @@ export async function sendBookingConfirmationEmail(booking: BookingDetails) {
     const propertyBooking = booking;
     bookingTypeSpecificDetails = `
       <p><strong>Property Type:</strong> ${propertyBooking.details.type}</p>
-      <p><strong>Guests:</strong> ${propertyBooking.bookingDetails.guests}</p>
+      <p><strong>Guests:</strong> ${propertyBooking.bookingDetails.totalGuests}</p>
       <p><strong>Rooms:</strong> ${propertyBooking.bookingDetails.rooms}</p>
     `;
   } else if (booking.type === 'travelling') {
@@ -73,7 +73,7 @@ export async function sendBookingConfirmationEmail(booking: BookingDetails) {
         <p><strong>Destination:</strong> ${details.locationTo}</p>
         <p><strong>Check-in:</strong> ${checkInDate}</p>
         <p><strong>Check-out:</strong> ${checkOutDate}</p>
-        <p><strong>Guests:</strong> ${guestDetails.passengers}</p>
+        <p><strong>Guests:</strong> ${guestDetails.firstName} ${guestDetails.lastName}</p>
         <p><strong>Total Price:</strong> ${bookingDetails.currency} ${bookingDetails.totalPrice.toFixed(2)}</p>
         
         ${bookingTypeSpecificDetails}

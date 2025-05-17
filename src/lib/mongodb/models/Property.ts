@@ -2,7 +2,7 @@
 
 import { Collection, ObjectId } from 'mongodb';
 import { getDb } from '..';
-import {  PropertyAmenities, PropertyType, RoomCategory } from '@/types';
+import {  PropertyAmenities, PropertyType, StoredRoomCategory } from '@/types';
 import { Image } from './Image';
 
 
@@ -18,10 +18,10 @@ export interface Property {
     city: string;
     country: string;
   };
-  startDate: string;
-  endDate: string;
-  costing: {
-    price: number; // pricePerNight
+  startDate: string; // Overall listing start
+  endDate: string;   // Overall listing end
+  costing: {         // Calculated summary: lowest starting price
+    price: number;
     discountedPrice: number;
     currency: string;
   };
@@ -35,23 +35,20 @@ export interface Property {
   bannerImage?: Image;
   detailImages?: Image[];
   rooms: number;
-
-  categoryRooms? : RoomCategory[]
+  categoryRooms?: StoredRoomCategory[];
   amenities: string[];
-  accessibility ?: string[];
-  roomAccessibility ?: string[];
-  popularFilters ?: string[];
-  funThingsToDo ?: string[];
-  meals ?: string[];
-  facilities ?: string[];
-  bedPreference ?: string[];
-  reservationPolicy ?: string[];
-  brands ?: string[];
-  roomFacilities ?: string[];
-  
-  propertyRating ?: number;
-  googleMaps ?: string;
-
+  accessibility?: string[];
+  roomAccessibility?: string[];
+  popularFilters?: string[];
+  funThingsToDo?: string[];
+  meals?: string[];
+  facilities?: string[];
+  bedPreference?: string[];
+  reservationPolicy?: string[];
+  brands?: string[];
+  roomFacilities?: string[];
+  propertyRating?: number;
+  googleMaps?: string;
 }
 
 

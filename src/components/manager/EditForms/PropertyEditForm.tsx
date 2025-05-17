@@ -1,71 +1,148 @@
 import React, { useState, useEffect } from "react";
-import { Property } from "@/lib/mongodb/models/Property"; // Assuming Review is part of Property model/type
+import { Property } from "@/lib/mongodb/models/Property";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { 
-  Select, 
-  SelectTrigger, 
-  SelectValue, 
-  SelectContent, 
-  SelectItem 
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem
 } from "@/components/ui/select";
 import ImageUpload from "@/components/cloudinary/ImageUpload";
 import MultipleImageUpload from "@/components/cloudinary/MultipleImageUpload";
-import { 
- 
-  RoomCategory as StoredRoomCategory, // This should be your updated type with detailed pricing and id
-  RoomCategoryPricing, 
-  PropertyType 
-} from "@/types"; // Ensure these types are correctly defined and imported
-import { 
-  X, 
-  Plus, 
-  Edit, 
-  Check, 
-  AlertCircle, 
-  Users, 
-  Baby, 
-  DollarSign, 
-  Home, 
-  MapPin, 
-  BedDouble, 
-  ListChecks, 
-  // ShieldCheck,
+import { Badge as UiBadge } from "@/components/ui/badge"; // Assuming a UI badge component
+import {
+  StoredRoomCategory,
+  RoomCategoryPricing,
+  PropertyType,
+  PricingByMealPlan,
+  DiscountedPricingByMealPlan
+} from "@/types";
+import {
+  X,
+  Plus,
+  Edit,
+  Check,
+  AlertCircle,
+  Users,
+  Baby,
+  DollarSign,
+  Home,
+  MapPin,
+  BedDouble,
+  ListChecks,
   Image as ImageIcon,
-  // MessageSquare
+  Utensils,
+  CalendarDays, // Added for unavailable dates section
 } from "lucide-react";
 
 // Helper to generate unique IDs
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
-// Initial state for the form to add/edit a new room category
+// Helper to get price safely from nested structure
+const getPrice = (
+    priceGroup: PricingByMealPlan | DiscountedPricingByMealPlan | undefined | number,
+    mealPlan?: keyof PricingByMealPlan
+): number => {
+    if (typeof priceGroup === 'number') return priceGroup; // Old format
+    if (priceGroup && typeof priceGroup === 'object' && mealPlan && mealPlan in priceGroup) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const price = (priceGroup as any)[mealPlan];
+        return typeof price === 'number' ? price : 0;
+    }
+    return 0;
+};
+
+// Initial state for the form to add/edit a new room category with meal plans
 const initialNewCategoryState = {
   id: '', // Will be set when editing
   title: "",
   qty: 1,
-  currency: "USD", // Default, can be updated
+  currency: "USD",
   pricing: {
-    singleOccupancyAdultPrice: 0,
-    discountedSingleOccupancyAdultPrice: 0, // Use 0 or undefined for no discount
-    doubleOccupancyAdultPrice: 0,
-    discountedDoubleOccupancyAdultPrice: 0,
-    tripleOccupancyAdultPrice: 0,
-    discountedTripleOccupancyAdultPrice: 0,
-    child5to12Price: 0,
-    discountedChild5to12Price: 0,
-    child12to18Price: 0,
-    discountedChild12to18Price: 0,
-  }
+    singleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    discountedSingleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    doubleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    discountedDoubleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    tripleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    discountedTripleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    child5to12Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    discountedChild5to12Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    child12to18Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    discountedChild12to18Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+  } as RoomCategoryPricing,
+  unavailableDates: [] as string[], // Added for unavailable dates
 };
 
+
 interface PropertyEditFormProps {
-  item: Property; // This item should conform to the Property type with StoredRoomCategory[]
+  item: Property;
   onSave: (updatedProperty: Property) => void;
 }
 
+// Helper Component for Meal Plan labels in Display
+const MealPlanLabel: React.FC<{ mealPlan: keyof PricingByMealPlan, showIcon?: boolean, className?: string }> = ({ mealPlan, showIcon = true, className="" }) => {
+    let text = '';
+    switch(mealPlan) {
+        case 'noMeal': text = 'Room Only'; break;
+        case 'breakfastOnly': text = 'Breakfast Incl.'; break;
+        case 'allMeals': text = 'All Meals Incl.'; break;
+        default: return null;
+    }
+    return (
+         <span className={`text-xs font-medium text-gray-500 inline-flex items-center ${className}`}>
+            {showIcon && <Utensils className="h-3 w-3 mr-1 text-gray-400"/>}
+            {text}
+         </span>
+    );
+}
+
+// Configuration for Adult Pricing Form Section
+interface AdultPricingRowConfig {
+    occupancy: number;
+    baseField: keyof RoomCategoryPricing;
+    discField: keyof RoomCategoryPricing;
+    label: string;
+}
+
+const adultPricingConfig: AdultPricingRowConfig[] = [
+    { occupancy: 1, baseField: 'singleOccupancyAdultPrice', discField: 'discountedSingleOccupancyAdultPrice', label: '1 Adult' },
+    { occupancy: 2, baseField: 'doubleOccupancyAdultPrice', discField: 'discountedDoubleOccupancyAdultPrice', label: '2 Adults' },
+    { occupancy: 3, baseField: 'tripleOccupancyAdultPrice', discField: 'discountedTripleOccupancyAdultPrice', label: '3 Adults' },
+];
+
+// Configuration for Child Pricing Form Section
+interface ChildPricingRowConfig {
+    age: string;
+    baseField: keyof RoomCategoryPricing;
+    discField: keyof RoomCategoryPricing;
+}
+
+const childPricingConfig: ChildPricingRowConfig[] = [
+    { age: '5-12 yrs', baseField: 'child5to12Price', discField: 'discountedChild5to12Price' },
+    { age: '12-18 yrs', baseField: 'child12to18Price', discField: 'discountedChild12to18Price' },
+];
+
+
 const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => {
-  const [formData, setFormData] = useState<Property>(item);
+  const [formData, setFormData] = useState<Property>(() => {
+      const clonedItem = JSON.parse(JSON.stringify(item));
+      if (clonedItem.categoryRooms && Array.isArray(clonedItem.categoryRooms)) {
+          clonedItem.categoryRooms = clonedItem.categoryRooms.map((cat: StoredRoomCategory) => ({
+              ...cat,
+              id: cat.id || generateId(),
+              pricing: cat.pricing && typeof cat.pricing.singleOccupancyAdultPrice === 'object'
+                  ? cat.pricing
+                  : initialNewCategoryState.pricing,
+              unavailableDates: Array.isArray(cat.unavailableDates) ? cat.unavailableDates.map(String).sort() : [],
+          }));
+      } else {
+          clonedItem.categoryRooms = [];
+      }
+      return clonedItem;
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [newCategory, setNewCategory] = useState<{
@@ -74,15 +151,15 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     qty: number;
     currency: string;
     pricing: RoomCategoryPricing;
+    unavailableDates: string[]; // Added for unavailable dates
   }>({
     ...initialNewCategoryState,
     currency: item.costing?.currency || "USD"
   });
-  
-  const [isEditMode, setIsEditMode] = useState(false); 
-  
-  // Define options for various property features
-  // const amenitiesOptions = ["wifi", "pool", "gym", "spa", "restaurant", "parking", "airConditioning", "breakfastIncluded", "petFriendly", "roomService", "barLounge", "laundryService"];
+
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [currentUnavailableDateInput, setCurrentUnavailableDateInput] = useState<string>(""); // For new unavailable date input
+
   const accessibilityOptions = ['Wheelchair Accessible', 'Elevator', 'Accessible Parking', 'Braille Signage', 'Accessible Bathroom', 'Roll-in Shower'];
   const roomAccessibilityOptionsList = ['Grab Bars', 'Lowered Amenities', 'Visual Alarms', 'Wide Doorways', 'Accessible Shower'];
   const popularFiltersOptions = ['Pet Friendly', 'Free Cancellation', 'Free Breakfast', 'Pool', 'Hot Tub', 'Ocean View', 'Family Friendly', 'Business Facilities'];
@@ -94,59 +171,92 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
   const brandsOptionsList =  ['Hilton', 'Marriott', 'Hyatt', 'Best Western', 'Accor', 'IHG', 'Wyndham', 'Choice Hotels'];
   const roomFacilitiesOptionsList = ['Air Conditioning', 'TV', 'Mini Bar', 'Coffee Maker', 'Safe', 'Desk', 'Balcony', 'Bathtub', 'Shower'];
 
-
   useEffect(() => {
-    // Deep clone item to prevent direct mutation if item is complex
     const clonedItem = JSON.parse(JSON.stringify(item));
-    setFormData(clonedItem);
-    if (!isEditMode) {
-        setNewCategory(prev => ({ ...prev, currency: clonedItem.costing?.currency || "USD" }));
+    if (clonedItem.categoryRooms && Array.isArray(clonedItem.categoryRooms)) {
+        clonedItem.categoryRooms = clonedItem.categoryRooms.map((cat: StoredRoomCategory) => ({
+            ...cat,
+            id: cat.id || generateId(),
+            pricing: cat.pricing && typeof cat.pricing.singleOccupancyAdultPrice === 'object'
+                ? cat.pricing
+                : initialNewCategoryState.pricing,
+            unavailableDates: Array.isArray(cat.unavailableDates) ? cat.unavailableDates.map(String).sort() : [],
+        }));
+    } else {
+        clonedItem.categoryRooms = [];
     }
-  }, [item, isEditMode]);
+    setFormData(clonedItem);
+  }, [item]);
 
   useEffect(() => {
-    if (formData.categoryRooms && formData.categoryRooms.length > 0) {
+    if (!isEditMode) {
+        setNewCategory({
+            ...initialNewCategoryState, // This will reset unavailableDates to []
+            currency: formData.costing?.currency || item.costing?.currency || "USD",
+        });
+        setCurrentUnavailableDateInput(""); // Reset date input as well
+    }
+  }, [isEditMode, item, formData.costing?.currency]);
+
+
+  useEffect(() => {
+    const currentCategories = formData.categoryRooms || [];
+    if (currentCategories && currentCategories.length > 0) {
       let minOverallPrice = Infinity;
       let minOverallDiscountedPrice = Infinity;
-      let leadCurrency = formData.categoryRooms[0].currency || "USD";
+      let leadCurrency = currentCategories[0].currency || "USD";
+      const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
 
-      formData.categoryRooms.forEach(cat => {
-        const prices: number[] = [];
-        const discountedPrices: number[] = [];
+      currentCategories.forEach((cat: StoredRoomCategory) => {
+        const pricing = cat.pricing || initialNewCategoryState.pricing;
 
-        prices.push(cat.pricing.singleOccupancyAdultPrice);
-        discountedPrices.push(cat.pricing.discountedSingleOccupancyAdultPrice && cat.pricing.discountedSingleOccupancyAdultPrice > 0 ? cat.pricing.discountedSingleOccupancyAdultPrice : cat.pricing.singleOccupancyAdultPrice);
+        mealPlans.forEach(mealPlan => {
+            const singleBase = getPrice(pricing.singleOccupancyAdultPrice, mealPlan);
+            const singleDisc = getPrice(pricing.discountedSingleOccupancyAdultPrice, mealPlan);
+            const doubleBase = getPrice(pricing.doubleOccupancyAdultPrice, mealPlan);
+            const doubleDisc = getPrice(pricing.discountedDoubleOccupancyAdultPrice, mealPlan);
+            const tripleBase = getPrice(pricing.tripleOccupancyAdultPrice, mealPlan);
+            const tripleDisc = getPrice(pricing.discountedTripleOccupancyAdultPrice, mealPlan);
 
-        if (cat.pricing.doubleOccupancyAdultPrice > 0) {
-          prices.push(cat.pricing.doubleOccupancyAdultPrice / 2);
-          discountedPrices.push(cat.pricing.discountedDoubleOccupancyAdultPrice && cat.pricing.discountedDoubleOccupancyAdultPrice > 0 ? cat.pricing.discountedDoubleOccupancyAdultPrice / 2 : cat.pricing.doubleOccupancyAdultPrice / 2);
-        }
-        
-        if (cat.pricing.tripleOccupancyAdultPrice > 0) {
-          prices.push(cat.pricing.tripleOccupancyAdultPrice / 3);
-          discountedPrices.push(cat.pricing.discountedTripleOccupancyAdultPrice && cat.pricing.discountedTripleOccupancyAdultPrice > 0 ? cat.pricing.discountedTripleOccupancyAdultPrice / 3 : cat.pricing.tripleOccupancyAdultPrice / 3);
-        }
-        
-        const currentCatMinPrice = Math.min(...prices.filter(p => p > 0 && isFinite(p)));
-        const currentCatMinDiscountedPrice = Math.min(...discountedPrices.filter(p => p > 0 && isFinite(p)));
+            const pricesPerAdult: number[] = [];
+            const discountedPricesPerAdult: number[] = [];
 
-        if (currentCatMinPrice < minOverallPrice) {
-          minOverallPrice = currentCatMinPrice;
-          leadCurrency = cat.currency;
-        }
-        if (currentCatMinDiscountedPrice < minOverallDiscountedPrice) {
-          minOverallDiscountedPrice = currentCatMinDiscountedPrice;
-        }
+            if (singleBase > 0) pricesPerAdult.push(singleBase);
+            if (singleDisc > 0) discountedPricesPerAdult.push(singleDisc);
+            else if (singleBase > 0) discountedPricesPerAdult.push(singleBase);
+
+            if (doubleBase > 0) pricesPerAdult.push(doubleBase / 2);
+            if (doubleDisc > 0) discountedPricesPerAdult.push(doubleDisc / 2);
+            else if (doubleBase > 0) discountedPricesPerAdult.push(doubleBase / 2);
+
+            if (tripleBase > 0) pricesPerAdult.push(tripleBase / 3);
+            if (tripleDisc > 0) discountedPricesPerAdult.push(tripleDisc / 3);
+            else if (tripleBase > 0) discountedPricesPerAdult.push(tripleBase / 3);
+
+            const currentMinForPlan = Math.min(...pricesPerAdult.filter(p => p > 0 && isFinite(p)), Infinity);
+            const currentMinDiscountedForPlan = Math.min(...discountedPricesPerAdult.filter(p => p > 0 && isFinite(p)), Infinity);
+
+             if (currentMinForPlan < minOverallPrice) {
+                minOverallPrice = currentMinForPlan;
+                leadCurrency = cat.currency;
+             }
+             if (currentMinDiscountedForPlan < minOverallDiscountedPrice) {
+                minOverallDiscountedPrice = currentMinDiscountedForPlan;
+             }
+        });
       });
-      
-      const totalRooms = formData.categoryRooms.reduce((sum, category) => sum + (category.qty || 0), 0);
-      
-      // Use functional update to avoid stale closures if other effects modify formData
+
+      const totalRooms = currentCategories.reduce((sum: number, category: StoredRoomCategory) => sum + (category.qty || 0), 0);
+      let finalDiscountedPrice = minOverallDiscountedPrice === Infinity ? (minOverallPrice === Infinity ? 0 : minOverallPrice) : minOverallDiscountedPrice;
+      if (finalDiscountedPrice >= (minOverallPrice === Infinity ? 0 : minOverallPrice) && minOverallPrice !== Infinity) {
+        finalDiscountedPrice = minOverallPrice;
+      }
+
       setFormData(prev => ({
         ...prev,
         costing: {
           price: minOverallPrice === Infinity ? 0 : parseFloat(minOverallPrice.toFixed(2)),
-          discountedPrice: minOverallDiscountedPrice === Infinity ? 0 : parseFloat(minOverallDiscountedPrice.toFixed(2)),
+          discountedPrice: parseFloat(finalDiscountedPrice.toFixed(2)),
           currency: leadCurrency
         },
         rooms: totalRooms
@@ -158,12 +268,12 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         rooms: 0
       }));
     }
-  }, [formData.categoryRooms]); // Only re-run if categoryRooms changes
+  }, [formData.categoryRooms]);
 
   const handleChange = (field: string, value: unknown) => {
     setFormData((prev) => {
       const keys = field.split(".");
-      const updated = JSON.parse(JSON.stringify(prev)) as Property; // Deep copy
+      const updated = JSON.parse(JSON.stringify(prev)) as Property;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let current: any = updated;
       for (let i = 0; i < keys.length - 1; i++) {
@@ -174,39 +284,99 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       return updated;
     });
   };
-  
-  const handleNewCategoryFieldChange = (field: keyof Omit<typeof newCategory, 'pricing' | 'id'>, value: string | number) => {
+
+  const handleNewCategoryFieldChange = (field: keyof Omit<typeof newCategory, 'pricing' | 'id' | 'unavailableDates'>, value: string | number) => {
     setNewCategory(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleNewCategoryPricingChange = (field: keyof RoomCategoryPricing, value: string | number) => {
-    const numericValue = Number(value);
-    setNewCategory(prev => ({
-      ...prev,
-      pricing: {
-        ...prev.pricing,
-        [field]: numericValue < 0 ? 0 : numericValue
-      }
+  const handleNewCategoryPricingChange = (
+      priceField: keyof RoomCategoryPricing,
+      mealPlan: keyof PricingByMealPlan,
+      value: string | number
+  ) => {
+      const numericValue = Number(value);
+      const safeValue = numericValue < 0 ? 0 : numericValue;
+
+      setNewCategory(prev => {
+          const updatedPricing = JSON.parse(JSON.stringify(prev.pricing));
+          if (!updatedPricing[priceField]) {
+              updatedPricing[priceField] = { noMeal: 0, breakfastOnly: 0, allMeals: 0 };
+          }
+          (updatedPricing[priceField] as PricingByMealPlan | DiscountedPricingByMealPlan)[mealPlan] = safeValue;
+          return { ...prev, pricing: updatedPricing };
+      });
+  };
+
+  const handleAddDateToNewCategory = () => {
+    if (currentUnavailableDateInput && !newCategory.unavailableDates.includes(currentUnavailableDateInput)) {
+        setNewCategory(prev => ({
+            ...prev,
+            unavailableDates: [...prev.unavailableDates, currentUnavailableDateInput].sort()
+        }));
+        setCurrentUnavailableDateInput("");
+    } else if (currentUnavailableDateInput && newCategory.unavailableDates.includes(currentUnavailableDateInput)) {
+        alert("This date is already marked as unavailable.");
+        setCurrentUnavailableDateInput("");
+    } else if (!currentUnavailableDateInput) {
+        alert("Please select a date to add.");
+    }
+  };
+
+  const handleRemoveDateFromNewCategory = (dateToRemove: string) => {
+      setNewCategory(prev => ({
+          ...prev,
+          unavailableDates: prev.unavailableDates.filter(date => date !== dateToRemove)
+      }));
+  };
+
+  const handleRemoveExistingUnavailableDate = (categoryId: string, dateToRemove: string) => {
+    setFormData(prev => ({
+        ...prev,
+        categoryRooms: (prev.categoryRooms || []).map(cat =>
+            cat.id === categoryId
+            ? { ...cat, unavailableDates: (cat.unavailableDates || []).filter(d => d !== dateToRemove) }
+            : cat
+        )
     }));
   };
 
   const handleAddOrUpdateCategory = () => {
     if (!newCategory.title.trim()) { alert('Category title is required.'); return; }
     if (newCategory.qty <= 0) { alert('Quantity must be greater than 0.'); return; }
-    if (newCategory.pricing.singleOccupancyAdultPrice <= 0 && newCategory.pricing.doubleOccupancyAdultPrice <= 0 && newCategory.pricing.tripleOccupancyAdultPrice <=0) { 
-        alert('At least one adult occupancy price must be greater than 0.'); return; 
+    if (getPrice(newCategory.pricing.singleOccupancyAdultPrice, 'noMeal') <= 0) {
+        alert('Base Price for 1 Adult (Room Only) must be greater than 0.'); return;
     }
-    // Example discount validation
-    if (newCategory.pricing.discountedSingleOccupancyAdultPrice && newCategory.pricing.discountedSingleOccupancyAdultPrice > newCategory.pricing.singleOccupancyAdultPrice) {
-        alert('Discounted price for 1 Adult cannot be greater than regular price.'); return;
-    } // Add more for other occupancies and children
+
+    const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
+    const priceFieldsToCheck: (keyof RoomCategoryPricing)[] = [
+        'singleOccupancyAdultPrice', 'doubleOccupancyAdultPrice', 'tripleOccupancyAdultPrice',
+        'child5to12Price', 'child12to18Price'
+    ];
+
+    for (const field of priceFieldsToCheck) {
+        const basePrices = newCategory.pricing[field];
+        const discountPricesField = `discounted${field.charAt(0).toUpperCase() + field.slice(1)}` as keyof RoomCategoryPricing;
+        const discountPrices = newCategory.pricing[discountPricesField];
+
+        if (basePrices && discountPrices) {
+            for (const mealPlan of mealPlans) {
+                const base = getPrice(basePrices, mealPlan);
+                const disc = getPrice(discountPrices, mealPlan);
+                if (disc > 0 && base > 0 && disc >= base) {
+                    alert(`Discounted price for ${field.replace(/([A-Z])/g, ' $1')} (${mealPlan}) must be less than base price.`);
+                    return;
+                }
+            }
+        }
+    }
 
     const categoryData: StoredRoomCategory = {
       id: isEditMode && newCategory.id ? newCategory.id : generateId(),
       title: newCategory.title,
       qty: newCategory.qty,
       currency: newCategory.currency,
-      pricing: { ...newCategory.pricing }
+      pricing: JSON.parse(JSON.stringify(newCategory.pricing)),
+      unavailableDates: newCategory.unavailableDates.sort() // Ensure sorted
     };
 
     if (isEditMode && newCategory.id) {
@@ -220,34 +390,54 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         categoryRooms: [...(prev.categoryRooms || []), categoryData]
       }));
     }
-    handleCancelEditCategory();
+    handleCancelEditCategory(); // Also resets newCategory via useEffect
   };
 
   const handleEditCategory = (category: StoredRoomCategory) => {
-    // Deep copy category to avoid mutating the one in formData directly
     const categoryToEdit = JSON.parse(JSON.stringify(category));
-    setNewCategory({ ...categoryToEdit }); 
+    const fullPricing = {
+        ...initialNewCategoryState.pricing,
+        ...categoryToEdit.pricing
+    };
+     Object.keys(initialNewCategoryState.pricing).forEach(key => {
+        const pricingKey = key as keyof RoomCategoryPricing;
+        if (fullPricing[pricingKey] && typeof fullPricing[pricingKey] === 'object') {
+            fullPricing[pricingKey] = {
+                noMeal: getPrice(fullPricing[pricingKey], 'noMeal'),
+                breakfastOnly: getPrice(fullPricing[pricingKey], 'breakfastOnly'),
+                allMeals: getPrice(fullPricing[pricingKey], 'allMeals'),
+            };
+        } else {
+            fullPricing[pricingKey] = { noMeal: 0, breakfastOnly: 0, allMeals: 0 };
+        }
+    });
+
+    setNewCategory({
+        id: categoryToEdit.id,
+        title: categoryToEdit.title,
+        qty: categoryToEdit.qty,
+        currency: categoryToEdit.currency,
+        pricing: fullPricing,
+        unavailableDates: Array.isArray(categoryToEdit.unavailableDates) ? categoryToEdit.unavailableDates.map(String).sort() : []
+    });
+    setCurrentUnavailableDateInput(""); // Reset date input
     setIsEditMode(true);
   };
 
   const handleCancelEditCategory = () => {
-    setNewCategory({
-        ...initialNewCategoryState,
-        currency: formData.costing?.currency || "USD"
-    });
-    setIsEditMode(false);
+    setIsEditMode(false); // useEffect will reset newCategory
   };
 
-  const handleRemoveCategory = (id: string) => {
-    if (isEditMode && newCategory.id === id) {
+  const handleRemoveCategory = (idToRemove: string) => {
+    if (isEditMode && newCategory.id === idToRemove) {
       handleCancelEditCategory();
     }
     setFormData(prev => ({
       ...prev,
-      categoryRooms: prev.categoryRooms?.filter(cat => cat.id !== id)
+      categoryRooms: (prev.categoryRooms || []).filter(cat => cat.id !== idToRemove)
     }));
   };
-  
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!formData.title?.trim()) newErrors.title = "Title is required";
@@ -257,16 +447,17 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     if (!formData.location?.city?.trim()) newErrors.city = "City is required";
     if (!formData.location?.state?.trim()) newErrors.state = "State/Province is required";
     if (!formData.location?.country?.trim()) newErrors.country = "Country is required";
+
     if (!formData.categoryRooms || formData.categoryRooms.length === 0) {
       newErrors.categoryRooms = "At least one room category is required.";
     } else {
-        const invalidCategory = formData.categoryRooms.some(cat => 
-            cat.pricing.singleOccupancyAdultPrice <= 0 && 
-            cat.pricing.doubleOccupancyAdultPrice <= 0 && 
-            cat.pricing.tripleOccupancyAdultPrice <= 0
+        const invalidCategory = formData.categoryRooms.some(cat =>
+            getPrice(cat.pricing.singleOccupancyAdultPrice, 'noMeal') <= 0 &&
+            getPrice(cat.pricing.doubleOccupancyAdultPrice, 'noMeal') <= 0 &&
+            getPrice(cat.pricing.tripleOccupancyAdultPrice, 'noMeal') <= 0
         );
         if (invalidCategory) {
-            newErrors.categoryRooms = "One or more room categories has no valid adult pricing.";
+            newErrors.categoryRooms = "One or more room categories has no valid adult pricing for 'Room Only'.";
         }
     }
     if (!formData.bannerImage?.url) newErrors.bannerImage = "Banner image is required";
@@ -278,8 +469,6 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     if (formData.startDate && formData.endDate && formData.startDate > formData.endDate) {
         newErrors.endDate = "End date cannot be before start date.";
     }
-    if (!formData.amenities || formData.amenities.length === 0) newErrors.amenities = "At least one amenity must be selected";
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -287,16 +476,16 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      onSave(formData); // formData is already up-to-date due to useEffect
+      onSave(formData);
     } else {
         alert("Please correct the errors in the form.");
     }
   };
 
-  const CheckboxGroup: React.FC<{ 
-    options: string[], 
-    value: string[], 
-    onChange: (field: string, value: string[]) => void, 
+  const CheckboxGroup: React.FC<{
+    options: string[],
+    value: string[],
+    onChange: (field: string, value: string[]) => void,
     label: string,
     fieldName: string
   }> = ({ options, value = [], onChange, label, fieldName }) => (
@@ -348,54 +537,22 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       <div className="space-y-4 pt-6 border-t">
         <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><MapPin className="mr-3 h-6 w-6 text-primary"/>Location</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-            <label className="font-medium text-gray-700">Address</label>
-            <Input value={formData.location?.address || ''} onChange={(e) => handleChange("location.address", e.target.value)} placeholder="Full Address" />
-            {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
-            </div>
-            <div>
-            <label className="font-medium text-gray-700">City</label>
-            <Input value={formData.location?.city || ''} onChange={(e) => handleChange("location.city", e.target.value)} placeholder="City" />
-            {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
-            </div>
-            <div>
-            <label className="font-medium text-gray-700">State/Province</label>
-            <Input value={formData.location?.state || ''} onChange={(e) => handleChange("location.state", e.target.value)} placeholder="State or Province" />
-            {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
-            </div>
-            <div>
-            <label className="font-medium text-gray-700">Country</label>
-            <Input value={formData.location?.country || ''} onChange={(e) => handleChange("location.country", e.target.value)} placeholder="Country" />
-            {errors.country && <p className="text-red-500 text-xs mt-1">{errors.country}</p>}
-            </div>
+            <div> <label className="font-medium text-gray-700">Address</label> <Input value={formData.location?.address || ''} onChange={(e) => handleChange("location.address", e.target.value)} placeholder="Full Address" /> {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>} </div>
+            <div> <label className="font-medium text-gray-700">City</label> <Input value={formData.location?.city || ''} onChange={(e) => handleChange("location.city", e.target.value)} placeholder="City" /> {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>} </div>
+            <div> <label className="font-medium text-gray-700">State/Province</label> <Input value={formData.location?.state || ''} onChange={(e) => handleChange("location.state", e.target.value)} placeholder="State or Province" /> {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>} </div>
+            <div> <label className="font-medium text-gray-700">Country</label> <Input value={formData.location?.country || ''} onChange={(e) => handleChange("location.country", e.target.value)} placeholder="Country" /> {errors.country && <p className="text-red-500 text-xs mt-1">{errors.country}</p>} </div>
         </div>
       </div>
-      
+
       {/* Section: Property Pricing & Room Overview (Read-only) */}
       <div className="space-y-4 pt-6 border-t">
-        <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><DollarSign className="mr-3 h-6 w-6 text-primary"/>Property Pricing & Room Overview</h2>
+        <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><DollarSign className="mr-3 h-6 w-6 text-primary"/>Property Overview (Calculated)</h2>
          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <div className="flex items-start gap-2 mb-3">
-            <AlertCircle size={20} className="text-blue-600 mt-0.5 shrink-0" />
-            <p className="text-sm text-blue-700">
-                The following values are automatically calculated based on your room categories. Ensure each category has valid pricing.
-            </p>
-            </div>
+            <div className="flex items-start gap-2 mb-3"> <AlertCircle size={20} className="text-blue-600 mt-0.5 shrink-0" /> <p className="text-sm text-blue-700"> The following values are automatically calculated from your room categories. Ensure each category has valid pricing for all meal plans. </p> </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Starting Price (per adult)</label>
-                <Input value={`${formData.costing?.currency || 'N/A'} ${formData.costing?.price.toLocaleString() || '0'}`} disabled className="bg-gray-100 font-bold text-gray-800 mt-1" />
-            </div>
-            {(formData.costing?.discountedPrice ?? 0) > 0 && formData.costing.discountedPrice < formData.costing.price && (
-                <div>
-                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Discounted Start Price</label>
-                <Input value={`${formData.costing.currency} ${formData.costing.discountedPrice.toLocaleString()}`} disabled className="bg-gray-100 font-bold text-green-600 mt-1" />
-                </div>
-            )}
-            <div>
-                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Rooms</label>
-                <Input value={formData.rooms || 0} type="number" disabled className="bg-gray-100 font-bold text-gray-800 mt-1" />
-            </div>
+            <div> <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Starting Price (per adult/night)</label> <Input value={`${formData.costing?.currency || 'N/A'} ${formData.costing?.price.toLocaleString(undefined, {minimumFractionDigits: 2}) || '0.00'}`} disabled className="bg-gray-100 font-bold text-gray-800 mt-1" /> </div>
+            {(formData.costing?.discountedPrice ?? 0) > 0 && formData.costing.discountedPrice < formData.costing.price && ( <div> <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Discounted Start Price</label> <Input value={`${formData.costing.currency} ${formData.costing.discountedPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}`} disabled className="bg-gray-100 font-bold text-green-600 mt-1" /> </div> )}
+            <div> <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Rooms</label> <Input value={formData.rooms || 0} type="number" disabled className="bg-gray-100 font-bold text-gray-800 mt-1" /> </div>
             </div>
         </div>
       </div>
@@ -404,24 +561,10 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       <div className="space-y-4 pt-6 border-t">
         <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3">Other Property Details</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label className="font-medium text-gray-700">Property Rating (Stars)</label>
-                <Input type="number" value={formData.propertyRating || 0} onChange={(e) => handleChange("propertyRating", parseFloat(e.target.value) || 0)} min={0} max={5} step={0.5} />
-            </div>
-            <div>
-                <label className="font-medium text-gray-700">Google Maps Link (Optional)</label>
-                <Input value={formData.googleMaps || ""} onChange={(e) => handleChange("googleMaps", e.target.value || "")} placeholder="https://maps.app.goo.gl/..." />
-            </div>
-            <div>
-                <label className="font-medium text-gray-700">Availability Start Date</label>
-                <Input type="date" value={formData.startDate || ''} onChange={(e) => handleChange("startDate", e.target.value)} />
-                {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>}
-            </div>
-            <div>
-                <label className="font-medium text-gray-700">Availability End Date</label>
-                <Input type="date" value={formData.endDate || ''} onChange={(e) => handleChange("endDate", e.target.value)} />
-                {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>}
-            </div>
+            <div> <label className="font-medium text-gray-700">Property Rating (Stars)</label> <Input type="number" value={formData.propertyRating || 0} onChange={(e) => handleChange("propertyRating", parseFloat(e.target.value) || 0)} min={0} max={5} step={0.5} /> </div>
+            <div> <label className="font-medium text-gray-700">Google Maps Link (Optional)</label> <Input value={formData.googleMaps || ""} onChange={(e) => handleChange("googleMaps", e.target.value || "")} placeholder="https://maps.app.goo.gl/..." /> </div>
+            <div> <label className="font-medium text-gray-700">Availability Start Date</label> <Input type="date" value={formData.startDate || ''} onChange={(e) => handleChange("startDate", e.target.value)} /> {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>} </div>
+            <div> <label className="font-medium text-gray-700">Availability End Date</label> <Input type="date" value={formData.endDate || ''} onChange={(e) => handleChange("endDate", e.target.value)} /> {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>} </div>
         </div>
       </div>
 
@@ -429,140 +572,205 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       <div className="space-y-4 pt-6 border-t">
         <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><BedDouble className="mr-3 h-6 w-6 text-primary"/>Manage Room Categories</h2>
         {errors.categoryRooms && <div className="my-2 p-3 bg-red-100 text-red-700 border border-red-300 rounded-md">{errors.categoryRooms}</div>}
-        
+
+        {/* Display Existing Categories */}
         {(formData.categoryRooms || []).length > 0 && (
           <div className="mb-6 space-y-4">
             <h3 className="text-xl font-medium text-gray-700">Current Room Categories:</h3>
-            {(formData.categoryRooms || []).map((cat) => (
-              <div key={cat.id} className="p-4 bg-white border border-gray-200 rounded-lg shadow">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="font-bold text-gray-800 text-xl">{cat.title} <span className="text-base text-gray-500 font-normal">({cat.qty} rooms)</span></p>
-                    <p className="text-sm text-gray-500">Currency: {cat.currency}</p>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button variant="outline" size="icon" type="button" onClick={() => handleEditCategory(cat)} disabled={isEditMode && newCategory.id === cat.id} aria-label={`Edit ${cat.title}`}>
-                      <Edit size={18} />
-                    </Button>
-                    <Button variant="destructive" size="icon" type="button" onClick={() => handleRemoveCategory(cat.id)} aria-label={`Remove ${cat.title}`}>
-                      <X size={18} />
-                    </Button>
-                  </div>
+            {(formData.categoryRooms || []).map((cat: StoredRoomCategory) => {
+                const pricing = cat.pricing || initialNewCategoryState.pricing;
+                const currency = cat.currency || "USD";
+                return (
+                <div key={cat.id} className="p-4 bg-white border border-gray-200 rounded-lg shadow">
+                    <div className="flex items-start justify-between mb-4 pb-3 border-b">
+                        <div> <p className="font-bold text-gray-800 text-xl">{cat.title} <span className="text-base text-gray-500 font-normal">({cat.qty} rooms)</span></p> <p className="text-sm text-gray-500">Currency: {currency}</p> </div>
+                        <div className="flex space-x-2"> <Button variant="outline" size="icon" type="button" onClick={() => handleEditCategory(cat)} disabled={isEditMode && newCategory.id === cat.id} aria-label={`Edit ${cat.title}`}> <Edit size={18} /> </Button> <Button variant="destructive" size="icon" type="button" onClick={() => handleRemoveCategory(cat.id!)} aria-label={`Remove ${cat.title}`}> <X size={18} /> </Button> </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                        <div>
+                            <p className="font-semibold text-gray-700 flex items-center mb-2"><Users className="inline h-4 w-4 mr-1.5"/>Adult Pricing (Total Room Price):</p>
+                            {adultPricingConfig.map(occ => (
+                                <div key={occ.label} className="mb-2 pl-2">
+                                    <strong className="block text-gray-600">{occ.label}:</strong>
+                                    <div className="pl-4 space-y-0.5">
+                                        {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => {
+                                            const basePrice = getPrice(pricing[occ.baseField as keyof RoomCategoryPricing], mealPlan);
+                                            const discPrice = getPrice(pricing[occ.discField as keyof RoomCategoryPricing], mealPlan);
+                                            if (basePrice > 0) {
+                                                return (
+                                                    <div key={mealPlan} className="flex justify-between items-center">
+                                                        <MealPlanLabel mealPlan={mealPlan} className="text-gray-600"/>
+                                                        <span className="text-gray-800">
+                                                            {currency} {basePrice.toLocaleString()}
+                                                            {(discPrice > 0 && discPrice < basePrice) ? <span className="text-green-600 font-medium"> (Now: {discPrice.toLocaleString()})</span> : ''}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            } return null;
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div>
+                             <p className="font-semibold text-gray-700 flex items-center mb-2"><Baby className="inline h-4 w-4 mr-1.5"/>Child Pricing (Per Child, Sharing):</p>
+                            {childPricingConfig.map(child => (
+                                <div key={child.age} className="mb-2 pl-2">
+                                    <strong className="block text-gray-600">Child ({child.age}):</strong>
+                                    <div className="pl-4 space-y-0.5">
+                                        {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => {
+                                            const basePrice = getPrice(pricing[child.baseField as keyof RoomCategoryPricing], mealPlan);
+                                            const discPrice = getPrice(pricing[child.discField as keyof RoomCategoryPricing], mealPlan);
+                                             if (basePrice > 0) {
+                                                return (
+                                                    <div key={mealPlan} className="flex justify-between items-center">
+                                                        <MealPlanLabel mealPlan={mealPlan} className="text-gray-600"/>
+                                                        <span className="text-gray-800">
+                                                            {currency} {basePrice.toLocaleString()}
+                                                            {(discPrice > 0 && discPrice < basePrice) ? <span className="text-green-600 font-medium"> (Now: {discPrice.toLocaleString()})</span> : ''}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            } return null;
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                     {cat.unavailableDates && cat.unavailableDates.length > 0 && (
+                        <div className="mt-3 pt-2 border-t text-xs">
+                            <p className="font-medium text-red-500 mb-1 flex items-center"><CalendarDays size={14} className="mr-1" /> Unavailable Dates:</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {cat.unavailableDates.map(d => (
+                                  <UiBadge key={d} variant="outline" className="font-normal bg-red-50 text-red-600 border-red-200 text-xs inline-flex items-center">
+                                      {d}
+                                      {(!isEditMode || newCategory.id !== cat.id) && (
+                                          <Button
+                                              type="button"
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-4 w-4 ml-1.5 text-red-500 hover:bg-red-200 hover:text-red-700 p-0"
+                                              onClick={() => handleRemoveExistingUnavailableDate(cat.id!, d)}
+                                              aria-label={`Remove date ${d}`}
+                                          >
+                                              <X size={12} />
+                                          </Button>
+                                      )}
+                                  </UiBadge>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
-                 <div className="space-y-3 text-sm text-gray-600">
-                  <div>
-                    <p className="font-semibold text-gray-700 flex items-center"><Users className="inline h-4 w-4 mr-1.5"/>Adult Pricing (Total Room Price):</p>
-                    <ul className="list-disc list-inside pl-6 mt-1 space-y-0.5">
-                      <li>1 Adult: {cat.currency} {cat.pricing.singleOccupancyAdultPrice.toLocaleString()}
-                          {cat.pricing.discountedSingleOccupancyAdultPrice && cat.pricing.discountedSingleOccupancyAdultPrice > 0 && cat.pricing.discountedSingleOccupancyAdultPrice < cat.pricing.singleOccupancyAdultPrice ? <span className="text-green-600 font-medium"> (Disc: {cat.pricing.discountedSingleOccupancyAdultPrice.toLocaleString()})</span> : ''}
-                      </li>
-                      <li>2 Adults: {cat.currency} {cat.pricing.doubleOccupancyAdultPrice.toLocaleString()}
-                          {cat.pricing.discountedDoubleOccupancyAdultPrice && cat.pricing.discountedDoubleOccupancyAdultPrice > 0 && cat.pricing.discountedDoubleOccupancyAdultPrice < cat.pricing.doubleOccupancyAdultPrice ? <span className="text-green-600 font-medium"> (Disc: {cat.pricing.discountedDoubleOccupancyAdultPrice.toLocaleString()})</span> : ''}
-                      </li>
-                      <li>3 Adults: {cat.currency} {cat.pricing.tripleOccupancyAdultPrice.toLocaleString()}
-                          {cat.pricing.discountedTripleOccupancyAdultPrice && cat.pricing.discountedTripleOccupancyAdultPrice > 0 && cat.pricing.discountedTripleOccupancyAdultPrice < cat.pricing.tripleOccupancyAdultPrice ? <span className="text-green-600 font-medium"> (Disc: {cat.pricing.discountedTripleOccupancyAdultPrice.toLocaleString()})</span> : ''}
-                      </li>
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-700 flex items-center mt-2"><Baby className="inline h-4 w-4 mr-1.5"/>Child Pricing (Per Child, Sharing):</p>
-                    <ul className="list-disc list-inside pl-6 mt-1 space-y-0.5">
-                      <li>5-12 yrs: {cat.currency} {cat.pricing.child5to12Price.toLocaleString()}
-                           {cat.pricing.discountedChild5to12Price && cat.pricing.discountedChild5to12Price > 0 && cat.pricing.discountedChild5to12Price < cat.pricing.child5to12Price ? <span className="text-green-600 font-medium"> (Disc: {cat.pricing.discountedChild5to12Price.toLocaleString()})</span> : ''}
-                      </li>
-                      <li>12-18 yrs: {cat.currency} {cat.pricing.child12to18Price.toLocaleString()}
-                          {cat.pricing.discountedChild12to18Price && cat.pricing.discountedChild12to18Price > 0 && cat.pricing.discountedChild12to18Price < cat.pricing.child12to18Price ? <span className="text-green-600 font-medium"> (Disc: {cat.pricing.discountedChild12to18Price.toLocaleString()})</span> : ''}
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            ))}
+                );
+            })}
           </div>
         )}
-        
+
+        {/* Add/Edit Category Form */}
         <div className="p-6 bg-gray-50 border border-gray-200 rounded-lg space-y-6 shadow">
-          <h3 className="text-xl font-semibold text-gray-700">{isEditMode ? `Editing: ${newCategory.title || 'Category Details'}` : "Add New Room Category"}</h3>
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-1">
-              <label className="font-medium text-gray-700">Category Title</label>
-              <Input value={newCategory.title} onChange={(e) => handleNewCategoryFieldChange('title', e.target.value)} placeholder="e.g., Deluxe Double Room" />
+            <h3 className="text-xl font-semibold text-gray-700">{isEditMode ? `Editing: ${newCategory.title || 'Category Details'}` : "Add New Room Category"}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-1"> <label className="font-medium text-gray-700">Category Title</label> <Input value={newCategory.title} onChange={(e) => handleNewCategoryFieldChange('title', e.target.value)} placeholder="e.g., Deluxe Double Room" /> </div>
+                <div> <label className="font-medium text-gray-700">Quantity (Rooms)</label> <Input type="number" value={newCategory.qty} onChange={(e) => handleNewCategoryFieldChange('qty', Number(e.target.value))} min={1} /> </div>
+                <div> <label className="font-medium text-gray-700">Currency</label> <Select value={newCategory.currency} onValueChange={(value) => handleNewCategoryFieldChange('currency', value)}> <SelectTrigger><SelectValue placeholder="Currency" /></SelectTrigger> <SelectContent>{['USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'KES'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent> </Select> </div>
             </div>
-            <div>
-              <label className="font-medium text-gray-700">Quantity (No. of these rooms)</label>
-              <Input type="number" value={newCategory.qty} onChange={(e) => handleNewCategoryFieldChange('qty', Number(e.target.value))} min={1} />
-            </div>
-            <div>
-              <label className="font-medium text-gray-700">Currency for this Category</label>
-              <Select value={newCategory.currency} onValueChange={(value) => handleNewCategoryFieldChange('currency', value)}>
-                <SelectTrigger><SelectValue placeholder="Currency" /></SelectTrigger>
-                <SelectContent>{['USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-          </div>
 
-          <div className="pt-4 border-t border-gray-300">
-            <label className="text-lg font-semibold text-gray-700 mb-3 block flex items-center"><Users className="inline h-5 w-5 mr-2"/>Adult Pricing (Total Room Price)</label>
-            {[
-              { occupancy: 1, base: 'singleOccupancyAdultPrice', disc: 'discountedSingleOccupancyAdultPrice', label: '1 Adult' },
-              { occupancy: 2, base: 'doubleOccupancyAdultPrice', disc: 'discountedDoubleOccupancyAdultPrice', label: '2 Adults' },
-              { occupancy: 3, base: 'tripleOccupancyAdultPrice', disc: 'discountedTripleOccupancyAdultPrice', label: '3 Adults' },
-            ].map(p => (
-              <div key={p.occupancy} className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 mb-4 items-end">
-                <div>
-                  <label className="text-sm font-medium text-gray-600">{p.label} - Base Price</label>
-                  <Input type="number" value={newCategory.pricing[p.base as keyof RoomCategoryPricing]} onChange={(e) => handleNewCategoryPricingChange(p.base as keyof RoomCategoryPricing, e.target.value)} placeholder="0.00" min="0" step="0.01" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">{p.label} - Discounted Price (Optional)</label>
-                  <Input type="number" value={newCategory.pricing[p.disc as keyof RoomCategoryPricing] || ''} onChange={(e) => handleNewCategoryPricingChange(p.disc as keyof RoomCategoryPricing, e.target.value)} placeholder="0.00 (if any)" min="0" step="0.01" />
-                </div>
-              </div>
-            ))}
-          </div>
+            <div className="pt-4 border-t border-gray-300">
+                <label className="text-lg font-semibold text-gray-700 mb-3 block flex items-center"><Users className="inline h-5 w-5 mr-2"/>Adult Pricing (Total Room Price)</label>
+                {adultPricingConfig.map(occ => (
+                    <div key={occ.occupancy} className="mb-6 p-3 border rounded bg-white/50">
+                        <p className="text-sm font-semibold mb-3 text-gray-600">{occ.label}</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3">
+                            {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => (
+                                <div key={mealPlan} className="space-y-2">
+                                    <label className="text-xs font-medium flex items-center text-gray-600"> <MealPlanLabel mealPlan={mealPlan} className="text-gray-600"/> </label>
+                                    <div> <label className="text-xs text-muted-foreground">Base Price</label> <Input type="number" value={getPrice(newCategory.pricing[occ.baseField], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(occ.baseField, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01" /> </div>
+                                    <div> <label className="text-xs text-muted-foreground">Discounted (Opt.)</label> <Input type="number" value={getPrice(newCategory.pricing[occ.discField], mealPlan) || ''} onChange={(e) => handleNewCategoryPricingChange(occ.discField, mealPlan, e.target.value)} placeholder="Optional" min="0" step="0.01" /> </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
 
-          <div className="pt-4 border-t border-gray-300">
-            <label className="text-lg font-semibold text-gray-700 mb-3 block flex items-center"><Baby className="inline h-5 w-5 mr-2"/>Child Pricing (Per Child, when sharing)</label>
-            <p className="text-xs text-gray-500 mb-3">Note: Max 3 occupants (adults + paying children) per room. Children below 5 are usually free if not taking an extra bed.</p>
-            {[
-              { age: '5-12 yrs', base: 'child5to12Price', disc: 'discountedChild5to12Price' },
-              { age: '12-18 yrs', base: 'child12to18Price', disc: 'discountedChild12to18Price' },
-            ].map(p => (
-              <div key={p.age} className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 mb-4 items-end">
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Child ({p.age}) - Base Price</label>
-                  <Input type="number" value={newCategory.pricing[p.base as keyof RoomCategoryPricing]} onChange={(e) => handleNewCategoryPricingChange(p.base as keyof RoomCategoryPricing, e.target.value)} placeholder="0.00" min="0" step="0.01" />
+            <div className="pt-4 border-t border-gray-300">
+                <label className="text-lg font-semibold text-gray-700 mb-3 block flex items-center"><Baby className="inline h-5 w-5 mr-2"/>Child Pricing (Per Child, sharing)</label>
+                {childPricingConfig.map(child => (
+                    <div key={child.age} className="mb-6 p-3 border rounded bg-white/50">
+                        <p className="text-sm font-semibold mb-3 text-gray-600">Child ({child.age})</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3">
+                             {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => (
+                                <div key={mealPlan} className="space-y-2">
+                                    <label className="text-xs font-medium flex items-center text-gray-600"> <MealPlanLabel mealPlan={mealPlan} className="text-gray-600"/> </label>
+                                    <div> <label className="text-xs text-muted-foreground">Base Price</label> <Input type="number" value={getPrice(newCategory.pricing[child.baseField], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(child.baseField, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01" /> </div>
+                                    <div> <label className="text-xs text-muted-foreground">Discounted (Opt.)</label> <Input type="number" value={getPrice(newCategory.pricing[child.discField], mealPlan) || ''} onChange={(e) => handleNewCategoryPricingChange(child.discField, mealPlan, e.target.value)} placeholder="Optional" min="0" step="0.01" /> </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Unavailable Dates Management in Add/Edit Form */}
+            <div className="pt-4 border-t border-gray-300">
+                <label className="text-lg font-semibold text-gray-700 mb-3 block flex items-center">
+                    <CalendarDays className="inline h-5 w-5 mr-2"/> Manage Unavailable Dates
+                </label>
+                <div className="flex items-end gap-2 mb-3">
+                    <div className="flex-grow">
+                        <label htmlFor="newUnavailableDate" className="text-xs font-medium text-gray-600">Add Date</label>
+                        <Input
+                            id="newUnavailableDate"
+                            type="date"
+                            value={currentUnavailableDateInput}
+                            onChange={(e) => setCurrentUnavailableDateInput(e.target.value)}
+                            className="mt-1"
+                        />
+                    </div>
+                    <Button type="button" onClick={handleAddDateToNewCategory} variant="outline" size="sm" className="px-3 py-2">
+                        <Plus size={16} className="mr-1.5" /> Add
+                    </Button>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Child ({p.age}) - Discounted Price (Optional)</label>
-                  <Input type="number" value={newCategory.pricing[p.disc as keyof RoomCategoryPricing] || ''} onChange={(e) => handleNewCategoryPricingChange(p.disc as keyof RoomCategoryPricing, e.target.value)} placeholder="0.00 (if any)" min="0" step="0.01" />
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 mt-4">
-            <Button type="button" onClick={handleAddOrUpdateCategory} className="flex-1 py-2.5">
-              {isEditMode ? <><Check size={18} className="mr-2" /> Update Category</> : <><Plus size={18} className="mr-2" /> Add This Category</>}
-            </Button>
-            {isEditMode && (
-              <Button type="button" variant="outline" onClick={handleCancelEditCategory} className="flex-1 py-2.5">
-                <X size={18} className="mr-2" /> Cancel Edit
-              </Button>
-            )}
-          </div>
+                {newCategory.unavailableDates.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                        {newCategory.unavailableDates.map(date => (
+                            <UiBadge key={date} variant="secondary" className="text-xs inline-flex items-center">
+                                {date}
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-4 w-4 ml-1.5 text-muted-foreground hover:bg-gray-200 hover:text-gray-700 p-0"
+                                    onClick={() => handleRemoveDateFromNewCategory(date)}
+                                    aria-label={`Remove date ${date}`}
+                                >
+                                    <X size={12} />
+                                </Button>
+                            </UiBadge>
+                        ))}
+                    </div>
+                )}
+                 {newCategory.unavailableDates.length === 0 && <p className="text-xs text-gray-500">No unavailable dates added for this category yet.</p>}
+            </div>
+
+
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 mt-4">
+                <Button type="button" onClick={handleAddOrUpdateCategory} className="flex-1 py-2.5"> {isEditMode ? <><Check size={18} className="mr-2" /> Update Category</> : <><Plus size={18} className="mr-2" /> Add This Category</>} </Button>
+                {isEditMode && ( <Button type="button" variant="outline" onClick={handleCancelEditCategory} className="flex-1 py-2.5"> <X size={18} className="mr-2" /> Cancel Edit </Button> )}
+            </div>
         </div>
       </div>
-      
+
       {/* Section: Property Features & Policies */}
       <div className="pt-6 border-t">
         <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><ListChecks className="mr-3 h-6 w-6 text-primary"/>Property Features & Policies</h2>
-        {/* <CheckboxGroup options={amenitiesOptions} value={formData.amenities || []} onChange={handleChange} label="Amenities" fieldName="amenities" /> */}
-        {/* {errors.amenities && <p className="text-red-500 text-xs mt-1 block mb-4">{errors.amenities}</p>} */}
         <CheckboxGroup options={accessibilityOptions} value={formData.accessibility || []} onChange={handleChange} label="Property Accessibility" fieldName="accessibility" />
         <CheckboxGroup options={roomAccessibilityOptionsList} value={formData.roomAccessibility || []} onChange={handleChange} label="Room Accessibility" fieldName="roomAccessibility" />
         <CheckboxGroup options={popularFiltersOptions} value={formData.popularFilters || []} onChange={handleChange} label="Popular Filters" fieldName="popularFilters" />
         <CheckboxGroup options={funThingsToDoOptions} value={formData.funThingsToDo || []} onChange={handleChange} label="Fun Things To Do" fieldName="funThingsToDo" />
-        <CheckboxGroup options={mealsOptionsList} value={formData.meals || []} onChange={handleChange} label="Meals" fieldName="meals" />
+        <CheckboxGroup options={mealsOptionsList} value={formData.meals || []} onChange={handleChange} label="Meals (Property Wide)" fieldName="meals" />
         <CheckboxGroup options={facilitiesOptionsList} value={formData.facilities || []} onChange={handleChange} label="Facilities" fieldName="facilities" />
         <CheckboxGroup options={bedPreferenceOptionsList} value={formData.bedPreference || []} onChange={handleChange} label="Bed Preferences" fieldName="bedPreference" />
         <CheckboxGroup options={reservationPolicyOptionsList} value={formData.reservationPolicy || []} onChange={handleChange} label="Reservation Policies" fieldName="reservationPolicy" />
@@ -573,48 +781,9 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       {/* Section: Images */}
       <div className="space-y-4 pt-6 border-t">
         <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><ImageIcon className="mr-3 h-6 w-6 text-primary"/>Images</h2>
-        <div>
-          <label className="font-medium text-gray-700">Banner Image</label>
-          <ImageUpload label='banner image' value={formData.bannerImage || null} onChange={(image) => handleChange("bannerImage", image)} />
-          {errors.bannerImage && <p className="text-red-500 text-xs mt-1">{errors.bannerImage}</p>}
-        </div>
-        <div>
-          <label className="font-medium text-gray-700">Detail Images (minimum 3)</label>
-          <MultipleImageUpload 
-            label='detail images' 
-            key={formData.detailImages?.map(img => img?.publicId || '').join(',') || 'empty-details'} // More robust key
-            value={formData.detailImages || []} 
-            onChange={(images) => handleChange("detailImages", images)} 
-            maxImages={10} 
-          />
-          {errors.detailImages && <p className="text-red-500 text-xs mt-1">{errors.detailImages}</p>}
-        </div>
+        <div> <label className="font-medium text-gray-700">Banner Image</label> <ImageUpload label='banner image' value={formData.bannerImage || null} onChange={(image) => handleChange("bannerImage", image)} /> {errors.bannerImage && <p className="text-red-500 text-xs mt-1">{errors.bannerImage}</p>} </div>
+        <div> <label className="font-medium text-gray-700">Detail Images (minimum 3)</label> <MultipleImageUpload label='detail images' key={formData.detailImages?.map(img => img?.publicId || '').join(',') || 'empty-details'} value={formData.detailImages || []} onChange={(images) => handleChange("detailImages", images)} maxImages={10} /> {errors.detailImages && <p className="text-red-500 text-xs mt-1">{errors.detailImages}</p>} </div>
       </div>
-
-      {/* Section: Reviews (Basic Editing/Display) */}
-      {/* {formData.review && formData.review.length > 0 && (
-        <div className="space-y-4 pt-6 border-t">
-          <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><MessageSquare className="mr-3 h-6 w-6 text-primary"/>Reviews</h2>
-          {formData.review.map((review, index) => (
-            <div key={review._id || index} className="border p-4 rounded-lg bg-gray-50 shadow-sm">
-              <div className="flex justify-between items-center mb-2">
-                <p className="text-sm text-gray-500"><strong>User:</strong> {review.userId?.toString().slice(-6) || 'Anonymous User'}</p>
-                <p className="text-sm text-gray-500"><strong>Rating:</strong> <span className="font-semibold text-amber-500">{review.rating}/5</span></p>
-              </div>
-              <div>
-                <label className="font-medium text-sm text-gray-700">Comment:</label>
-                <Textarea
-                  value={review.comment}
-                  onChange={(e) => handleChange(`review.${index}.comment`, e.target.value)}
-                  placeholder="Review comment"
-                  rows={2}
-                  className="text-sm mt-1"
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      )} */}
 
       <Button type="submit" className="w-full py-3 text-lg font-semibold mt-8">
         <Check className="mr-2 h-5 w-5"/> Save Property Changes

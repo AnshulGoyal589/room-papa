@@ -1,3 +1,5 @@
+import { ObjectId } from "mongodb";
+
 export type PropertyType = 'hotel' | 'apartment' | 'villa' | 'hostel' | 'resort';
 export type PropertyAmenities = 'wifi' | 'pool' | 'gym' | 'spa' | 'restaurant' | 'parking' | 'airConditioning' | 'breakfast';
 export type PopularFilters = 'Free cancellation' | 'No prepayment' | 'Book without credit card' | 'Breakfast & dinner included' | 'Swimming Pool';
@@ -13,29 +15,49 @@ export interface SearchHeaderProps {
   initialSearchParams?: { [key: string]: string };
 }
 
-
-// In your types.ts or directly in PropertyForm if not shared
-export interface RoomCategoryPricing {
-  singleOccupancyAdultPrice: number;
-  discountedSingleOccupancyAdultPrice?: number;
-  doubleOccupancyAdultPrice: number; // Total room price for 2 adults
-  discountedDoubleOccupancyAdultPrice?: number;
-  tripleOccupancyAdultPrice: number;  // Total room price for 3 adults
-  discountedTripleOccupancyAdultPrice?: number;
-  child5to12Price: number;  // Price for one child 5-12 (per child, occupying a slot)
-  discountedChild5to12Price?: number;
-  child12to18Price: number; // Price for one child 12-18 (per child, occupying a slot)
-  discountedChild12to18Price?: number;
-}
-
-export interface RoomCategory { // This is what's stored in propertyData.categoryRooms
-  id: string; // Added for unique key in rendering
+export interface StoredRoomCategory {
+  id: string;
   title: string;
   qty: number;
   currency: string;
   pricing: RoomCategoryPricing;
+  unavailableDates: string[]; // Array of dates in 'YYYY-MM-DD' format
 }
 
+export interface PricingByMealPlan {
+  noMeal: number;
+  breakfastOnly: number;
+  allMeals: number; // Represents Breakfast + Lunch/Dinner
+}
+
+export interface DiscountedPricingByMealPlan {
+  noMeal?: number;        // Use optional if discount might not exist
+  breakfastOnly?: number;
+  allMeals?: number;
+}
+
+export interface RoomCategoryPricing {
+  singleOccupancyAdultPrice: PricingByMealPlan;
+  discountedSingleOccupancyAdultPrice?: DiscountedPricingByMealPlan; // Optional discount structure
+  doubleOccupancyAdultPrice: PricingByMealPlan;
+  discountedDoubleOccupancyAdultPrice?: DiscountedPricingByMealPlan;
+  tripleOccupancyAdultPrice: PricingByMealPlan;
+  discountedTripleOccupancyAdultPrice?: DiscountedPricingByMealPlan;
+  child5to12Price: PricingByMealPlan;
+  discountedChild5to12Price?: DiscountedPricingByMealPlan;
+  child12to18Price: PricingByMealPlan;
+  discountedChild12to18Price?: DiscountedPricingByMealPlan;
+}
+
+export interface RoomCategory {
+  id: string; // Essential: Unique identifier for the category (frontend relies on this)
+  _id?: string | ObjectId; // Optional: Mongoose/DB ID if different from frontend 'id'
+  title: string;
+  qty: number;
+  currency: string;
+  pricing: RoomCategoryPricing; // Use the detailed pricing structure above
+  unavailableDates: string[]; // Array of dates in 'YYYY-MM-DD' format
+}
 
 export type DateFilter2 = {
   [key: string]: unknown;
