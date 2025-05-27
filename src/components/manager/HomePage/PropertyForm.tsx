@@ -622,7 +622,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
                   <div className="pl-4 space-y-1">
                      {[
                         { label: 'Child (5-12 yrs)', base: cat.pricing.child5to12Price, disc: cat.pricing.discountedChild5to12Price },
-                        { label: 'Child (12-18 yrs)', base: cat.pricing.child12to18Price, disc: cat.pricing.discountedChild12to18Price },
+                        // { label: 'Child (12-18 yrs)', base: cat.pricing.child12to18Price, disc: cat.pricing.discountedChild12to18Price },
                     ].map(p => (
                          <div key={p.label}>
                            <strong>{p.label}:</strong>
@@ -733,7 +733,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
             <p className="text-xs text-muted-foreground mb-3">Apply if children share room with adults (up to max room occupancy, typically 3 total). Children below 5 usually free.</p>
              {[
                 { age: '5-12 yrs', baseField: 'child5to12Price', discField: 'discountedChild5to12Price' },
-                { age: '12-18 yrs', baseField: 'child12to18Price', discField: 'discountedChild12to18Price' },
+                // { age: '12-18 yrs', baseField: 'child12to18Price', discField: 'discountedChild12to18Price' },
              ].map(child => (
                 <div key={child.age} className="mb-6 p-3 border rounded bg-background/50">
                    <p className="text-sm font-semibold mb-3">Child ({child.age})</p>

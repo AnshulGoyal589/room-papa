@@ -107,7 +107,7 @@ interface ChildPricingRowConfig {
 
 const childPricingConfig: ChildPricingRowConfig[] = [
     { age: '5-12 yrs', baseField: 'child5to12Price', discField: 'discountedChild5to12Price' },
-    { age: '12-18 yrs', baseField: 'child12to18Price', discField: 'discountedChild12to18Price' },
+    // { age: '12-18 yrs', baseField: 'child12to18Price', discField: 'discountedChild12to18Price' },
 ];
 
 
@@ -458,7 +458,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                                                 <p className="font-semibold text-gray-700 flex items-center mb-2"><Baby className="inline h-4 w-4 mr-1.5"/>Child Pricing (Per Child, Sharing):</p>
                                                 {[
                                                     { label: '5-12 yrs', base: pricing.child5to12Price, disc: pricing.discountedChild5to12Price },
-                                                    { label: '12-18 yrs', base: pricing.child12to18Price, disc: pricing.discountedChild12to18Price },
+                                                    // { label: '12-18 yrs', base: pricing.child12to18Price, disc: pricing.discountedChild12to18Price },
                                                 ].map(child => (
                                                     <div key={child.label} className="mb-2 pl-2">
                                                          <strong className="block text-gray-600">Child ({child.label}):</strong>

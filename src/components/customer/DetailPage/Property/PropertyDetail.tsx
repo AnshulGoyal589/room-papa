@@ -17,7 +17,10 @@ import {
 } from '@/types';
 import DummyReviews from './Reviews'; // Assuming this component exists
 import { useUser, useClerk } from '@clerk/nextjs';
-import { Wifi, Car, Droplet, Wind, Dumbbell, Sparkles, Utensils, Briefcase, Tv, Coffee, BedDouble, SunMedium, ShieldAlert, Filter, Drama, CheckCircle, FileText, Building, Star as StarIcon, MapPin, Users as UsersIcon, Image as ImageIcon, CalendarOff, X } from 'lucide-react';
+import {
+    Wifi, Car, Droplet, Wind, Dumbbell, Sparkles, Utensils, Briefcase, Tv, Coffee, BedDouble, SunMedium, ShieldAlert, Filter, Drama, CheckCircle, FileText, Building, Star as StarIcon, MapPin, Users as UsersIcon, Image as ImageIcon, CalendarOff, X,
+    ChevronDown, ChevronUp // Added Chevron icons and Wheelchair
+} from 'lucide-react';
 import { ObjectId } from 'mongodb';
 
 // --- Define Extended Types incorporating Admin Changes ---
@@ -162,6 +165,18 @@ export default function PropertyDetailPage() {
     const [bookingConfirmed, setBookingConfirmed] = useState(false);
     const [bookingError, setBookingError] = useState<string | null>(null); // General booking errors
 
+    // States for "Read More" toggles
+    const [showAllAmenities, setShowAllAmenities] = useState(false);
+    const [showAllFacilities, setShowAllFacilities] = useState(false);
+    const [showAllRoomFacilities, setShowAllRoomFacilities] = useState(false);
+    const [showAllPropertyAccess, setShowAllPropertyAccess] = useState(false);
+    const [showAllRoomAccess, setShowAllRoomAccess] = useState(false);
+    const [showAllFunThings, setShowAllFunThings] = useState(false);
+    const [showAllMeals, setShowAllMeals] = useState(false);
+    const [showAllBedOptions, setShowAllBedOptions] = useState(false);
+
+    const initialMobileDisplayCount = 4; // Number of items to show initially on mobile
+
     const guestCount = useMemo(() => adultCount, [adultCount]);
     const days = useMemo(() => calculateDays(checkInDate, checkOutDate), [checkInDate, checkOutDate]);
 
@@ -232,11 +247,10 @@ export default function PropertyDetailPage() {
                     endDate: propertyEndDate,
                     createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
                     updatedAt: data.updatedAt ? new Date(data.updatedAt) : new Date(),
-                    // Parse category rooms with new structure and fallbacks
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     categoryRooms: Array.isArray(data.categoryRooms) ? data.categoryRooms.map((cat: any): StoredRoomCategory => ({
-                        id: cat.id || cat._id?.toString() || generateId(), // Prioritize id, then _id (stringified), then generate
-                        _id: cat._id?.toString(), // Store stringified _id if present
+                        id: cat.id || cat._id?.toString() || generateId(), 
+                        _id: cat._id?.toString(), 
                         title: cat.title || "Unnamed Room",
                         qty: typeof cat.qty === 'number' ? cat.qty : 0,
                         currency: cat.currency || "USD",
@@ -330,7 +344,6 @@ export default function PropertyDetailPage() {
                             setSelectedMealPlan(parsedPrefs.selectedMealPlan);
                         } else { setSelectedMealPlan('noMeal'); }
                         
-                        // Check availability with the loaded & validated values directly
                         const { available, message } = checkAvailabilityForSelection(
                             tempCheckInDate, 
                             tempCheckOutDate, 
@@ -548,7 +561,7 @@ export default function PropertyDetailPage() {
         const category = property.categoryRooms.find(cat => cat.id === categoryID || cat._id === categoryID);
         if (!category) return;
 
-        const currentQty = selectedRooms[category.id] || 0; // Use consistent ID
+        const currentQty = selectedRooms[category.id] || 0; 
         const newQty = Math.max(0, currentQty + change); 
 
         if (newQty > category.qty) return; 
@@ -666,7 +679,7 @@ export default function PropertyDetailPage() {
             const bookingPayload = {
                 type: "property" as const, 
                 details: {
-                    id: params?.id as string, // Assuming params.id is string
+                    id: params?.id as string, 
                     title: property.title,
                     ownerId: property.userId, 
                     locationFrom: "NA", 
@@ -737,21 +750,69 @@ export default function PropertyDetailPage() {
     );
 
     const getAmenityIcon = (amenity: string): React.ReactNode => {
-        const icons: Record<string, React.ReactNode> = {
-            wifi: <Wifi size={20} />, pool: <Droplet size={20} />, airConditioning: <Wind size={20} />,
-            breakfast: <Coffee size={20} />, parking: <Car size={20} />, spa: <Sparkles size={20} />,
-            restaurant: <Utensils size={20} />, gym: <Dumbbell size={20} />,
-            breakfastIncluded: <Coffee size={20} />, petFriendly: <ShieldAlert size={20} />, roomService: <Briefcase size={20} />,
-            barLounge: <Utensils size={20} />, laundryService: <CheckCircle size={20} />,
-            tv: <Tv size={20}/>, 
-        };
-        return icons[amenity as keyof typeof icons] || <CheckCircle size={20} />; 
+        const lowerAmenity = amenity.toLowerCase();
+        if (lowerAmenity.includes('wifi') || lowerAmenity.includes('internet')) return <Wifi size={20} />;
+        if (lowerAmenity.includes('parking')) return <Car size={20} />;
+        if (lowerAmenity.includes('pool')) return <Droplet size={20} />;
+        if (lowerAmenity.includes('air conditioning') || lowerAmenity.includes('ac')) return <Wind size={20} />;
+        if (lowerAmenity.includes('gym') || lowerAmenity.includes('fitness')) return <Dumbbell size={20} />;
+        if (lowerAmenity.includes('spa')) return <Sparkles size={20} />;
+        if (lowerAmenity.includes('restaurant')) return <Utensils size={20} />;
+        if (lowerAmenity.includes('tv') || lowerAmenity.includes('television')) return <Tv size={20} />;
+        if (lowerAmenity.includes('coffee') || lowerAmenity.includes('tea maker') || lowerAmenity.includes('breakfast')) return <Coffee size={20} />;
+        // Default icon for other amenities
+        return <CheckCircle size={20} />;
     };
 
      const formatAmenityName = (amenity: string): string => {
-         const names: Record<string, string> = { wifi: 'WiFi', parking: 'Parking', pool: 'Swimming Pool', airConditioning: 'Air Conditioning', gym: 'Fitness Center', spa: 'Spa', restaurant: 'Restaurant', breakfast: 'Breakfast Available', breakfastIncluded: 'Breakfast Included', petFriendly: 'Pet Friendly', roomService: 'Room Service', barLounge: 'Bar/Lounge', laundryService: 'Laundry Service', tv: 'Television' };
-         return names[amenity as keyof typeof names] || amenity.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()); 
+        const name = amenity.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+        // Specific overrides if needed, e.g., "Wifi" -> "Wi-Fi"
+        if (name.toLowerCase() === 'wifi') return 'Wi-Fi';
+        return name;
      };
+
+    // Helper function to render lists with "Read More" functionality
+    const renderDynamicList = (
+        items: string[] | undefined,
+        listKeyPrefix: string,
+        showAll: boolean,
+        setShowAll: React.Dispatch<React.SetStateAction<boolean>>,
+        iconRenderer: (item: string) => React.ReactNode,
+        nameFormatter: (item: string) => string,
+        iconContainerClasses: string,
+        gridColsClass: string = "sm:grid-cols-2 md:grid-cols-3" // Default grid for most lists
+    ) => {
+        if (!items || items.length === 0) return null;
+
+        const displayedItems = showAll ? items : items.slice(0, initialMobileDisplayCount);
+
+        return (
+            <>
+                <div className={`flex flex-wrap gap-3 sm:grid ${gridColsClass} sm:gap-4`}>
+                    {displayedItems.map((item, index) => (
+                        <div 
+                            key={`${listKeyPrefix}-${index}`} 
+                            className="flex items-center bg-gray-50 p-3 rounded-lg border border-gray-200 min-w-[140px] flex-1 sm:flex-none sm:min-w-0" // Mobile: min-width and flex-1; Desktop: grid handles width
+                        >
+                            <div className={`${iconContainerClasses} p-2 rounded-full mr-3 shrink-0`}>
+                                {iconRenderer(item)}
+                            </div>
+                            <span className="text-sm text-gray-700">{nameFormatter(item)}</span>
+                        </div>
+                    ))}
+                </div>
+                {items.length > initialMobileDisplayCount && (
+                    <button
+                        onClick={() => setShowAll(!showAll)}
+                        className="mt-4 text-sm text-blue-600 hover:text-blue-800 font-semibold flex items-center sm:hidden"
+                    >
+                        {showAll ? 'Show Less' : `Show All ${items.length} items`}
+                        {showAll ? <ChevronUp size={18} className="ml-1" /> : <ChevronDown size={18} className="ml-1" />}
+                    </button>
+                )}
+            </>
+        );
+    };
 
 
     // --- Main Render ---
@@ -770,7 +831,7 @@ export default function PropertyDetailPage() {
                     objectFit="cover" 
                     priority 
                     className="transform transition-transform duration-500 group-hover:scale-110 brightness-70" 
-                    onError={() => setSelectedImage('/images/placeholder-property.jpg')} // Corrected onError
+                    onError={() => setSelectedImage('/images/placeholder-property.jpg')}
                  />
                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex flex-col justify-end p-6 md:p-10">
                     <div className="inline-block px-4 py-1.5 bg-blue-600 w-fit text-white text-xs sm:text-sm font-semibold rounded-full mb-3 shadow-md uppercase tracking-wider">{property.type}</div>
@@ -834,46 +895,49 @@ export default function PropertyDetailPage() {
                         )}
 
                         {/* Amenities & Features Section */}
-                         {((property.amenities && property.amenities.length > 0) || (property.facilities && property.facilities.length > 0) || (property.roomFacilities && property.roomFacilities.length > 0)) && (
+                        {((property.amenities && property.amenities.length > 0) || (property.facilities && property.facilities.length > 0) || (property.roomFacilities && property.roomFacilities.length > 0)) && (
                             <section className="bg-white p-6 sm:p-8 rounded-xl shadow-xl">
                                 <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-3 flex items-center"><FileText className="mr-3 h-6 w-6 text-blue-600" />Amenities & Features</h2>
                                 {property.amenities && property.amenities.length > 0 && (
                                     <div className="mb-6">
                                         <h3 className="text-lg font-semibold text-gray-700 mb-3">General Amenities</h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                            {property.amenities.map((amenity, index) => (
-                                                <div key={`gen-amenity-${index}`} className="flex items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                                    <div className="bg-blue-100 p-2 rounded-full mr-3 text-blue-600 shrink-0">{getAmenityIcon(amenity)}</div>
-                                                    <span className="text-sm text-gray-700">{formatAmenityName(amenity)}</span>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        {renderDynamicList(
+                                            property.amenities,
+                                            'gen-amenity',
+                                            showAllAmenities,
+                                            setShowAllAmenities,
+                                            getAmenityIcon,
+                                            formatAmenityName,
+                                            'bg-blue-100 text-blue-600'
+                                        )}
                                     </div>
                                 )}
                                 {property.facilities && property.facilities.length > 0 && (
                                     <div className="mb-6">
                                         <h3 className="text-lg font-semibold text-gray-700 mb-3">On-site Facilities</h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                            {property.facilities.map((facility, index) => (
-                                                <div key={`facility-${index}`} className="flex items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                                    <div className="bg-green-100 p-2 rounded-full mr-3 text-green-600 shrink-0"><Briefcase size={20} /></div>
-                                                    <span className="text-sm text-gray-700">{facility}</span>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        {renderDynamicList(
+                                            property.facilities,
+                                            'facility',
+                                            showAllFacilities,
+                                            setShowAllFacilities,
+                                            () => <Briefcase size={20} />, // Specific icon for facilities
+                                            (item) => item, // No special formatting for facility names
+                                            'bg-green-100 text-green-600'
+                                        )}
                                     </div>
                                 )}
                                 {property.roomFacilities && property.roomFacilities.length > 0 && (
                                     <div>
                                         <h3 className="text-lg font-semibold text-gray-700 mb-3">Standard In-Room Facilities</h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                            {property.roomFacilities.map((facility, index) => (
-                                                <div key={`room-facility-${index}`} className="flex items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                                    <div className="bg-purple-100 p-2 rounded-full mr-3 text-purple-600 shrink-0">{getAmenityIcon(facility)}</div>
-                                                    <span className="text-sm text-gray-700">{formatAmenityName(facility)}</span>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        {renderDynamicList(
+                                            property.roomFacilities,
+                                            'room-facility',
+                                            showAllRoomFacilities,
+                                            setShowAllRoomFacilities,
+                                            getAmenityIcon,
+                                            formatAmenityName,
+                                            'bg-purple-100 text-purple-600'
+                                        )}
                                     </div>
                                 )}
                             </section>
@@ -882,40 +946,88 @@ export default function PropertyDetailPage() {
                         {/* Accessibility Section */}
                         {((property.accessibility && property.accessibility.length > 0) || (property.roomAccessibility && property.roomAccessibility.length > 0)) && (
                             <section className="bg-white p-6 sm:p-8 rounded-xl shadow-xl">
-                                <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-3 flex items-center"><Droplet className="mr-3 h-6 w-6 text-blue-600" />Accessibility</h2>
+                                <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-3 flex items-center"><ShieldAlert className="mr-3 h-6 w-6 text-blue-600" />Accessibility</h2>
                                 {property.accessibility && property.accessibility.length > 0 && (
                                     <div className="mb-6">
                                         <h3 className="text-lg font-semibold text-gray-700 mb-3">Property Accessibility</h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {property.accessibility.map((feature, index) => (
-                                                <div key={`prop-access-${index}`} className="flex items-center bg-gray-50 p-3 rounded-lg border">
-                                                    <div className="bg-indigo-100 p-2 rounded-full mr-3 text-indigo-600 shrink-0"><CheckCircle size={20} /></div>
-                                                    <span className="text-sm text-gray-700">{feature}</span>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        {renderDynamicList(
+                                            property.accessibility,
+                                            'prop-access',
+                                            showAllPropertyAccess,
+                                            setShowAllPropertyAccess,
+                                            () => <CheckCircle size={20} />,
+                                            (item) => item,
+                                            'bg-indigo-100 text-indigo-600',
+                                            'sm:grid-cols-1 md:grid-cols-2' // Accessibility lists might be longer, 2 cols on desktop
+                                        )}
                                     </div>
                                 )}
                                 {property.roomAccessibility && property.roomAccessibility.length > 0 && (
                                     <div>
                                         <h3 className="text-lg font-semibold text-gray-700 mb-3">Room Accessibility Features</h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {property.roomAccessibility.map((feature, index) => (
-                                                <div key={`room-access-${index}`} className="flex items-center bg-gray-50 p-3 rounded-lg border">
-                                                    <div className="bg-teal-100 p-2 rounded-full mr-3 text-teal-600 shrink-0"><CheckCircle size={20} /></div>
-                                                    <span className="text-sm text-gray-700">{feature}</span>
-                                                </div>
-                                            ))}
-                                        </div>
+                                         {renderDynamicList(
+                                            property.roomAccessibility,
+                                            'room-access',
+                                            showAllRoomAccess,
+                                            setShowAllRoomAccess,
+                                            () => <CheckCircle size={20} />,
+                                            (item) => item,
+                                            'bg-teal-100 text-teal-600',
+                                            'sm:grid-cols-1 md:grid-cols-2' // Accessibility lists
+                                        )}
                                     </div>
                                 )}
                             </section>
                         )}
 
-                        {/* Other Sections */}
-                        {property.funThingsToDo && property.funThingsToDo.length > 0 && ( <section className="bg-white p-6 sm:p-8 rounded-xl shadow-xl"> <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-3 flex items-center"><Drama className="mr-3 h-6 w-6 text-blue-600"/>Fun Things To Do Nearby</h2> <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{property.funThingsToDo.map((activity, index) => (<div key={`fun-${index}`} className="flex items-center bg-gray-50 p-3 rounded-lg border"><div className="bg-pink-100 p-2 rounded-full mr-3 text-pink-600 shrink-0"><SunMedium size={20}/></div><span className="text-sm text-gray-700">{activity}</span></div>))}</div> </section> )}
-                        {property.meals && property.meals.length > 0 && ( <section className="bg-white p-6 sm:p-8 rounded-xl shadow-xl"> <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-3 flex items-center"><Utensils className="mr-3 h-6 w-6 text-blue-600"/>Meal Options (Property-wide)</h2> <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{property.meals.map((meal, index) => (<div key={`meal-${index}`} className="flex items-center bg-gray-50 p-3 rounded-lg border"><div className="bg-orange-100 p-2 rounded-full mr-3 text-orange-600 shrink-0"><Utensils size={20}/></div><span className="text-sm text-gray-700">{meal}</span></div>))}</div> </section> )}
-                        {property.bedPreference && property.bedPreference.length > 0 && ( <section className="bg-white p-6 sm:p-8 rounded-xl shadow-xl"> <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-3 flex items-center"><BedDouble className="mr-3 h-6 w-6 text-blue-600"/>Bed Options Available</h2> <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{property.bedPreference.map((preference, index) => (<div key={`bed-${index}`} className="flex items-center bg-gray-50 p-3 rounded-lg border"><div className="bg-lime-100 p-2 rounded-full mr-3 text-lime-600 shrink-0"><BedDouble size={20}/></div><span className="text-sm text-gray-700">{preference}</span></div>))}</div> </section> )}
+                        {/* Other Sections using renderDynamicList */}
+                        {property.funThingsToDo && property.funThingsToDo.length > 0 && (
+                            <section className="bg-white p-6 sm:p-8 rounded-xl shadow-xl">
+                                <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-3 flex items-center"><Drama className="mr-3 h-6 w-6 text-blue-600"/>Fun Things To Do Nearby</h2>
+                                {renderDynamicList(
+                                    property.funThingsToDo,
+                                    'fun',
+                                    showAllFunThings,
+                                    setShowAllFunThings,
+                                    () => <SunMedium size={20}/>,
+                                    (item) => item,
+                                    'bg-pink-100 text-pink-600',
+                                    'sm:grid-cols-1 md:grid-cols-2'
+                                )}
+                            </section>
+                        )}
+                        {property.meals && property.meals.length > 0 && (
+                            <section className="bg-white p-6 sm:p-8 rounded-xl shadow-xl">
+                                <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-3 flex items-center"><Utensils className="mr-3 h-6 w-6 text-blue-600"/>Meal Options (Property-wide)</h2>
+                                {renderDynamicList(
+                                    property.meals,
+                                    'meal',
+                                    showAllMeals,
+                                    setShowAllMeals,
+                                    () => <Utensils size={20}/>,
+                                    (item) => item,
+                                    'bg-orange-100 text-orange-600',
+                                    'sm:grid-cols-1 md:grid-cols-2'
+                                )}
+                            </section>
+                        )}
+                        {property.bedPreference && property.bedPreference.length > 0 && (
+                            <section className="bg-white p-6 sm:p-8 rounded-xl shadow-xl">
+                                <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-3 flex items-center"><BedDouble className="mr-3 h-6 w-6 text-blue-600"/>Bed Options Available</h2>
+                                 {renderDynamicList(
+                                    property.bedPreference,
+                                    'bed',
+                                    showAllBedOptions,
+                                    setShowAllBedOptions,
+                                    () => <BedDouble size={20}/>,
+                                    (item) => item,
+                                    'bg-lime-100 text-lime-600',
+                                    'sm:grid-cols-1 md:grid-cols-2'
+                                )}
+                            </section>
+                        )}
+
+                        {/* Sections that don't need "Read More" for items (list or tags) */}
                         {property.reservationPolicy && property.reservationPolicy.length > 0 && ( <section className="bg-white p-6 sm:p-8 rounded-xl shadow-xl"> <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-3 flex items-center"><FileText className="mr-3 h-6 w-6 text-blue-600"/>Reservation Policy</h2> <ul className="list-disc list-inside pl-2 space-y-1.5 text-sm text-gray-700 marker:text-blue-500">{property.reservationPolicy.map((policy, index) => (<li key={`policy-${index}`}>{policy}</li>))}</ul> </section> )}
                         {property.popularFilters && property.popularFilters.length > 0 && ( <section className="bg-white p-6 sm:p-8 rounded-xl shadow-xl"> <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-3 flex items-center"><Filter className="mr-3 h-6 w-6 text-blue-600"/>Popular Filters</h2> <div className="flex flex-wrap gap-2">{property.popularFilters.map((filter, index) => (<span key={`filter-${index}`} className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-xs font-medium border border-blue-200">{filter}</span>))}</div> </section> )}
                         {property.brands && property.brands.length > 0 && ( <section className="bg-white p-6 sm:p-8 rounded-xl shadow-xl"> <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-3 flex items-center"><Building className="mr-3 h-6 w-6 text-blue-600"/>Associated Brands</h2> <div className="flex flex-wrap gap-2">{property.brands.map((brand, index) => (<span key={`brand-${index}`} className="bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full text-xs font-medium border border-purple-200">{brand}</span>))}</div> </section> )}
@@ -973,7 +1085,7 @@ export default function PropertyDetailPage() {
                                     <div className="space-y-2">
                                         {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(plan => {
                                             const isPlanOffered = property.categoryRooms?.some(cat => {
-                                                if ((selectedRooms[cat.id] || selectedRooms[cat._id!] || 0) > 0) { // Check using both id and _id
+                                                if ((selectedRooms[cat.id] || selectedRooms[cat._id!] || 0) > 0) { 
                                                     return getPrice(cat.pricing.singleOccupancyAdultPrice, plan) > 0 ||
                                                            getPrice(cat.pricing.doubleOccupancyAdultPrice, plan) > 0 ||
                                                            getPrice(cat.pricing.tripleOccupancyAdultPrice, plan) > 0;
@@ -1000,7 +1112,7 @@ export default function PropertyDetailPage() {
                                     {property.categoryRooms && property.categoryRooms.length > 0 ? (
                                         <div className="space-y-3 max-h-72 overflow-y-auto pr-2 border rounded-lg p-2 bg-gray-50/50">
                                             {property.categoryRooms.map((cat: StoredRoomCategory) => {
-                                                const selectedQty = selectedRooms[cat.id] || 0; // Use cat.id which is preferred unique id
+                                                const selectedQty = selectedRooms[cat.id] || 0; 
                                                 const remainingQty = cat.qty - selectedQty;
                                                 const canIncrement = totalSelectedRooms < MAX_COMBINED_ROOMS && remainingQty > 0;
 
@@ -1055,7 +1167,7 @@ export default function PropertyDetailPage() {
                                 disabled={
                                     !checkInDate || !checkOutDate || days <= 0 ||
                                     totalSelectedRooms <= 0 || totalSelectedRooms > MAX_COMBINED_ROOMS ||
-                                    !(property.categoryRooms && property.categoryRooms.length > 0) || // Should be true if property loaded
+                                    !(property.categoryRooms && property.categoryRooms.length > 0) || 
                                     guestCount > totalSelectedRooms * MAX_OCCUPANTS_PER_ROOM ||
                                     !!availabilityError 
                                 }
@@ -1135,7 +1247,7 @@ export default function PropertyDetailPage() {
                         <div className="mb-5"><div className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center border-4 border-green-200"><CheckCircle className="w-12 h-12 text-green-500" /></div></div>
                         <h3 className="text-2xl font-bold text-gray-800 mb-3">Booking Confirmed!</h3>
                         <p className="mb-6 text-gray-600">Your booking for <span className="font-semibold">{property.title}</span> has been successfully processed. A confirmation email has been sent to <span className="font-semibold">{bookingData.email}</span>.</p>
-                        <button onClick={() => { setBookingConfirmed(false); router.refresh(); /* Optionally refresh or navigate */}} className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-blue-300">Done</button>
+                        <button onClick={() => { setBookingConfirmed(false); router.refresh(); }} className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-blue-300">Done</button>
                     </div>
                 </div>
             )}

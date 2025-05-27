@@ -122,7 +122,7 @@ interface ChildPricingRowConfig {
 
 const childPricingConfig: ChildPricingRowConfig[] = [
     { age: '5-12 yrs', baseField: 'child5to12Price', discField: 'discountedChild5to12Price' },
-    { age: '12-18 yrs', baseField: 'child12to18Price', discField: 'discountedChild12to18Price' },
+    // { age: '12-18 yrs', baseField: 'child12to18Price', discField: 'discountedChild12to18Price' },
 ];
 
 
