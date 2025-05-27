@@ -830,7 +830,7 @@ export default function PropertyDetailPage() {
                     layout="fill" 
                     objectFit="cover" 
                     priority 
-                    className="transform transition-transform duration-500 group-hover:scale-110 brightness-70" 
+                    className="transform transition-transform duration-500 group-hover:scale-110" 
                     onError={() => setSelectedImage('/images/placeholder-property.jpg')}
                  />
                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex flex-col justify-end p-6 md:p-10">
