@@ -276,26 +276,26 @@ export function Header() {
             <div className="flex items-center gap-2">
               {/* Adjusted Login Button Style */}
               <button 
-                onClick={() => openSignIn()}
-                className="flex items-center space-x-1 bg-white text-[#003b95] px-3 py-2 rounded-full hover:bg-gray-200 transition text-sm font-medium"
-              >
-                <span>Login</span>
-              </button>
-              {/* Adjusted Sign Up Button Style */}
-              <button 
-                onClick={handleCustomerSignUp}
-                className="hidden md:flex items-center space-x-1 bg-white text-[#003b95] px-3 py-2 rounded-full hover:bg-gray-200 transition text-sm font-medium"
-              >
-                <span>Sign Up</span>
-              </button>
-               {/* Kept List Property button green for distinction, ensured text contrast */}
-              <button 
                 onClick={handleManagerSignUp}
                 className="flex items-center space-x-1 bg-green-500 text-white px-3 py-2 rounded-full hover:bg-green-600 transition text-sm font-medium" // Slightly brighter green
               >
                 <Building className="w-4 h-4 mr-1" />
                 <span>List Your Property</span>
               </button>
+              <button 
+                onClick={handleCustomerSignUp}
+                className="hidden md:flex items-center space-x-1 bg-white text-[#003b95] px-3 py-2 rounded-full hover:bg-gray-200 transition text-sm font-medium"
+              >
+                <span>Register</span>
+              </button>
+              <button 
+                onClick={() => openSignIn()}
+                className="flex items-center space-x-1 bg-white text-[#003b95] px-3 py-2 rounded-full hover:bg-gray-200 transition text-sm font-medium"
+              >
+                <span>Sign In</span>
+              </button>
+              {/* Adjusted Sign Up Button Style */}
+               {/* Kept List Property button green for distinction, ensured text contrast */}
             </div>
           </SignedOut>
           

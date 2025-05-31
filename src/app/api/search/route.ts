@@ -178,7 +178,6 @@ function addPropertyFilters(query: QueryType, searchParams: URLSearchParams) {
   if (propertyType) {
     query['type'] = propertyType;
   }
-  
   // Property rating filter
   const propertyRating = searchParams.get('propertyRating');
   if (propertyRating && parseFloat(propertyRating)!=0 && !isNaN(parseFloat(propertyRating))) {

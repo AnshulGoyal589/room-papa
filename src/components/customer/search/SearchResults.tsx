@@ -4,48 +4,65 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MapPin, Calendar, Star, Bookmark, Heart, X } from 'lucide-react';
-import { Property } from '@/lib/mongodb/models/Property';
+import { MapPin, Calendar, Bookmark, Heart, X, BedDouble, Sparkles, Plane, Train, Car } from 'lucide-react'; // Added more icons
+import { Property } from '@/lib/mongodb/models/Property'; // Assuming ObjectId is handled
 import { Trip } from '@/lib/mongodb/models/Trip';
-import { Travelling } from '@/lib/mongodb/models/Travelling';
+import { Travelling } from '@/lib/mongodb/models/Travelling'; // Assuming TransportationType is defined
+// Define TransportationType as an enum
+export enum TransportationType {
+  flight = 'flight',
+  train = 'train',
+  bus = 'bus',
+  car = 'car',
+  boat = 'boat',
+  other = 'other',
+}
+
+
+// Helper function for PropertyType (if you have specific display needs)
+// enum PropertyType { hotel = 'Hotel', apartment = 'Apartment', resort = 'Resort', villa = 'Villa', guestHouse = 'Guest House' }
+
+// Helper to get rating description
+const getRatingDescription = (rating?: number): { text: string; className: string } => {
+  if (rating === undefined || rating === null) return { text: "No rating", className: "text-gray-600" };
+  if (rating >= 9.5) return { text: "Exceptional", className: "text-green-700" };
+  if (rating >= 9.0) return { text: "Superb", className: "text-green-600" };
+  if (rating >= 8.5) return { text: "Fabulous", className: "text-blue-700" };
+  if (rating >= 8.0) return { text: "Very Good", className: "text-blue-600" };
+  if (rating >= 7.0) return { text: "Good", className: "text-teal-600" };
+  if (rating >= 6.0) return { text: "Pleasant", className: "text-orange-600" };
+  return { text: "Review score", className: "text-gray-700" };
+};
+
+// Helper to format review count
+const formatReviewCount = (reviews?: Array<{ comment: string; rating: number }>): string => {
+  const count = reviews?.length || 0;
+  if (count === 0) return "No reviews yet";
+  return `${count} review${count === 1 ? '' : 's'}`;
+};
+
 
 export default function SearchResults() {
   const router = useRouter();
   const currentSearchParams = useSearchParams();
-  // const [searchParams, setSearchParams] = useState<{ [key: string]: string }>({});
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState<Array<Property | Trip | Travelling>>([]);
   const [isLoading, setIsLoading] = useState(false);
-  // const [sortBy, setSortBy] = useState('createdAt');
-  // const [sortOrder, setSortOrder] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [category, setCategory] = useState<string>('property');
   const [filterChips, setFilterChips] = useState<Array<{key: string, value: string}>>([]);
 
-  // Parse search parameters on component mount and when URL changes
   useEffect(() => {
     const params: { [key: string]: string } = {};
     currentSearchParams?.forEach((value, key) => {
       params[key] = value;
     });
-    // setSearchParams(params);
-    
-    // Set initial states from URL params
-    // setSortBy(params.sortBy || 'createdAt');
-    // setSortOrder(params.sortOrder || 'desc');
     setCurrentPage(parseInt(params.page || '1'));
     setCategory(params.category || 'property');
     
-    // Create filter chips from URL params (excluding pagination, sorting, and category)
     const chips: Array<{key: string, value: string}> = [];
     Object.entries(params).forEach(([key, value]) => {
-      if (
-        key !== 'page' && 
-        key !== 'sortBy' && 
-        key !== 'sortOrder' && 
-        key !== 'category' &&
-        value
-      ) {
+      if (key !== 'page' && key !== 'sortBy' && key !== 'sortOrder' && key !== 'category' && value) {
         chips.push({ key, value });
       }
     });
@@ -59,17 +76,24 @@ export default function SearchResults() {
       
       try {
         const response = await fetch(`/api/search?${params.toString()}`);
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status}`);
+        }
         const data = await response.json();
-        setResults(data.results);
-        setTotalPages(Math.ceil(data.total / 10));
+        setResults(data.results || []); // Ensure results is always an array
+        setTotalPages(Math.ceil((data.total || 0) / 10)); // Ensure total is a number
       } catch (error) {
         console.error('Error fetching search results:', error);
+        setResults([]); // Set to empty array on error
+        setTotalPages(0);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadData();
+    if (currentSearchParams) { // Only load if searchParams are available
+        loadData();
+    }
   }, [currentSearchParams]);
 
   const handlePageChange = (page: number) => {
@@ -81,232 +105,346 @@ export default function SearchResults() {
     window.scrollTo(0, 0);
   };
 
-  // const handleSortChange = (field: string, order: string) => {
-  //   const params = new URLSearchParams(currentSearchParams?.toString() || '');
-  //   params.set('sortBy', field);
-  //   params.set('sortOrder', order);
-  //   params.set('page', '1'); // Reset to first page when sorting changes
-  //   router.push(`/customer/search?${params.toString()}`, { scroll: false });
-  // };
-
   const handleRemoveFilter = (chipKey: string) => {
     const params = new URLSearchParams(currentSearchParams?.toString() || '');
     params.delete(chipKey);
-    params.set('page', '1'); // Reset to first page when filters change
+    params.set('page', '1'); 
     router.push(`/customer/search?${params.toString()}`, { scroll: false });
   };
 
-  // Format filter chip label for display
   const formatChipLabel = (key: string, value: string): string => {
-    // Custom formatting for specific filter types
     switch (key) {
-      case 'minPrice':
-        return `Price > ${value}`;
-      case 'maxPrice':
-        return `Price < ${value}`;
-      case 'rooms':
-        return `${value} Rooms`;
-      case 'city':
-      case 'country':
-        return value;
-      case 'startDate':
-        return `From: ${new Date(value).toLocaleDateString()}`;
-      case 'endDate':
-        return `To: ${new Date(value).toLocaleDateString()}`;
+      case 'minPrice': return `Min Price: ${value}`;
+      case 'maxPrice': return `Max Price: ${value}`;
+      case 'rooms': return `${value} Room${parseInt(value) > 1 ? 's' : ''}`;
+      case 'city': return `City: ${value}`;
+      case 'country': return `Country: ${value}`;
+      case 'checkIn': return `Check-in: ${new Date(value).toLocaleDateString()}`; // Changed from startDate
+      case 'checkOut': return `Check-out: ${new Date(value).toLocaleDateString()}`; // Changed from endDate
+      case 'adults': return `${value} Adult${parseInt(value) > 1 ? 's' : ''}`;
+      case 'children': return `${value} Child${parseInt(value) > 1 ? 'ren' : ''}`;
+      case 'pets': return value === 'true' ? 'Pets Allowed' : 'No Pets';
+      case 'title': return `Keyword: ${value}`;
       default:
-        // Format camelCase keys to readable text
-        const formattedKey = key.replace(/([A-Z])/g, ' $1').toLowerCase();
+        const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
         return `${formattedKey}: ${value}`;
     }
   };
 
-  const renderPropertyCard = (property: Property) => (
+  const renderPropertyCard = (property: Property) => {
+    const ratingDesc = getRatingDescription(property.propertyRating);
+    const reviewText = formatReviewCount(property.review);
+    const propertyTypeDisplay = property.type ? property.type.charAt(0).toUpperCase() + property.type.slice(1) : 'Property';
+
+    return (
     <div 
       key={property._id?.toString()} 
-      className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow" 
-      onClick={() => router.push(`/customer/property/${property._id}`)}
+      className="flex flex-col md:flex-row border border-gray-300 rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 bg-white group"
     >
-      <div className="relative h-48">
-        {
-          property.bannerImage && 
-            <Image 
-              src={property.bannerImage.url} 
-              alt={property.title || ""}
-              fill
-              style={{ objectFit: 'cover' }}
-            />
-        }
-        <button className="absolute top-3 right-3 bg-white p-1.5 rounded-full">
-          <Heart size={18} className="text-gray-500 hover:text-red-500" />
+      {/* Image Section */}
+      <div className="md:w-1/3 lg:w-[280px] relative cursor-pointer" onClick={() => router.push(`/customer/property/${property._id}`)}>
+        {property.bannerImage?.url ? (
+          <Image 
+            src={property.bannerImage.url} 
+            alt={property.title || "Property image"}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 33vw, 280px"
+            style={{ objectFit: 'cover' }}
+            
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+            <BedDouble size={48} className="text-gray-400" />
+          </div>
+        )}
+        <button className="absolute top-3 right-3 bg-black bg-opacity-40 hover:bg-opacity-60 p-2 rounded-full transition-colors">
+          <Heart size={20} className="text-white" />
         </button>
       </div>
       
-      <div className="p-4">
-        <div className="flex justify-between mb-2">
-          <div className="flex items-center">
-            <MapPin size={16} className="text-gray-500 mr-1" />
-            <span className="text-sm text-gray-500">{property.location?.city}, {property.location?.country}</span>
-          </div>
-          {property.totalRating && (
-            <div className="flex items-center gap-1">
-              <span className="text-sm font-medium">{property.propertyRating?.toString()}</span>
-              <Star size={16} className="text-yellow-500 mr-1" />
+      {/* Content Section */}
+      <div className="md:w-2/3 lg:flex-grow p-4 flex flex-col">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-start mb-1">
+          <Link href={`/customer/property/${property._id}`} className="block">
+            <h3 className="text-2xl font-bold text-blue-700 hover:text-blue-800 transition-colors line-clamp-2">{property.title || "Untitled Property"}</h3>
+          </Link>
+          {property.propertyRating && (
+            <div className="flex items-center gap-2 mt-1 sm:mt-0 sm:ml-4 flex-shrink-0">
+              <div className="text-right">
+                <p className={`text-sm font-semibold ${ratingDesc.className}`}>{ratingDesc.text}</p>
+                <p className="text-xs text-gray-500">{reviewText}</p>
+              </div>
+              <div className="bg-blue-700 text-white text-base font-bold px-2 py-1 rounded-md h-fit">
+                {property.propertyRating.toFixed(1)}
+              </div>
             </div>
           )}
         </div>
-        
-        <Link href={`/properties/${property._id}`} className="block">
-          <h3 className="font-semibold text-lg mb-1 hover:text-primary">{property.title}</h3>
-        </Link>
-        
-        <div className="flex items-center mt-2 text-sm text-gray-600 mb-3">
-          <span>{property.rooms} Rooms</span>
-        </div>
-        
-        <div className="flex justify-between items-center mt-4">
-          <div>
-            <span className="text-lg font-bold">{property.costing.currency} {property.costing.discountedPrice }</span>
-            <span className="text-gray-500"> / night</span>
-          </div>
-          <Link href={`/properties/${property._id}`} className="bg-primary text-white px-4 py-2 rounded-md text-sm">
-            View Details
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
 
-  const renderTripCard = (trip: Trip) => (
-    <div key={trip._id?.toString()} 
-      className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-      onClick={() => router.push(`/customer/trip/${trip._id}`)}
-    >
-      <div className="relative h-48">
-        {trip.bannerImage ? (
-          <Image 
-            src={trip.bannerImage.url || '/placeholder-trip.jpg'} 
-            alt={trip.title || ""}
-            fill
-            style={{ objectFit: 'cover' }}
-          />
-        ) : (
-          <Image 
-            src="/placeholder-trip.jpg" 
-            alt={trip.title || ""}
-            fill
-            style={{ objectFit: 'cover' }}
-          />
-        )}
-      </div>
-      
-      <div className="p-4">
-        <div className="flex items-center mb-2">
-          <MapPin size={16} className="text-gray-500 mr-1" />
-          <span className="text-sm text-gray-500">{trip.destination?.city}, {trip.destination?.country}</span>
+        <div className="flex items-center text-xs text-blue-600 hover:underline mb-2 cursor-pointer" onClick={() => router.push(`/customer/property/${property._id}#location`)}>
+          <MapPin size={14} className="mr-1" />
+          <span>{property.location?.city}, {property.location?.country}</span>
+          {/* Optionally, add "Show on map" if you have a maps link */}
         </div>
-        
-        <Link href={`/trips/${trip._id}`} className="block">
-          <h3 className="font-semibold text-lg mb-1 hover:text-primary">{trip.title}</h3>
-        </Link>
-        
-        <div className="flex items-center mt-2 text-sm text-gray-600">
-          <Calendar size={16} className="mr-1" />
-          <span>{new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}</span>
+
+        <div className="text-sm text-gray-600 mb-3">
+          <span className="font-semibold">{propertyTypeDisplay}</span> • <span>{property.rooms} Room{property.rooms === 1 ? '' : 's'}</span>
         </div>
-        
-        {trip.costing && (
-          <div className="mt-2 text-sm">
-            <span className="font-medium">Budget: </span>
-            <span>{trip.costing.discountedPrice} {trip.costing.currency}</span>
+
+        <p className="text-sm text-gray-700 mb-3 line-clamp-2 md:line-clamp-3 flex-grow">
+          {property.description || "No description available."}
+        </p>
+
+        {property.amenities && property.amenities.length > 0 && (
+          <div className="mb-3">
+            <span className="text-sm font-semibold text-green-700">
+              {property.amenities.slice(0, 20).join(' • ')}
+              {property.amenities.length > 20 ? ' • ...' : ''}
+            </span>
           </div>
         )}
         
-        <div className="flex justify-between items-center mt-4">
-          <div className="flex items-center text-sm text-gray-500">
-            <span>{trip.activities?.length || 0} activities</span>
-          </div>
-          <Link href={`/trips/${trip._id}`} className="bg-primary text-white px-4 py-2 rounded-md text-sm">
-            View Trip
+        {/* Price and CTA Section - Pushed to bottom */}
+        <div className="mt-auto pt-2 text-right">
+          {property.costing && (
+            <>
+              {property.costing.price > property.costing.discountedPrice && (
+                  <span className="text-sm text-gray-500 line-through mr-2">
+                      {property.costing.currency} {property.costing.price.toFixed(2)}
+                  </span>
+              )}
+              <span className="text-2xl font-bold text-gray-800">
+                {property.costing.currency} {property.costing.discountedPrice.toFixed(2)}
+              </span>
+              <p className="text-xs text-gray-500">per night</p>
+              <p className="text-xs text-gray-500">Includes taxes and fees</p>
+            </>
+          )}
+          <Link 
+            href={`/customer/property/${property._id}?checkIn=${currentSearchParams?.get('checkIn') || ''}&checkOut=${currentSearchParams?.get('checkOut') || ''}&adults=${currentSearchParams?.get('adults') || '1'}`} 
+            className="mt-2 inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-md text-sm transition-colors w-full sm:w-auto"
+          >
+            See availability
           </Link>
         </div>
       </div>
     </div>
-  );
+    );
+  };
   
-  const renderTravellingCard = (itinerary: Travelling) => (
+  const renderTripCard = (trip: Trip) => {
+    const ratingDesc = getRatingDescription(trip.rating); // Assuming 'rating' is numerical for trips too
+    const reviewText = formatReviewCount(trip.review); // Using the same review count formatter
+    const placeholderImage = '/placeholder-trip.jpg';
 
-    <div key={itinerary._id?.toString()}
-      className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-      onClick={() => router.push(`/customer/travelling/${itinerary._id}`)}
-    >
-      <div className="relative h-48">
-        {itinerary.bannerImage ? (
+    return (
+      <div 
+        key={trip._id?.toString()} 
+        className="flex flex-col md:flex-row border border-gray-300 rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 bg-white group"
+      >
+        {/* Image Section */}
+        <div className="md:w-1/3 lg:w-[280px] relative cursor-pointer" onClick={() => router.push(`/customer/trip/${trip._id}`)}>
           <Image 
-            src={itinerary.bannerImage.url || '/placeholder-itinerary.jpg'} 
-            alt={itinerary.title || ""}
+            src={trip.bannerImage?.url || placeholderImage} 
+            alt={trip.title || "Trip image"}
             fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 33vw, 280px"
             style={{ objectFit: 'cover' }}
+            
+            onError={(e) => (e.currentTarget.src = placeholderImage)} // Fallback for broken image URLs
           />
-        ) : (
-          <Image 
-            src="/placeholder-itinerary.jpg" 
-            alt={itinerary.title || ""}
-            fill
-            style={{ objectFit: 'cover' }}
-          />
-        )}
-        <div className="absolute top-3 right-3 flex space-x-2">
-          <button className="bg-white p-1.5 rounded-full">
-            <Bookmark size={16} className="text-gray-500 hover:text-primary" />
+           <button className="absolute top-3 right-3 bg-black bg-opacity-40 hover:bg-opacity-60 p-2 rounded-full transition-colors">
+            <Heart size={20} className="text-white" />
           </button>
         </div>
-      </div>
-      
-      <div className="p-4">
-        <Link href={`/itineraries/${itinerary._id}`} className="block">
-          <h3 className="font-semibold text-lg mb-1 hover:text-primary">{itinerary.title}</h3>
-        </Link>
-        
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{itinerary.description || 'No description available'}</p>
-        
-        <div className="flex items-center mt-2 text-sm text-gray-600">
-          <Calendar size={16} className="mr-1" />
+
+        {/* Content Section */}
+        <div className="md:w-2/3 lg:flex-grow p-4 flex flex-col">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-start mb-1">
+            <Link href={`/customer/trip/${trip._id}`} className="block">
+              <h3 className="text-xl font-bold text-blue-700 hover:text-blue-800 transition-colors line-clamp-2">{trip.title || "Adventure Awaits"}</h3>
+            </Link>
+            {trip.rating && (
+              <div className="flex items-center gap-2 mt-1 sm:mt-0 sm:ml-4 flex-shrink-0">
+                <div className="text-right">
+                  <p className={`text-sm font-semibold ${ratingDesc.className}`}>{ratingDesc.text}</p>
+                  <p className="text-xs text-gray-500">{reviewText}</p>
+                </div>
+                <div className="bg-blue-700 text-white text-base font-bold px-2 py-1 rounded-md h-fit">
+                  {trip.rating.toFixed(1)}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center text-xs text-blue-600 hover:underline mb-2 cursor-pointer" onClick={() => router.push(`/customer/trip/${trip._id}`)}>
+            <MapPin size={14} className="mr-1" />
+            <span>{trip.destination?.city}, {trip.destination?.country}</span>
+          </div>
+          
+          <div className="flex items-center text-sm text-gray-600 mb-2">
+            <Calendar size={16} className="mr-2 text-gray-500" />
+            <span>{new Date(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(trip.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+          </div>
+
+          {trip.activities && trip.activities.length > 0 && (
+            <div className="flex items-center text-sm text-gray-600 mb-3">
+              <Sparkles size={16} className="mr-2 text-yellow-500" />
+              <span>{trip.activities.length} Activit{trip.activities.length === 1 ? 'y' : 'ies'} included</span>
+            </div>
+          )}
+          
+          <p className="text-sm text-gray-700 mb-3 line-clamp-2 md:line-clamp-3 flex-grow">
+            {trip.description || "Discover amazing places and experiences on this trip."}
+          </p>
+
+          {/* Price and CTA Section */}
+          <div className="mt-auto pt-2 text-right">
+            {trip.costing && (
+              <>
+                {trip.costing.price > trip.costing.discountedPrice && (
+                    <span className="text-sm text-gray-500 line-through mr-2">
+                        {trip.costing.currency} {trip.costing.price.toFixed(2)}
+                    </span>
+                )}
+                <span className="text-2xl font-bold text-gray-800">
+                  {trip.costing.currency} {trip.costing.discountedPrice.toFixed(2)}
+                </span>
+                <p className="text-xs text-gray-500">total per person</p>
+              </>
+            )}
+            <Link 
+              href={`/customer/trip/${trip._id}`} 
+              className="mt-2 inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-md text-sm transition-colors w-full sm:w-auto"
+            >
+              View Details
+            </Link>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
+  
+  const renderTravellingCard = (itinerary: Travelling) => {
+    // Travelling schema is a bit different, adapt as best as possible
+    const placeholderImage = '/placeholder-itinerary.jpg';
+    const getTransportationIcon = (type?: TransportationType) => {
+      switch (type) {
+        case TransportationType.flight: return <Plane size={16} className="mr-2 text-blue-500" />;
+        case TransportationType.train: return <Train size={16} className="mr-2 text-green-500" />;
+        case TransportationType.bus: return <Car size={16} className="mr-2 text-orange-500" />; // Assuming Car icon for Bus
+        case TransportationType.car: return <Car size={16} className="mr-2 text-red-500" />;
+        default: return <MapPin size={16} className="mr-2 text-gray-500" />;
+      }
+    };
+
+    return (
+      <div 
+        key={itinerary._id?.toString()}
+        className="flex flex-col md:flex-row border border-gray-300 rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 bg-white group"
+      >
+        {/* Image Section */}
+        <div className="md:w-1/3 lg:w-[280px] relative cursor-pointer" onClick={() => router.push(`/customer/travelling/${itinerary._id}`)}>
+          <Image 
+            src={itinerary.bannerImage?.url || placeholderImage} 
+            alt={itinerary.title || "Itinerary image"}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 33vw, 280px"
+            style={{ objectFit: 'cover' }}
+            
+            onError={(e) => (e.currentTarget.src = placeholderImage)}
+          />
+          <button className="absolute top-3 right-3 bg-black bg-opacity-40 hover:bg-opacity-60 p-2 rounded-full transition-colors">
+            <Bookmark size={20} className="text-white" />
+          </button>
+        </div>
+
+        {/* Content Section */}
+        <div className="md:w-2/3 lg:flex-grow p-4 flex flex-col">
+          <Link href={`/customer/travelling/${itinerary._id}`} className="block mb-1">
+            <h3 className="text-xl font-bold text-blue-700 hover:text-blue-800 transition-colors line-clamp-2">{itinerary.title || "Custom Itinerary"}</h3>
+          </Link>
+          
+          {itinerary.transportation && (
+            <div className="flex items-center text-sm text-gray-600 mb-2">
+              {getTransportationIcon(itinerary.transportation.type as TransportationType)}
+              <span>
+                {itinerary.transportation.type ? itinerary.transportation.type.charAt(0).toUpperCase() + itinerary.transportation.type.slice(1) : 'Travel'} from <strong>{itinerary.transportation.from}</strong> to <strong>{itinerary.transportation.to}</strong>
+              </span>
+            </div>
+          )}
+          
+          {itinerary.transportation?.departureTime && itinerary.transportation?.arrivalTime && (
+            <div className="flex items-center text-sm text-gray-600 mb-3">
+              <Calendar size={16} className="mr-2 text-gray-500" />
+              <span>Dep: {new Date(itinerary.transportation.departureTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span className="mx-1">•</span>
+              <span>Arr: {new Date(itinerary.transportation.arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+          )}
+
+          <p className="text-sm text-gray-700 mb-3 line-clamp-2 md:line-clamp-3 flex-grow">
+            {itinerary.description || "Plan your perfect journey with this itinerary."}
+          </p>
+          
+          {/* Price and CTA Section */}
+          <div className="mt-auto pt-2 text-right">
+            {itinerary.costing && (
+              <>
+                {itinerary.costing.price > itinerary.costing.discountedPrice && (
+                    <span className="text-sm text-gray-500 line-through mr-2">
+                        {itinerary.costing.currency} {itinerary.costing.price.toFixed(2)}
+                    </span>
+                )}
+                <span className="text-2xl font-bold text-gray-800">
+                  {itinerary.costing.currency} {itinerary.costing.discountedPrice.toFixed(2)}
+                </span>
+                <p className="text-xs text-gray-500">estimated cost</p>
+              </>
+            )}
+            <Link 
+              href={`/customer/travelling/${itinerary._id}`} 
+              className="mt-2 inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-md text-sm transition-colors w-full sm:w-auto"
+            >
+              View Itinerary
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
 
   return (
-    <div>
+    <div className="container mx-auto px-4 py-8">
       {/* Filter Chips Section */}
       {filterChips.length > 0 && (
-        <div className="mb-6">
-          <div className="flex flex-wrap gap-2">
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <h3 className="text-md font-semibold mb-3 text-gray-700">Active Filters:</h3>
+          <div className="flex flex-wrap gap-2 items-center">
             {filterChips.map((chip) => (
               <div 
-                key={chip.key}
-                className="flex items-center bg-gray-100 rounded-full px-3 py-1 text-sm"
+                key={`${chip.key}-${chip.value}`} // Ensure unique key
+                className="flex items-center bg-blue-100 text-blue-700 rounded-full px-3 py-1.5 text-sm font-medium"
               >
                 <span>{formatChipLabel(chip.key, chip.value)}</span>
                 <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveFilter(chip.key);
-                  }}
-                  className="ml-2 text-gray-500 hover:text-gray-700"
+                  onClick={(e) => { e.stopPropagation(); handleRemoveFilter(chip.key); }}
+                  className="ml-2 text-blue-500 hover:text-blue-700"
+                  aria-label={`Remove filter ${chip.key}`}
                 >
-                  <X size={14} />
+                  <X size={16} />
                 </button>
               </div>
             ))}
-            {filterChips.length > 1 && (
+            {filterChips.length > 0 && ( // Always show if there's at least one filter
               <button 
                 onClick={() => {
                   const params = new URLSearchParams();
-                  params.set('category', category);
+                  if (category) params.set('category', category); // Preserve category if set
                   router.push(`/customer/search?${params.toString()}`);
                 }}
-                className="text-sm text-primary hover:underline"
+                className="text-sm text-red-600 hover:text-red-800 hover:underline font-medium ml-2"
               >
                 Clear all filters
               </button>
@@ -316,109 +454,87 @@ export default function SearchResults() {
       )}
 
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">
-          {results.length} {category === 'property' ? 'Properties' : category === 'trip' ? 'Trips' : 'Itineraries'} Found
+        <h2 className="text-2xl font-bold text-gray-800">
+          {isLoading ? 'Searching...' : `${results.length} ${category === 'property' ? 'Properties' : category === 'trip' ? 'Trips' : 'Itineraries'} Found`}
         </h2>
-        
-        {/* <div className="flex items-center space-x-4">
-          <div>
-            <label htmlFor="sortBy" className="mr-2 text-sm">Sort by:</label>
-            <select
-              id="sortBy"
-              value={`${sortBy}-${sortOrder}`}
-              onChange={(e) => {
-                const [field, order] = e.target.value.split('-');
-                handleSortChange(field, order);
-              }}
-              className="p-2 border rounded-md"
-            >
-              <option value="createdAt-desc">Newest</option>
-              <option value="createdAt-asc">Oldest</option>
-              <option value="costing.discountedPrice-asc">Price (Low to High)</option>
-              <option value="costing.discountedPrice-desc">Price (High to Low)</option>
-              <option value="rat-asc">Highest Rated</option>
-              
-              {category === 'trip' && (
-                <>
-                  <option value="startDate-asc">Departure (Soonest)</option>
-                  <option value="duration-asc">Duration (Shortest)</option>
-                  <option value="duration-desc">Duration (Longest)</option>
-                </>
-              )}
-              {category === 'travelling' && (
-                <>
-                  <option value="likes-desc">Most Popular</option>
-                  <option value="days.length-desc">Longest Itineraries</option>
-                </>
-              )}
-            </select>
-          </div>
-        </div> */}
+        {/* Sorting dropdown can be added here if uncommented and styled */}
       </div>
       
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, index) => (
-            <div key={index} className="bg-gray-100 rounded-lg h-80 animate-pulse"></div>
+        <div className="grid grid-cols-1 gap-6">
+          {[...Array(3)].map((_, index) => ( // Show fewer, taller skeletons
+            <div key={index} className="flex flex-col md:flex-row border border-gray-200 rounded-lg overflow-hidden bg-white h-[250px] md:h-[220px]">
+                <div className="md:w-1/3 lg:w-[280px] bg-gray-200 animate-pulse h-full"></div>
+                <div className="md:w-2/3 lg:flex-grow p-4 flex flex-col">
+                    <div className="h-6 bg-gray-200 rounded w-3/4 mb-2 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-4 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded w-full mb-1 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded w-5/6 mb-auto animate-pulse"></div>
+                    <div className="h-10 bg-gray-200 rounded w-1/3 ml-auto animate-pulse"></div>
+                </div>
+            </div>
           ))}
         </div>
       ) : results.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 gap-6 mb-12"> {/* Changed gap */}
           {results.map((item) => {
+            // Type guard to ensure item has _id
+            if (!item || typeof item._id === 'undefined') {
+                console.warn("Search result item is missing _id:", item);
+                return null; // Skip rendering this item
+            }
             switch (category) {
               case 'trip':
                 return renderTripCard(item as Trip);
               case 'travelling':
                 return renderTravellingCard(item as Travelling);
-              default:
+              default: // property
                 return renderPropertyCard(item as Property);
             }
           })}
         </div>
       ) : (
-        <div className="text-center py-12">
-          <h3 className="text-xl font-medium mb-2">No results found</h3>
-          <p className="text-gray-500">Try adjusting your search criteria</p>
+        <div className="text-center py-16">
+          <MapPin size={48} className="mx-auto text-gray-400 mb-4" />
+          <h3 className="text-2xl font-semibold text-gray-700 mb-2">No results found</h3>
+          <p className="text-gray-500">Try adjusting your search filters or check back later.</p>
         </div>
       )}
       
-      {totalPages > 1 && (
-        <div className="flex justify-center mt-8">
-          <nav className="flex items-center space-x-2">
+      {totalPages > 1 && !isLoading && ( // Hide pagination when loading
+        <div className="flex justify-center mt-10">
+          <nav className="flex items-center space-x-1 sm:space-x-2">
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="px-3 py-1 rounded-md border disabled:opacity-50"
+              className="px-3 sm:px-4 py-2 rounded-md border bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
             >
               Previous
             </button>
             
             {[...Array(totalPages)].map((_, index) => {
               const pageNumber = index + 1;
-              
-              if (
-                pageNumber === 1 || 
-                pageNumber === totalPages || 
-                (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
-              ) {
+              // Logic for ellipsis in pagination
+              const showPage = pageNumber === 1 || pageNumber === totalPages || (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1);
+              const showEllipsisStart = pageNumber === currentPage - 2 && currentPage > 3;
+              const showEllipsisEnd = pageNumber === currentPage + 2 && currentPage < totalPages - 2;
+
+              if (showPage) {
                 return (
                   <button
                     key={pageNumber}
                     onClick={() => handlePageChange(pageNumber)}
-                    className={`px-3 py-1 rounded-md ${
+                    className={`px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                       pageNumber === currentPage
-                        ? 'bg-primary text-white'
-                        : 'border hover:bg-gray-50'
+                        ? 'bg-blue-600 text-white border border-blue-600'
+                        : 'border bg-white text-gray-600 hover:bg-gray-100 hover:border-gray-400'
                     }`}
                   >
                     {pageNumber}
                   </button>
                 );
-              } else if (
-                (pageNumber === currentPage - 2 && currentPage > 3) || 
-                (pageNumber === currentPage + 2 && currentPage < totalPages - 2)
-              ) {
-                return <span key={pageNumber}>...</span>;
+              } else if (showEllipsisStart || showEllipsisEnd) {
+                return <span key={`ellipsis-${pageNumber}`} className="px-2 py-2 text-gray-500">...</span>;
               }
               return null;
             })}
@@ -426,7 +542,7 @@ export default function SearchResults() {
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 rounded-md border disabled:opacity-50"
+              className="px-3 sm:px-4 py-2 rounded-md border bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
             >
               Next
             </button>
@@ -436,3 +552,13 @@ export default function SearchResults() {
     </div>
   );
 }
+
+// Define TransportationType enum if not already globally available
+// enum TransportationType {
+//   Flight = 'flight',
+//   Train = 'train',
+//   Bus = 'bus',
+//   Car = 'car',
+//   Boat = 'boat',
+//   Other = 'other',
+// }

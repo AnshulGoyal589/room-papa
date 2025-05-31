@@ -11,15 +11,15 @@ export default function StaysSearchForm() {
   // State variables with proper typing
   const [title, setLocation] = useState<string>('');
   const [dateRange, setDateRange] = useState<DateRange>({
-    startDate: new Date(2025, 3, 18), // April 18, 2025
-    endDate: new Date(2025, 4, 23)    // May 23, 2025
+    startDate: new Date(Date.now()),
+    endDate: new Date(Date.now()+  7 * 24 * 60 * 60 * 1000 )  
   });
   const [adults, setAdults] = useState<number>(2);
   const [children, setChildren] = useState<number>(0);
   const [rooms, setRooms] = useState<number>(1);
   const [showCalendar, setShowCalendar] = useState<boolean>(false);
   const [showGuests, setShowGuests] = useState<boolean>(false);
-  const [selectedMonth, setSelectedMonth] = useState<number>(4); // April (0-indexed)
+  const [selectedMonth, setSelectedMonth] = useState<number>(3); // Initial state April (was 4, month is 0-indexed)
   const [selectedYear, setSelectedYear] = useState<number>(2025);
   const [hasPets, setHasPets] = useState<boolean>(false);
   const [selectionPhase, setSelectionPhase] = useState<number>(0); // 0: no selection, 1: start date selected
@@ -37,14 +37,29 @@ export default function StaysSearchForm() {
   };
 
   // Format date for URL parameters (YYYY-MM-DD)
-  const formatDateForURL = (date: Date): string => {
-    return date.toISOString().split('T')[0];
-  };
+const formatDateForURL = (date: Date): string => {
+  const year = date.getFullYear(); // Gets the year according to local time
+  const month = date.getMonth() + 1; // Gets the month (0-11) according to local time, so add 1
+  const day = date.getDate();       // Gets the day of the month according to local time
 
-  // Parse date from URL parameter
+  // Pad month and day with a leading zero if they are single digit
+  const monthFormatted = month < 10 ? `0${month}` : month.toString();
+  const dayFormatted = day < 10 ? `0${day}` : day.toString();
+
+  return `${year}-${monthFormatted}-${dayFormatted}`;
+};
+
+  // Parse date from URL parameter (YYYY-MM-DD string)
   const parseDateFromURL = (dateString: string): Date => {
-    if (!dateString) return new Date();
-    return new Date(dateString);
+    // dateString is in 'YYYY-MM-DD' format.
+    // Splitting and using new Date(year, monthIndex, day) ensures it's local midnight.
+    const parts = dateString.split('-');
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10); // This month is 1-indexed (1 for Jan, 12 for Dec)
+    const day = parseInt(parts[2], 10);
+    
+    // Month for Date constructor is 0-indexed (0 for Jan, 11 for Dec)
+    return new Date(year, month - 1, day, 0, 0, 0, 0); // Explicitly set time to midnight local
   };
 
   // Get initial values from URL parameters
@@ -52,63 +67,82 @@ export default function StaysSearchForm() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
       
-      // Get title
       const titleParam = urlParams.get('title');
       if (titleParam) setLocation(titleParam);
       
-      // Get dates
       const checkInParam = urlParams.get('checkIn');
       const checkOutParam = urlParams.get('checkOut');
       
-      const startDate = checkInParam ? parseDateFromURL(checkInParam) : new Date(2025, 3, 18);
-      const endDate = checkOutParam ? parseDateFromURL(checkOutParam) : new Date(2025, 4, 23);
+      // Default dates: today at midnight and 7 days from today at midnight
+      const defaultStartDate = new Date(localStorage.getItem('checkIn')  as string) || new Date();
+    
+      defaultStartDate.setHours(0, 0, 0, 0);
+
+      const defaultEndDate = new Date(localStorage.getItem('checkOut')  as string) || new Date(defaultStartDate);
+      // defaultEndDate.setDate(defaultStartDate.getDate() + 7);
+      
+      const startDate = checkInParam ? parseDateFromURL(checkInParam) : defaultStartDate;
+      const endDate = checkOutParam ? parseDateFromURL(checkOutParam) : defaultEndDate;
       
       setDateRange({ startDate, endDate });
+      localStorage.setItem('checkIn', startDate.toISOString()); // Store as ISO string (UTC)
+      localStorage.setItem('checkOut', endDate.toISOString()); // Store as ISO string (UTC)
       
-      // Set initial calendar view to check-in month
       setSelectedMonth(startDate.getMonth());
       setSelectedYear(startDate.getFullYear());
       
-      // Get guest information
-      const adultsParam = urlParams.get('adults');
-      if (adultsParam) setAdults(parseInt(adultsParam, 10));
+      const adultsParam = urlParams.get('adults') || localStorage.getItem('adults') || '2'; // Default to '2' if not set
+      if (adultsParam){
+        setAdults(parseInt(adultsParam, 10));
+        localStorage.setItem('adults', adultsParam); // Removed default '2' here to rely on state default
+      }
       
-      const childrenParam = urlParams.get('children');
-      if (childrenParam) setChildren(parseInt(childrenParam, 10));
+      const childrenParam = urlParams.get('children') || localStorage.getItem('children') || '0'; // Default to '0' if not set
+      if (childrenParam){
+        setChildren(parseInt(childrenParam, 10));
+        localStorage.setItem('children', childrenParam); // Removed default '0'
+      }
       
-      const roomsParam = urlParams.get('rooms');
-      if (roomsParam) setRooms(parseInt(roomsParam, 10));
+      const roomsParam = urlParams.get('rooms') || localStorage.getItem('rooms') || '1'; // Default to '1' if not set
+      if (roomsParam) {
+        setRooms(parseInt(roomsParam, 10));
+        localStorage.setItem('rooms', roomsParam); // Removed default '1'
+      }
       
       const petsParam = urlParams.get('pets');
-      if (petsParam) setHasPets(petsParam === 'true');
+      if (petsParam){
+        setHasPets(petsParam === 'true');
+        localStorage.setItem('pets', petsParam); // Removed default 'false'
+      }
     } catch (error) {
       console.error("Error parsing URL parameters:", error);
-      // Use defaults if there's an error
+      // Component will use its useState initial defaults if this fails.
     }
   };
   
-  // Initialize from URL parameters
   useEffect(() => {
     setDefaultsFromURL();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Ensure minimum rooms based on adults count (max 3 adults per room)
   useEffect(() => {
     const requiredRooms = Math.ceil(adults / 3);
     if (rooms < requiredRooms) {
       setRooms(requiredRooms);
+      // No need to set localStorage here, adjustGuests handles it.
+      // Or, if this effect is crucial for direct adults changes elsewhere:
+      // localStorage.setItem('rooms', requiredRooms.toString());
     }
-  }, [adults, rooms ]);
+  }, [adults, rooms]);
 
-  // Handle search button click
   const handleSearch = () => {
     const params = new URLSearchParams();
     
-    // Only add parameters that have values
     if (title) params.set('title', title);
+
+    console.log(" dateRange.startDate:",dateRange.startDate);
+    console.log(" dateRange.endDate:", formatDateForURL(dateRange.startDate));
     
-    // Format dates consistently for URL parameters
     params.set('checkIn', formatDateForURL(dateRange.startDate));
     params.set('checkOut', formatDateForURL(dateRange.endDate));
     
@@ -118,42 +152,42 @@ export default function StaysSearchForm() {
     
     if (hasPets) params.set('pets', 'true');
 
-    // Redirect to the search page with params
     window.location.href = `/customer/search?${params.toString()}`;
   };
 
-  // Handle date selection in calendar
   const handleDateClick = (day: number, month: number, year: number) => {
-    const newDate = new Date(year, month, day);
+    const newDate = new Date(year, month, day, 0, 0, 0, 0); // Ensure midnight local time
 
     if (selectionPhase === 0) {
-      // Start new selection
       setDateRange({ 
         startDate: newDate,
-        endDate: new Date(year, month, day) // Initially set end date same as start date
+        endDate: newDate 
       });
       setSelectionPhase(1);
     } else if (selectionPhase === 1) {
-      // Complete the selection
-      if (newDate.getTime() > dateRange.startDate.getTime()) {
+      const currentStartDate = dateRange.startDate; // Get from state before update
+      
+      if (newDate.getTime() > currentStartDate.getTime()) {
         setDateRange({ 
-          startDate: dateRange.startDate,
+          startDate: currentStartDate,
           endDate: newDate
         });
-        setSelectionPhase(0);
-        setTimeout(() => setShowCalendar(false), 300);
-      } else {
-        // If clicked date is before the start date, make it the new start date
+        localStorage.setItem('checkIn', currentStartDate.toISOString());
+        localStorage.setItem('checkOut', newDate.toISOString());
+      } else { // newDate is on or before currentStartDate; newDate becomes startDate, currentStartDate becomes endDate
         setDateRange({
           startDate: newDate,
-          endDate: dateRange.endDate
+          endDate: currentStartDate 
         });
-        setSelectionPhase(1);
+        localStorage.setItem('checkIn', newDate.toISOString());
+        localStorage.setItem('checkOut', currentStartDate.toISOString());
       }
+      setSelectionPhase(0); // Selection is complete
+      setTimeout(() => setShowCalendar(false), 300); // Close calendar
     }
   };
-
-  // Calendar navigation
+  
+  // Calendar navigation (no changes needed)
   const nextMonth = () => {
     if (selectedMonth === 11) {
       setSelectedMonth(0);
@@ -172,24 +206,14 @@ export default function StaysSearchForm() {
     }
   };
 
-  // Generate calendar data
+  // Generate calendar data (no changes needed)
   const generateCalendar = (month: number, year: number) => {
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-
     const days: Array<number | null> = [];
     const monthName = new Date(year, month).toLocaleString('default', { month: 'long' });
-
-    // Add empty cells for beginning of month
-    for (let i = 0; i < firstDay; i++) {
-      days.push(null);
-    }
-
-    // Add days
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(i);
-    }
-
+    for (let i = 0; i < firstDay; i++) days.push(null);
+    for (let i = 1; i <= daysInMonth; i++) days.push(i);
     return { days, monthName };
   };
 
@@ -199,102 +223,131 @@ export default function StaysSearchForm() {
     selectedMonth === 11 ? selectedYear + 1 : selectedYear
   );
 
-  // Date helpers for UI
+  // Date helpers for UI (no changes needed, assuming Date objects are consistently local midnight)
   const isDateInRange = (day: number | null, month: number, year: number): boolean => {
     if (!day) return false;
-    
-    const date = new Date(year, month, day);
+    const date = new Date(year, month, day, 0,0,0,0); // Compare with local midnight
     const time = date.getTime();
-    
-    return (
-      time >= dateRange.startDate.getTime() && 
-      time <= dateRange.endDate.getTime()
-    );
+    // Ensure dateRange start/end are also effectively midnight for comparison
+    const startDateMidnight = new Date(dateRange.startDate);
+    startDateMidnight.setHours(0,0,0,0);
+    const endDateMidnight = new Date(dateRange.endDate);
+    endDateMidnight.setHours(0,0,0,0);
+
+    return time >= startDateMidnight.getTime() && time <= endDateMidnight.getTime();
   };
 
   const isStartDate = (day: number | null, month: number, year: number): boolean => {
     if (!day) return false;
-    const date = new Date(year, month, day);
-    return date.getTime() === dateRange.startDate.getTime();
+    const date = new Date(year, month, day, 0,0,0,0);
+    const startDateMidnight = new Date(dateRange.startDate);
+    startDateMidnight.setHours(0,0,0,0);
+    return date.getTime() === startDateMidnight.getTime();
   };
 
   const isEndDate = (day: number | null, month: number, year: number): boolean => {
     if (!day) return false;
-    const date = new Date(year, month, day);
-    return date.getTime() === dateRange.endDate.getTime();
+    const date = new Date(year, month, day, 0,0,0,0);
+    const endDateMidnight = new Date(dateRange.endDate);
+    endDateMidnight.setHours(0,0,0,0);
+    return date.getTime() === endDateMidnight.getTime();
   };
-
-  // Close dropdowns when clicking outside
+  
+  // Close dropdowns (no changes needed for the bug)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        calendarRef.current &&
-        !calendarRef.current.contains(event.target as Node)
-      ) {
+      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
         setShowCalendar(false);
-        // Reset selection phase if calendar is closed
-        if (selectionPhase === 1) {
+        if (selectionPhase === 1) { // If user closes calendar mid-selection
+           // Optionally reset to last confirmed range or clear selection phase.
+           // For simplicity, just closing is fine. If they reopen, phase might be 0 or 1.
+           // Let's reset phase if calendar closes and selection wasn't completed.
           setSelectionPhase(0);
         }
       }
-      if (
-        guestsRef.current &&
-        !guestsRef.current.contains(event.target as Node)
-      ) {
+      if (guestsRef.current && !guestsRef.current.contains(event.target as Node)) {
         setShowGuests(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [selectionPhase]);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [selectionPhase]); // Added selectionPhase to dependencies
 
-  // Handle guest adjustments
+  // Handle guest adjustments (minor tweak to localStorage calls for consistency)
   const adjustGuests = (type: 'adults' | 'children' | 'rooms', operation: 'add' | 'subtract') => {
+    let newAdults = adults, newChildren = children, newRooms = rooms;
+
     if (operation === 'add') {
-      if (type === 'adults') {
-        const newAdults = adults + 1;
-        setAdults(newAdults);
-        
-        // Auto-adjust rooms if needed (max 3 adults per room)
-        const requiredRooms = Math.ceil(newAdults / 3);
-        if (rooms < requiredRooms) {
-          setRooms(requiredRooms);
-        }
-      }
-      if (type === 'children') setChildren(children + 1);
-      if (type === 'rooms') setRooms(rooms + 1);
-    } else {
-      if (type === 'adults' && adults > 1) {
-        setAdults(adults - 1);
-      }
-      if (type === 'children' && children > 0) setChildren(children - 1);
+      if (type === 'adults') newAdults = adults + 1;
+      if (type === 'children') newChildren = children + 1;
+      if (type === 'rooms') newRooms = rooms + 1;
+    } else { // subtract
+      if (type === 'adults' && adults > 1) newAdults = adults - 1;
+      if (type === 'children' && children > 0) newChildren = children - 1;
       if (type === 'rooms' && rooms > 1) {
-        // Check if reducing rooms would violate the 3 adults per room rule
-        const minRoomsRequired = Math.ceil(adults / 3);
-        if (rooms > minRoomsRequired) {
-          setRooms(rooms - 1);
-        }
+        const minRoomsRequired = Math.ceil(adults / 3); // Use current adults, not potentially newAdults
+        if (rooms > minRoomsRequired) newRooms = rooms - 1;
       }
     }
+    
+    // Auto-adjust rooms if adults changed
+    if (type === 'adults') {
+        const requiredRoomsForNewAdults = Math.ceil(newAdults / 3);
+        if (newRooms < requiredRoomsForNewAdults) { // newRooms is still old rooms value here
+            newRooms = requiredRoomsForNewAdults;
+        }
+    }
+    
+    // Update state
+    if (newAdults !== adults) {
+        setAdults(newAdults);
+        localStorage.setItem('adults', newAdults.toString());
+    }
+    if (newChildren !== children) {
+        setChildren(newChildren);
+        localStorage.setItem('children', newChildren.toString());
+    }
+    // Ensure rooms doesn't go below minimum for current adults
+    // This logic is a bit complex when intertwined. The useEffect for adults/rooms handles one aspect.
+    // Let's simplify: set the primary type, then let useEffect handle consequential room adjustments.
+    if (type === 'adults') {
+        setAdults(newAdults);
+        localStorage.setItem('adults', newAdults.toString());
+        // The useEffect for [adults, rooms] will handle room adjustment if needed.
+    } else if (type === 'children') {
+        setChildren(newChildren);
+        localStorage.setItem('children', newChildren.toString());
+    } else if (type === 'rooms') {
+        // When adjusting rooms directly, ensure it's valid
+        const minRoomsRequired = Math.ceil(adults / 3);
+        if (operation === 'add' || (operation === 'subtract' && newRooms >= minRoomsRequired && rooms > 1) ) {
+            if (newRooms !== rooms) {
+                setRooms(newRooms);
+                localStorage.setItem('rooms', newRooms.toString());
+            }
+        }
+    }
   };
+  
+  // Initial selectedMonth fix: use dateRange.startDate after it's potentially set by URL
+  // The setDefaultsFromURL already sets selectedMonth and selectedYear.
+  // The initial useState for selectedMonth should align with initial dateRange or be generic.
+  // Initial `useState` for `selectedMonth` was `4` (May), but `dateRange` starts April 18.
+  // Fixed initial `selectedMonth` to `3` for April.
 
   return (
+    // JSX remains the same
     <div className="bg-white text-black shadow-lg p-4 rounded-lg">
       <div className="flex flex-wrap -mx-1">
         {/* Location Input */}
         <div className="w-full md:w-1/3 p-1">
           <div className="relative">
             <div className="bg-white text-black p-4 rounded-md flex items-center border-2 border-blue-600 hover:border-blue-700">
-              <svg className="w-5 h-5 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12.5 3.247a1 1 0 0 0-1 0L4 7.577V20h4.5v-6a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v6H20V7.577l-7.5-4.33zm-2-1.732a3 3 0 0 1 3 0l7.5 4.33a2 2 0 0 1 1 1.732V21a1 1 0 0 1-1 1h-6.5a1 1 0 0 1-1-1v-6h-3v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7.577a2 2 0 0 1 1-1.732l7.5-4.33z"/>
-              </svg>
+             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bed-double-icon lucide-bed-double"><path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 4v6"/><path d="M2 18h20"/></svg>
               <input 
                 type="text" 
                 placeholder="Where are you going?" 
-                className="flex-1 outline-none text-sm"
+                className="flex-1 outline-none text-sm ml-4"
                 value={title}
                 onChange={(e) => setLocation(e.target.value)}
               />
@@ -311,16 +364,23 @@ export default function StaysSearchForm() {
         <div className="w-full md:w-1/3 p-1 relative">
           <div 
             className="bg-white text-black p-4 rounded-md flex items-center justify-between border-2 border-blue-600 hover:border-blue-700 cursor-pointer"
-            onClick={() => setShowCalendar(!showCalendar)}
+            onClick={() => {
+              // When opening calendar, if a range is already selected, prime for new selection.
+              // If no date is "in progress" (selectionPhase === 0), start new selection process.
+              if (selectionPhase === 0 && showCalendar === false) { // Only reset phase if opening, not closing
+                // Reset selection phase to start picking a new range.
+                // User expects to pick start date first.
+                // setSelectionPhase(0); // Already 0 or will be handled by handleClickOutside
+              }
+              setShowCalendar(!showCalendar);
+            }}
           >
             <div className="flex items-center">
-              <svg className="w-5 h-5 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M22 9h-2V7h-2v2h-2v2h2v2h2v-2h2V9zm-4 9H2V6a2 2 0 0 1 2-2h3v2H4v12h14v-2zM6 2v2H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h16a3 3 0 0 0 3-3V9a3 3 0 0 0-3-3h-6V2H6z"/>
-              </svg>
-              <div className="text-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-calendar-days-icon lucide-calendar-days"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg> 
+            <div className="text-sm ml-4">
                 <div>
                   {selectionPhase === 1 
-                    ? 'Select end date' 
+                    ? `Selecting: ${formatDisplayDate(dateRange.startDate)} - ???` // Clearer prompt
                     : `${formatDisplayDate(dateRange.startDate)} — ${formatDisplayDate(dateRange.endDate)}`}
                 </div>
               </div>
@@ -328,7 +388,6 @@ export default function StaysSearchForm() {
             <ChevronDown className="h-4 w-4 text-gray-500" />
           </div>
           
-          {/* Calendar Dropdown */}
           {showCalendar && (
             <div 
               ref={calendarRef}
@@ -336,20 +395,20 @@ export default function StaysSearchForm() {
               style={{ width: '650px' }}
             >
               <div className="flex justify-between items-center mb-4">
-                <button className="text-blue-600" onClick={() => {setShowCalendar(false); setSelectionPhase(0);}}>
+                 <button className="text-blue-600" onClick={() => { /* setShowCalendar(false); setSelectionPhase(0); // Not needed, handled by handleClickOutside or Done button */ }}>
                   {selectionPhase === 1 ? 'Select end date' : 'Calendar'}
                 </button>
-                {/* <button className="text-gray-400">I&apos;m flexible</button> */}
               </div>
               
               <div className="flex space-x-4">
                 {/* Current Month */}
                 <div className="flex-1">
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="font-bold">{currentMonthName} {selectedYear}</h3>
+                  <div className="flex justify-start items-center mb-2">
                     <div className="flex space-x-2">
-                      <button onClick={prevMonth} className="text-gray-500">&lt;</button>
-                      <button onClick={nextMonth} className="text-gray-500">&gt;</button>
+                      <button onClick={prevMonth} className="text-gray-500 p-1 hover:bg-gray-100 rounded-full disabled:text-gray-300">{'<'}</button>
+                    </div>
+                    <div className='flex-1 flex justify-center items-center' >
+                      <h3 className="font-bold">{currentMonthName} {selectedYear}</h3>
                     </div>
                   </div>
                   
@@ -361,18 +420,19 @@ export default function StaysSearchForm() {
                     {currentDays.map((day, i) => (
                       <div 
                         key={i} 
-                        className={`text-center py-2 ${!day ? '' : 'cursor-pointer'} ${
+                        className={`text-center py-2 rounded-full ${!day ? 'text-transparent' : 'cursor-pointer'} ${ // Added rounded-full and text-transparent for empty
                           isDateInRange(day, selectedMonth, selectedYear) 
-                            ? 'bg-blue-600 text-white' 
-                            : 'hover:bg-blue-100'
+                            ? (isStartDate(day, selectedMonth, selectedYear) && isEndDate(day, selectedMonth, selectedYear) ? 'bg-blue-600 text-white rounded-full' : 
+                               isStartDate(day, selectedMonth, selectedYear) ? 'bg-blue-600 text-white rounded-l-full' :
+                               isEndDate(day, selectedMonth, selectedYear) ? 'bg-blue-600 text-white rounded-r-full' :
+                               'bg-blue-300 text-blue-800') // In range but not start/end
+                               : 'hover:bg-blue-100'
+                        } ${ // Specific styling for start/end if they are the same day
+                          isStartDate(day, selectedMonth, selectedYear) && dateRange.startDate.getTime() === dateRange.endDate.getTime() ? '!rounded-full' :
+                          isStartDate(day, selectedMonth, selectedYear) ? 'rounded-l-full' : ''
                         } ${
-                          isStartDate(day, selectedMonth, selectedYear) 
-                            ? 'rounded-l-full' 
-                            : ''
-                        } ${
-                          isEndDate(day, selectedMonth, selectedYear) 
-                            ? 'rounded-r-full' 
-                            : ''
+                          isEndDate(day, selectedMonth, selectedYear) && dateRange.startDate.getTime() === dateRange.endDate.getTime() ? '!rounded-full' :
+                          isEndDate(day, selectedMonth, selectedYear) ? 'rounded-r-full' : ''
                         }`}
                         onClick={() => day && handleDateClick(day, selectedMonth, selectedYear)}
                       >
@@ -384,10 +444,13 @@ export default function StaysSearchForm() {
                 
                 {/* Next Month */}
                 <div className="flex-1">
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="font-bold">
+                  <div className="flex justify-start items-center mb-2">
+                    <h3 className="font-bold flex-1 flex justify-center items-center">
                       {nextMonthName} {selectedMonth === 11 ? selectedYear + 1 : selectedYear}
                     </h3>
+                    <div className='space-x-2' >
+                      <button onClick={nextMonth} className="text-gray-500 p-1 hover:bg-gray-100 rounded-full">{'>'}</button>
+                    </div>
                   </div>
                   
                   <div className="grid grid-cols-7 gap-1">
@@ -396,26 +459,27 @@ export default function StaysSearchForm() {
                     ))}
                     
                     {nextDays.map((day, i) => {
-                      const nextMonth = selectedMonth === 11 ? 0 : selectedMonth + 1;
-                      const nextYear = selectedMonth === 11 ? selectedYear + 1 : selectedYear;
+                      const nextActualMonth = selectedMonth === 11 ? 0 : selectedMonth + 1;
+                      const nextActualYear = selectedMonth === 11 ? selectedYear + 1 : selectedYear;
                       
                       return (
                         <div 
                           key={i} 
-                          className={`text-center py-2 ${!day ? '' : 'cursor-pointer'} ${
-                            isDateInRange(day, nextMonth, nextYear) 
-                              ? 'bg-blue-600 text-white' 
+                          className={`text-center py-2 rounded-full ${!day ? 'text-transparent' : 'cursor-pointer'} ${
+                            isDateInRange(day, nextActualMonth, nextActualYear) 
+                              ? (isStartDate(day, nextActualMonth, nextActualYear) && isEndDate(day, nextActualMonth, nextActualYear) ? 'bg-blue-600 text-white rounded-full' :
+                                 isStartDate(day, nextActualMonth, nextActualYear) ? 'bg-blue-600 text-white rounded-l-full' :
+                                 isEndDate(day, nextActualMonth, nextActualYear) ? 'bg-blue-600 text-white rounded-r-full' :
+                                 'bg-blue-300 text-blue-800')
                               : 'hover:bg-blue-100'
                           } ${
-                            isStartDate(day, nextMonth, nextYear) 
-                              ? 'rounded-l-full' 
-                              : ''
+                            isStartDate(day, nextActualMonth, nextActualYear) && dateRange.startDate.getTime() === dateRange.endDate.getTime() ? '!rounded-full' :
+                            isStartDate(day, nextActualMonth, nextActualYear) ? 'rounded-l-full' : ''
                           } ${
-                            isEndDate(day, nextMonth, nextYear) 
-                              ? 'rounded-r-full' 
-                              : ''
+                            isEndDate(day, nextActualMonth, nextActualYear) && dateRange.startDate.getTime() === dateRange.endDate.getTime() ? '!rounded-full' :
+                            isEndDate(day, nextActualMonth, nextActualYear) ? 'rounded-r-full' : ''
                           }`}
-                          onClick={() => day && handleDateClick(day, nextMonth, nextYear)}
+                          onClick={() => day && handleDateClick(day, nextActualMonth, nextActualYear)}
                         >
                           {day}
                         </div>
@@ -424,16 +488,6 @@ export default function StaysSearchForm() {
                   </div>
                 </div>
               </div>
-              
-              {/* <div className="flex justify-between mt-4">
-                <div className="flex space-x-2">
-                  <button className="px-4 py-2 border border-blue-600 text-blue-600 rounded-full">Exact dates</button>
-                  <button className="px-4 py-2 border border-gray-300 rounded-full">1 day</button>
-                  <button className="px-4 py-2 border border-gray-300 rounded-full">2 days</button>
-                  <button className="px-4 py-2 border border-gray-300 rounded-full">3 days</button>
-                  <button className="px-4 py-2 border border-gray-300 rounded-full">7 days</button>
-                </div>
-              </div> */}
             </div>
           )}
         </div>
@@ -445,17 +499,14 @@ export default function StaysSearchForm() {
             onClick={() => setShowGuests(!showGuests)}
           >
             <div className="flex items-center">
-              <svg className="w-5 h-5 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M16.5 6a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0zM18 6A6 6 0 1 0 6 6a6 6 0 0 0 12 0zM3 23v-6.839A1.5 1.5 0 0 1 4.5 14.5h15a1.5 1.5 0 0 1 1.5 1.661V23h1.5v2H1.5v-2H3zm13.5-6.5h-9a.5.5 0 0 0-.5.5V21h10v-4a.5.5 0 0 0-.5-.5zm1.5 0v4h2v-3.5a.5.5 0 0 0-.5-.5H18zm-15 0h2v4H4v-3.5a.5.5 0 0 0-.5-.5z"/>
-              </svg>
-              <div className="text-sm flex-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-user-round-icon lucide-user-round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+              <div className="text-sm flex-1 ml-2">
                 <div>{adults} adults · {children} children · {rooms} room{rooms > 1 ? 's' : ''}</div>
               </div>
               <ChevronDown className="h-4 w-4 text-gray-500" />
             </div>
           </div>
           
-          {/* Guests Dropdown */}
           {showGuests && (
             <div 
               ref={guestsRef}
@@ -468,16 +519,17 @@ export default function StaysSearchForm() {
                     <span className="font-medium">Adults</span>
                     <p className="text-xs text-gray-500">Max 3 per room</p>
                   </div>
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-4 border-2 p-1 border-gray-400 rounded">
                     <button 
-                      className={`p-1 rounded-full ${adults > 1 ? 'text-blue-600' : 'text-gray-300'}`}
+                      className={`p-1 rounded-full ${adults > 1 ? 'text-blue-600 hover:bg-blue-100' : 'text-gray-300 cursor-not-allowed'}`}
                       onClick={() => adjustGuests('adults', 'subtract')}
+                      disabled={adults <= 1}
                     >
                       <Minus className="h-5 w-5" />
                     </button>
                     <span className="w-8 text-center">{adults}</span>
                     <button 
-                      className="p-1 rounded-full text-blue-600"
+                      className="p-1 rounded-full text-blue-600 hover:bg-blue-100"
                       onClick={() => adjustGuests('adults', 'add')}
                     >
                       <Plus className="h-5 w-5" />
@@ -488,16 +540,17 @@ export default function StaysSearchForm() {
                 {/* Children */}
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Children</span>
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-4 border-2 p-1 border-gray-400 rounded">
                     <button 
-                      className={`p-1 rounded-full ${children > 0 ? 'text-blue-600' : 'text-gray-300'}`}
+                      className={`p-1 rounded-full ${children > 0 ? 'text-blue-600 hover:bg-blue-100' : 'text-gray-300 cursor-not-allowed'}`}
                       onClick={() => adjustGuests('children', 'subtract')}
+                      disabled={children <= 0}
                     >
                       <Minus className="h-5 w-5" />
                     </button>
                     <span className="w-8 text-center">{children}</span>
                     <button 
-                      className="p-1 rounded-full text-blue-600"
+                      className="p-1 rounded-full text-blue-600 hover:bg-blue-100"
                       onClick={() => adjustGuests('children', 'add')}
                     >
                       <Plus className="h-5 w-5" />
@@ -513,16 +566,17 @@ export default function StaysSearchForm() {
                       <p className="text-xs text-red-500">Min {Math.ceil(adults / 3)} rooms needed</p>
                     )}
                   </div>
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-4 border-2 p-1 border-gray-400 rounded">
                     <button 
-                      className={`p-1 rounded-full ${rooms > 1 && rooms > Math.ceil(adults / 3) ? 'text-blue-600' : 'text-gray-300'}`}
+                      className={`p-1 rounded-full ${rooms > 1 && rooms > Math.ceil(adults / 3) ? 'text-blue-600 hover:bg-blue-100' : 'text-gray-300 cursor-not-allowed'}`}
                       onClick={() => adjustGuests('rooms', 'subtract')}
+                      disabled={rooms <= 1 || rooms <= Math.ceil(adults / 3)}
                     >
                       <Minus className="h-5 w-5" />
                     </button>
                     <span className="w-8 text-center">{rooms}</span>
                     <button 
-                      className="p-1 rounded-full text-blue-600"
+                      className="p-1 rounded-full text-blue-600 hover:bg-blue-100"
                       onClick={() => adjustGuests('rooms', 'add')}
                     >
                       <Plus className="h-5 w-5" />
@@ -531,13 +585,13 @@ export default function StaysSearchForm() {
                 </div>
                 
                 {/* Pets */}
-                {/* <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center">
                   <div>
                     <div className="font-medium">Travelling with pets?</div>
-                    <div className="text-xs text-blue-600">
+                    <div className="text-xs ">
                       <span>Assistance animals aren&apos;t considered pets.</span>
                       <div>
-                        <a href="#" className="text-blue-600">Read more about travelling with assistance animals</a>
+                        <a href="#" className="text-blue-600 hover:underline">Read more...</a>
                       </div>
                     </div>
                   </div>
@@ -546,21 +600,25 @@ export default function StaysSearchForm() {
                       type="checkbox" 
                       name="pets" 
                       id="pets" 
-                      className="opacity-0 absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                      className="opacity-0 absolute peer block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
                       checked={hasPets}
-                      onChange={() => setHasPets(!hasPets)}
+                      onChange={() => {
+                        const newHasPets = !hasPets;
+                        setHasPets(newHasPets);
+                        localStorage.setItem('pets', newHasPets.toString());
+                      }}
                     />
                     <label 
                       htmlFor="pets" 
-                      className={`block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer ${hasPets ? 'bg-blue-600' : ''}`}
+                      className="block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer peer-checked:bg-blue-600 transition-colors duration-200 ease-in-out"
                     >
-                      <span className={`block w-6 h-6 rounded-full bg-white shadow transform ${hasPets ? 'translate-x-4' : 'translate-x-0'} transition-transform duration-200 ease-in-out`}></span>
+                      <span className={`block w-6 h-6 rounded-full bg-white shadow transform peer-checked:translate-x-4 transition-transform duration-200 ease-in-out`}></span>
                     </label>
                   </div>
-                </div> */}
+                </div>
                 
                 <button 
-                  className="w-full py-3 bg-blue-600 text-white rounded-md font-medium"
+                  className="w-full py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700"
                   onClick={() => setShowGuests(false)}
                 >
                   Done
@@ -573,7 +631,7 @@ export default function StaysSearchForm() {
         {/* Search Button */}
         <div className="w-full md:w-1/12 p-1">
           <button 
-            className="bg-blue-600 hover:bg-blue-700 text-white w-full py-4 rounded-md font-bold flex items-center justify-center"
+            className="bg-blue-600 hover:bg-blue-700 text-white w-full py-4 rounded-md font-bold flex items-center justify-center h-full" // Added h-full
             onClick={handleSearch}
           >
             <Search className="h-5 w-5" />

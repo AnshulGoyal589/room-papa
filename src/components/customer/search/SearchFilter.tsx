@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PropertyType, TransportationType } from '@/types';
 import { categoryOptions } from '../../../../public/assets/data';
+import { Slider } from '@/components/ui/slider';
 
 export default function SearchFilter() {
   const router = useRouter();
@@ -16,7 +17,7 @@ export default function SearchFilter() {
   // Common filters
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
-  const [currency, setCurrency] = useState<string>('USD');
+  // const [currency, setCurrency] = useState<string>('USD');
   // const [totalRating, setTotalRating] = useState<string>('');
 
   // Basic property filters
@@ -125,7 +126,7 @@ export default function SearchFilter() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    filterMode, minPrice, maxPrice, currency, propertyType, propertyRating, accessibility, roomAccessibility, bedPreference, roomFacilities, transportationType, arrivalTime, departureTime, fromLocation, toLocation, tripType, city, state, country, popularFilters, funThingsToDo, meals, facilities, reservationPolicy, brands, amenities
+    filterMode, minPrice, maxPrice, propertyType, propertyRating, accessibility, roomAccessibility, bedPreference, roomFacilities, transportationType, arrivalTime, departureTime, fromLocation, toLocation, tripType, city, state, country, popularFilters, funThingsToDo, meals, facilities, reservationPolicy, brands, amenities
   ]);
 
   // Sync state with URL params on mount
@@ -221,46 +222,61 @@ export default function SearchFilter() {
     setBrands([]);
   };
 
+
+  const handlePriceChange = (value: [number, number]): void => {
+    setMaxPrice(value[1].toString());
+    setMinPrice(value[0].toString());
+  };
+
+
   return (
     <div className="w-full bg-white p-6 shadow-md rounded-lg">
       <h2 className="text-lg font-semibold mb-4">Filters</h2>
 
       {/* Price Range Filter (Common) */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">Price Range</label>
-        <div className="flex space-x-2">
-          <input
-            type="number"
-            placeholder="Min"
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
-            className="border rounded-md p-2 w-full"
-          />
-          <input
-            type="number"
-            placeholder="Max"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-            className="border rounded-md p-2 w-full"
-          />
+      <div className="mb-4 p-4 max-w-md">
+      <label className="block text-sm font-medium mb-3">Price Range</label>
+      
+      {/* Current Range Display */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="bg-gray-100 px-3 py-1 rounded-md">
+          <span className="text-sm font-medium text-gray-700">
+            Min: {minPrice}
+          </span>
+        </div>
+        <span className="text-gray-400">-</span>
+        <div className="bg-gray-100 px-3 py-1 rounded-md">
+          <span className="text-sm font-medium text-gray-700">
+            Max: {maxPrice}
+          </span>
         </div>
       </div>
-
-      {/* Currency Selection (Common) */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">Currency</label>
-        <select
-          value={currency}
-          onChange={(e) => setCurrency(e.target.value)}
-          className="border rounded-md p-2 w-full"
-        >
-          <option value="USD">USD</option>
-          <option value="EUR">EUR</option>
-          <option value="GBP">GBP</option>
-          <option value="INR">INR</option>
-          <option value="JPY">JPY</option>
-        </select>
+      
+      {/* Dual Range Slider */}
+      <div className="px-2">
+        <Slider
+          value={[Number(minPrice), Number(maxPrice)]}
+          onValueChange={handlePriceChange}
+          max={2000}
+          min={0}
+          step={25}
+          className="w-full"
+        />
       </div>
+      
+      {/* Range Indicators */}
+      <div className="flex justify-between mt-3 text-xs text-gray-500 px-2">
+        <span>0</span>
+        <span className="text-center bg-blue-50 px-2 py-1 rounded text-blue-600 font-medium">
+          Selected: {maxPrice + '-' + minPrice} range
+        </span>
+        <span>2000</span>
+      </div>
+    </div>
+
+
+
+
 
       {/* Property-specific filters */}
       {filterMode === 'property' && (
@@ -273,7 +289,7 @@ export default function SearchFilter() {
               className="border rounded-md p-2 w-full"
             >
               <option value="">All</option>
-              {Object.values(propertyType).map((type) => (
+              {['Hotel' , 'Apartment' , 'Villa' , 'Hostel' , 'Resort'].map((type) => (
                 <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
               ))}
             </select>
@@ -294,6 +310,24 @@ export default function SearchFilter() {
               <option value="4">4 Stars</option>
               <option value="5">5 Stars</option>
             </select>
+          </div>
+
+          {/* Popular Filters */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">Popular Filters</label>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {categoryOptions.popularFilters.map((item) => (
+                <label key={item} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={popularFilters.includes(item)}
+                    onChange={() => handleCheckboxChange(item, popularFilters, setPopularFilters)}
+                    className="form-checkbox"
+                  />
+                  <span>{item}</span>
+                </label>
+              ))}
+            </div>
           </div>
 
           {/* Property Accessibility */}
@@ -429,6 +463,24 @@ export default function SearchFilter() {
             />
           </div>
 
+          {/* Popular Filters */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">Popular Filters</label>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {categoryOptions.popularFilters.map((item) => (
+                <label key={item} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={popularFilters.includes(item)}
+                    onChange={() => handleCheckboxChange(item, popularFilters, setPopularFilters)}
+                    className="form-checkbox"
+                  />
+                  <span>{item}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           {/* Travelling Accessibility */}
           <div className="mb-4">
             <label className="block text-sm font-medium mb-2">Travel Accessibility</label>
@@ -498,6 +550,24 @@ export default function SearchFilter() {
             />
           </div>
 
+          {/* Popular Filters */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">Popular Filters</label>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {categoryOptions.popularFilters.map((item) => (
+                <label key={item} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={popularFilters.includes(item)}
+                    onChange={() => handleCheckboxChange(item, popularFilters, setPopularFilters)}
+                    className="form-checkbox"
+                  />
+                  <span>{item}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           {/* Trip Accessibility */}
           <div className="mb-4">
             <label className="block text-sm font-medium mb-2">Trip Accessibility</label>
@@ -539,23 +609,7 @@ export default function SearchFilter() {
         </div>
       </div>
 
-      {/* Popular Filters */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-2">Popular Filters</label>
-        <div className="space-y-2 max-h-40 overflow-y-auto">
-          {categoryOptions.popularFilters.map((item) => (
-            <label key={item} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={popularFilters.includes(item)}
-                onChange={() => handleCheckboxChange(item, popularFilters, setPopularFilters)}
-                className="form-checkbox"
-              />
-              <span>{item}</span>
-            </label>
-          ))}
-        </div>
-      </div>
+
 
       {/* Fun Things To Do */}
       <div className="mb-4">

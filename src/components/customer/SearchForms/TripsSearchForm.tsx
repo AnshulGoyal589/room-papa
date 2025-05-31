@@ -414,6 +414,7 @@ export default function FlightsSearchForm() {
                 
                 {/* Next Month */}
                 <div className="flex-1">
+                  
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="font-bold">
                       {nextMonthName} {selectedMonth === 11 ? selectedYear + 1 : selectedYear}
@@ -498,7 +499,7 @@ export default function FlightsSearchForm() {
                     <span className="font-medium">Adults</span>
                     <p className="text-xs text-gray-500">Max 3 per room</p>
                   </div>
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-4 border-2 p-1 border-gray-400">
                     <button 
                       className={`p-1 rounded-full ${adults > 1 ? 'text-blue-600' : 'text-gray-300'}`}
                       onClick={() => adjustGuests('adults', 'subtract')}
@@ -518,7 +519,7 @@ export default function FlightsSearchForm() {
                 {/* Children */}
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Children</span>
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-4 border-2 p-1 border-gray-400">
                     <button 
                       className={`p-1 rounded-full ${children > 0 ? 'text-blue-600' : 'text-gray-300'}`}
                       onClick={() => adjustGuests('children', 'subtract')}
@@ -543,7 +544,7 @@ export default function FlightsSearchForm() {
                       <p className="text-xs text-red-500">Min {Math.ceil(adults / 3)} rooms needed</p>
                     )}
                   </div>
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-4 border-2 p-1 border-gray-400">
                     <button 
                       className={`p-1 rounded-full ${rooms > 1 && rooms > Math.ceil(adults / 3) ? 'text-blue-600' : 'text-gray-300'}`}
                       onClick={() => adjustGuests('rooms', 'subtract')}
@@ -561,10 +562,10 @@ export default function FlightsSearchForm() {
                 </div>
                 
                 {/* Pets */}
-                {/* <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center">
                   <div>
                     <div className="font-medium">Travelling with pets?</div>
-                    <div className="text-xs text-blue-600">
+                    <div className="text-xs">
                       <span>Assistance animals aren&apos;t considered pets.</span>
                       <div>
                         <a href="#" className="text-blue-600">Read more about travelling with assistance animals</a>
@@ -587,7 +588,7 @@ export default function FlightsSearchForm() {
                       <span className={`block w-6 h-6 rounded-full bg-white shadow transform ${hasPets ? 'translate-x-4' : 'translate-x-0'} transition-transform duration-200 ease-in-out`}></span>
                     </label>
                   </div>
-                </div> */}
+                </div>
                 
                 <button 
                   className="w-full py-3 bg-blue-600 text-white rounded-md font-medium"

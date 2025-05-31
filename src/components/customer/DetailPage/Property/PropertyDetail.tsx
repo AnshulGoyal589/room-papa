@@ -287,13 +287,40 @@ export default function PropertyDetailPage() {
         fetchPropertyDetails();
     }, [params?.id]);
 
+    const getDateFromLocalStorage = (key: string) => {
+        const storedValue = localStorage.getItem(key);
+        const date = storedValue ? new Date(storedValue) : null;
+        if (date) {
+            const year = date.getFullYear(); // Gets the year according to local time
+            const month = date.getMonth() + 1; // Gets the month (0-11) according to local time, so add 1
+            const day = date.getDate();       // Gets the day of the month according to local time
+          
+            // Pad month and day with a leading zero if they are single digit
+            const monthFormatted = month < 10 ? `0${month}` : month.toString();
+            const dayFormatted = day < 10 ? `0${day}` : day.toString();
+          
+            return `${year}-${monthFormatted}-${dayFormatted}`;
+        }
+      };
+
     // Load preferences from Local Storage
     useEffect(() => {
         if (property && typeof window !== 'undefined') {
             const storedPreferences = localStorage.getItem(LOCAL_STORAGE_KEY);
+            const checkInDate = getDateFromLocalStorage('checkIn');
+            const checkOutDate = getDateFromLocalStorage('checkOut');
+            const adults = localStorage.getItem('adults');
+            const children = localStorage.getItem('children');
+            const rooms = localStorage.getItem('rooms');
             if (storedPreferences) {
                 try {
                     const parsedPrefs = JSON.parse(storedPreferences);
+                    if( checkInDate ) parsedPrefs.checkInDate = checkInDate;
+                    if( checkOutDate ) parsedPrefs.checkOutDate = checkOutDate;
+                    if( adults ) parsedPrefs.adultCount = parseInt(adults, 10);
+                    if( children ) parsedPrefs.childCount = parseInt(children, 10);
+                    if( rooms ) parsedPrefs.selectedRooms = JSON.parse(rooms);
+                    
                     if (parsedPrefs.propertyId === property._id) {
                         let tempCheckInDate: Date | null = null;
                         if (parsedPrefs.checkInDate) {
