@@ -257,9 +257,9 @@ export default function SearchFilter() {
         <Slider
           value={[Number(minPrice), Number(maxPrice)]}
           onValueChange={handlePriceChange}
-          max={2000}
+          max={200000}
           min={0}
-          step={25}
+          step={1000}
           className="w-full"
         />
       </div>
@@ -270,7 +270,7 @@ export default function SearchFilter() {
         <span className="text-center bg-blue-50 px-2 py-1 rounded text-blue-600 font-medium">
           Selected: {maxPrice + '-' + minPrice} range
         </span>
-        <span>2000</span>
+        <span>200000</span>
       </div>
     </div>
 

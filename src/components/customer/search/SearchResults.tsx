@@ -162,72 +162,80 @@ export default function SearchResults() {
         </button>
       </div>
       
-      {/* Content Section */}
-      <div className="md:w-2/3 lg:flex-grow p-4 flex flex-col">
-        <div className="flex flex-col sm:flex-row justify-between sm:items-start mb-1">
-          <Link href={`/customer/property/${property._id}`} className="block">
-            <h3 className="text-2xl font-bold text-blue-700 hover:text-blue-800 transition-colors line-clamp-2">{property.title || "Untitled Property"}</h3>
-          </Link>
-          {property.propertyRating && (
-            <div className="flex items-center gap-2 mt-1 sm:mt-0 sm:ml-4 flex-shrink-0">
-              <div className="text-right">
-                <p className={`text-sm font-semibold ${ratingDesc.className}`}>{ratingDesc.text}</p>
-                <p className="text-xs text-gray-500">{reviewText}</p>
-              </div>
-              <div className="bg-blue-700 text-white text-base font-bold px-2 py-1 rounded-md h-fit">
-                {property.propertyRating.toFixed(1)}
-              </div>
+          {/* Content Section */}
+        <div className="md:w-2/3 lg:flex-grow p-4 flex flex-col">
+       
+          <div className="flex flex-col sm:flex-row justify-between sm:items-start mb-1">
+            <Link href={`/customer/property/${property._id}`} className="block">
+              <h3 className="text-2xl font-bold text-blue-700 hover:text-blue-800 transition-colors line-clamp-2">{property.title || "Untitled Property"}</h3>
+            </Link>
+          </div>
+
+          <div className="flex items-center text-xs text-blue-600 hover:underline mb-2 cursor-pointer" onClick={() => router.push(`/customer/property/${property._id}#location`)}>
+            <MapPin size={14} className="mr-1" />
+            <span>{property.location?.city}, {property.location?.country}</span>
+            {/* Optionally, add "Show on map" if you have a maps link */}
+          </div>
+
+          <div className="text-sm text-gray-600 mb-3">
+            <span className="font-semibold">{propertyTypeDisplay}</span> • <span>{property.rooms} Room{property.rooms === 1 ? '' : 's'}</span>
+          </div>
+
+          <p className="text-sm text-gray-700 mb-3 line-clamp-2 md:line-clamp-3 flex-grow">
+            {property.description || "No description available."}
+          </p>
+
+          {property.amenities && property.amenities.length > 0 && (
+            <div className="mb-3">
+              <span className="text-sm font-semibold text-green-700">
+                {property.amenities.slice(0, 20).join(' • ')}
+                {property.amenities.length > 20 ? ' • ...' : ''}
+              </span>
             </div>
           )}
+
         </div>
 
-        <div className="flex items-center text-xs text-blue-600 hover:underline mb-2 cursor-pointer" onClick={() => router.push(`/customer/property/${property._id}#location`)}>
-          <MapPin size={14} className="mr-1" />
-          <span>{property.location?.city}, {property.location?.country}</span>
-          {/* Optionally, add "Show on map" if you have a maps link */}
-        </div>
+        <div className='flex flex-col w-[18%] justify-between items-center pt-4 pb-8 ' >
 
-        <div className="text-sm text-gray-600 mb-3">
-          <span className="font-semibold">{propertyTypeDisplay}</span> • <span>{property.rooms} Room{property.rooms === 1 ? '' : 's'}</span>
-        </div>
-
-        <p className="text-sm text-gray-700 mb-3 line-clamp-2 md:line-clamp-3 flex-grow">
-          {property.description || "No description available."}
-        </p>
-
-        {property.amenities && property.amenities.length > 0 && (
-          <div className="mb-3">
-            <span className="text-sm font-semibold text-green-700">
-              {property.amenities.slice(0, 20).join(' • ')}
-              {property.amenities.length > 20 ? ' • ...' : ''}
-            </span>
+          <div>
+            {property.propertyRating && (
+              <div className="flex items-center gap-2 mt-1 sm:mt-0 sm:ml-4 flex-shrink-0">
+                <div className="text-right">
+                  <p className={`text-sm font-semibold ${ratingDesc.className}`}>{ratingDesc.text}</p>
+                  <p className="text-xs text-gray-500">{reviewText}</p>
+                </div>
+                <div className="bg-blue-700 text-white text-base font-bold px-2 py-1 rounded-md h-fit">
+                  {property.propertyRating.toFixed(1)}
+                </div>
+              </div>
+            )}
           </div>
-        )}
-        
-        {/* Price and CTA Section - Pushed to bottom */}
-        <div className="mt-auto pt-2 text-right">
-          {property.costing && (
-            <>
-              {property.costing.price > property.costing.discountedPrice && (
-                  <span className="text-sm text-gray-500 line-through mr-2">
-                      {property.costing.currency} {property.costing.price.toFixed(2)}
-                  </span>
-              )}
-              <span className="text-2xl font-bold text-gray-800">
-                {property.costing.currency} {property.costing.discountedPrice.toFixed(2)}
-              </span>
-              <p className="text-xs text-gray-500">per night</p>
-              <p className="text-xs text-gray-500">Includes taxes and fees</p>
-            </>
-          )}
-          <Link 
-            href={`/customer/property/${property._id}?checkIn=${currentSearchParams?.get('checkIn') || ''}&checkOut=${currentSearchParams?.get('checkOut') || ''}&adults=${currentSearchParams?.get('adults') || '1'}`} 
-            className="mt-2 inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-md text-sm transition-colors w-full sm:w-auto"
-          >
-            See availability
-          </Link>
+          
+          <div className="mt-auto text-right pr-8">
+            {property.costing && (
+              <>
+                {property.costing.price > property.costing.discountedPrice && (
+                    <span className="text-sm text-gray-500 line-through mr-2">
+                        {property.costing.currency} {property.costing.price.toFixed(2)}
+                    </span>
+                )}
+                <span className="text-2xl font-bold text-gray-800">
+                  {property.costing.currency} {property.costing.discountedPrice.toFixed(2)}
+                </span>
+                <p className="text-xs text-gray-500">per night</p>
+                <p className="text-xs text-gray-500">Includes taxes and fees</p>
+              </>
+            )}
+            <Link 
+              href={`/customer/property/${property._id}?checkIn=${currentSearchParams?.get('checkIn') || ''}&checkOut=${currentSearchParams?.get('checkOut') || ''}&adults=${currentSearchParams?.get('adults') || '1'}`} 
+              className="mt-2 inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-md text-sm transition-colors w-full sm:w-auto"
+            >
+              See availability
+            </Link>
+          </div>
         </div>
-      </div>
+
     </div>
     );
   };
