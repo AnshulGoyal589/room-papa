@@ -19,8 +19,8 @@ export default function StaysSearchForm() {
   const [rooms, setRooms] = useState<number>(1);
   const [showCalendar, setShowCalendar] = useState<boolean>(false);
   const [showGuests, setShowGuests] = useState<boolean>(false);
-  const [selectedMonth, setSelectedMonth] = useState<number>(3); // Initial state April (was 4, month is 0-indexed)
-  const [selectedYear, setSelectedYear] = useState<number>(2025);
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth()); 
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [hasPets, setHasPets] = useState<boolean>(false);
   const [selectionPhase, setSelectionPhase] = useState<number>(0); // 0: no selection, 1: start date selected
   
@@ -37,29 +37,25 @@ export default function StaysSearchForm() {
   };
 
   // Format date for URL parameters (YYYY-MM-DD)
-const formatDateForURL = (date: Date): string => {
-  const year = date.getFullYear(); // Gets the year according to local time
-  const month = date.getMonth() + 1; // Gets the month (0-11) according to local time, so add 1
-  const day = date.getDate();       // Gets the day of the month according to local time
+  const formatDateForURL = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1; 
+    const day = date.getDate();      
 
-  // Pad month and day with a leading zero if they are single digit
-  const monthFormatted = month < 10 ? `0${month}` : month.toString();
-  const dayFormatted = day < 10 ? `0${day}` : day.toString();
+    const monthFormatted = month < 10 ? `0${month}` : month.toString();
+    const dayFormatted = day < 10 ? `0${day}` : day.toString();
 
-  return `${year}-${monthFormatted}-${dayFormatted}`;
-};
+    return `${year}-${monthFormatted}-${dayFormatted}`;
+  };
 
   // Parse date from URL parameter (YYYY-MM-DD string)
   const parseDateFromURL = (dateString: string): Date => {
-    // dateString is in 'YYYY-MM-DD' format.
-    // Splitting and using new Date(year, monthIndex, day) ensures it's local midnight.
     const parts = dateString.split('-');
     const year = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10); // This month is 1-indexed (1 for Jan, 12 for Dec)
+    const month = parseInt(parts[1], 10); 
     const day = parseInt(parts[2], 10);
     
-    // Month for Date constructor is 0-indexed (0 for Jan, 11 for Dec)
-    return new Date(year, month - 1, day, 0, 0, 0, 0); // Explicitly set time to midnight local
+    return new Date(year, month - 1, day, 0, 0, 0, 0);
   };
 
   // Get initial values from URL parameters
@@ -73,50 +69,81 @@ const formatDateForURL = (date: Date): string => {
       const checkInParam = urlParams.get('checkIn');
       const checkOutParam = urlParams.get('checkOut');
       
-      // Default dates: today at midnight and 7 days from today at midnight
-      const defaultStartDate = new Date(localStorage.getItem('checkIn')  as string) || new Date();
-    
+      const defaultStartDate = new Date();
       defaultStartDate.setHours(0, 0, 0, 0);
 
-      const defaultEndDate = new Date(localStorage.getItem('checkOut')  as string) || new Date(defaultStartDate);
-      // defaultEndDate.setDate(defaultStartDate.getDate() + 7);
+      const defaultEndDate = new Date(defaultStartDate);
+      defaultEndDate.setDate(defaultStartDate.getDate() + 7);
+      defaultEndDate.setHours(0,0,0,0);
       
-      const startDate = checkInParam ? parseDateFromURL(checkInParam) : defaultStartDate;
-      const endDate = checkOutParam ? parseDateFromURL(checkOutParam) : defaultEndDate;
-      
-      setDateRange({ startDate, endDate });
-      localStorage.setItem('checkIn', startDate.toISOString()); // Store as ISO string (UTC)
-      localStorage.setItem('checkOut', endDate.toISOString()); // Store as ISO string (UTC)
-      
-      setSelectedMonth(startDate.getMonth());
-      setSelectedYear(startDate.getFullYear());
-      
-      const adultsParam = urlParams.get('adults') || localStorage.getItem('adults') || '2'; // Default to '2' if not set
-      if (adultsParam){
-        setAdults(parseInt(adultsParam, 10));
-        localStorage.setItem('adults', adultsParam); // Removed default '2' here to rely on state default
+      let effectiveStartDate = defaultStartDate;
+      let effectiveEndDate = defaultEndDate;
+
+      const storedCheckIn = localStorage.getItem('checkIn');
+      if (storedCheckIn) {
+        const parsedStoredCheckIn = new Date(storedCheckIn);
+        if (!isNaN(parsedStoredCheckIn.getTime())) {
+            parsedStoredCheckIn.setHours(0,0,0,0);
+            effectiveStartDate = parsedStoredCheckIn;
+        }
+      }
+
+      const storedCheckOut = localStorage.getItem('checkOut');
+      if (storedCheckOut) {
+          const parsedStoredCheckOut = new Date(storedCheckOut);
+          if (!isNaN(parsedStoredCheckOut.getTime())) {
+            parsedStoredCheckOut.setHours(0,0,0,0);
+            effectiveEndDate = parsedStoredCheckOut;
+          }
       }
       
-      const childrenParam = urlParams.get('children') || localStorage.getItem('children') || '0'; // Default to '0' if not set
-      if (childrenParam){
-        setChildren(parseInt(childrenParam, 10));
-        localStorage.setItem('children', childrenParam); // Removed default '0'
+      if (checkInParam) {
+        const parsedCheckIn = parseDateFromURL(checkInParam);
+        if (!isNaN(parsedCheckIn.getTime())) effectiveStartDate = parsedCheckIn;
       }
+      if (checkOutParam) {
+        const parsedCheckOut = parseDateFromURL(checkOutParam);
+        if (!isNaN(parsedCheckOut.getTime())) effectiveEndDate = parsedCheckOut;
+      }
+
+      // Ensure end date is not before start date
+      if (effectiveEndDate.getTime() < effectiveStartDate.getTime()) {
+        effectiveEndDate = new Date(effectiveStartDate);
+        effectiveEndDate.setDate(effectiveStartDate.getDate() + 7); // Default to 7 days if invalid
+      }
+
+      setDateRange({ startDate: effectiveStartDate, endDate: effectiveEndDate });
+      localStorage.setItem('checkIn', effectiveStartDate.toISOString());
+      localStorage.setItem('checkOut', effectiveEndDate.toISOString());
       
-      const roomsParam = urlParams.get('rooms') || localStorage.getItem('rooms') || '1'; // Default to '1' if not set
-      if (roomsParam) {
-        setRooms(parseInt(roomsParam, 10));
-        localStorage.setItem('rooms', roomsParam); // Removed default '1'
-      }
+      setSelectedMonth(effectiveStartDate.getMonth());
+      setSelectedYear(effectiveStartDate.getFullYear());
       
-      const petsParam = urlParams.get('pets');
-      if (petsParam){
-        setHasPets(petsParam === 'true');
-        localStorage.setItem('pets', petsParam); // Removed default 'false'
-      }
+      const adultsParam = urlParams.get('adults') || localStorage.getItem('adults') || '2';
+      setAdults(parseInt(adultsParam, 10));
+      localStorage.setItem('adults', adultsParam);
+      
+      const childrenParam = urlParams.get('children') || localStorage.getItem('children') || '0';
+      setChildren(parseInt(childrenParam, 10));
+      localStorage.setItem('children', childrenParam);
+      
+      const roomsParam = urlParams.get('rooms') || localStorage.getItem('rooms') || '1';
+      setRooms(parseInt(roomsParam, 10));
+      localStorage.setItem('rooms', roomsParam);
+      
+      const petsParam = urlParams.get('pets') || localStorage.getItem('pets') || 'false';
+      setHasPets(petsParam === 'true');
+      localStorage.setItem('pets', petsParam);
+
     } catch (error) {
-      console.error("Error parsing URL parameters:", error);
-      // Component will use its useState initial defaults if this fails.
+      console.error("Error parsing URL parameters or localStorage:", error);
+      // Fallback to initial state defaults if error occurs
+      const today = new Date(); today.setHours(0,0,0,0);
+      const sevenDaysLater = new Date(today); sevenDaysLater.setDate(today.getDate() + 7); sevenDaysLater.setHours(0,0,0,0);
+      setDateRange({ startDate: today, endDate: sevenDaysLater });
+      setSelectedMonth(today.getMonth());
+      setSelectedYear(today.getFullYear());
+      setAdults(2); setChildren(0); setRooms(1); setHasPets(false);
     }
   };
   
@@ -129,9 +156,7 @@ const formatDateForURL = (date: Date): string => {
     const requiredRooms = Math.ceil(adults / 3);
     if (rooms < requiredRooms) {
       setRooms(requiredRooms);
-      // No need to set localStorage here, adjustGuests handles it.
-      // Or, if this effect is crucial for direct adults changes elsewhere:
-      // localStorage.setItem('rooms', requiredRooms.toString());
+      localStorage.setItem('rooms', requiredRooms.toString());
     }
   }, [adults, rooms]);
 
@@ -139,9 +164,6 @@ const formatDateForURL = (date: Date): string => {
     const params = new URLSearchParams();
     
     if (title) params.set('title', title);
-
-    console.log(" dateRange.startDate:",dateRange.startDate);
-    console.log(" dateRange.endDate:", formatDateForURL(dateRange.startDate));
     
     params.set('checkIn', formatDateForURL(dateRange.startDate));
     params.set('checkOut', formatDateForURL(dateRange.endDate));
@@ -156,25 +178,27 @@ const formatDateForURL = (date: Date): string => {
   };
 
   const handleDateClick = (day: number, month: number, year: number) => {
-    const newDate = new Date(year, month, day, 0, 0, 0, 0); // Ensure midnight local time
+    const newDate = new Date(year, month, day, 0, 0, 0, 0);
 
     if (selectionPhase === 0) {
       setDateRange({ 
         startDate: newDate,
-        endDate: newDate 
+        endDate: newDate // Temporarily set end date to new date
       });
+      setSelectedMonth(newDate.getMonth()); // Update calendar view to month of startDate
+      setSelectedYear(newDate.getFullYear());
       setSelectionPhase(1);
     } else if (selectionPhase === 1) {
-      const currentStartDate = dateRange.startDate; // Get from state before update
+      const currentStartDate = dateRange.startDate;
       
-      if (newDate.getTime() > currentStartDate.getTime()) {
+      if (newDate.getTime() >= currentStartDate.getTime()) { // Allow same day selection for start and end
         setDateRange({ 
           startDate: currentStartDate,
           endDate: newDate
         });
         localStorage.setItem('checkIn', currentStartDate.toISOString());
         localStorage.setItem('checkOut', newDate.toISOString());
-      } else { // newDate is on or before currentStartDate; newDate becomes startDate, currentStartDate becomes endDate
+      } else { 
         setDateRange({
           startDate: newDate,
           endDate: currentStartDate 
@@ -182,12 +206,11 @@ const formatDateForURL = (date: Date): string => {
         localStorage.setItem('checkIn', newDate.toISOString());
         localStorage.setItem('checkOut', currentStartDate.toISOString());
       }
-      setSelectionPhase(0); // Selection is complete
-      setTimeout(() => setShowCalendar(false), 300); // Close calendar
+      setSelectionPhase(0); 
+      setTimeout(() => setShowCalendar(false), 300);
     }
   };
   
-  // Calendar navigation (no changes needed)
   const nextMonth = () => {
     if (selectedMonth === 11) {
       setSelectedMonth(0);
@@ -198,6 +221,13 @@ const formatDateForURL = (date: Date): string => {
   };
 
   const prevMonth = () => {
+    const today = new Date();
+    const currentCalendarDate = new Date(selectedYear, selectedMonth, 1);
+    // Prevent navigating to months before the current real-world month
+    if (currentCalendarDate.getFullYear() === today.getFullYear() && currentCalendarDate.getMonth() === today.getMonth()) {
+      return; 
+    }
+
     if (selectedMonth === 0) {
       setSelectedMonth(11);
       setSelectedYear(selectedYear - 1);
@@ -206,7 +236,6 @@ const formatDateForURL = (date: Date): string => {
     }
   };
 
-  // Generate calendar data (no changes needed)
   const generateCalendar = (month: number, year: number) => {
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -223,12 +252,19 @@ const formatDateForURL = (date: Date): string => {
     selectedMonth === 11 ? selectedYear + 1 : selectedYear
   );
 
-  // Date helpers for UI (no changes needed, assuming Date objects are consistently local midnight)
+  const isDateDisabled = (day: number | null, month: number, year: number): boolean => {
+    if (!day) return true;
+    const date = new Date(year, month, day, 0,0,0,0);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    return date.getTime() < today.getTime();
+  };
+
   const isDateInRange = (day: number | null, month: number, year: number): boolean => {
-    if (!day) return false;
-    const date = new Date(year, month, day, 0,0,0,0); // Compare with local midnight
+    if (!day || isDateDisabled(day, month, year)) return false;
+    const date = new Date(year, month, day, 0,0,0,0);
     const time = date.getTime();
-    // Ensure dateRange start/end are also effectively midnight for comparison
+    
     const startDateMidnight = new Date(dateRange.startDate);
     startDateMidnight.setHours(0,0,0,0);
     const endDateMidnight = new Date(dateRange.endDate);
@@ -238,7 +274,7 @@ const formatDateForURL = (date: Date): string => {
   };
 
   const isStartDate = (day: number | null, month: number, year: number): boolean => {
-    if (!day) return false;
+    if (!day || isDateDisabled(day, month, year)) return false;
     const date = new Date(year, month, day, 0,0,0,0);
     const startDateMidnight = new Date(dateRange.startDate);
     startDateMidnight.setHours(0,0,0,0);
@@ -246,22 +282,36 @@ const formatDateForURL = (date: Date): string => {
   };
 
   const isEndDate = (day: number | null, month: number, year: number): boolean => {
-    if (!day) return false;
+    if (!day || isDateDisabled(day, month, year)) return false;
     const date = new Date(year, month, day, 0,0,0,0);
     const endDateMidnight = new Date(dateRange.endDate);
     endDateMidnight.setHours(0,0,0,0);
     return date.getTime() === endDateMidnight.getTime();
   };
   
-  // Close dropdowns (no changes needed for the bug)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
         setShowCalendar(false);
-        if (selectionPhase === 1) { // If user closes calendar mid-selection
-           // Optionally reset to last confirmed range or clear selection phase.
-           // For simplicity, just closing is fine. If they reopen, phase might be 0 or 1.
-           // Let's reset phase if calendar closes and selection wasn't completed.
+        if (selectionPhase === 1) {
+          // If mid-selection and calendar closes, reset to a valid range or clear.
+          // Here, we'll reset to the last confirmed dateRange if only startDate was picked.
+          // Or simply reset selectionPhase.
+          const today = new Date(); today.setHours(0,0,0,0);
+          const sevenDaysLater = new Date(today); sevenDaysLater.setDate(today.getDate()+7); sevenDaysLater.setHours(0,0,0,0);
+          
+          const lastCheckIn = localStorage.getItem('checkIn');
+          const lastCheckOut = localStorage.getItem('checkOut');
+
+          let sDate = today;
+          let eDate = sevenDaysLater;
+
+          if(lastCheckIn && lastCheckOut){
+            sDate = new Date(lastCheckIn); sDate.setHours(0,0,0,0);
+            eDate = new Date(lastCheckOut); eDate.setHours(0,0,0,0);
+          }
+          
+          setDateRange({startDate: sDate, endDate: eDate}); // Revert to last saved/default
           setSelectionPhase(0);
         }
       }
@@ -271,72 +321,54 @@ const formatDateForURL = (date: Date): string => {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [selectionPhase]); // Added selectionPhase to dependencies
+  }, [selectionPhase]);
 
-  // Handle guest adjustments (minor tweak to localStorage calls for consistency)
   const adjustGuests = (type: 'adults' | 'children' | 'rooms', operation: 'add' | 'subtract') => {
-    let newAdults = adults, newChildren = children, newRooms = rooms;
+    let currentAdults = adults;
+    let currentChildren = children;
+    let currentRooms = rooms;
 
     if (operation === 'add') {
-      if (type === 'adults') newAdults = adults + 1;
-      if (type === 'children') newChildren = children + 1;
-      if (type === 'rooms') newRooms = rooms + 1;
+      if (type === 'adults') currentAdults++;
+      if (type === 'children') currentChildren++;
+      if (type === 'rooms') currentRooms++;
     } else { // subtract
-      if (type === 'adults' && adults > 1) newAdults = adults - 1;
-      if (type === 'children' && children > 0) newChildren = children - 1;
+      if (type === 'adults' && adults > 1) currentAdults--;
+      if (type === 'children' && children > 0) currentChildren--;
       if (type === 'rooms' && rooms > 1) {
-        const minRoomsRequired = Math.ceil(adults / 3); // Use current adults, not potentially newAdults
-        if (rooms > minRoomsRequired) newRooms = rooms - 1;
+         // Prevent reducing rooms below what's needed for current adults
+        const minRoomsForAdults = Math.ceil(adults / 3);
+        if (rooms -1 >= minRoomsForAdults) {
+            currentRooms--;
+        }
       }
     }
     
     // Auto-adjust rooms if adults changed
     if (type === 'adults') {
-        const requiredRoomsForNewAdults = Math.ceil(newAdults / 3);
-        if (newRooms < requiredRoomsForNewAdults) { // newRooms is still old rooms value here
-            newRooms = requiredRoomsForNewAdults;
+        const requiredRoomsForNewAdults = Math.ceil(currentAdults / 3);
+        if (currentRooms < requiredRoomsForNewAdults) {
+            currentRooms = requiredRoomsForNewAdults;
         }
     }
     
-    // Update state
-    if (newAdults !== adults) {
-        setAdults(newAdults);
-        localStorage.setItem('adults', newAdults.toString());
-    }
-    if (newChildren !== children) {
-        setChildren(newChildren);
-        localStorage.setItem('children', newChildren.toString());
-    }
-    // Ensure rooms doesn't go below minimum for current adults
-    // This logic is a bit complex when intertwined. The useEffect for adults/rooms handles one aspect.
-    // Let's simplify: set the primary type, then let useEffect handle consequential room adjustments.
-    if (type === 'adults') {
-        setAdults(newAdults);
-        localStorage.setItem('adults', newAdults.toString());
-        // The useEffect for [adults, rooms] will handle room adjustment if needed.
-    } else if (type === 'children') {
-        setChildren(newChildren);
-        localStorage.setItem('children', newChildren.toString());
-    } else if (type === 'rooms') {
-        // When adjusting rooms directly, ensure it's valid
-        const minRoomsRequired = Math.ceil(adults / 3);
-        if (operation === 'add' || (operation === 'subtract' && newRooms >= minRoomsRequired && rooms > 1) ) {
-            if (newRooms !== rooms) {
-                setRooms(newRooms);
-                localStorage.setItem('rooms', newRooms.toString());
-            }
-        }
-    }
+    setAdults(currentAdults);
+    setChildren(currentChildren);
+    setRooms(currentRooms); // This will trigger the useEffect for rooms if adults changed it
+
+    localStorage.setItem('adults', currentAdults.toString());
+    localStorage.setItem('children', currentChildren.toString());
+    localStorage.setItem('rooms', currentRooms.toString());
+  };
+
+  const isPrevMonthDisabled = () => {
+    const today = new Date();
+    const firstOfSelectedMonth = new Date(selectedYear, selectedMonth, 1);
+    const firstOfCurrentRealMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    return firstOfSelectedMonth.getTime() <= firstOfCurrentRealMonth.getTime();
   };
   
-  // Initial selectedMonth fix: use dateRange.startDate after it's potentially set by URL
-  // The setDefaultsFromURL already sets selectedMonth and selectedYear.
-  // The initial useState for selectedMonth should align with initial dateRange or be generic.
-  // Initial `useState` for `selectedMonth` was `4` (May), but `dateRange` starts April 18.
-  // Fixed initial `selectedMonth` to `3` for April.
-
   return (
-    // JSX remains the same
     <div className="bg-white text-black shadow-lg p-4 rounded-lg">
       <div className="flex flex-wrap -mx-1">
         {/* Location Input */}
@@ -349,10 +381,16 @@ const formatDateForURL = (date: Date): string => {
                 placeholder="Where are you going?" 
                 className="flex-1 outline-none text-sm ml-4"
                 value={title}
-                onChange={(e) => setLocation(e.target.value)}
+                onChange={(e) => {
+                  setLocation(e.target.value);
+                  localStorage.setItem('title', e.target.value);
+                }}
               />
               {title && (
-                <button className="text-gray-400" onClick={() => setLocation('')}>
+                <button className="text-gray-400" onClick={() => {
+                  setLocation('');
+                  localStorage.removeItem('title');
+                }}>
                   <X className="h-4 w-4" />
                 </button>
               )}
@@ -365,12 +403,16 @@ const formatDateForURL = (date: Date): string => {
           <div 
             className="bg-white text-black p-4 rounded-md flex items-center justify-between border-2 border-blue-600 hover:border-blue-700 cursor-pointer"
             onClick={() => {
-              // When opening calendar, if a range is already selected, prime for new selection.
-              // If no date is "in progress" (selectionPhase === 0), start new selection process.
-              if (selectionPhase === 0 && showCalendar === false) { // Only reset phase if opening, not closing
-                // Reset selection phase to start picking a new range.
-                // User expects to pick start date first.
-                // setSelectionPhase(0); // Already 0 or will be handled by handleClickOutside
+              if (!showCalendar) { // Opening calendar
+                const currentStartDate = dateRange.startDate;
+                setSelectedMonth(currentStartDate.getMonth());
+                setSelectedYear(currentStartDate.getFullYear());
+                 // If no selection is in progress, set phase to 0, ready for start date.
+                if(selectionPhase === 1 && dateRange.startDate.getTime() === dateRange.endDate.getTime()){
+                  // If only start date was selected, keep phase 1
+                } else {
+                   setSelectionPhase(0); 
+                }
               }
               setShowCalendar(!showCalendar);
             }}
@@ -379,8 +421,8 @@ const formatDateForURL = (date: Date): string => {
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-calendar-days-icon lucide-calendar-days"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg> 
             <div className="text-sm ml-4">
                 <div>
-                  {selectionPhase === 1 
-                    ? `Selecting: ${formatDisplayDate(dateRange.startDate)} - ???` // Clearer prompt
+                  {selectionPhase === 1 && dateRange.startDate.getTime() === dateRange.endDate.getTime()
+                    ? `Picking end: ${formatDisplayDate(dateRange.startDate)}`
                     : `${formatDisplayDate(dateRange.startDate)} — ${formatDisplayDate(dateRange.endDate)}`}
                 </div>
               </div>
@@ -391,25 +433,28 @@ const formatDateForURL = (date: Date): string => {
           {showCalendar && (
             <div 
               ref={calendarRef}
-              className="absolute left-0 mt-2 bg-white shadow-lg rounded-lg p-4 z-20 border border-gray-200"
-              style={{ width: '650px' }}
+              className="absolute left-0 mt-2 bg-white shadow-lg rounded-lg p-4 z-20 border border-gray-200 w-full md:w-[650px]" // Responsive width
             >
               <div className="flex justify-between items-center mb-4">
-                 <button className="text-blue-600" onClick={() => { /* setShowCalendar(false); setSelectionPhase(0); // Not needed, handled by handleClickOutside or Done button */ }}>
-                  {selectionPhase === 1 ? 'Select end date' : 'Calendar'}
+                 <button className="text-blue-600">
+                  {selectionPhase === 1 ? 'Select end date' : 'Select your dates'}
                 </button>
               </div>
               
-              <div className="flex space-x-4">
+              {/* Container for months with responsive flex direction */}
+              <div className="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
                 {/* Current Month */}
                 <div className="flex-1">
-                  <div className="flex justify-start items-center mb-2">
-                    <div className="flex space-x-2">
-                      <button onClick={prevMonth} className="text-gray-500 p-1 hover:bg-gray-100 rounded-full disabled:text-gray-300">{'<'}</button>
-                    </div>
-                    <div className='flex-1 flex justify-center items-center' >
-                      <h3 className="font-bold">{currentMonthName} {selectedYear}</h3>
-                    </div>
+                  <div className="flex justify-between items-center mb-2"> {/* Changed justify-start to justify-between */}
+                    <button 
+                      onClick={prevMonth} 
+                      className={`text-gray-500 p-1 hover:bg-gray-100 rounded-full ${isPrevMonthDisabled() ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      disabled={isPrevMonthDisabled()}
+                    >
+                      {'<'}
+                    </button>
+                    <h3 className="font-bold text-center">{currentMonthName} {selectedYear}</h3> {/* Added text-center */}
+                    <div className="w-6"></div> {/* Spacer to balance the layout if next button is not here */}
                   </div>
                   
                   <div className="grid grid-cols-7 gap-1">
@@ -417,40 +462,49 @@ const formatDateForURL = (date: Date): string => {
                       <div key={i} className="text-center text-sm py-1 text-gray-500">{day}</div>
                     ))}
                     
-                    {currentDays.map((day, i) => (
-                      <div 
-                        key={i} 
-                        className={`text-center py-2 rounded-full ${!day ? 'text-transparent' : 'cursor-pointer'} ${ // Added rounded-full and text-transparent for empty
-                          isDateInRange(day, selectedMonth, selectedYear) 
-                            ? (isStartDate(day, selectedMonth, selectedYear) && isEndDate(day, selectedMonth, selectedYear) ? 'bg-blue-600 text-white rounded-full' : 
-                               isStartDate(day, selectedMonth, selectedYear) ? 'bg-blue-600 text-white rounded-l-full' :
-                               isEndDate(day, selectedMonth, selectedYear) ? 'bg-blue-600 text-white rounded-r-full' :
-                               'bg-blue-300 text-blue-800') // In range but not start/end
-                               : 'hover:bg-blue-100'
-                        } ${ // Specific styling for start/end if they are the same day
-                          isStartDate(day, selectedMonth, selectedYear) && dateRange.startDate.getTime() === dateRange.endDate.getTime() ? '!rounded-full' :
-                          isStartDate(day, selectedMonth, selectedYear) ? 'rounded-l-full' : ''
-                        } ${
-                          isEndDate(day, selectedMonth, selectedYear) && dateRange.startDate.getTime() === dateRange.endDate.getTime() ? '!rounded-full' :
-                          isEndDate(day, selectedMonth, selectedYear) ? 'rounded-r-full' : ''
-                        }`}
-                        onClick={() => day && handleDateClick(day, selectedMonth, selectedYear)}
-                      >
-                        {day}
-                      </div>
-                    ))}
+                    {currentDays.map((day, i) => {
+                      const disabled = isDateDisabled(day, selectedMonth, selectedYear);
+                      const inRange = isDateInRange(day, selectedMonth, selectedYear);
+                      const isStart = isStartDate(day, selectedMonth, selectedYear);
+                      const isEnd = isEndDate(day, selectedMonth, selectedYear);
+                      const isSingleDaySelection = isStart && isEnd;
+                      
+                      let cellClass = `text-center py-2 rounded-full ${!day ? 'text-transparent' : 'cursor-pointer'}`;
+                      if (disabled) {
+                        cellClass += ' text-gray-300 cursor-not-allowed';
+                      } else if (isSingleDaySelection) {
+                        cellClass += ' bg-blue-600 text-white !rounded-full';
+                      } else if (isStart) {
+                        cellClass += ' bg-blue-600 text-white rounded-l-full rounded-r-none';
+                      } else if (isEnd) {
+                        cellClass += ' bg-blue-600 text-white rounded-r-full rounded-l-none';
+                      } else if (inRange) {
+                        cellClass += ' bg-blue-300 text-blue-800 rounded-none'; // No rounding for mid-range dates
+                      } else {
+                        cellClass += ' hover:bg-blue-100';
+                      }
+
+                      return (
+                        <div 
+                          key={i} 
+                          className={cellClass}
+                          onClick={() => day && !disabled && handleDateClick(day, selectedMonth, selectedYear)}
+                        >
+                          {day}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
                 
                 {/* Next Month */}
                 <div className="flex-1">
-                  <div className="flex justify-start items-center mb-2">
-                    <h3 className="font-bold flex-1 flex justify-center items-center">
+                  <div className="flex justify-between items-center mb-2"> {/* Changed justify-start to justify-between */}
+                     <div className="w-6"></div> {/* Spacer to balance the layout */}
+                    <h3 className="font-bold text-center"> {/* Added text-center */}
                       {nextMonthName} {selectedMonth === 11 ? selectedYear + 1 : selectedYear}
                     </h3>
-                    <div className='space-x-2' >
-                      <button onClick={nextMonth} className="text-gray-500 p-1 hover:bg-gray-100 rounded-full">{'>'}</button>
-                    </div>
+                    <button onClick={nextMonth} className="text-gray-500 p-1 hover:bg-gray-100 rounded-full">{'>'}</button>
                   </div>
                   
                   <div className="grid grid-cols-7 gap-1">
@@ -461,25 +515,32 @@ const formatDateForURL = (date: Date): string => {
                     {nextDays.map((day, i) => {
                       const nextActualMonth = selectedMonth === 11 ? 0 : selectedMonth + 1;
                       const nextActualYear = selectedMonth === 11 ? selectedYear + 1 : selectedYear;
+                      const disabled = isDateDisabled(day, nextActualMonth, nextActualYear);
+                      const inRange = isDateInRange(day, nextActualMonth, nextActualYear);
+                      const isStart = isStartDate(day, nextActualMonth, nextActualYear);
+                      const isEnd = isEndDate(day, nextActualMonth, nextActualYear);
+                      const isSingleDaySelection = isStart && isEnd;
+
+                      let cellClass = `text-center py-2 rounded-full ${!day ? 'text-transparent' : 'cursor-pointer'}`;
+                      if (disabled) {
+                        cellClass += ' text-gray-300 cursor-not-allowed';
+                      } else if (isSingleDaySelection) {
+                        cellClass += ' bg-blue-600 text-white !rounded-full';
+                      } else if (isStart) {
+                        cellClass += ' bg-blue-600 text-white rounded-l-full rounded-r-none';
+                      } else if (isEnd) {
+                        cellClass += ' bg-blue-600 text-white rounded-r-full rounded-l-none';
+                      } else if (inRange) {
+                        cellClass += ' bg-blue-300 text-blue-800 rounded-none';
+                      } else {
+                        cellClass += ' hover:bg-blue-100';
+                      }
                       
                       return (
                         <div 
                           key={i} 
-                          className={`text-center py-2 rounded-full ${!day ? 'text-transparent' : 'cursor-pointer'} ${
-                            isDateInRange(day, nextActualMonth, nextActualYear) 
-                              ? (isStartDate(day, nextActualMonth, nextActualYear) && isEndDate(day, nextActualMonth, nextActualYear) ? 'bg-blue-600 text-white rounded-full' :
-                                 isStartDate(day, nextActualMonth, nextActualYear) ? 'bg-blue-600 text-white rounded-l-full' :
-                                 isEndDate(day, nextActualMonth, nextActualYear) ? 'bg-blue-600 text-white rounded-r-full' :
-                                 'bg-blue-300 text-blue-800')
-                              : 'hover:bg-blue-100'
-                          } ${
-                            isStartDate(day, nextActualMonth, nextActualYear) && dateRange.startDate.getTime() === dateRange.endDate.getTime() ? '!rounded-full' :
-                            isStartDate(day, nextActualMonth, nextActualYear) ? 'rounded-l-full' : ''
-                          } ${
-                            isEndDate(day, nextActualMonth, nextActualYear) && dateRange.startDate.getTime() === dateRange.endDate.getTime() ? '!rounded-full' :
-                            isEndDate(day, nextActualMonth, nextActualYear) ? 'rounded-r-full' : ''
-                          }`}
-                          onClick={() => day && handleDateClick(day, nextActualMonth, nextActualYear)}
+                          className={cellClass}
+                          onClick={() => day && !disabled && handleDateClick(day, nextActualMonth, nextActualYear)}
                         >
                           {day}
                         </div>
@@ -546,14 +607,14 @@ const formatDateForURL = (date: Date): string => {
                       onClick={() => adjustGuests('children', 'subtract')}
                       disabled={children <= 0}
                     >
-                      <Minus className="h-5 w-5" />
+                      <Plus className="h-5 w-5" />
                     </button>
                     <span className="w-8 text-center">{children}</span>
                     <button 
                       className="p-1 rounded-full text-blue-600 hover:bg-blue-100"
                       onClick={() => adjustGuests('children', 'add')}
                     >
-                      <Plus className="h-5 w-5" />
+                      <Minus className="h-5 w-5" />
                     </button>
                   </div>
                 </div>
@@ -631,7 +692,7 @@ const formatDateForURL = (date: Date): string => {
         {/* Search Button */}
         <div className="w-full md:w-1/12 p-1">
           <button 
-            className="bg-blue-600 hover:bg-blue-700 text-white w-full py-4 rounded-md font-bold flex items-center justify-center h-full" // Added h-full
+            className="bg-blue-600 hover:bg-blue-700 text-white w-full py-4 rounded-md font-bold flex items-center justify-center h-full"
             onClick={handleSearch}
           >
             <Search className="h-5 w-5" />

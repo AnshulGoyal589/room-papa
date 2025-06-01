@@ -16,9 +16,11 @@ import {
     Wifi, Car, Droplet, Wind, Dumbbell, Coffee as CoffeeIconLucide, CheckCircle, Star as StarIcon, MapPin, Users as UsersIcon, Image as ImageIconLucide, CalendarOff, X,
     ChevronDown, ChevronUp, Heart, Share2, AlertTriangle, Award, Bed, ListChecks,// Added more icons
     Utensils,
-    Tv
+    Tv,
+    HelpCircle // For question mark icon
 } from 'lucide-react';
 import { ObjectId } from 'mongodb'; // Assuming you have mongodb installed or ObjectId type definition
+import RazorpayPaymentButton from '@/components/payment/RazorpayPaymentButton';
 
 // --- Provided Property Schema ---
 interface MongoImage { // Assuming an Image structure based on usage
@@ -95,13 +97,13 @@ interface StoredRoomCategory {
     id: string; 
     _id?: string; 
     title: string;
-    qty: number;
+    qty: number; // Total physical rooms of this type
     currency: string;
     pricing: RoomCategoryPricing; 
     unavailableDates: string[];
     size?: string; 
     bedConfiguration?: string; 
-    maxOccupancy?: number; 
+    maxOccupancy?: number; // Max people a single room of this type can hold
     roomSpecificAmenities?: string[]; 
 }
 
@@ -152,6 +154,28 @@ interface ExtendedProperty extends Omit<PropertySchema, 'categoryRooms' | 'costi
     propertyRating?: number;
     googleMaps?: string;
 }
+
+// --- NEW: Interface for Displayable Room Offers ---
+interface DisplayableRoomOffer {
+    offerId: string; // Unique ID, e.g., `${categoryId}_2adults`
+    categoryId: string;
+    categoryTitle: string;
+    bedConfiguration?: string;
+    size?: string;
+    roomSpecificAmenities?: string[];
+    maxPhysicalRoomsForCategory: number; // category.qty
+
+    // Offer-specific configuration
+    intendedAdults: number; // e.g., 1 for single, 2 for double, 3 for triple pricing basis
+    intendedChildren: number; // For this specific offer, usually 0 for base offers
+    guestCapacityInOffer: number; // Max guests this specific offer type is for (e.g. 2 for a "2 adult" offer)
+
+    // Pricing (for display, per night for this specific offer configuration)
+    pricePerNight: number;
+    originalPricePerNight?: number;
+    isDiscounted: boolean;
+    currency: string;
+}
 // --- END TYPE DEFINITIONS ---
 
 
@@ -197,9 +221,9 @@ const SERVICE_FEE_FIXED = 10;
 const TAX_RATE_PERCENTAGE = 0.05; 
 
 // --- localStorage Key ---
-const LOCAL_STORAGE_KEY = 'propertyBookingPreferences_v2';
+const LOCAL_STORAGE_KEY = 'propertyBookingPreferences_v3'; // Incremented version
 const MAX_COMBINED_ROOMS = 5; 
-const MAX_OCCUPANTS_PER_ROOM = 3; 
+const MAX_OCCUPANTS_PER_ROOM = 3; // Default if not specified by category
 
 // Helper to generate unique IDs if needed
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -233,12 +257,15 @@ export default function PropertyDetailPage() {
 
     const [checkInDate, setCheckInDate] = useState<Date | null>(null);
     const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
-    const [adultCount, setAdultCount] = useState<number>(1);
-    const [childCount, setChildCount] = useState<number>(0);
-    const [selectedRooms, setSelectedRooms] = useState<Record<string, number>>({}); 
-    const [selectedMealPlan, setSelectedMealPlan] = useState<keyof PricingByMealPlan>('noMeal'); 
+    
+    // adultCount state is now influenced by room selection. Initial value 1.
+    const [adultCount, setAdultCount] = useState<number>(1); 
+    const [childCount, setChildCount] = useState<number>(0); // Global child count for booking
+    
+    const [selectedOffers, setSelectedOffers] = useState<Record<string, number>>({}); 
+    const [selectedMealPlan, setSelectedMealPlan] = useState<keyof PricingByMealPlan>('breakfastOnly');
 
-    const [totalSelectedRooms, setTotalSelectedRooms] = useState<number>(0);
+    const [totalSelectedPhysicalRooms, setTotalSelectedPhysicalRooms] = useState<number>(0);
     const [totalBookingPricePerNight, setTotalBookingPricePerNight] = useState<number>(0);
     const [subtotalNights, setSubtotalNights] = useState<number>(0);
     const [serviceCharge, setServiceCharge] = useState<number>(0);
@@ -248,15 +275,17 @@ export default function PropertyDetailPage() {
 
     const [showBookingModal, setShowBookingModal] = useState(false);
     const [bookingData, setBookingData] = useState<BookingFormData>({ firstName: '', lastName: '', email: '', phone: '', passengers: 1, rooms: 0, specialRequests: '' });
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    // const [isSubmitting, setIsSubmitting] = useState(false);
     const [bookingConfirmed, setBookingConfirmed] = useState(false);
     const [bookingError, setBookingError] = useState<string | null>(null); 
     const [modalBookingError, setModalBookingError] = useState<string | null>(null);
 
-
+    const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "";
+    
     const [showAllAmenities, setShowAllAmenities] = useState(false);
 
-    const guestCount = useMemo(() => adultCount + childCount, [adultCount, childCount]);
+    // globalGuestCount will use the adultCount state, which is now derived from selections or dropdown
+    const globalGuestCount = useMemo(() => adultCount + childCount, [adultCount, childCount]);
     const days = useMemo(() => calculateDays(checkInDate, checkOutDate), [checkInDate, checkOutDate]);
 
     const validateDate = (selectedDateStr: string, propertyStartDateStr: string, propertyEndDateStr: string): Date => {
@@ -272,27 +301,32 @@ export default function PropertyDetailPage() {
      const checkAvailabilityForSelection = useCallback((
         startDate: Date | null,
         endDate: Date | null,
-        currentSelectedRooms: Record<string, number>,
+        currentSelectedOffers: Record<string, number>,
         allCategories: StoredRoomCategory[] | undefined
     ): { available: boolean; message: string | null } => {
-        if (!startDate || !endDate || endDate <= startDate || !allCategories || Object.keys(currentSelectedRooms).length === 0) {
+        if (!startDate || !endDate || endDate <= startDate || !allCategories || Object.keys(currentSelectedOffers).length === 0) {
             return { available: true, message: null }; 
         }
 
         const dateRange = getDatesInRange(startDate, endDate); 
         if (dateRange.length === 0) return { available: true, message: null }; 
 
-        for (const [catId, qty] of Object.entries(currentSelectedRooms)) {
-            if (qty > 0) {
-                const category = allCategories.find(c => c.id === catId || c._id === catId); 
-                if (category && category.unavailableDates && category.unavailableDates.length > 0) {
-                    for (const dateStr of dateRange) {
-                        if (category.unavailableDates.includes(dateStr)) {
-                            return {
-                                available: false,
-                                message: `Room type "${category.title}" is unavailable on ${new Date(dateStr).toLocaleDateString()}. Please adjust dates or room selection.`
-                            };
-                        }
+        const involvedCategoryIds = new Set<string>();
+        Object.keys(currentSelectedOffers).forEach(offerId => {
+            if (currentSelectedOffers[offerId] > 0) {
+                involvedCategoryIds.add(offerId.split('_')[0]);
+            }
+        });
+
+        for (const catId of Array.from(involvedCategoryIds)) {
+            const category = allCategories.find(c => c.id === catId || c._id === catId); 
+            if (category && category.unavailableDates && category.unavailableDates.length > 0) {
+                for (const dateStr of dateRange) {
+                    if (category.unavailableDates.includes(dateStr)) {
+                        return {
+                            available: false,
+                            message: `Room type "${category.title}" is unavailable on ${new Date(dateStr).toLocaleDateString()}. Please adjust dates or room selection.`
+                        };
                     }
                 }
             }
@@ -301,7 +335,6 @@ export default function PropertyDetailPage() {
     }, []); 
 
 
-    // Fetch Property Details
     useEffect(() => {
         const fetchPropertyDetails = async () => {
             if (!params?.id) return;
@@ -382,7 +415,6 @@ export default function PropertyDetailPage() {
         return null;
       };
 
-    // Load preferences from Local Storage
     useEffect(() => {
         if (property && typeof window !== 'undefined') {
             const storedPreferences = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -417,43 +449,28 @@ export default function PropertyDetailPage() {
                             tempCheckOutDate = validatedCO;
                         }
                         
-                        let tempSelectedRooms: Record<string, number> = {};
-                        if (typeof parsedPrefs.selectedRooms === 'object' && parsedPrefs.selectedRooms !== null && property.categoryRooms) {
-                            const validSelectedRooms: Record<string, number> = {};
-                            let currentTotalRoomsFromStorage = 0;
-                            for (const [catId, qty] of Object.entries(parsedPrefs.selectedRooms)) {
-                                if (typeof qty === 'number' && qty > 0) {
-                                    const categoryInfo = property.categoryRooms.find(cat => cat.id === catId || cat._id === catId);
-                                    if (categoryInfo) {
-                                        const qtyToSelect = Math.min(qty, categoryInfo.qty);
-                                        if (currentTotalRoomsFromStorage + qtyToSelect <= MAX_COMBINED_ROOMS) {
-                                            validSelectedRooms[categoryInfo.id] = qtyToSelect; 
-                                            currentTotalRoomsFromStorage += qtyToSelect;
-                                        } else {
-                                            const remainingCap = MAX_COMBINED_ROOMS - currentTotalRoomsFromStorage;
-                                            if (remainingCap > 0) validSelectedRooms[categoryInfo.id] = Math.min(qtyToSelect, remainingCap);
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                            tempSelectedRooms = validSelectedRooms;
+                        let tempSelectedOffers: Record<string, number> = {};
+                        if (typeof parsedPrefs.selectedOffers === 'object' && parsedPrefs.selectedOffers !== null && property.categoryRooms) {
+                             tempSelectedOffers = parsedPrefs.selectedOffers;
                         }
 
                         setCheckInDate(tempCheckInDate);
                         setCheckOutDate(tempCheckOutDate);
+                        
+                        // Adult count from local storage is an initial value. If rooms are selected, it will be derived.
+                        // So, we set it here, and the pricing useEffect will potentially override it.
                         if (typeof parsedPrefs.adultCount === 'number' && parsedPrefs.adultCount >= 1) setAdultCount(parsedPrefs.adultCount); else if (localAdultsString === null) setAdultCount(1); 
                         if (typeof parsedPrefs.childCount === 'number' && parsedPrefs.childCount >= 0) setChildCount(parsedPrefs.childCount); else if (localChildrenString === null) setChildCount(0);
 
-                        setSelectedRooms(tempSelectedRooms);
+                        setSelectedOffers(tempSelectedOffers);
                         if (parsedPrefs.selectedMealPlan && ['noMeal', 'breakfastOnly', 'allMeals'].includes(parsedPrefs.selectedMealPlan)) {
                             setSelectedMealPlan(parsedPrefs.selectedMealPlan);
-                        } else { setSelectedMealPlan('noMeal'); }
+                        } else { setSelectedMealPlan('breakfastOnly'); }
                         
                         const { available, message } = checkAvailabilityForSelection(
                             tempCheckInDate, 
                             tempCheckOutDate, 
-                            tempSelectedRooms, 
+                            tempSelectedOffers,
                             property.categoryRooms
                         );
                          if (!available) {
@@ -503,179 +520,218 @@ export default function PropertyDetailPage() {
 
         setCheckInDate(qCheckIn);
         setCheckOutDate(qCheckOut);
-        setAdultCount(qAdults);
+        setAdultCount(qAdults); // Initial adult count
         setChildCount(qChildren);
-        setSelectedRooms({}); 
-        setSelectedMealPlan('noMeal'); 
+        setSelectedOffers({});
+        setSelectedMealPlan('breakfastOnly'); 
     };
 
 
-    // Save preferences to Local Storage
     useEffect(() => {
         if (property && typeof window !== 'undefined' && !loading) {
             const preferencesToSave = {
                 propertyId: property._id?.toString(), 
                 checkInDate: checkInDate ? checkInDate.toISOString() : null,
                 checkOutDate: checkOutDate ? checkOutDate.toISOString() : null,
-                adultCount,
+                adultCount, // Saves current adultCount, whether from dropdown or derived
                 childCount,
-                selectedRooms,
+                selectedOffers, 
                 selectedMealPlan,
             };
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(preferencesToSave));
         }
-    }, [checkInDate, checkOutDate, adultCount, childCount, selectedRooms, selectedMealPlan, property, loading]);
+    }, [checkInDate, checkOutDate, adultCount, childCount, selectedOffers, selectedMealPlan, property, loading]);
+
+    // MODIFIED: Function to generate displayable offers based on room categories
+    const displayableRoomOffers = useMemo((): DisplayableRoomOffer[] => {
+        if (!property?.categoryRooms) return [];
+
+        const offers: DisplayableRoomOffer[] = [];
+        property.categoryRooms.forEach(cat => {
+            const calculateOfferPrice = (numAdults: number): { price: number, originalPrice?: number, isDiscounted: boolean } => {
+                let basePrice = 0, discountedPrice = 0;
+                if (numAdults === 1) {
+                    basePrice = getPrice(cat.pricing.singleOccupancyAdultPrice, selectedMealPlan);
+                    discountedPrice = getPrice(cat.pricing.discountedSingleOccupancyAdultPrice, selectedMealPlan);
+                } else if (numAdults === 2) {
+                    basePrice = getPrice(cat.pricing.doubleOccupancyAdultPrice, selectedMealPlan);
+                    discountedPrice = getPrice(cat.pricing.discountedDoubleOccupancyAdultPrice, selectedMealPlan);
+                } else if (numAdults >= 3) {
+                    basePrice = getPrice(cat.pricing.tripleOccupancyAdultPrice, selectedMealPlan);
+                    discountedPrice = getPrice(cat.pricing.discountedTripleOccupancyAdultPrice, selectedMealPlan);
+                }
+
+                if (basePrice === 0 && selectedMealPlan !== 'noMeal') {
+                    let fbBase = 0, fbDisc = 0;
+                    if (numAdults === 1) { fbBase = getPrice(cat.pricing.singleOccupancyAdultPrice, 'noMeal'); fbDisc = getPrice(cat.pricing.discountedSingleOccupancyAdultPrice, 'noMeal');}
+                    else if (numAdults === 2) { fbBase = getPrice(cat.pricing.doubleOccupancyAdultPrice, 'noMeal'); fbDisc = getPrice(cat.pricing.discountedDoubleOccupancyAdultPrice, 'noMeal');}
+                    else if (numAdults >= 3) { fbBase = getPrice(cat.pricing.tripleOccupancyAdultPrice, 'noMeal'); fbDisc = getPrice(cat.pricing.discountedTripleOccupancyAdultPrice, 'noMeal');}
+                    basePrice = fbBase; discountedPrice = fbDisc;
+                }
+                
+                const isDisc = discountedPrice > 0 && discountedPrice < basePrice;
+                return {
+                    price: isDisc ? discountedPrice : basePrice,
+                    originalPrice: isDisc ? basePrice : undefined,
+                    isDiscounted: isDisc
+                };
+            };
+
+            const offerConfigs = [
+                { intendedAdults: 1, guestCapacityInOffer: 1, offerKeySuffix: '1guest' },
+                { intendedAdults: 2, guestCapacityInOffer: 2, offerKeySuffix: '2guests' },
+                { intendedAdults: 3, guestCapacityInOffer: 3, offerKeySuffix: '3guests' },
+            ];
+
+            offerConfigs.forEach(oc => {
+                if (cat.maxOccupancy && cat.maxOccupancy >= oc.guestCapacityInOffer) {
+                     const pricingExists = 
+                        (oc.intendedAdults === 1 && cat.pricing.singleOccupancyAdultPrice) ||
+                        (oc.intendedAdults === 2 && cat.pricing.doubleOccupancyAdultPrice) ||
+                        (oc.intendedAdults === 3 && cat.pricing.tripleOccupancyAdultPrice);
+
+                    if (pricingExists) {
+                        const priceInfo = calculateOfferPrice(oc.intendedAdults);
+                         if (priceInfo.price > 0) {
+                            offers.push({
+                                offerId: `${cat.id}_${oc.offerKeySuffix}`,
+                                categoryId: cat.id,
+                                categoryTitle: cat.title,
+                                bedConfiguration: cat.bedConfiguration,
+                                size: cat.size,
+                                roomSpecificAmenities: cat.roomSpecificAmenities,
+                                maxPhysicalRoomsForCategory: cat.qty,
+                                intendedAdults: oc.intendedAdults,
+                                intendedChildren: 0, 
+                                guestCapacityInOffer: oc.guestCapacityInOffer,
+                                pricePerNight: priceInfo.price,
+                                originalPricePerNight: priceInfo.originalPrice,
+                                isDiscounted: priceInfo.isDiscounted,
+                                currency: cat.currency,
+                            });
+                        }
+                    }
+                }
+            });
+        });
+        return offers;
+    }, [property?.categoryRooms, selectedMealPlan]);
 
 
-    // Calculate Total Price based on selection and MEAL PLAN
+    // Calculate Total Price based on selection, MEAL PLAN, derived adultCount and childCount
     useEffect(() => {
-        // Reset prices and errors if essential conditions are not met
-        if (!property?.categoryRooms || totalSelectedRooms === 0 || guestCount === 0 || !checkInDate || !checkOutDate || days <= 0) {
+        if (!property?.categoryRooms || !displayableRoomOffers || !checkInDate || !checkOutDate || days <= 0) {
             setTotalBookingPricePerNight(0);
             setSubtotalNights(0); setServiceCharge(0); setTaxesApplied(0); setTotalBookingPricing(0);
-            setBookingError(null); 
+            setBookingError(null);
+            // If no rooms are selected, adultCount is controlled by dropdown. Don't reset it here unless specifically intended.
             return;
         }
 
+        let newActualAdultCountBasedOnOffers = 0;
         let calculatedPricePerNight = 0;
-        let remainingAdults = adultCount;
-        let remainingChildren = childCount;
+        const currentBookedRoomInstances: {
+            category: StoredRoomCategory;
+            offer: DisplayableRoomOffer;
+            childrenAssigned: number; // To track children per instance for capacity checks
+        }[] = [];
 
-        // Create a list of all individual room instances to assign guests to
-        const roomInstances: { catId: string; category: StoredRoomCategory }[] = [];
-        Object.entries(selectedRooms).forEach(([catId, qty]) => {
-            if (qty > 0) {
-                const category = property.categoryRooms?.find(c => c.id === catId || c._id === catId);
-                if (category) {
-                    for (let i = 0; i < qty; i++) {
-                        roomInstances.push({ catId, category });
+        if (totalSelectedPhysicalRooms > 0 && displayableRoomOffers.length > 0) {
+            Object.entries(selectedOffers).forEach(([offerId, qty]) => {
+                if (qty > 0) {
+                    const offer = displayableRoomOffers.find(o => o.offerId === offerId);
+                    const category = property.categoryRooms.find(c => c.id === offer?.categoryId || c._id === offer?.categoryId);
+
+                    if (offer && category) {
+                        calculatedPricePerNight += offer.pricePerNight * qty; // Base price from offer (for its intended adults)
+                        newActualAdultCountBasedOnOffers += offer.intendedAdults * qty;
+                        for (let i = 0; i < qty; i++) {
+                            currentBookedRoomInstances.push({
+                                category,
+                                offer,
+                                childrenAssigned: 0,
+                            });
+                        }
                     }
                 }
-            }
-        });
-
-        // --- Pricing Calculation Logic ---
-        // This loop iterates through each *selected room instance*.
-        // It assigns guests (adults, then children) to each room instance up to its max capacity.
-        // The price for *each room instance* is then determined based on:
-        //   1. The number of adults in *that specific room instance* (for single, double, or triple occupancy rates).
-        //   2. The number of children in *that specific room instance* (child rates are additive).
-        //   3. The selected meal plan.
-        //   4. Applicable discounts.
-        // The sum of these per-room-instance prices gives the total nightly rate.
-        for (const { category } of roomInstances) {
-            if (remainingAdults === 0 && remainingChildren === 0) break; // All guests assigned
-
-            let roomPriceForThisInstance = 0;
-            let adultsInThisRoom = 0;
-            let childrenInThisRoom = 0;
-
-            const pricing = category.pricing; 
-            const maxOccupantsForThisRoom = category.maxOccupancy || MAX_OCCUPANTS_PER_ROOM;
-
-            // Assign adults to this room instance
-            const adultsToAssign = Math.min(remainingAdults, maxOccupantsForThisRoom);
-            adultsInThisRoom = adultsToAssign;
-            remainingAdults -= adultsToAssign;
-
-            // Assign children to this room instance's remaining capacity
-            const remainingCapacityInRoom = maxOccupantsForThisRoom - adultsInThisRoom;
-            const childrenToAssign = Math.min(remainingChildren, remainingCapacityInRoom);
-            childrenInThisRoom = childrenToAssign;
-            remainingChildren -= childrenToAssign;
-            
-            // Calculate Adult Price for this room instance based on occupancy
-            let adultBasePrice = 0;
-            let adultDiscountedPrice = 0;
-
-            if (adultsInThisRoom >= 3) { 
-                adultBasePrice = getPrice(pricing.tripleOccupancyAdultPrice, selectedMealPlan);
-                adultDiscountedPrice = getPrice(pricing.discountedTripleOccupancyAdultPrice, selectedMealPlan);
-            } else if (adultsInThisRoom === 2) {
-                adultBasePrice = getPrice(pricing.doubleOccupancyAdultPrice, selectedMealPlan);
-                adultDiscountedPrice = getPrice(pricing.discountedDoubleOccupancyAdultPrice, selectedMealPlan);
-            } else if (adultsInThisRoom === 1 || (adultsInThisRoom === 0 && childrenInThisRoom > 0)) { 
-                // Single adult price also applies if only children are in the room (acts as base room charge)
-                adultBasePrice = getPrice(pricing.singleOccupancyAdultPrice, selectedMealPlan);
-                adultDiscountedPrice = getPrice(pricing.discountedSingleOccupancyAdultPrice, selectedMealPlan);
-            }
-
-            let effectiveAdultPrice = (adultDiscountedPrice > 0 && adultDiscountedPrice < adultBasePrice) ? adultDiscountedPrice : adultBasePrice;
-            
-            // Fallback to 'noMeal' plan if selected meal plan yielded zero price for adults AND room is occupied
-            if (effectiveAdultPrice === 0 && selectedMealPlan !== 'noMeal' && (adultsInThisRoom > 0 || childrenInThisRoom > 0)) {
-                let fallbackBase = 0;
-                let fallbackDisc = 0;
-                if (adultsInThisRoom >= 3) {
-                    fallbackBase = getPrice(pricing.tripleOccupancyAdultPrice, 'noMeal');
-                    fallbackDisc = getPrice(pricing.discountedTripleOccupancyAdultPrice, 'noMeal');
-                } else if (adultsInThisRoom === 2) {
-                    fallbackBase = getPrice(pricing.doubleOccupancyAdultPrice, 'noMeal');
-                    fallbackDisc = getPrice(pricing.discountedDoubleOccupancyAdultPrice, 'noMeal');
-                } else { 
-                    fallbackBase = getPrice(pricing.singleOccupancyAdultPrice, 'noMeal');
-                    fallbackDisc = getPrice(pricing.discountedSingleOccupancyAdultPrice, 'noMeal');
-                }
-                effectiveAdultPrice = (fallbackDisc > 0 && fallbackDisc < fallbackBase) ? fallbackDisc : fallbackBase;
-            }
-            roomPriceForThisInstance = effectiveAdultPrice;
-
-            // Calculate Child Price for this room instance (additive)
-            if (childrenInThisRoom > 0) {
-                let pricePerChild = 0;
-                // Prioritize 5-12 age group pricing
-                let child5to12Base = getPrice(pricing.child5to12Price, selectedMealPlan);
-                let child5to12Disc = getPrice(pricing.discountedChild5to12Price, selectedMealPlan);
-
-                // Fallback to 'noMeal' for child 5-12 if selected meal plan price is zero
-                if (child5to12Base === 0 && selectedMealPlan !== 'noMeal' && pricing.child5to12Price) {
-                    child5to12Base = getPrice(pricing.child5to12Price, 'noMeal');
-                }
-                if (child5to12Disc === 0 && selectedMealPlan !== 'noMeal' && pricing.discountedChild5to12Price) {
-                    child5to12Disc = getPrice(pricing.discountedChild5to12Price, 'noMeal');
-                }
-                const calculatedChild5to12Price = (child5to12Disc > 0 && child5to12Disc < child5to12Base) ? child5to12Disc : child5to12Base;
-
-                if (calculatedChild5to12Price > 0) {
-                    pricePerChild = calculatedChild5to12Price;
-                } else {
-                    // Fallback to 12-18 age group pricing if 5-12 was zero or not found
-                    let child12to18Base = getPrice(pricing.child12to18Price, selectedMealPlan);
-                    let child12to18Disc = getPrice(pricing.discountedChild12to18Price, selectedMealPlan);
-
-                    // Fallback to 'noMeal' for child 12-18
-                    if (child12to18Base === 0 && selectedMealPlan !== 'noMeal' && pricing.child12to18Price) {
-                        child12to18Base = getPrice(pricing.child12to18Price, 'noMeal');
-                    }
-                    if (child12to18Disc === 0 && selectedMealPlan !== 'noMeal' && pricing.discountedChild12to18Price) {
-                        child12to18Disc = getPrice(pricing.discountedChild12to18Price, 'noMeal');
-                    }
-                    const calculatedChild12to18Price = (child12to18Disc > 0 && child12to18Disc < child12to18Base) ? child12to18Disc : child12to18Base;
-                    if (calculatedChild12to18Price > 0) {
-                        pricePerChild = calculatedChild12to18Price;
-                    }
-                }
-                roomPriceForThisInstance += pricePerChild * childrenInThisRoom;
-            }
-            
-            calculatedPricePerNight += roomPriceForThisInstance;
+            });
         }
-        // --- End of Pricing Calculation Logic snippet ---
-
-
-        // Check if all guests were assigned
-        const newErrorMessage = remainingAdults > 0 || remainingChildren > 0
-            ? `Not enough room capacity for ${guestCount} guests with current selection. Please add more rooms or adjust guest count.`
-            : null;
-
-        setBookingError(newErrorMessage); // Set or clear capacity error.
         
+        // This is the number of adults determined by the selected room offers.
+        // If rooms are selected, adultCount state should reflect this.
+        const adultCountToSet = totalSelectedPhysicalRooms > 0 ? Math.max(1, newActualAdultCountBasedOnOffers) : adultCount; // Use current adultCount if no rooms
+
+        if (totalSelectedPhysicalRooms > 0 && adultCount !== adultCountToSet) {
+            setAdultCount(adultCountToSet);
+            // This will trigger a re-render and this useEffect will run again.
+            // The calculations below in *this* execution cycle should use adultCountToSet.
+        }
+        
+        // Adults for pricing are now based on adultCountToSet (derived from offers if any, else from dropdown via adultCount state)
+        // Children are from childCount state (dropdown)
+        let remainingChildrenToPlace = childCount;
+        let childrenPriceComponent = 0;
+        let newErrorMessage: string | null = null;
+
+        if (remainingChildrenToPlace > 0 && currentBookedRoomInstances.length > 0) {
+            for (const instance of currentBookedRoomInstances) {
+                if (remainingChildrenToPlace === 0) break;
+
+                const { category, offer } = instance;
+                const pricing = category.pricing;
+                const adultsInThisRoomInstanceByOffer = offer.intendedAdults;
+                const capacityForChildrenInInstance = Math.max(0, (category.maxOccupancy || MAX_OCCUPANTS_PER_ROOM) - adultsInThisRoomInstanceByOffer);
+                
+                const childrenToAssignToInstance = Math.min(remainingChildrenToPlace, capacityForChildrenInInstance);
+
+                if (childrenToAssignToInstance > 0) {
+                    instance.childrenAssigned = childrenToAssignToInstance; // Track for validation
+                    remainingChildrenToPlace -= childrenToAssignToInstance;
+
+                    let pricePerChildForInstance = 0;
+                    let child5to12Base = getPrice(pricing.child5to12Price, selectedMealPlan);
+                    let child5to12Disc = getPrice(pricing.discountedChild5to12Price, selectedMealPlan);
+                    if (child5to12Base === 0 && selectedMealPlan !== 'noMeal') child5to12Base = getPrice(pricing.child5to12Price, 'noMeal');
+                    if (child5to12Disc === 0 && selectedMealPlan !== 'noMeal') child5to12Disc = getPrice(pricing.discountedChild5to12Price, 'noMeal');
+                    const calculatedChild5to12Price = (child5to12Disc > 0 && child5to12Disc < child5to12Base) ? child5to12Disc : child5to12Base;
+
+                    if (calculatedChild5to12Price > 0) {
+                        pricePerChildForInstance = calculatedChild5to12Price;
+                    } else {
+                        let child12to18Base = getPrice(pricing.child12to18Price, selectedMealPlan);
+                        let child12to18Disc = getPrice(pricing.discountedChild12to18Price, selectedMealPlan);
+                        if (child12to18Base === 0 && selectedMealPlan !== 'noMeal') child12to18Base = getPrice(pricing.child12to18Price, 'noMeal');
+                        if (child12to18Disc === 0 && selectedMealPlan !== 'noMeal') child12to18Disc = getPrice(pricing.discountedChild12to18Price, 'noMeal');
+                        const calculatedChild12to18Price = (child12to18Disc > 0 && child12to18Disc < child12to18Base) ? child12to18Disc : child12to18Base;
+                        if (calculatedChild12to18Price > 0) pricePerChildForInstance = calculatedChild12to18Price;
+                    }
+                    childrenPriceComponent += pricePerChildForInstance * childrenToAssignToInstance;
+                }
+            }
+        }
+        calculatedPricePerNight += childrenPriceComponent;
+
+        if (remainingChildrenToPlace > 0) {
+            newErrorMessage = `Not enough room capacity for all ${childCount} children. ${remainingChildrenToPlace} children could not be assigned. Please adjust room selection or reduce child count.`;
+        }
+        
+        // Final check on total guests vs total capacity (adults are by offer, children distributed)
+        const totalGuestCapacityInSelectedRooms = currentBookedRoomInstances.reduce((sum, inst) => sum + (inst.category.maxOccupancy || MAX_OCCUPANTS_PER_ROOM), 0);
+        const totalGuestsAttemptingToBook = adultCountToSet + childCount; // adultCountToSet is derived if rooms selected
+
+        if (totalSelectedPhysicalRooms > 0 && totalGuestsAttemptingToBook > totalGuestCapacityInSelectedRooms && !newErrorMessage) {
+             // This condition might be slightly redundant if remainingChildrenToPlace already covers it,
+             // but it's a good safeguard.
+             newErrorMessage = `Total guests (${totalGuestsAttemptingToBook}) exceed capacity of selected rooms (${totalGuestCapacityInSelectedRooms}). Adjust selection.`;
+        }
+        
+        setBookingError(newErrorMessage);
         setTotalBookingPricePerNight(calculatedPricePerNight);
 
-        // Calculate final pricing if no capacity error and price is valid
-        if (calculatedPricePerNight > 0 && days > 0 && !newErrorMessage) { 
+        if (calculatedPricePerNight > 0 && days > 0 && !newErrorMessage) {
             const currentSubtotalNights = calculatedPricePerNight * days;
             setSubtotalNights(currentSubtotalNights);
+            // Service fee: Assuming SERVICE_FEE_FIXED is a per-booking, per-night fee, not per room.
             const currentServiceCharge = SERVICE_FEE_FIXED * days; 
             setServiceCharge(currentServiceCharge);
             const currentTaxes = (currentSubtotalNights + currentServiceCharge) * TAX_RATE_PERCENTAGE;
@@ -683,12 +739,28 @@ export default function PropertyDetailPage() {
             setTotalBookingPricing(currentSubtotalNights + currentServiceCharge + currentTaxes);
         } else {
             setSubtotalNights(0); setServiceCharge(0); setTaxesApplied(0); setTotalBookingPricing(0);
-            if(calculatedPricePerNight <=0 && totalSelectedRooms > 0 && days > 0 && !newErrorMessage) { // If no capacity error, but price is still zero
-                 setBookingError("Could not calculate a valid price for the selected options. Please check room rates or contact support.");
+            if (calculatedPricePerNight <= 0 && totalSelectedPhysicalRooms > 0 && days > 0 && !newErrorMessage) {
+                // Avoid setting error if adultCount is being updated by this effect, which will trigger re-calculation
+                const adultCountIsStableOrNoRooms = !(totalSelectedPhysicalRooms > 0 && adultCount !== adultCountToSet);
+                if (adultCountIsStableOrNoRooms) {
+                     setBookingError("Could not calculate a valid price. Check room rates or contact support.");
+                }
             }
         }
-
-    }, [selectedRooms, property?.categoryRooms, days, adultCount, childCount, totalSelectedRooms, guestCount, selectedMealPlan, checkInDate, checkOutDate, property]); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [
+        selectedOffers, 
+        property, // Includes property.categoryRooms, property.costing.currency etc.
+        displayableRoomOffers, 
+        days, 
+        adultCount, // adultCount state (used for comparison and when no rooms selected)
+        childCount, 
+        selectedMealPlan, 
+        checkInDate, 
+        checkOutDate, 
+        totalSelectedPhysicalRooms,
+        // setAdultCount is a setter, not a dependency here
+    ]);
 
 
     // --- Event Handlers ---
@@ -724,7 +796,7 @@ export default function PropertyDetailPage() {
                 }
             }
         }
-         const { available, message } = checkAvailabilityForSelection(validatedCheckIn, checkOutDate, selectedRooms, property?.categoryRooms);
+         const { available, message } = checkAvailabilityForSelection(validatedCheckIn, checkOutDate, selectedOffers, property?.categoryRooms);
          setAvailabilityError(available ? null : message);
          setBookingError(null); 
     };
@@ -748,7 +820,7 @@ export default function PropertyDetailPage() {
              }
             setCheckOutDate(validatedCheckOut);
         }
-         const { available, message } = checkAvailabilityForSelection(checkInDate, validatedCheckOut, selectedRooms, property?.categoryRooms);
+         const { available, message } = checkAvailabilityForSelection(checkInDate, validatedCheckOut, selectedOffers, property?.categoryRooms);
          setAvailabilityError(available ? null : message);
          setBookingError(null);
     };
@@ -767,52 +839,49 @@ export default function PropertyDetailPage() {
 
     const handleImageClick = (imageUrl: string) => { setActiveImage(imageUrl); };
 
-    // const handleGuestChange = (type: 'adult' | 'child', change: number) => {
-    //     if (type === 'adult') {
-    //         setAdultCount(prev => Math.max(1, prev + change));
-    //     } else {
-    //         setChildCount(prev => Math.max(0, prev + change));
-    //     }
-    //     setBookingError(null);
-    //     setAvailabilityError(null); 
-    // };
-
-    const handleRoomQuantityChange = (categoryID: string, quantity: number) => {
+    const handleOfferQuantityChange = (offerId: string, quantity: number) => {
         if (!property?.categoryRooms) return;
-        const category = property.categoryRooms.find(cat => cat.id === categoryID || cat._id === categoryID);
+        
+        const [categoryIdFromFile] = offerId.split('_');
+        const category = property.categoryRooms.find(cat => cat.id === categoryIdFromFile || cat._id === categoryIdFromFile);
         if (!category) return;
-    
-        const newQty = Math.max(0, Math.min(quantity, category.qty)); 
-    
-        const tempSelectedRooms = { ...selectedRooms };
+
+        const newQty = Math.max(0, quantity);
+
+        const tempSelectedOffers = { ...selectedOffers };
         if (newQty === 0) {
-            delete tempSelectedRooms[category.id];
+            delete tempSelectedOffers[offerId];
         } else {
-            tempSelectedRooms[category.id] = newQty;
+            tempSelectedOffers[offerId] = newQty;
         }
-            
-        const newTotalSelected = Object.values(tempSelectedRooms).reduce((sum, q) => sum + q, 0);
-    
-        if (newTotalSelected > MAX_COMBINED_ROOMS) {
-            setBookingError(`Maximum ${MAX_COMBINED_ROOMS} rooms allowed in total.`);
-            setTimeout(() => {
-                 if (bookingError === `Maximum ${MAX_COMBINED_ROOMS} rooms allowed in total.`) {
-                    setBookingError(null);
-                }
-            }, 3000);
+
+        let qtySumForThisCategory = 0;
+        for (const currentOfferId in tempSelectedOffers) {
+            if (currentOfferId.startsWith(category.id + '_') || currentOfferId.startsWith(category._id + '_')) { // check both id and _id
+                qtySumForThisCategory += tempSelectedOffers[currentOfferId];
+            }
+        }
+
+
+        if (qtySumForThisCategory > category.qty) {
+            setBookingError(`Cannot select more than ${category.qty} rooms of type "${category.title}".`);
+            setTimeout(() => { setBookingError(null); }, 3000);
             return; 
         }
         
-        setSelectedRooms(tempSelectedRooms); 
-
-        const { available, message } = checkAvailabilityForSelection(checkInDate, checkOutDate, tempSelectedRooms, property.categoryRooms);
-        if (!available) {
-            setAvailabilityError(message);
-        } else {
-            setAvailabilityError(null); 
+        const newTotalSelectedPhysical = Object.values(tempSelectedOffers).reduce((sum, q) => sum + q, 0);
+        if (newTotalSelectedPhysical > MAX_COMBINED_ROOMS) {
+            setBookingError(`Maximum ${MAX_COMBINED_ROOMS} rooms allowed in total.`);
+            setTimeout(() => { setBookingError(null); }, 3000);
+            return;
         }
+        
+        setSelectedOffers(tempSelectedOffers); 
+
+        const { available, message } = checkAvailabilityForSelection(checkInDate, checkOutDate, tempSelectedOffers, property.categoryRooms);
+        setAvailabilityError(available ? null : message);
     
-        if (bookingError && bookingError.startsWith("Not enough room capacity")) {
+        if (bookingError && (bookingError.startsWith("Not enough room capacity") || bookingError.startsWith("Your selection does not accommodate"))) {
              setBookingError(null);
         }
     };
@@ -820,9 +889,9 @@ export default function PropertyDetailPage() {
 
     useEffect(() => {
         let currentTotal = 0;
-        Object.values(selectedRooms).forEach(qty => currentTotal += qty);
-        setTotalSelectedRooms(currentTotal);
-    }, [selectedRooms]);
+        Object.values(selectedOffers).forEach(qty => currentTotal += qty);
+        setTotalSelectedPhysicalRooms(currentTotal);
+    }, [selectedOffers]);
 
     const handleMealPlanChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSelectedMealPlan(e.target.value as keyof PricingByMealPlan);
@@ -842,10 +911,10 @@ export default function PropertyDetailPage() {
 
         if (!checkInDate || !checkOutDate) { localError = "Please select check-in and check-out dates."; }
         else if (days <= 0) { localError = "Check-out date must be after check-in date."; }
-        else if (totalSelectedRooms <= 0) { localError = "Please select at least one room."; }
-        else if (totalSelectedRooms > MAX_COMBINED_ROOMS) { localError = `Cannot book more than ${MAX_COMBINED_ROOMS} rooms.`; }
+        else if (totalSelectedPhysicalRooms <= 0) { localError = "Please select at least one room offer."; }
+        else if (totalSelectedPhysicalRooms > MAX_COMBINED_ROOMS) { localError = `Cannot book more than ${MAX_COMBINED_ROOMS} rooms.`; }
         
-        const { available, message: availabilityMsg } = checkAvailabilityForSelection(checkInDate, checkOutDate, selectedRooms, property?.categoryRooms);
+        const { available, message: availabilityMsg } = checkAvailabilityForSelection(checkInDate, checkOutDate, selectedOffers, property?.categoryRooms);
         if (!available) {
             setAvailabilityError(availabilityMsg);
             return; 
@@ -853,11 +922,11 @@ export default function PropertyDetailPage() {
             setAvailabilityError(null);
         }
 
-        if (bookingError) { // This bookingError is from the main pricing useEffect
+        if (bookingError) { 
             return;
         }
         
-        if (totalBookingPricing <= 0 && totalSelectedRooms > 0 && days > 0) {
+        if (totalBookingPricing <= 0 && totalSelectedPhysicalRooms > 0 && days > 0) {
            localError = "Calculated price is zero. Please check room rates or contact support.";
         }
 
@@ -867,8 +936,8 @@ export default function PropertyDetailPage() {
         }
         setBookingError(null); 
 
-
-        setBookingData(prev => ({ ...prev, passengers: guestCount, rooms: totalSelectedRooms }));
+        // globalGuestCount uses the adultCount state, which is updated by pricing useEffect
+        setBookingData(prev => ({ ...prev, passengers: globalGuestCount, rooms: totalSelectedPhysicalRooms }));
         setShowBookingModal(true);
     };
 
@@ -876,122 +945,13 @@ export default function PropertyDetailPage() {
         const { name, value } = e.target;
         setBookingData(prev => ({ ...prev, [name]: value }));
     };
+    
 
-    const handleBookingSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setModalBookingError(null); 
+    // const handleBookingSubmit = async (e: React.FormEvent) => {
+    //     e.preventDefault();
+    //     console.log("Form submitted, but Razorpay button should handle actual booking POST.");
+    // };
 
-        if (!property || !checkInDate || !checkOutDate || totalSelectedRooms <= 0 || availabilityError) {
-            setModalBookingError("Booking details incomplete or dates unavailable. Please review your selection.");
-            return;
-        };
-         if (totalBookingPricing <= 0) {
-            setModalBookingError("Cannot proceed with a zero total price. Please check configuration.");
-            return;
-         }
-         if (bookingError) { // Re-check main page error (like capacity)
-            setModalBookingError(bookingError); 
-            return;
-         }
-
-        setIsSubmitting(true);
-
-        const selectedRoomDetailsPayload = Object.entries(selectedRooms)
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            .filter(([_, qty]) => qty > 0)
-            .map(([catId, qty]) => {
-                const category = property.categoryRooms?.find(cat => cat.id === catId || cat._id === catId);
-                 let pricePerRoomNight = 0;
-                 if (category) { 
-                    let adultPrice = getPrice(category.pricing.singleOccupancyAdultPrice, selectedMealPlan) || getPrice(category.pricing.doubleOccupancyAdultPrice, selectedMealPlan);
-                    let adultDiscPrice = getPrice(category.pricing.discountedSingleOccupancyAdultPrice, selectedMealPlan) || getPrice(category.pricing.discountedDoubleOccupancyAdultPrice, selectedMealPlan);
-                    pricePerRoomNight = (adultDiscPrice > 0 && adultDiscPrice < adultPrice) ? adultDiscPrice : adultPrice;
-                    
-                    if (pricePerRoomNight === 0 && selectedMealPlan !== 'noMeal') { 
-                        adultPrice = getPrice(category.pricing.singleOccupancyAdultPrice, 'noMeal') || getPrice(category.pricing.doubleOccupancyAdultPrice, 'noMeal');
-                        adultDiscPrice = getPrice(category.pricing.discountedSingleOccupancyAdultPrice, 'noMeal') || getPrice(category.pricing.discountedDoubleOccupancyAdultPrice, 'noMeal');
-                        pricePerRoomNight = (adultDiscPrice > 0 && adultDiscPrice < adultPrice) ? adultDiscPrice : adultPrice;
-                    }
-                 }
-                const currency = category?.currency || property.costing?.currency || 'USD';
-                return {
-                    categoryId: catId,
-                    title: category?.title || 'Unknown Room',
-                    qty: qty,
-                    estimatedPricePerRoomNight: pricePerRoomNight, 
-                    currency: currency
-                };
-            });
-
-        try {
-            const bookingPayload = {
-                type: "property" as const, 
-                details: {
-                    id: params?.id as string, 
-                    title: property.title || "N/A",
-                    ownerId: property.userId || "N/A", 
-                    locationFrom: "NA", 
-                    locationTo: `${property.location.address}, ${property.location.city}, ${property.location.country}`,
-                    type: property.type as PropertyType,
-                },
-                bookingDetails: {
-                    checkIn: checkInDate.toISOString(),
-                    checkOut: checkOutDate.toISOString(),
-                    adults: adultCount,
-                    children: childCount,
-                    totalGuests: guestCount,
-                    totalRoomsSelected: totalSelectedRooms,
-                    selectedMealPlan: selectedMealPlan, 
-                    roomsDetail: selectedRoomDetailsPayload,
-                    calculatedPricePerNight: totalBookingPricePerNight, 
-                    currency: property.costing?.currency || 'USD',
-                    numberOfNights: days,
-                    subtotal: subtotalNights,
-                    serviceFee: serviceCharge,
-                    taxes: taxesApplied,
-                    totalPrice: totalBookingPricing,
-                },
-                guestDetails: {
-                    firstName: bookingData.firstName,
-                    lastName: bookingData.lastName,
-                    email: bookingData.email,
-                    phone: bookingData.phone,
-                    specialRequests: bookingData.specialRequests,
-                },
-                recipients: [bookingData.email, 'admin-notifications@yourplatform.com'] 
-            };
-
-            console.log("Booking Payload:", JSON.stringify(bookingPayload, null, 2)); 
-
-            const response = await fetch('/api/bookings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(bookingPayload),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Booking submission failed with status: ' + response.status }));
-                throw new Error(errorData.message || 'Failed to submit booking');
-            }
-
-            setBookingConfirmed(true);
-            setShowBookingModal(false);
-            if (typeof window !== 'undefined') {
-                localStorage.removeItem(LOCAL_STORAGE_KEY); 
-                localStorage.removeItem('checkIn');
-                localStorage.removeItem('checkOut');
-                localStorage.removeItem('adults');
-                localStorage.removeItem('children');
-                localStorage.removeItem('rooms'); 
-            }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (error: any) {
-            console.error('Error submitting booking:', error);
-            setModalBookingError(`Booking failed: ${error.message}. Please try again or contact support.`);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
 
     const renderRatingStars = (rating: number, starSize: string = "w-4 h-4") => (
         <div className="flex items-center">
@@ -1125,7 +1085,7 @@ export default function PropertyDetailPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-5">
+                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-5">
                     <div className="md:col-span-8">
                         <div className="grid grid-cols-3 grid-rows-3 gap-1.5 h-[300px] md:h-[420px] rounded-lg overflow-hidden">
                             {mainGalleryImage && (
@@ -1187,33 +1147,44 @@ export default function PropertyDetailPage() {
                     </div>
                 </SignedOut>
 
-
                 <div className="bg-white p-0 rounded-md border border-gray-200 mb-6">
                     <div className="bg-gray-50 p-4 border-b border-gray-200">
-                        <h2 className="text-xl font-bold text-gray-800 mb-3">Select your option</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                        <h2 className="text-xl font-bold text-gray-800 mb-3">Select your rooms</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                             <div className="md:col-span-1">
-                                <label htmlFor="checkin-date-table" className="block text-xs font-medium text-gray-500 mb-1">Check-in - Check-out</label>
-                                <div className="flex space-x-2">
+                                <label htmlFor="checkin-date-table" className="block text-xs font-medium text-gray-500 mb-1">Check-in</label>
                                 <input id="checkin-date-table" type="date" value={checkInDate ? checkInDate.toISOString().split('T')[0] : ''} onChange={handleCheckInChange} className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm" min={property.startDate} max={property.endDate} required />
+                            </div>
+                             <div className="md:col-span-1">
+                                <label htmlFor="checkout-date-table" className="block text-xs font-medium text-gray-500 mb-1">Check-out</label>
                                 <input id="checkout-date-table" type="date" value={checkOutDate ? checkOutDate.toISOString().split('T')[0] : ''} onChange={handleCheckOutChange} className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm" min={checkInDate ? new Date(checkInDate.getTime() + 86400000).toISOString().split('T')[0] : property.startDate} max={property.endDate} required disabled={!checkInDate} />
-                                </div>
                             </div>
                             <div className="md:col-span-1">
-                                <label className="block text-xs font-medium text-gray-500 mb-1">Guests</label>
-                                <div className="flex items-center border border-gray-300 rounded-md shadow-sm bg-white p-2 text-sm">
-                                    <UsersIcon size={16} className="mr-2 text-gray-500" />
-                                    <span>{adultCount} adult{adultCount > 1 ? 's' : ''}{childCount > 0 ? `, ${childCount} child${childCount > 1 ? 'ren' : ''}` : ''} - {totalSelectedRooms > 0 ? `${totalSelectedRooms} room${totalSelectedRooms > 1 ? 's' : ''}`: 'Select rooms'}</span>
-                                </div>
+                                <label htmlFor="adult-count-selector" className="block text-xs font-medium text-gray-500 mb-1">Adults</label>
+                                <select 
+                                    id="adult-count-selector" 
+                                    value={adultCount} // This value is now updated by useEffect if rooms are selected
+                                    onChange={e => {
+                                        // If user changes dropdown, this sets adultCount.
+                                        // If rooms are ALREADY selected, pricing useEffect will likely re-derive and override this.
+                                        // If NO rooms selected, this sets the desired adult count.
+                                        setAdultCount(parseInt(e.target.value));
+                                        setBookingError(null); // Clear errors when user interacts
+                                    }} 
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm shadow-sm"
+                                >
+                                    {[...Array(10)].map((_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}
+                                </select>
                             </div>
-                            <div className="md:col-span-1">
-                                <button onClick={() => router.push('/properties')} className="w-full bg-blue-600 text-white font-semibold py-2.5 px-4 rounded-md hover:bg-blue-700 text-sm">
-                                    Change search
-                                </button>
+                             <div className="md:col-span-1">
+                                <label htmlFor="child-count-selector" className="block text-xs font-medium text-gray-500 mb-1">Children (0-17)</label>
+                                 <select id="child-count-selector" value={childCount} onChange={e => {setChildCount(parseInt(e.target.value)); setBookingError(null);}} className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm shadow-sm">
+                                    {[...Array(6)].map((_, i) => <option key={i} value={i}>{i}</option>)}
+                                </select>
                             </div>
                         </div>
                         <div className="mt-4">
-                            <label className="block text-xs font-medium text-gray-500 mb-1.5">Preferred Meal Plan for Pricing Display:</label>
+                            <label className="block text-xs font-medium text-gray-500 mb-1.5">Preferred Meal Plan (for all rooms):</label>
                             <div className="flex flex-wrap gap-2">
                                 {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(plan => {
                                     const labelText = { noMeal: 'Room Only', breakfastOnly: 'Breakfast', allMeals: 'All Meals'}[plan];
@@ -1231,149 +1202,162 @@ export default function PropertyDetailPage() {
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full min-w-[900px]">
+                        <table className="w-full min-w-[1000px]">
                             <thead className="bg-gray-100 text-left text-xs text-gray-500 uppercase tracking-wider">
                                 <tr>
-                                    <th className="px-4 py-2.5 font-semibold">Room type</th>
-                                    <th className="px-3 py-2.5 font-semibold text-center">Sleeps</th>
-                                    <th className="px-3 py-2.5 font-semibold">Price for {days > 0 ? `${days} night${days > 1 ? 's' : ''}` : 'N/A'}</th>
-                                    <th className="px-3 py-2.5 font-semibold">Your choices</th>
-                                    <th className="px-4 py-2.5 font-semibold text-center">Select rooms</th>
+                                    <th className="px-4 py-2.5 font-semibold w-[30%]">Room type</th>
+                                    <th className="px-3 py-2.5 font-semibold text-center w-[10%]">Offer for</th>
+                                    <th className="px-3 py-2.5 font-semibold w-[20%]">Price for {days > 0 ? `${days} night${days > 1 ? 's' : ''}` : 'N/A'}</th>
+                                    <th className="px-3 py-2.5 font-semibold w-[25%]">Your choices</th>
+                                    <th className="px-4 py-2.5 font-semibold text-center w-[15%]">Select rooms</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
-                                {property.categoryRooms && property.categoryRooms.length > 0 ? property.categoryRooms.map(cat => {
-                                    const currentQtySelected = selectedRooms[cat.id] || 0;
-                                    let displayPricePerNight = 0;
-                                    let originalPricePerNight = 0;
-                                    let isDiscounted = false;
-
-                                    const baseAdultPrice = getPrice(cat.pricing.doubleOccupancyAdultPrice, selectedMealPlan) || getPrice(cat.pricing.singleOccupancyAdultPrice, selectedMealPlan);
-                                    const discountedAdultPrice = getPrice(cat.pricing.discountedDoubleOccupancyAdultPrice, selectedMealPlan) || getPrice(cat.pricing.discountedSingleOccupancyAdultPrice, selectedMealPlan);
-                                    
-                                    if (discountedAdultPrice > 0 && discountedAdultPrice < baseAdultPrice) {
-                                        displayPricePerNight = discountedAdultPrice;
-                                        originalPricePerNight = baseAdultPrice;
-                                        isDiscounted = true;
-                                    } else {
-                                        displayPricePerNight = baseAdultPrice;
-                                    }
-
-                                    if (displayPricePerNight === 0 && selectedMealPlan !== 'noMeal') {
-                                        const noMealBase = getPrice(cat.pricing.doubleOccupancyAdultPrice, 'noMeal') || getPrice(cat.pricing.singleOccupancyAdultPrice, 'noMeal');
-                                        const noMealDisc = getPrice(cat.pricing.discountedDoubleOccupancyAdultPrice, 'noMeal') || getPrice(cat.pricing.discountedSingleOccupancyAdultPrice, 'noMeal');
-                                        if(noMealDisc > 0 && noMealDisc < noMealBase) {
-                                            displayPricePerNight = noMealDisc;
-                                            originalPricePerNight = noMealBase;
-                                            isDiscounted = true;
-                                        } else {
-                                            displayPricePerNight = noMealBase;
-                                            originalPricePerNight = 0;
-                                            isDiscounted = false;
-                                        }
-                                    }
-
-                                    const totalPriceForRoomTypeNights = displayPricePerNight * days;
-                                    const totalOriginalPriceForRoomTypeNights = originalPricePerNight * days;
-                                    const illustrativeTaxForRoomType = (totalPriceForRoomTypeNights + (SERVICE_FEE_FIXED * days / Math.max(1,totalSelectedRooms)) ) * TAX_RATE_PERCENTAGE; 
-                                    
-                                    return (
-                                        <tr key={cat.id} className={`${currentQtySelected > 0 ? 'bg-blue-50/30' : ''}`}>
-                                            <td className="px-4 py-3 align-top w-[30%]">
-                                                <a href="#" onClick={(e) => e.preventDefault()} className="font-semibold text-blue-600 hover:underline text-sm">{cat.title}</a>
-                                                {cat.bedConfiguration && <p className="text-xs text-gray-600 mt-0.5 flex items-center"><Bed size={14} className="mr-1.5 text-gray-500" />{cat.bedConfiguration}</p>}
-                                                {cat.size && <p className="text-xs text-gray-500 mt-0.5">Size: {cat.size}</p>}
-                                                <div className="mt-1.5 space-y-0.5">
-                                                    {(cat.roomSpecificAmenities?.slice(0,3) || property.roomFacilities?.slice(0,3) || []).map(amenity => (
-                                                        <div key={amenity} className="flex items-center text-xs text-gray-600">
-                                                            {getAmenityIcon(amenity)} <span className="ml-1.5">{formatAmenityName(amenity)}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </td>
-                                            <td className="px-3 py-3 align-top text-center">
-                                                <div className="flex justify-center items-center">
-                                                    {[...Array(cat.maxOccupancy || MAX_OCCUPANTS_PER_ROOM)].map((_, i) => <UsersIcon key={i} size={14} className="text-gray-500 mr-0.5" />)}
-                                                </div>
-                                                <p className="text-xs text-gray-500 mt-1">Max {cat.maxOccupancy || MAX_OCCUPANTS_PER_ROOM}</p>
-                                            </td>
-                                            <td className="px-3 py-3 align-top">
-                                                {days > 0 && displayPricePerNight > 0 ? (
-                                                    <>
-                                                        {isDiscounted && originalPricePerNight > 0 && totalPriceForRoomTypeNights < totalOriginalPriceForRoomTypeNights && (
-                                                            <p className="text-xs text-gray-400 line-through">{cat.currency} {totalOriginalPriceForRoomTypeNights.toLocaleString()}</p>
-                                                        )}
-                                                        <p className="text-lg font-bold text-gray-800">{cat.currency} {totalPriceForRoomTypeNights.toLocaleString()}</p>
-                                                        <p className="text-[11px] text-gray-500">+ {cat.currency} {illustrativeTaxForRoomType.toFixed(2)} taxes and charges</p>
-                                                        {isDiscounted && <span className="text-xs bg-red-500 text-white font-semibold px-1.5 py-0.5 rounded-sm mt-1 inline-block">Deal!</span>}
-                                                    </>
-                                                ) : days > 0 ? (
-                                                    <p className="text-sm text-red-500">Price not available</p>
-                                                ) : (
-                                                    <p className="text-sm text-gray-500">Select dates</p>
-                                                )}
-                                            </td>
-                                            <td className="px-3 py-3 align-top text-xs text-gray-600 space-y-1">
-                                                <p className="flex items-center text-green-600"><CheckCircle size={14} className="mr-1.5 shrink-0" /> {selectedMealPlan === 'breakfastOnly' ? 'Breakfast option' : selectedMealPlan === 'allMeals' ? 'All meals option' : 'Room only option'}</p>
-                                                {property.reservationPolicy && property.reservationPolicy[0] ? (
-                                                    <p className="flex items-center text-green-600"><CheckCircle size={14} className="mr-1.5 shrink-0" /> {property.reservationPolicy[0]}</p>
-                                                ) : (
-                                                    <p className="flex items-center text-green-600"><CheckCircle size={14} className="mr-1.5 shrink-0" /> Flexible cancellation</p>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 align-top text-center">
-                                                {cat.qty > 0 ? (
-                                                    <select 
-                                                        value={currentQtySelected} 
-                                                        onChange={(e) => handleRoomQuantityChange(cat.id, parseInt(e.target.value))}
-                                                        className="p-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 w-20"
-                                                        disabled={days <= 0}
-                                                    >
-                                                        {[...Array(Math.min(cat.qty, MAX_COMBINED_ROOMS - (totalSelectedRooms - currentQtySelected)) + 1)].map((_, i) => (
-                                                            <option key={i} value={i}>{i}</option>
-                                                        ))}
-                                                    </select>
-                                                ) : (
-                                                    <span className="text-xs text-red-500">Sold out</span>
-                                                )}
-                                                 <p className="text-[11px] text-gray-500 mt-1">{cat.qty} available</p>
-                                            </td>
-                                        </tr>
-                                    );
-                                }) : (
-                                    <tr><td colSpan={5} className="text-center py-8 text-gray-500">No room types available for this property.</td></tr>
+                                {displayableRoomOffers.length === 0 && property.categoryRooms && property.categoryRooms.length > 0 && (
+                                    <tr><td colSpan={5} className="text-center py-6 text-gray-500">No pricing options available for the selected meal plan. Try another plan.</td></tr>
                                 )}
+                                {!property.categoryRooms || property.categoryRooms.length === 0 && (
+                                     <tr><td colSpan={5} className="text-center py-8 text-gray-500">No room types available for this property.</td></tr>
+                                )}
+                                {property.categoryRooms && property.categoryRooms.map((category) => {
+                                    const offersForThisCategory = displayableRoomOffers.filter(offer => offer.categoryId === category.id || offer.categoryId === category._id);
+                                    if (offersForThisCategory.length === 0) return null;
+
+                                    return (
+                                        <React.Fragment key={category.id || category._id}>
+                                            {offersForThisCategory.map((offer, offerIndex) => {
+                                                const currentQtySelected = selectedOffers[offer.offerId] || 0;
+                                                const totalPriceForOfferNights = offer.pricePerNight * days;
+                                                const totalOriginalPriceForOfferNights = offer.originalPricePerNight ? offer.originalPricePerNight * days : 0;
+                                                
+                                                const serviceFeePerRoomNightApproximation = (SERVICE_FEE_FIXED * days) / Math.max(1, totalSelectedPhysicalRooms || 1); // Distribute booking service fee approx
+                                                const illustrativeTaxForOffer = (totalPriceForOfferNights + serviceFeePerRoomNightApproximation) * TAX_RATE_PERCENTAGE; 
+                                                
+                                                let sumOfOtherOffersInCat = 0;
+                                                Object.keys(selectedOffers).forEach(oId => {
+                                                    if ((oId.startsWith(category.id + '_') || oId.startsWith(category._id + '_')) && oId !== offer.offerId) {
+                                                        sumOfOtherOffersInCat += selectedOffers[oId];
+                                                    }
+                                                });
+                                                // const remainingForCat = category.qty - sumOfOtherOffersInCat;
+                                                
+                                                // let sumOfOffersInOtherCats = 0;
+                                                // Object.keys(selectedOffers).forEach(oId => {
+                                                //     if (!(oId.startsWith(category.id + '_') || oId.startsWith(category._id + '_'))) {
+                                                //         sumOfOffersInOtherCats += selectedOffers[oId];
+                                                //     }
+                                                // });
+                                                // const remainingForTotalMax = MAX_COMBINED_ROOMS - sumOfOffersInOtherCats - sumOfOtherOffersInCat; // this is wrong if sumOfOtherOffersInCat included current offer
+                                                const maxSelectableForThisOffer = Math.min(category.qty - sumOfOtherOffersInCat, MAX_COMBINED_ROOMS - (totalSelectedPhysicalRooms - currentQtySelected));
+
+
+                                                return (
+                                                    <tr key={offer.offerId} className={`${currentQtySelected > 0 ? 'bg-blue-50/50' : ''}`}>
+                                                        {offerIndex === 0 ? (
+                                                            <td className="px-4 py-3 align-top" rowSpan={offersForThisCategory.length}>
+                                                                <a href="#" onClick={(e) => e.preventDefault()} className="font-semibold text-blue-600 hover:underline text-sm">{offer.categoryTitle}</a>
+                                                                {offer.bedConfiguration && <p className="text-xs text-gray-600 mt-0.5 flex items-center"><Bed size={14} className="mr-1.5 text-gray-500" />{offer.bedConfiguration}</p>}
+                                                                {offer.size && <p className="text-xs text-gray-500 mt-0.5">Size: {offer.size}</p>}
+                                                                <div className="mt-1.5 space-y-0.5">
+                                                                    {(offer.roomSpecificAmenities?.slice(0,2) || property.roomFacilities?.slice(0,2) || []).map(amenity => (
+                                                                        <div key={amenity} className="flex items-center text-xs text-gray-600">
+                                                                            {getAmenityIcon(amenity)} <span className="ml-1.5">{formatAmenityName(amenity)}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </td>
+                                                        ) : null }
+
+                                                        <td className="px-3 py-3 align-top text-center">
+                                                            <div className="flex justify-center items-center">
+                                                                {[...Array(offer.intendedAdults)].map((_, i) => <UsersIcon key={i} size={14} className={`text-gray-500 ${i > 0 ? 'ml-0.5' : ''}`} />)}
+                                                            </div>
+                                                            <p className="text-xs text-gray-500 mt-1">Max {offer.guestCapacityInOffer} total</p>
+                                                        </td>
+                                                        <td className="px-3 py-3 align-top">
+                                                            {days > 0 && offer.pricePerNight > 0 ? (
+                                                                <>
+                                                                    {offer.isDiscounted && offer.originalPricePerNight && totalPriceForOfferNights < totalOriginalPriceForOfferNights && (
+                                                                        <p className="text-xs text-gray-400 line-through">{offer.currency} {totalOriginalPriceForOfferNights.toLocaleString()}</p>
+                                                                    )}
+                                                                    <p className="text-lg font-bold text-gray-800">{offer.currency} {totalPriceForOfferNights.toLocaleString()}</p>
+                                                                    <p className="text-[11px] text-gray-500">+ {offer.currency} {illustrativeTaxForOffer.toFixed(0)} taxes & charges (approx)</p>
+                                                                    {offer.isDiscounted && <span className="text-xs bg-red-500 text-white font-semibold px-1.5 py-0.5 rounded-sm mt-1 inline-block">Deal!</span>}
+                                                                </>
+                                                            ) : days > 0 ? (
+                                                                <p className="text-sm text-red-500">Price not available</p>
+                                                            ) : (
+                                                                <p className="text-sm text-gray-500">Select dates</p>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-3 py-3 align-top text-xs text-gray-600 space-y-1">
+                                                            <p className="flex items-center text-green-600 font-semibold">
+                                                                <CheckCircle size={14} className="mr-1.5 shrink-0" /> 
+                                                                {selectedMealPlan === 'breakfastOnly' ? 'Very good breakfast included' : selectedMealPlan === 'allMeals' ? 'All meals included' : 'Room only'}
+                                                                <HelpCircle size={13} className="ml-1 text-gray-400 hover:text-gray-600 cursor-pointer" aria-label={`Price shown is for ${selectedMealPlan === 'noMeal' ? 'room only' : selectedMealPlan === 'breakfastOnly' ? 'room with breakfast' : 'room with all meals'}.`} />
+                                                            </p>
+                                                            {property.reservationPolicy && property.reservationPolicy.length > 0 && property.reservationPolicy[0].toLowerCase().includes('cancel') ? (
+                                                                <p className="flex items-center text-green-600"><CheckCircle size={14} className="mr-1.5 shrink-0" /> {property.reservationPolicy[0]}</p>
+                                                            ) : (
+                                                                <p className="flex items-center text-green-600"><CheckCircle size={14} className="mr-1.5 shrink-0" /> Free cancellation option often available</p> 
+                                                            )}
+                                                             <p className="text-gray-500 text-[11px]">&bull; Pay options vary by policy</p>
+                                                        </td>
+                                                        <td className="px-4 py-3 align-top text-center">
+                                                            {category.qty > 0 ? (
+                                                                <select 
+                                                                    value={currentQtySelected} 
+                                                                    onChange={(e) => handleOfferQuantityChange(offer.offerId, parseInt(e.target.value))}
+                                                                    className="p-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 w-20"
+                                                                    disabled={days <= 0 || maxSelectableForThisOffer < 0 || availabilityError ? true : false}
+                                                                >
+                                                                    {[...Array(Math.max(0, maxSelectableForThisOffer) + 1)].map((_, i) => (
+                                                                        <option key={i} value={i}>{i}</option>
+                                                                    ))}
+                                                                </select>
+                                                            ) : (
+                                                                <span className="text-xs text-red-500">Sold out</span>
+                                                            )}
+                                                             <p className="text-[11px] text-gray-500 mt-1">Max {category.qty} for {category.title}</p>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </React.Fragment>
+                                    )
+                                })}
                             </tbody>
                         </table>
                     </div>
-                     {property.categoryRooms && property.categoryRooms.length > 0 && days > 0 && totalSelectedRooms > 0 && (
-                        <div className="p-4 border-t border-gray-200 text-right">
+                     {displayableRoomOffers.length > 0 && days > 0 && totalSelectedPhysicalRooms > 0 && (
+                        <div className="p-4 border-t border-gray-200">
                             <div className="mb-2 text-left">
                                 {totalBookingPricing > 0 && !bookingError ? (
-                                    <p className="text-sm text-gray-700">
-                                        Total for <span className="font-semibold">{days} night{days !== 1 && 's'}</span>, 
-                                        <span className="font-semibold"> {guestCount} guest{guestCount !== 1 && 's'}</span> in 
-                                        <span className="font-semibold"> {totalSelectedRooms} room{totalSelectedRooms !== 1 && 's'}</span>: 
-                                        <strong className="text-xl ml-2 text-blue-700">{property.costing.currency} {totalBookingPricing.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                                     <p className="text-sm text-gray-700">
+                                        Selected: <span className="font-semibold">{totalSelectedPhysicalRooms} room{totalSelectedPhysicalRooms !== 1 && 's'}</span> for <span className="font-semibold">{globalGuestCount} guest{globalGuestCount !== 1 && 's'}</span> ({adultCount} Ad, {childCount} Ch) for <span className="font-semibold">{days} night{days !== 1 && 's'}.</span>
+                                        <br/>Total price: <strong className="text-xl ml-1 text-blue-700">{property.costing.currency} {totalBookingPricing.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                                     </p>
                                 ) : bookingError ? null 
-                                : ( totalSelectedRooms > 0 && days > 0 && 
+                                : ( totalSelectedPhysicalRooms > 0 && days > 0 && 
                                      <p className="text-sm text-red-600">Total price cannot be calculated. Please review selections.</p>
                                 )}
                             </div>
-                            <button 
-                                onClick={handleBookNowOrReserveClick}
-                                disabled={!checkInDate || !checkOutDate || days <= 0 || totalSelectedRooms <= 0 || !!availabilityError || totalBookingPricing <=0 || !!bookingError}
-                                className="bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-md hover:bg-blue-700 text-md disabled:bg-gray-400 disabled:cursor-not-allowed"
-                            >
-                                I&apos;ll reserve
-                            </button>
-                            <p className="text-xs text-gray-500 mt-1 text-left">You won&apos;t be charged yet. Final confirmation on next step.</p>
+                            <div className="text-right">
+                                <button 
+                                    onClick={handleBookNowOrReserveClick}
+                                    disabled={!checkInDate || !checkOutDate || days <= 0 || totalSelectedPhysicalRooms <= 0 || !!availabilityError || totalBookingPricing <=0 || !!bookingError}
+                                    className="bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-md hover:bg-blue-700 text-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                >
+                                    I&apos;ll reserve
+                                </button>
+                                <p className="text-xs text-gray-500 mt-1 text-left">You won&apos;t be charged yet. Final confirmation on next step.</p>
+                            </div>
                         </div>
                     )}
                 </div>
 
-                 <section className="bg-white p-4 sm:p-6 rounded-md border border-gray-200 mb-6">
+
+                <section className="bg-white p-4 sm:p-6 rounded-md border border-gray-200 mb-6">
                     <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center"><ListChecks className="mr-2 h-5 w-5 text-blue-600" />Most Popular Facilities</h2>
                     {(property.amenities || property.facilities) && ((property.amenities && property.amenities.length > 0) || (property.facilities && property.facilities.length > 0)) ? (
                         <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2`}>
@@ -1392,10 +1376,9 @@ export default function PropertyDetailPage() {
                         </button>
                     )}
                 </section>
-
             </div> 
 
-            {showBookingModal && property && property.costing && (
+            {showBookingModal && property && property.costing && checkInDate && checkOutDate && (
                 <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[100] backdrop-blur-sm">
                     <div className="bg-white rounded-lg max-w-lg w-full p-6 sm:p-7 max-h-[90vh] overflow-y-auto shadow-xl">
                          <div className="flex justify-between items-center mb-5 pb-3 border-b border-gray-200">
@@ -1405,7 +1388,7 @@ export default function PropertyDetailPage() {
 
                         <div className="mb-5 space-y-3">
                             <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-md border border-gray-200">
-                                {activeImage && <div className="relative h-16 w-24 mr-1 rounded-md overflow-hidden flex-shrink-0 shadow-sm"><Image src={activeImage} alt={property.title || "Property image"} layout="fill" objectFit="cover" onError={(e) => e.currentTarget.src = '/images/placeholder-property.jpg'} /></div>}
+                                {activeImage && <div className="relative h-16 w-24 mr-1 rounded-md overflow-hidden flex-shrink-0 shadow-sm"><Image src={activeImage} alt={property.title || "Property image"} layout="fill" objectFit="cover" onError={(e) => (e.currentTarget as HTMLImageElement).src = '/images/placeholder-property.jpg'} /></div>}
                                 <div className="flex-grow">
                                     <h4 className="font-semibold text-md text-gray-800">{property.title || "N/A"}</h4>
                                     <p className="text-xs text-gray-500">{property.location.city}, {property.location.country}</p>
@@ -1418,11 +1401,11 @@ export default function PropertyDetailPage() {
                                 <div><div className="text-gray-500 uppercase tracking-wide text-[10px]">Check-in</div><div className="font-medium text-gray-700">{checkInDate?.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div></div>
                                 <div><div className="text-gray-500 uppercase tracking-wide text-[10px]">Check-out</div><div className="font-medium text-gray-700">{checkOutDate?.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div></div>
                                 <div><div className="text-gray-500 uppercase tracking-wide text-[10px]">Duration</div><div className="font-medium text-gray-700">{days} {days === 1 ? 'night' : 'nights'}</div></div>
-                                <div><div className="text-gray-500 uppercase tracking-wide text-[10px]">Guests</div><div className="font-medium text-gray-700">{guestCount} ({adultCount} Ad, {childCount} Ch)</div></div>
+                                {/* globalGuestCount uses the derived adultCount state */}
+                                <div><div className="text-gray-500 uppercase tracking-wide text-[10px]">Guests</div><div className="font-medium text-gray-700">{globalGuestCount} ({adultCount} Ad, {childCount} Ch)</div></div>
                                 <div className="col-span-2"><div className="text-gray-500 uppercase tracking-wide text-[10px]">Meal Plan</div><div className="font-medium text-gray-700">{selectedMealPlan === 'noMeal' ? 'Room Only' : selectedMealPlan === 'breakfastOnly' ? 'Breakfast Included' : 'All Meals'}</div></div>
-                                <div className="col-span-2"><div className="text-gray-500 uppercase tracking-wide text-[10px]">Rooms</div><div className="font-medium text-gray-700">{totalSelectedRooms} room{totalSelectedRooms !== 1 && 's'} selected</div></div>
+                                <div className="col-span-2"><div className="text-gray-500 uppercase tracking-wide text-[10px]">Rooms</div><div className="font-medium text-gray-700">{totalSelectedPhysicalRooms} room{totalSelectedPhysicalRooms !== 1 && 's'} selected</div></div>
                             </div>
-                            
                              <div className="flex flex-col space-y-1 p-3 bg-blue-50 rounded-md border border-blue-200">
                                 <div className="flex justify-between text-xs"><span className="text-gray-600">Subtotal ({days} {days === 1 ? 'night' : 'nights'})</span><span className="text-gray-700 font-medium">{property.costing.currency} {subtotalNights.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
                                 <div className="flex justify-between text-xs"><span className="text-gray-600">Service Fee</span><span className="text-gray-700 font-medium">{property.costing.currency} {serviceCharge.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
@@ -1431,7 +1414,7 @@ export default function PropertyDetailPage() {
                             </div>
                         </div>
 
-                        <form onSubmit={handleBookingSubmit} className="space-y-3.5">
+                        <div className="space-y-3.5">
                             <h4 className="text-md font-semibold text-gray-700 pt-3 border-t border-gray-200">Your Information</h4>
                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><label className="block text-xs font-medium text-gray-600 mb-0.5" htmlFor="modal-firstName">First Name</label><input id="modal-firstName" type="text" name="firstName" value={bookingData.firstName} onChange={handleInputChange} required className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm"/></div><div><label className="block text-xs font-medium text-gray-600 mb-0.5" htmlFor="modal-lastName">Last Name</label><input id="modal-lastName" type="text" name="lastName" value={bookingData.lastName} onChange={handleInputChange} required className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm"/></div></div>
                              <div><label className="block text-xs font-medium text-gray-600 mb-0.5" htmlFor="modal-email">Email</label><input id="modal-email" type="email" name="email" value={bookingData.email} onChange={handleInputChange} required className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm"/></div>
@@ -1439,9 +1422,96 @@ export default function PropertyDetailPage() {
                              <div><label className="block text-xs font-medium text-gray-600 mb-0.5" htmlFor="modal-specialRequests">Special Requests</label><textarea id="modal-specialRequests" name="specialRequests" value={bookingData.specialRequests} onChange={handleInputChange} rows={2} className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm" placeholder="Optional (e.g., late check-in)"></textarea></div>
 
                             {modalBookingError && <div className="p-2.5 bg-red-50 text-red-700 text-xs rounded-md border border-red-200">{modalBookingError}</div>}
-
-                             <button type="submit" disabled={isSubmitting} className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-lg font-semibold text-md hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-blue-400 disabled:cursor-wait shadow-md">{isSubmitting ? <span className="flex items-center justify-center"><svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Processing...</span> : "Confirm & Book"}</button>
-                        </form>
+                            
+                            <RazorpayPaymentButton
+                                amountInSubunits={Math.round(totalBookingPricing * 100)}
+                                currency={property.costing.currency}
+                                receiptId={`booking_${property._id}_${Date.now()}`}
+                                bookingPayload={{ 
+                                    type: "property" as const,
+                                    details: {
+                                        id: params?.id as string,
+                                        title: property.title || "N/A",
+                                        ownerId: property.userId || "N/A",
+                                        locationFrom: "NA",
+                                        locationTo: `${property.location.address}, ${property.location.city}, ${property.location.country}`,
+                                        type: property.type as PropertyType,
+                                    },
+                                    bookingDetails: {
+                                        checkIn: checkInDate.toISOString(), 
+                                        checkOut: checkOutDate.toISOString(),
+                                        adults: adultCount, // Uses the derived adultCount state
+                                        children: childCount,
+                                        totalGuests: globalGuestCount, // Uses derived adultCount
+                                        totalRoomsSelected: totalSelectedPhysicalRooms,
+                                        selectedMealPlan: selectedMealPlan,
+                                        roomsDetail: Object.entries(selectedOffers)
+                                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                                            .filter(([_, qty]) => qty > 0)
+                                            .map(([offerId, qty]) => {
+                                                const offer = displayableRoomOffers.find(o => o.offerId === offerId);
+                                                return {
+                                                    categoryId: offer?.categoryId || 'unknown',
+                                                    offerKey: offerId.split('_').slice(1).join('_'),
+                                                    title: offer?.categoryTitle || 'Unknown Room',
+                                                    qty: qty,
+                                                    estimatedPricePerRoomNight: offer?.pricePerNight || 0,
+                                                    currency: offer?.currency || property.costing?.currency || 'USD'
+                                                };
+                                            }),
+                                        calculatedPricePerNight: totalBookingPricePerNight,
+                                        currency: property.costing?.currency || 'USD',
+                                        numberOfNights: days,
+                                        subtotal: subtotalNights,
+                                        serviceFee: serviceCharge,
+                                        taxes: taxesApplied,
+                                        totalPrice: totalBookingPricing,
+                                    },
+                                    guestDetails: {
+                                        firstName: bookingData.firstName,
+                                        lastName: bookingData.lastName,
+                                        email: bookingData.email,
+                                        phone: bookingData.phone,
+                                        specialRequests: bookingData.specialRequests,
+                                    },
+                                    recipients: [bookingData.email, user?.primaryEmailAddress?.emailAddress, 'your-admin-email@example.com'].filter(Boolean) as string[]
+                                }}
+                                prefill={{
+                                    name: `${bookingData.firstName} ${bookingData.lastName}`,
+                                    email: bookingData.email,
+                                    contact: bookingData.phone,
+                                }}
+                                notes={{
+                                    propertyTitle: property.title || "N/A",
+                                    checkIn: checkInDate?.toISOString().split('T')[0] || "N/A",
+                                    checkOut: checkOutDate?.toISOString().split('T')[0] || "N/A",
+                                }}
+                                onPaymentSuccess={(confirmationData) => {
+                                    console.log("Payment successful, booking confirmed by backend:", confirmationData);
+                                    setBookingConfirmed(true);
+                                    setShowBookingModal(false); 
+                                    setModalBookingError(null);
+                                    if (typeof window !== 'undefined') {
+                                        localStorage.removeItem(LOCAL_STORAGE_KEY);
+                                    }
+                                }}
+                                onPaymentError={(errorMessage) => {
+                                    setModalBookingError(errorMessage);
+                                }}
+                                razorpayKeyId={RAZORPAY_KEY_ID}
+                                companyName="YourStays.com" 
+                                disabled={
+                                    !bookingData.firstName || 
+                                    !bookingData.lastName || 
+                                    !bookingData.email || 
+                                    !bookingData.phone || 
+                                    totalBookingPricing <= 0 ||
+                                    !!availabilityError || 
+                                    !!bookingError
+                                }
+                                buttonText={`Pay ${property.costing.currency} ${totalBookingPricing.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} & Book`}
+                            />
+                        </div>
                     </div>
                 </div>
             )}
