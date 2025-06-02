@@ -11,7 +11,7 @@ import {
 import StaysSearchForm from './SearchForms/StaysSearchForm';
 import FlightsSearchForm from './SearchForms/FlightsSearchForm';
 import TripsSearchForm from './SearchForms/TripsSearchForm';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 
 // Define visible tab IDs
 export type TabId = 'property' | 'travelling' | 'flight+hotel' | 'car-rentals' | 'attractions' | 'airport-taxis';
@@ -21,10 +21,11 @@ export type CategoryType = 'property' | 'trip' | 'travelling';
 
 export default function SearchHeader() {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const [activeTab, setActiveTab] = useState<TabId>(
     (searchParams?.get('tab') as TabId) || 'property'
   );
-
+  const showHeading = pathname ? pathname.includes('dashboard') : false; 
   // Map tabs to categories
   const getCategory = (tabId: TabId): CategoryType => {
     switch (tabId) {
@@ -143,7 +144,7 @@ export default function SearchHeader() {
 
   return (
     <div className="bg-[#003b95] text-white">
-      <div className="container mx-auto px-4 pt-2 pb-8 md:pt-4 lg:pt-8 md:pb-12 lg:pb-16 w-full lg:w-[70vw]">
+      <div className="container mx-auto px-4 pb-4 md:pb-8 lg:pb-12 w-full lg:w-[70vw]">
         {/* Navigation Tabs */}
         <div className="flex overflow-x-auto no-scrollbar mb-6 pb-2">
           {tabs.map((tab) => {
@@ -166,10 +167,13 @@ export default function SearchHeader() {
         </div>
 
         {/* Heading */}
-        <div className="my-12 flex flex-col gap-4">
-          <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold">{title}</h1>
-          <p className="text-base md:text-xl">{subtitle}</p>
-        </div>
+        {
+          showHeading && 
+          <div className="my-12 flex flex-col gap-4">
+            <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold">{title}</h1>
+            <p className="text-base md:text-xl">{subtitle}</p>
+          </div>
+        }
 
         {/* Search Form */}
         <div className="relative z-10">

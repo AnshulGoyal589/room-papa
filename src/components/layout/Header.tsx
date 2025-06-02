@@ -10,8 +10,14 @@ import {
   ShoppingBag, 
   Briefcase,
   BookAIcon,
-  Building
+  Building,
+  CircleHelp
 } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {
   SignedIn,
   SignedOut,
@@ -178,8 +184,8 @@ export function Header() {
 
   return (
     // Changed background color to #003b95 and removed shadow
-    <header className="bg-[#003b95] "> 
-      <div className="container mx-auto flex justify-between items-center"> {/* Added some padding */}
+    <header className="bg-[#003b95]"> 
+      <div className="flex justify-between items-center mx-auto px-4 w-full lg:w-[70vw] "> {/* Added some padding */}
         {/* Logo with dynamic routing based on role */}
         <Link href={role === 'customer' ? "/customer/dashboard" : role === 'manager' ? "/manager/dashboard" : role === 'admin' ? "/admin/dashboard" : "/"} 
           // Changed logo text color to white for contrast
@@ -270,8 +276,23 @@ export function Header() {
           </nav>
         )}
 
+
         {/* Authentication and User Actions */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-4 lg:space-x-8 ">
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link href="/customer-care" >
+                <CircleHelp className='text-white h-7 w-7 ' />
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Contact Customer Service</p>
+            </TooltipContent>
+          </Tooltip>
+
+          
+
           <SignedOut>
             <div className="flex items-center gap-2">
               {/* Adjusted Login Button Style */}
@@ -302,12 +323,12 @@ export function Header() {
           <SignedIn>
             <div className="flex items-center gap-2">
               {role && role !== 'guest' && (
-                 // Adjusted Role Indicator Style for contrast
+                
                 <span className="hidden md:inline-block px-2 py-1 bg-white text-[#003b95] rounded-full text-xs font-medium">
                   {role === 'customer' ? 'Customer' : role === 'manager' ? 'Manager' : 'Admin'}
                 </span>
               )}
-              {/* UserButton - Clerk's default styling should work, might need custom appearance props if needed */}
+             
               <UserButton afterSignOutUrl="/" />
             </div>
           </SignedIn>

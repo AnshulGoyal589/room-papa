@@ -230,49 +230,75 @@ export default function SearchFilter() {
 
 
   return (
-    <div className="w-full bg-white p-6 shadow-md rounded-lg">
+    <div className="w-full bg-white p-6 shadow-md rounded-lg bg-red-500 ">
       <h2 className="text-lg font-semibold mb-4">Filters</h2>
 
       {/* Price Range Filter (Common) */}
-      <div className="mb-4 p-4 max-w-md">
-      <label className="block text-sm font-medium mb-3">Price Range</label>
-      
-      {/* Current Range Display */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="bg-gray-100 px-3 py-1 rounded-md">
-          <span className="text-sm font-medium text-gray-700">
-            Min: {minPrice}
-          </span>
+      <div className="mb-6 p-5 bg-white rounded-lg border border-gray-200 shadow-sm max-w-md">
+        {/* Main Label for the filter section */}
+        <label id="price-range-label" className="block text-base font-semibold text-gray-800 mb-5">
+          Price Range
+        </label>
+        
+        {/* Current Selected Min and Max Price Display Boxes */}
+        <div className="flex items-center justify-between space-x-3 mb-6">
+          {/* Min Price Display Box */}
+          <div className="relative flex-1">
+            <span className="absolute -top-2.5 left-2.5 inline-block bg-white px-1 text-xs font-medium text-gray-500">
+              Min
+            </span>
+            <div 
+              className="w-full bg-gray-50 border border-gray-300 px-3 py-2.5 rounded-md text-sm font-medium text-gray-700 text-center"
+              aria-live="polite" // Announces changes to screen readers
+            >
+              {/* You might want to format this with a currency symbol if applicable */}
+              {/* e.g., `₹${minPrice.toLocaleString()}` or `$${minPrice.toLocaleString()}` */}
+              {minPrice ? Number(minPrice).toLocaleString() : minPrice}
+            </div>
+          </div>
+
+          <span className="text-gray-400 pt-4">-</span> {/* Separator, pt-4 to align vertically with input-like boxes */}
+
+          {/* Max Price Display Box */}
+          <div className="relative flex-1">
+            <span className="absolute -top-2.5 left-2.5 inline-block bg-white px-1 text-xs font-medium text-gray-500">
+              Max
+            </span>
+            <div 
+              className="w-full bg-gray-50 border border-gray-300 px-3 py-2.5 rounded-md text-sm font-medium text-gray-700 text-center"
+              aria-live="polite" // Announces changes to screen readers
+            >
+              {Number(maxPrice).toLocaleString()}
+            </div>
+          </div>
         </div>
-        <span className="text-gray-400">-</span>
-        <div className="bg-gray-100 px-3 py-1 rounded-md">
-          <span className="text-sm font-medium text-gray-700">
-            Max: {maxPrice}
+        
+        {/* Dual Range Slider */}
+        <div className="px-1 mb-2"> {/* Slight horizontal padding for slider thumbs clearance */}
+          <Slider
+            value={[Number(minPrice), Number(maxPrice)]}
+            onValueChange={handlePriceChange} // Your existing logic
+            max={200000} // Overall maximum value for the slider
+            min={0}      // Overall minimum value for the slider
+            step={1000}  // Step increment
+            className="w-full" // Assumes Slider component handles its internal styling
+            aria-labelledby="price-range-label" // Associates slider with the main label
+          />
+        </div>
+        
+        {/* Slider Min/Max Labels & Centered Selected Range Indicator */}
+        <div className="flex justify-between items-center mt-1 text-xs text-gray-500 px-1">
+          <span>{0..toLocaleString()}</span> {/* Overall Min possible value, formatted */}
+          
+          {/* Displaying the selected min-max range in the middle for clarity */}
+          <span className="font-medium text-sm text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md">
+            {/* Corrected order: minPrice first, then maxPrice */}
+            {Number(minPrice).toLocaleString()} - {Number(maxPrice).toLocaleString()}
           </span>
+          
+          <span>{200000..toLocaleString()}</span> {/* Overall Max possible value, formatted */}
         </div>
       </div>
-      
-      {/* Dual Range Slider */}
-      <div className="px-2">
-        <Slider
-          value={[Number(minPrice), Number(maxPrice)]}
-          onValueChange={handlePriceChange}
-          max={200000}
-          min={0}
-          step={1000}
-          className="w-full"
-        />
-      </div>
-      
-      {/* Range Indicators */}
-      <div className="flex justify-between mt-3 text-xs text-gray-500 px-2">
-        <span>0</span>
-        <span className="text-center bg-blue-50 px-2 py-1 rounded text-blue-600 font-medium">
-          Selected: {maxPrice + '-' + minPrice} range
-        </span>
-        <span>200000</span>
-      </div>
-    </div>
 
 
 
