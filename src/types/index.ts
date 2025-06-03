@@ -45,8 +45,8 @@ export interface RoomCategoryPricing {
   discountedTripleOccupancyAdultPrice?: DiscountedPricingByMealPlan;
   child5to12Price: PricingByMealPlan;
   discountedChild5to12Price?: DiscountedPricingByMealPlan;
-  child12to18Price: PricingByMealPlan;
-  discountedChild12to18Price?: DiscountedPricingByMealPlan;
+  // child12to18Price: PricingByMealPlan;
+  // discountedChild12to18Price?: DiscountedPricingByMealPlan;
 }
 
 export interface RoomCategory {

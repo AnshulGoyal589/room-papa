@@ -70,8 +70,8 @@ const initialNewCategoryState = {
     discountedTripleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
     child5to12Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
     discountedChild5to12Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
-    child12to18Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
-    discountedChild12to18Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    // child12to18Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    // discountedChild12to18Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
   } as RoomCategoryPricing,
   unavailableDates: [] as string[], // Added for unavailable dates
 };
@@ -350,7 +350,8 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
     const priceFieldsToCheck: (keyof RoomCategoryPricing)[] = [
         'singleOccupancyAdultPrice', 'doubleOccupancyAdultPrice', 'tripleOccupancyAdultPrice',
-        'child5to12Price', 'child12to18Price'
+        'child5to12Price', 
+        // 'child12to18Price'
     ];
 
     for (const field of priceFieldsToCheck) {

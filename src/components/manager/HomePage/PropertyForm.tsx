@@ -44,8 +44,8 @@ interface RoomCategoryPricing {
   discountedTripleOccupancyAdultPrice?: DiscountedPricingByMealPlan;
   child5to12Price: PricingByMealPlan;
   discountedChild5to12Price?: DiscountedPricingByMealPlan;
-  child12to18Price: PricingByMealPlan;
-  discountedChild12to18Price?: DiscountedPricingByMealPlan;
+  // child12to18Price: PricingByMealPlan;
+  // discountedChild12to18Price?: DiscountedPricingByMealPlan;
 }
 
 
@@ -101,8 +101,8 @@ const initialNewCategoryState = {
     discountedTripleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
     child5to12Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
     discountedChild5to12Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
-    child12to18Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
-    discountedChild12to18Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    // child12to18Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    // discountedChild12to18Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
   } as RoomCategoryPricing, // Explicit cast might be needed depending on TS setup
   newUnavailableDate: '', // Input for adding a single unavailable date
   currentUnavailableDates: [] as string[], // List of dates for the category being added
@@ -356,7 +356,8 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
     const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
     const priceFieldsToCheck: (keyof RoomCategoryPricing)[] = [
         'singleOccupancyAdultPrice', 'doubleOccupancyAdultPrice', 'tripleOccupancyAdultPrice',
-        'child5to12Price', 'child12to18Price'
+        'child5to12Price', 
+        // 'child12to18Price'
     ];
 
     for (const field of priceFieldsToCheck) {
