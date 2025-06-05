@@ -62,88 +62,185 @@ export default function StaysSearchForm() {
   const setDefaultsFromURL = () => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      
-      const titleParam = urlParams.get('title');
-      if (titleParam) setLocation(titleParam);
-      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Today at midnight
+
+      let effectiveStartDate: Date;
+      let effectiveEndDate: Date;
+
+      // Default values
+      const defaultStartDate = new Date(today);
+      const defaultEndDate = new Date(today);
+      defaultEndDate.setDate(today.getDate() + 7);
+
+      // Attempt to load from URL
+      let urlStartDate: Date | null = null;
+      let urlEndDate: Date | null = null;
+
       const checkInParam = urlParams.get('checkIn');
-      const checkOutParam = urlParams.get('checkOut');
-      
-      const defaultStartDate = new Date();
-      defaultStartDate.setHours(0, 0, 0, 0);
-
-      const defaultEndDate = new Date(defaultStartDate);
-      defaultEndDate.setDate(defaultStartDate.getDate() + 7);
-      defaultEndDate.setHours(0,0,0,0);
-      
-      let effectiveStartDate = defaultStartDate;
-      let effectiveEndDate = defaultEndDate;
-
-      const storedCheckIn = localStorage.getItem('checkIn');
-      if (storedCheckIn) {
-        const parsedStoredCheckIn = new Date(storedCheckIn);
-        if (!isNaN(parsedStoredCheckIn.getTime())) {
-            parsedStoredCheckIn.setHours(0,0,0,0);
-            effectiveStartDate = parsedStoredCheckIn;
+      if (checkInParam) {
+        const parsed = parseDateFromURL(checkInParam);
+        if (!isNaN(parsed.getTime())) {
+          urlStartDate = parsed;
         }
       }
 
-      const storedCheckOut = localStorage.getItem('checkOut');
-      if (storedCheckOut) {
-          const parsedStoredCheckOut = new Date(storedCheckOut);
-          if (!isNaN(parsedStoredCheckOut.getTime())) {
-            parsedStoredCheckOut.setHours(0,0,0,0);
-            effectiveEndDate = parsedStoredCheckOut;
-          }
+      const checkOutParam = urlParams.get('checkOut');
+      if (checkOutParam) {
+        const parsed = parseDateFromURL(checkOutParam);
+        if (!isNaN(parsed.getTime())) {
+          urlEndDate = parsed;
+        }
+      }
+
+      // Attempt to load from localStorage
+      let storedStartDate: Date | null = null;
+      let storedEndDate: Date | null = null;
+
+      const storedCheckInString = localStorage.getItem('checkIn');
+      if (storedCheckInString) {
+        const parsed = new Date(storedCheckInString);
+        if (!isNaN(parsed.getTime())) {
+          parsed.setHours(0, 0, 0, 0); // Normalize
+          storedStartDate = parsed;
+        }
+      }
+
+      const storedCheckOutString = localStorage.getItem('checkOut');
+      if (storedCheckOutString) {
+        const parsed = new Date(storedCheckOutString);
+        if (!isNaN(parsed.getTime())) {
+          parsed.setHours(0, 0, 0, 0); // Normalize
+          storedEndDate = parsed;
+        }
+      }
+
+      // Determine effectiveStartDate:
+      // Priority: URL > localStorage > Default. Must be >= today.
+      if (urlStartDate && urlStartDate.getTime() >= today.getTime()) {
+        effectiveStartDate = urlStartDate;
+      } else if (storedStartDate && storedStartDate.getTime() >= today.getTime()) {
+        effectiveStartDate = storedStartDate;
+      } else {
+        effectiveStartDate = defaultStartDate; // Today
+      }
+
+      // Determine effectiveEndDate:
+      // Priority: URL > localStorage > Default. Must be >= effectiveStartDate.
+      if (urlEndDate && urlEndDate.getTime() >= effectiveStartDate.getTime()) {
+        effectiveEndDate = urlEndDate;
+      } else if (storedEndDate && storedEndDate.getTime() >= effectiveStartDate.getTime()) {
+        effectiveEndDate = storedEndDate;
+      } else {
+        // If no valid URL/stored end date, or if they are before start date,
+        // calculate default duration from effectiveStartDate.
+        effectiveEndDate = new Date(effectiveStartDate);
+        effectiveEndDate.setDate(effectiveStartDate.getDate() + 7);
       }
       
-      if (checkInParam) {
-        const parsedCheckIn = parseDateFromURL(checkInParam);
-        if (!isNaN(parsedCheckIn.getTime())) effectiveStartDate = parsedCheckIn;
-      }
-      if (checkOutParam) {
-        const parsedCheckOut = parseDateFromURL(checkOutParam);
-        if (!isNaN(parsedCheckOut.getTime())) effectiveEndDate = parsedCheckOut;
-      }
-
-      // Ensure end date is not before start date
+      // Final safeguard: If endDate somehow ended up before startDate (should be prevented by above logic)
       if (effectiveEndDate.getTime() < effectiveStartDate.getTime()) {
-        effectiveEndDate = new Date(effectiveStartDate);
-        effectiveEndDate.setDate(effectiveStartDate.getDate() + 7); // Default to 7 days if invalid
+          effectiveEndDate = new Date(effectiveStartDate);
+          effectiveEndDate.setDate(effectiveStartDate.getDate() + 7);
       }
 
+      // Set state and update localStorage for dates
       setDateRange({ startDate: effectiveStartDate, endDate: effectiveEndDate });
       localStorage.setItem('checkIn', effectiveStartDate.toISOString());
       localStorage.setItem('checkOut', effectiveEndDate.toISOString());
-      
+
       setSelectedMonth(effectiveStartDate.getMonth());
       setSelectedYear(effectiveStartDate.getFullYear());
       
-      const adultsParam = urlParams.get('adults') || localStorage.getItem('adults') || '2';
-      setAdults(parseInt(adultsParam, 10));
-      localStorage.setItem('adults', adultsParam);
-      
-      const childrenParam = urlParams.get('children') || localStorage.getItem('children') || '0';
-      setChildren(parseInt(childrenParam, 10));
-      localStorage.setItem('children', childrenParam);
-      
-      const roomsParam = urlParams.get('rooms') || localStorage.getItem('rooms') || '1';
-      setRooms(parseInt(roomsParam, 10));
-      localStorage.setItem('rooms', roomsParam);
-      
-      const petsParam = urlParams.get('pets') || localStorage.getItem('pets') || 'false';
-      setHasPets(petsParam === 'true');
-      localStorage.setItem('pets', petsParam);
+      // --- Location ---
+      const titleParam = urlParams.get('title');
+      const storedTitle = localStorage.getItem('title');
+      let currentTitle = ''; // Default if nothing else
+      if (titleParam !== null) { // URL param takes precedence, even if empty string
+          currentTitle = titleParam;
+      } else if (storedTitle !== null) { // Fallback to localStorage
+          currentTitle = storedTitle;
+      }
+      setLocation(currentTitle);
+      localStorage.setItem('title', currentTitle); // Store the determined value
+
+      // --- Adults ---
+      let currentAdults = 2; // Default
+      const adultsParam = urlParams.get('adults');
+      const storedAdults = localStorage.getItem('adults');
+      if (adultsParam !== null) {
+          currentAdults = parseInt(adultsParam, 10);
+      } else if (storedAdults !== null) {
+          currentAdults = parseInt(storedAdults, 10);
+      }
+      currentAdults = (isNaN(currentAdults) || currentAdults < 1) ? 2 : currentAdults;
+      setAdults(currentAdults);
+      localStorage.setItem('adults', currentAdults.toString());
+
+      // --- Children ---
+      let currentChildren = 0; // Default
+      const childrenParam = urlParams.get('children');
+      const storedChildren = localStorage.getItem('children');
+      if (childrenParam !== null) {
+          currentChildren = parseInt(childrenParam, 10);
+      } else if (storedChildren !== null) {
+          currentChildren = parseInt(storedChildren, 10);
+      }
+      currentChildren = (isNaN(currentChildren) || currentChildren < 0) ? 0 : currentChildren;
+      setChildren(currentChildren);
+      localStorage.setItem('children', currentChildren.toString());
+
+      // --- Rooms ---
+      let currentRooms = 1; // Default
+      const roomsParam = urlParams.get('rooms');
+      const storedRooms = localStorage.getItem('rooms');
+      if (roomsParam !== null) {
+          currentRooms = parseInt(roomsParam, 10);
+      } else if (storedRooms !== null) {
+          currentRooms = parseInt(storedRooms, 10);
+      }
+      currentRooms = (isNaN(currentRooms) || currentRooms < 1) ? 1 : currentRooms;
+      // The useEffect for rooms will adjust it based on adults later if needed, and update localStorage.
+      // Setting state here first, then useEffect might re-evaluate.
+      setRooms(currentRooms); 
+      localStorage.setItem('rooms', currentRooms.toString()); // Initial set, might be overridden by useEffect
+
+      // --- Pets ---
+      let currentHasPets = false; // Default
+      const petsParam = urlParams.get('pets');
+      const storedPets = localStorage.getItem('pets');
+      if (petsParam !== null) {
+          currentHasPets = petsParam === 'true';
+      } else if (storedPets !== null) {
+          currentHasPets = storedPets === 'true';
+      }
+      setHasPets(currentHasPets);
+      localStorage.setItem('pets', currentHasPets.toString());
 
     } catch (error) {
-      console.error("Error parsing URL parameters or localStorage:", error);
-      // Fallback to initial state defaults if error occurs
-      const today = new Date(); today.setHours(0,0,0,0);
-      const sevenDaysLater = new Date(today); sevenDaysLater.setDate(today.getDate() + 7); sevenDaysLater.setHours(0,0,0,0);
+      console.error("Error initializing from URL/localStorage:", error);
+      // Fallback to hardcoded defaults if any error occurs
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const sevenDaysLater = new Date(today);
+      sevenDaysLater.setDate(today.getDate() + 7);
+      
       setDateRange({ startDate: today, endDate: sevenDaysLater });
       setSelectedMonth(today.getMonth());
       setSelectedYear(today.getFullYear());
-      setAdults(2); setChildren(0); setRooms(1); setHasPets(false);
+      setLocation('');
+      setAdults(2);
+      setChildren(0);
+      setRooms(1);
+      setHasPets(false);
+
+      // Clear potentially problematic localStorage items to prevent recurring issues
+      localStorage.removeItem('checkIn');
+      localStorage.removeItem('checkOut');
+      localStorage.removeItem('title');
+      localStorage.removeItem('adults');
+      localStorage.removeItem('children');
+      localStorage.removeItem('rooms');
+      localStorage.removeItem('pets');
     }
   };
   
