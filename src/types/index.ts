@@ -1,4 +1,5 @@
 import { ObjectId } from "mongodb";
+import { RoomCategoryPricing } from "./booking";
 
 export type PropertyType = 'hotel' | 'apartment' | 'villa' | 'hostel' | 'resort';
 export type PropertyAmenities = 'wifi' | 'pool' | 'gym' | 'spa' | 'restaurant' | 'parking' | 'airConditioning' | 'breakfast';
@@ -15,14 +16,6 @@ export interface SearchHeaderProps {
   initialSearchParams?: { [key: string]: string };
 }
 
-export interface StoredRoomCategory {
-  id: string;
-  title: string;
-  qty: number;
-  currency: string;
-  pricing: RoomCategoryPricing;
-  unavailableDates: string[]; // Array of dates in 'YYYY-MM-DD' format
-}
 
 export interface PricingByMealPlan {
   noMeal: number;
@@ -36,18 +29,7 @@ export interface DiscountedPricingByMealPlan {
   allMeals?: number;
 }
 
-export interface RoomCategoryPricing {
-  singleOccupancyAdultPrice: PricingByMealPlan;
-  discountedSingleOccupancyAdultPrice?: DiscountedPricingByMealPlan; // Optional discount structure
-  doubleOccupancyAdultPrice: PricingByMealPlan;
-  discountedDoubleOccupancyAdultPrice?: DiscountedPricingByMealPlan;
-  tripleOccupancyAdultPrice: PricingByMealPlan;
-  discountedTripleOccupancyAdultPrice?: DiscountedPricingByMealPlan;
-  child5to12Price: PricingByMealPlan;
-  discountedChild5to12Price?: DiscountedPricingByMealPlan;
-  // child12to18Price: PricingByMealPlan;
-  // discountedChild12to18Price?: DiscountedPricingByMealPlan;
-}
+
 
 export interface RoomCategory {
   id: string; // Essential: Unique identifier for the category (frontend relies on this)

@@ -21,7 +21,8 @@ import { Property } from '@/lib/mongodb/models/Property';
 import { categoryOptions } from '../../../../public/assets/data'; // Adjust path if needed
 
 // --- MOCK TYPES (Replace with your actual types file import) ---
-import { PropertyType , StoredRoomCategory } from '@/types';
+import { PropertyType } from '@/types';
+import { StoredRoomCategory } from '@/types/booking';
 
 interface PricingByMealPlan {
   noMeal: number;

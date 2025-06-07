@@ -14,8 +14,6 @@ import ImageUpload from "@/components/cloudinary/ImageUpload";
 import MultipleImageUpload from "@/components/cloudinary/MultipleImageUpload";
 import { Badge as UiBadge } from "@/components/ui/badge"; // Assuming a UI badge component
 import {
-  StoredRoomCategory,
-  RoomCategoryPricing,
   PropertyType,
   PricingByMealPlan,
   DiscountedPricingByMealPlan
@@ -37,6 +35,7 @@ import {
   Utensils,
   CalendarDays, // Added for unavailable dates section
 } from "lucide-react";
+import { RoomCategoryPricing, StoredRoomCategory } from "@/types/booking";
 
 // Helper to generate unique IDs
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -330,13 +329,13 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
   };
 
   const handleRemoveExistingUnavailableDate = (categoryId: string, dateToRemove: string) => {
-    setFormData(prev => ({
-        ...prev,
-        categoryRooms: (prev.categoryRooms || []).map(cat =>
-            cat.id === categoryId
-            ? { ...cat, unavailableDates: (cat.unavailableDates || []).filter(d => d !== dateToRemove) }
-            : cat
-        )
+    setFormData((prev: Property) => ({
+      ...prev,
+      categoryRooms: (prev.categoryRooms || []).map((cat: StoredRoomCategory) =>
+        cat.id === categoryId
+        ? { ...cat, unavailableDates: (cat.unavailableDates || []).filter((d: string) => d !== dateToRemove) }
+        : cat
+      )
     }));
   };
 

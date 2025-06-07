@@ -1,182 +1,27 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import Image from 'next/image';
-import { useRouter, useParams } from 'next/navigation';
-// import { Property } from '@/lib/mongodb/models/Property'; // Using the provided schema interface below instead
 import {
     BookingFormData,
-    PropertyType, // Assuming this is defined elsewhere e.g. 'Hotel', 'Apartment'
+    PropertyType,
     PricingByMealPlan,
     DiscountedPricingByMealPlan
-} from '@/types'; // Assuming these are in your @/types
-// import DummyReviews from './Reviews'; // Assuming this component can take property.review and property.totalRating
-import { useUser, useClerk, SignedOut } from '@clerk/nextjs';
+} from '@/types';
 import {
     Wifi, Car, Droplet, Wind, Dumbbell, Coffee as CoffeeIconLucide, CheckCircle, Star as StarIcon, MapPin, Users as UsersIcon, Image as ImageIconLucide, CalendarOff, X,
-    ChevronDown, ChevronUp, Heart, Share2, AlertTriangle, Award, Bed, ListChecks,// Added more icons
+    ChevronDown, ChevronUp, Heart, Share2, AlertTriangle, Award, Bed, ListChecks,
     Utensils,
     Tv,
-    HelpCircle // For question mark icon
+    HelpCircle
 } from 'lucide-react';
-import { ObjectId } from 'mongodb'; // Assuming you have mongodb installed or ObjectId type definition
+import Image from 'next/image';
+import { useRouter, useParams } from 'next/navigation';
+import { useUser, useClerk, SignedOut } from '@clerk/nextjs';
 import RazorpayPaymentButton from '@/components/payment/RazorpayPaymentButton';
+import { Property } from '@/lib/mongodb/models/Property';
+import { DisplayableRoomOffer, ExtendedProperty, RoomCategoryPricing, StoredRoomCategory } from '@/types/booking';
+import { Image as MongoImage } from '@/lib/mongodb/models/Image';
 
-// --- Provided Property Schema ---
-interface MongoImage { // Assuming an Image structure based on usage
-    publicId?: string;
-    url: string;
-    alt?: string; // Optional alt text from CMS
-}
-
-export interface PropertySchema { // Renamed to avoid conflict with component's Property type
-  _id?: ObjectId;
-  userId?: string; // Owner/Host ID
-  title?: string;
-  description?: string;
-  type: PropertyType; // e.g., 'Hotel', 'Apartment', 'Villa'
-  location: {
-    address: string;
-    state: string;
-    city: string;
-    country: string;
-  };
-  startDate: string; // Overall listing start availability
-  endDate: string;   // Overall listing end availability
-  costing: {         // Calculated summary: lowest starting price
-    price: number;
-    discountedPrice: number;
-    currency: string;
-  };
-  totalRating?: number;
-  review?: {
-    userId?: string; 
-    userName?: string; 
-    comment: string;
-    rating: number;
-    createdAt?: Date; 
-  }[];
-  createdAt?: Date;
-  updatedAt?: Date;
-  bannerImage?: MongoImage;
-  detailImages?: MongoImage[];
-  rooms: number; 
-  categoryRooms?: StoredRoomCategory[];
-  amenities: string[]; 
-  accessibility?: string[];
-  roomAccessibility?: string[];
-  popularFilters?: string[];
-  funThingsToDo?: string[];
-  meals?: string[]; 
-  facilities?: string[]; 
-  bedPreference?: string[];
-  reservationPolicy?: string[];
-  brands?: string[];
-  roomFacilities?: string[]; 
-  propertyRating?: number; 
-  googleMaps?: string; 
-}
-// --- End Provided Property Schema ---
-
-
-// --- Define Extended Types incorporating Admin Changes ---
-interface RoomCategoryPricing {
-    singleOccupancyAdultPrice: PricingByMealPlan;
-    discountedSingleOccupancyAdultPrice?: DiscountedPricingByMealPlan;
-    doubleOccupancyAdultPrice: PricingByMealPlan;
-    discountedDoubleOccupancyAdultPrice?: DiscountedPricingByMealPlan;
-    tripleOccupancyAdultPrice: PricingByMealPlan;
-    discountedTripleOccupancyAdultPrice?: DiscountedPricingByMealPlan;
-    child5to12Price: PricingByMealPlan;
-    discountedChild5to12Price?: DiscountedPricingByMealPlan;
-    child12to18Price: PricingByMealPlan;
-    discountedChild12to18Price?: DiscountedPricingByMealPlan;
-}
-
-interface StoredRoomCategory {
-    id: string; 
-    _id?: string; 
-    title: string;
-    qty: number; // Total physical rooms of this type
-    currency: string;
-    pricing: RoomCategoryPricing; 
-    unavailableDates: string[];
-    size?: string; 
-    bedConfiguration?: string; 
-    maxOccupancy?: number; // Max people a single room of this type can hold
-    roomSpecificAmenities?: string[]; 
-}
-
-interface ExtendedProperty extends Omit<PropertySchema, 'categoryRooms' | 'costing' | 'rooms' | 'startDate' | 'endDate' | 'createdAt' | 'updatedAt'> {
-    _id: ObjectId; 
-    categoryRooms: StoredRoomCategory[];
-    costing: { 
-        price: number; 
-        discountedPrice: number; 
-        currency: string;
-    };
-    rooms: number; 
-    startDate: string; 
-    endDate: string;   
-    createdAt: Date; 
-    updatedAt: Date; 
-    userId?: string;
-    title?: string;
-    description?: string;
-    type: PropertyType;
-    location: {
-        address: string;
-        state: string;
-        city: string;
-        country: string;
-    };
-    totalRating?: number;
-    review?: {
-        userId?: string;
-        userName?: string;
-        comment: string;
-        rating: number;
-        createdAt?: Date;
-    }[];
-    bannerImage?: MongoImage;
-    detailImages?: MongoImage[];
-    amenities: string[];
-    accessibility?: string[];
-    roomAccessibility?: string[];
-    popularFilters?: string[];
-    funThingsToDo?: string[];
-    meals?: string[];
-    facilities?: string[];
-    bedPreference?: string[];
-    reservationPolicy?: string[];
-    brands?: string[];
-    roomFacilities?: string[];
-    propertyRating?: number;
-    googleMaps?: string;
-}
-
-// --- NEW: Interface for Displayable Room Offers ---
-interface DisplayableRoomOffer {
-    offerId: string; // Unique ID, e.g., `${categoryId}_2adults`
-    categoryId: string;
-    categoryTitle: string;
-    bedConfiguration?: string;
-    size?: string;
-    roomSpecificAmenities?: string[];
-    maxPhysicalRoomsForCategory: number; // category.qty
-
-    // Offer-specific configuration
-    intendedAdults: number; // e.g., 1 for single, 2 for double, 3 for triple pricing basis
-    intendedChildren: number; // For this specific offer, usually 0 for base offers
-    guestCapacityInOffer: number; // Max guests this specific offer type is for (e.g. 2 for a "2 adult" offer)
-
-    // Pricing (for display, per night for this specific offer configuration)
-    pricePerNight: number;
-    originalPricePerNight?: number;
-    isDiscounted: boolean;
-    currency: string;
-}
-// --- END TYPE DEFINITIONS ---
 
 
 // Helper function to calculate days between two dates
@@ -238,8 +83,8 @@ const initialPricingState: RoomCategoryPricing = {
     discountedTripleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
     child5to12Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
     discountedChild5to12Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
-    child12to18Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
-    discountedChild12to18Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    // child12to18Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    // discountedChild12to18Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
 };
 
 
@@ -342,7 +187,7 @@ export default function PropertyDetailPage() {
                 setLoading(true); setError(null); setAvailabilityError(null);
                 const response = await fetch(`/api/properties/${params.id}`);
                 if (!response.ok) throw new Error(`Failed to fetch property: ${response.statusText} (${response.status})`);
-                const data: PropertySchema = await response.json();
+                const data: Property = await response.json();
                 if (!data || typeof data !== 'object' || !data._id) throw new Error('Invalid property data received');
 
                 const propertyStartDate = data.startDate ? new Date(data.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
@@ -372,8 +217,8 @@ export default function PropertyDetailPage() {
                                 discountedTripleOccupancyAdultPrice: { ...initialPricingState.discountedTripleOccupancyAdultPrice, ...(cat.pricing.discountedTripleOccupancyAdultPrice || {})},
                                 child5to12Price: { ...initialPricingState.child5to12Price, ...(cat.pricing.child5to12Price || {})},
                                 discountedChild5to12Price: { ...initialPricingState.discountedChild5to12Price, ...(cat.pricing.discountedChild5to12Price || {})},
-                                child12to18Price: { ...initialPricingState.child12to18Price, ...(cat.pricing.child12to18Price || {})},
-                                discountedChild12to18Price: { ...initialPricingState.discountedChild12to18Price, ...(cat.pricing.discountedChild12to18Price || {})},
+                                // child12to18Price: { ...initialPricingState.child12to18Price, ...(cat.pricing.child12to18Price || {})},
+                                // discountedChild12to18Price: { ...initialPricingState.discountedChild12to18Price, ...(cat.pricing.discountedChild12to18Price || {})},
                             }
                             : initialPricingState, 
                         unavailableDates: Array.isArray(cat.unavailableDates) ? cat.unavailableDates : [], 
@@ -698,12 +543,12 @@ export default function PropertyDetailPage() {
                     if (calculatedChild5to12Price > 0) {
                         pricePerChildForInstance = calculatedChild5to12Price;
                     } else {
-                        let child12to18Base = getPrice(pricing.child12to18Price, selectedMealPlan);
-                        let child12to18Disc = getPrice(pricing.discountedChild12to18Price, selectedMealPlan);
-                        if (child12to18Base === 0 && selectedMealPlan !== 'noMeal') child12to18Base = getPrice(pricing.child12to18Price, 'noMeal');
-                        if (child12to18Disc === 0 && selectedMealPlan !== 'noMeal') child12to18Disc = getPrice(pricing.discountedChild12to18Price, 'noMeal');
-                        const calculatedChild12to18Price = (child12to18Disc > 0 && child12to18Disc < child12to18Base) ? child12to18Disc : child12to18Base;
-                        if (calculatedChild12to18Price > 0) pricePerChildForInstance = calculatedChild12to18Price;
+                        // let child12to18Base = getPrice(pricing.child12to18Price, selectedMealPlan);
+                        // let child12to18Disc = getPrice(pricing.discountedChild12to18Price, selectedMealPlan);
+                        // if (child12to18Base === 0 && selectedMealPlan !== 'noMeal') child12to18Base = getPrice(pricing.child12to18Price, 'noMeal');
+                        // if (child12to18Disc === 0 && selectedMealPlan !== 'noMeal') child12to18Disc = getPrice(pricing.discountedChild12to18Price, 'noMeal');
+                        // const calculatedChild12to18Price = (child12to18Disc > 0 && child12to18Disc < child12to18Base) ? child12to18Disc : child12to18Base;
+                        // if (calculatedChild12to18Price > 0) pricePerChildForInstance = calculatedChild12to18Price;
                     }
                     childrenPriceComponent += pricePerChildForInstance * childrenToAssignToInstance;
                 }
@@ -945,13 +790,6 @@ export default function PropertyDetailPage() {
         const { name, value } = e.target;
         setBookingData(prev => ({ ...prev, [name]: value }));
     };
-    
-
-    // const handleBookingSubmit = async (e: React.FormEvent) => {
-    //     e.preventDefault();
-    //     console.log("Form submitted, but Razorpay button should handle actual booking POST.");
-    // };
-
 
     const renderRatingStars = (rating: number, starSize: string = "w-4 h-4") => (
         <div className="flex items-center">

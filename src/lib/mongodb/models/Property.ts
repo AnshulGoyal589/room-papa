@@ -2,8 +2,9 @@
 
 import { Collection, ObjectId } from 'mongodb';
 import { getDb } from '..';
-import {  PropertyAmenities, PropertyType, StoredRoomCategory } from '@/types';
+import {  PropertyAmenities, PropertyType } from '@/types';
 import { Image } from './Image';
+import { StoredRoomCategory } from '@/types/booking';
 
 
 export interface Property {

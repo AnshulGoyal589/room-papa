@@ -11,12 +11,11 @@ import GoogleMapsSection from './GoogleMapsSection';
 
 // --- Assuming these types are defined correctly in '@/types' based on previous updates ---
 import {
-    StoredRoomCategory,
-    RoomCategoryPricing,
     PricingByMealPlan,
     DiscountedPricingByMealPlan
 } from '@/types';
 import { Label } from '@/components/ui/label';
+import { RoomCategoryPricing, StoredRoomCategory } from '@/types/booking';
 // --- End Type Assumption ---
 
 // Helper to generate unique IDs if adding categories locally
