@@ -10,7 +10,7 @@ interface DateRange {
 export default function FlightsSearchForm() {
   // State variables with proper typing
   const [title, setLocation] = useState<string>('');
-  const [title2, setLocation2] = useState<string>('');
+  const [title2, setLocation2] = useState<string>('');                     
   const [dateRange, setDateRange] = useState<DateRange>({
     startDate: new Date(2025, 3, 18), // April 18, 2025
     endDate: new Date(2025, 4, 23)    // May 23, 2025
