@@ -328,7 +328,7 @@ export function Header() {
                {/* Kept List Property button green for distinction, ensured text contrast */}
             </div>
           </SignedOut>
-          
+           
           <SignedIn>
             <div className="flex items-center gap-2">
               {role && role !== 'guest' && (
