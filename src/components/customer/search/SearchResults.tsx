@@ -12,7 +12,7 @@ import { Travelling } from '@/lib/mongodb/models/Travelling';
 // Define TransportationType as an enum
 export enum TransportationType {
   flight = 'flight',
-  train = 'train',
+  train = 'train', 
   bus = 'bus',
   car = 'car',
   boat = 'boat',
