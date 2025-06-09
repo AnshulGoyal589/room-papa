@@ -31,7 +31,9 @@ export class BookingRepository {
     // and other relevant fields like bookingDetails, guestDetails, recipients.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { details, ...restOfInput } = bookingData as any; // Use 'as any' for generic access, then type specifics
-
+    // console.log("rest of input: ",restOfInput);
+    // console.log("details: ",details);
+    // console.log("bookingData: ",bookingData);
     const tripDetailsPayload: BaseDetails & { ownerId?: string } = {
       id: details.id,
       title: details.title,
@@ -48,7 +50,10 @@ export class BookingRepository {
         tripDetails: tripDetailsPayload,
         bookingDetails: {
           ...propertyInput.bookingDetails,
-          pricePerNight: propertyInput.bookingDetails.totalPrice / propertyInput.bookingDetails.numberOfNights, // Example calculation
+          pricePerNight: propertyInput.bookingDetails.totalPrice / propertyInput.bookingDetails.numberOfNights, 
+          payment : {
+            provider: 'razorpay'
+          }
         },
         guestDetails: propertyInput.guestDetails,
         userId: restOfInput.userId || 'some-user-id', // Placeholder if userId is not in input, ensure it's handled

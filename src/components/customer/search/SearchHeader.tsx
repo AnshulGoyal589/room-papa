@@ -1,3 +1,9 @@
+// ----------------------------------
+// ----------------------------------
+// YOU CAN DELETE IT, IT IS OF NO USE
+// ----------------------------------
+// ----------------------------------
+
 'use client'
 
 import { useState, useEffect, ChangeEvent } from 'react';

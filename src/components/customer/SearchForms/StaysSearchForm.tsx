@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, ChevronDown, X, Plus, Minus } from 'lucide-react';
+import { ChevronDown, X, Plus, Minus } from 'lucide-react';
 
 // Define types for our component
 interface DateRange {
@@ -466,12 +466,11 @@ export default function StaysSearchForm() {
   };
   
   return (
-    <div className="bg-white text-black shadow-lg p-4 rounded-lg">
-      <div className="flex flex-wrap -mx-1">
+    <div className=" text-black shadow-lg border-yellow-400 border-1 p-0.5 pl-1 pr-1 bg-yellow-400 rounded-lg">
+      <div className="flex flex-wrap ">
         {/* Location Input */}
-        <div className="w-full md:w-1/3 p-1">
-          <div className="relative">
-            <div className="bg-white text-black p-4 rounded-md flex items-center border-2 border-blue-600 hover:border-blue-700">
+        <div className="w-full md:w-1/3 relative">
+            <div className="bg-white text-black  h-full p-4 rounded-md flex items-center border-yellow-400 border-3">
              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bed-double-icon lucide-bed-double"><path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 4v6"/><path d="M2 18h20"/></svg>
               <input 
                 type="text" 
@@ -492,13 +491,12 @@ export default function StaysSearchForm() {
                 </button>
               )}
             </div>
-          </div>
         </div>
         
         {/* Date Range */}
-        <div className="w-full md:w-1/3 p-1 relative">
+        <div className="w-full md:w-1/3 relative">
           <div 
-            className="bg-white text-black p-4 rounded-md flex items-center justify-between border-2 border-blue-600 hover:border-blue-700 cursor-pointer"
+            className="bg-white text-black p-4 h-full rounded-md flex items-center justify-between border-yellow-400 border-3 cursor-pointer"
             onClick={() => {
               if (!showCalendar) { // Opening calendar
                 const currentStartDate = dateRange.startDate;
@@ -651,9 +649,9 @@ export default function StaysSearchForm() {
         </div>
         
         {/* Guests */}
-        <div className="w-full md:w-1/4 p-1 relative">
+        <div className="w-full md:w-1/4 relative">
           <div 
-            className="bg-white text-black p-4 rounded-md flex items-center justify-between border-2 border-blue-600 hover:border-blue-700 cursor-pointer"
+            className="bg-white text-black p-4 rounded-md flex items-center justify-between border-yellow-400 border-3 cursor-pointer"
             onClick={() => setShowGuests(!showGuests)}
           >
             <div className="flex items-center">
@@ -787,12 +785,13 @@ export default function StaysSearchForm() {
         </div>
         
         {/* Search Button */}
-        <div className="w-full md:w-1/12 p-1">
+        <div className="w-full md:w-1/12">
           <button 
-            className="bg-blue-600 hover:bg-blue-700 text-white w-full py-4 rounded-md font-bold flex items-center justify-center h-full"
+            className="bg-blue-600 hover:bg-blue-700 text-white w-full text-xl py-4 rounded-md font-bold flex items-center justify-center h-full"
             onClick={handleSearch}
           >
-            <Search className="h-5 w-5" />
+            Search
+            {/* <Search className="h-5 w-5" /> */}
           </button>
         </div>
       </div>

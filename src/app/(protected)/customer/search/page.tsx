@@ -58,7 +58,7 @@ export default function SearchPage() {
         </button>
       </div>
 
-      <main className="container mx-auto py-8">
+      <main className="container mx-auto py-16">
         <div className="flex flex-col md:flex-row md:gap-8 relative">
           
           {/* Overlay for mobile when filter is open */}

@@ -2,9 +2,40 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { PropertyType, TransportationType } from '@/types';
-import { categoryOptions } from '../../../../public/assets/data';
-import { Slider } from '@/components/ui/slider';
+import { PropertyType, TransportationType } from '@/types'; // Assuming these types are defined
+import { categoryOptions } from '../../../../public/assets/data'; // Assuming this path is correct
+import { Slider } from '@/components/ui/slider'; // Assuming this component exists
+
+// Helper component for filter sections for better structure and styling consistency
+const FilterSection: React.FC<{ title: string; children: React.ReactNode; show?: boolean }> = ({ title, children, show = true }) => {
+  if (!show) return null;
+  return (
+    <div className="py-4 border-b border-gray-200 last:border-b-0">
+      <h3 className="text-base font-semibold text-gray-700 mb-3">{title}</h3>
+      {children}
+    </div>
+  );
+};
+
+// Helper component for checkbox items
+const CheckboxItem: React.FC<{
+  id: string;
+  label: string;
+  checked: boolean;
+  onChange: () => void;
+}> = ({ id, label, checked, onChange }) => (
+  <label htmlFor={id} className="flex items-center space-x-3 py-1.5 cursor-pointer group">
+    <input
+      id={id}
+      type="checkbox"
+      checked={checked}
+      onChange={onChange}
+      className="h-5 w-5 text-blue-600 border-gray-400 rounded focus:ring-blue-500 focus:ring-offset-0 group-hover:border-blue-500"
+    />
+    <span className="text-sm text-gray-700 group-hover:text-blue-600">{label}</span>
+  </label>
+);
+
 
 export default function SearchFilter() {
   const router = useRouter();
@@ -17,13 +48,10 @@ export default function SearchFilter() {
   // Common filters
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
-  // const [currency, setCurrency] = useState<string>('USD');
-  // const [totalRating, setTotalRating] = useState<string>('');
 
   // Basic property filters
   const [propertyType, setPropertyType] = useState<PropertyType | ''>('');
   const [propertyRating, setPropertyRating] = useState<string>('');
-  // const [googleMaps, setGoogleMaps] = useState<string>('');
   const [roomAccessibility, setRoomAccessibility] = useState<string[]>([]);
   const [bedPreference, setBedPreference] = useState<string[]>([]);
   const [roomFacilities, setRoomFacilities] = useState<string[]>([]);
@@ -51,29 +79,39 @@ export default function SearchFilter() {
   const [brands, setBrands] = useState<string[]>([]);
   const [amenities, setAmenities] = useState<string[]>([]);
 
-  // Handle filter changes and update URL params with debounce
+  // Fixed list for TransportationType options for the dropdown
+  const transportationTypeOptions: { value: TransportationType; label: string }[] = [
+    { value: 'flight', label: 'Flight' },
+    { value: 'train', label: 'Train' },
+    { value: 'bus', label: 'Bus' },
+    { value: 'car', label: 'Car Rental' },
+    { value: 'ferry', label: 'Ferry' },
+  ];
+  const propertyTypeOptions: { value: PropertyType; label: string }[] = [
+    { value: 'hotel', label: 'Hotel' },
+    { value: 'apartment', label: 'Apartment' },
+    { value: 'villa', label: 'Villa' },
+    { value: 'hostel', label: 'Hostel' },
+    { value: 'resort', label: 'Resort' },
+  ];
+
+
   const updateFilters = () => {
-    // Clear any existing timer
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
     
-    // Set a new timer that will execute after 3 seconds
     debounceTimerRef.current = setTimeout(() => {
       const scrollPosition = window.scrollY;
-
       const params: { [key: string]: string | undefined } = {
         category: filterMode,
         minPrice: minPrice || undefined,
         maxPrice: maxPrice || undefined,
-        // currency: currency || undefined,
       };
 
-      // Add mode-specific params
       if (filterMode === 'property') {
         params.propertyType = propertyType || undefined;
         params.propertyRating = propertyRating || undefined;
-        // params.googleMaps = googleMaps || undefined;
         params.roomAccessibility = roomAccessibility.length > 0 ? roomAccessibility.join(',') : undefined;
         params.bedPreference = bedPreference.length > 0 ? bedPreference.join(',') : undefined;
         params.roomFacilities = roomFacilities.length > 0 ? roomFacilities.join(',') : undefined;
@@ -90,7 +128,6 @@ export default function SearchFilter() {
         params.country = country || undefined;
       }
       
-      // Common category filters
       params.accessibility = accessibility.length > 0 ? accessibility.join(',') : undefined;
       params.popularFilters = popularFilters.length > 0 ? popularFilters.join(',') : undefined;
       params.funThingsToDo = funThingsToDo.length > 0 ? funThingsToDo.join(',') : undefined;
@@ -100,25 +137,20 @@ export default function SearchFilter() {
       params.brands = brands.length > 0 ? brands.join(',') : undefined;
       params.amenities = amenities.length > 0 ? amenities.join(',') : undefined;
 
-      // Remove undefined values
       Object.keys(params).forEach(key => {
         if (params[key] === undefined) {
           delete params[key];
         }
       });
 
-      // Construct URL search params
       const queryString = new URLSearchParams(params as Record<string, string>).toString();
-      router.push(`?${queryString}`);
+      router.push(`?${queryString}`, { scroll: false }); // Use scroll: false with manual scroll restoration
       window.scrollTo(0, scrollPosition);
-    }, 1000); // 3000 milliseconds = 3 seconds
+    }, 1000);
   };
 
-  // Trigger updateFilters whenever filters change
   useEffect(() => {
     updateFilters();
-    
-    // Cleanup function to clear any pending timers when component unmounts
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
@@ -129,52 +161,36 @@ export default function SearchFilter() {
     filterMode, minPrice, maxPrice, propertyType, propertyRating, accessibility, roomAccessibility, bedPreference, roomFacilities, transportationType, arrivalTime, departureTime, fromLocation, toLocation, tripType, city, state, country, popularFilters, funThingsToDo, meals, facilities, reservationPolicy, brands, amenities
   ]);
 
-  // Sync state with URL params on mount
   useEffect(() => {
     if (searchParams) {
-      // Get the filter mode
       setFilterMode(searchParams.get('category') || 'property');
-
-      // Common filters
-      setMinPrice(searchParams.get('minPrice') || '');
-      setMaxPrice(searchParams.get('maxPrice') || '');
-
-      // setCurrency(searchParams.get('currency') || 'USD');
-
-      // Property filters
+      setMinPrice(searchParams.get('minPrice') || '0');
+      setMaxPrice(searchParams.get('maxPrice') || '200000');
       setPropertyType((searchParams.get('propertyType') as PropertyType) || '');
       setPropertyRating(searchParams.get('propertyRating') || '');
-      // setGoogleMaps(searchParams.get('googleMaps') || '');
-      setRoomAccessibility(searchParams.get('roomAccessibility')?.split(',') || []);
-      setBedPreference(searchParams.get('bedPreference')?.split(',') || []);
-      setRoomFacilities(searchParams.get('roomFacilities')?.split(',') || []);
-
-      // Travelling filters
+      setRoomAccessibility(searchParams.get('roomAccessibility')?.split(',').filter(Boolean) || []);
+      setBedPreference(searchParams.get('bedPreference')?.split(',').filter(Boolean) || []);
+      setRoomFacilities(searchParams.get('roomFacilities')?.split(',').filter(Boolean) || []);
       setTransportationType((searchParams.get('transportationType') as TransportationType) || '');
       setArrivalTime(searchParams.get('arrivalTime') || '');
       setDepartureTime(searchParams.get('departureTime') || '');
       setFromLocation(searchParams.get('fromLocation') || '');
       setToLocation(searchParams.get('toLocation') || '');
-      
-      // Trip filters
       setTripType(searchParams.get('tripType') || '');
       setCity(searchParams.get('city') || '');
       setState(searchParams.get('state') || '');
       setCountry(searchParams.get('country') || '');
-      
-      // Common category filters
-      setAccessibility(searchParams.get('accessibility')?.split(',') || []);
-      setAmenities(searchParams.get('amenities')?.split(',') || []);
-      setPopularFilters(searchParams.get('popularFilters')?.split(',') || []);
-      setFunThingsToDo(searchParams.get('funThingsToDo')?.split(',') || []);
-      setMeals(searchParams.get('meals')?.split(',') || []);
-      setFacilities(searchParams.get('facilities')?.split(',') || []);
-      setReservationPolicy(searchParams.get('reservationPolicy')?.split(',') || []);
-      setBrands(searchParams.get('brands')?.split(',') || []);
+      setAccessibility(searchParams.get('accessibility')?.split(',').filter(Boolean) || []);
+      setAmenities(searchParams.get('amenities')?.split(',').filter(Boolean) || []);
+      setPopularFilters(searchParams.get('popularFilters')?.split(',').filter(Boolean) || []);
+      setFunThingsToDo(searchParams.get('funThingsToDo')?.split(',').filter(Boolean) || []);
+      setMeals(searchParams.get('meals')?.split(',').filter(Boolean) || []);
+      setFacilities(searchParams.get('facilities')?.split(',').filter(Boolean) || []);
+      setReservationPolicy(searchParams.get('reservationPolicy')?.split(',').filter(Boolean) || []);
+      setBrands(searchParams.get('brands')?.split(',').filter(Boolean) || []);
     }
-  }, [searchParams]);
+  }, [searchParams]); // Only re-run if searchParams object itself changes
 
-  // Helper function for checkbox filters
   const handleCheckboxChange = (value: string, currentState: string[], stateSetter: React.Dispatch<React.SetStateAction<string[]>>) => {
     if (currentState.includes(value)) {
       stateSetter(currentState.filter(item => item !== value));
@@ -183,35 +199,23 @@ export default function SearchFilter() {
     }
   };
 
-  // Helper function to clear all filters
   const clearAllFilters = () => {
-    // Common filters
-    setMinPrice('');
-    setMaxPrice('');
-    // setCurrency('USD');
-
-    // Property filters
+    setMinPrice('0'); // Reset to default min
+    setMaxPrice('200000'); // Reset to default max
     setPropertyType('');
     setPropertyRating('');
-    // setGoogleMaps('');
     setRoomAccessibility([]);
     setBedPreference([]);
     setRoomFacilities([]);
-    
-    // Travelling filters
     setTransportationType('');
     setArrivalTime('');
     setDepartureTime('');
     setFromLocation('');
     setToLocation('');
-    
-    // Trip filters
     setTripType('');
     setCity('');
     setState('');
     setCountry('');
-
-    // Common category filters
     setAccessibility([]);
     setAmenities([]);
     setPopularFilters([]);
@@ -222,518 +226,379 @@ export default function SearchFilter() {
     setBrands([]);
   };
 
-
   const handlePriceChange = (value: [number, number]): void => {
-    setMaxPrice(value[1].toString());
     setMinPrice(value[0].toString());
+    setMaxPrice(value[1].toString());
   };
+
+  // Common input field styling
+  const inputClassName = "block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5 text-sm";
+  // Common select field styling
+  const selectClassName = "block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5 text-sm";
 
 
   return (
-    <div className="w-full bg-white p-6 shadow-md rounded-lg bg-red-500 ">
-      <h2 className="text-lg font-semibold mb-4">Filters</h2>
-
-      {/* Price Range Filter (Common) */}
-      <div className="mb-6 p-5 bg-white rounded-lg border border-gray-200 shadow-sm max-w-md">
-        {/* Main Label for the filter section */}
-        <label id="price-range-label" className="block text-base font-semibold text-gray-800 mb-5">
-          Price Range
-        </label>
-        
-        {/* Current Selected Min and Max Price Display Boxes */}
-        <div className="flex items-center justify-between space-x-3 mb-6">
-          {/* Min Price Display Box */}
-          <div className="relative flex-1">
-            <span className="absolute -top-2.5 left-2.5 inline-block bg-white px-1 text-xs font-medium text-gray-500">
-              Min
-            </span>
-            <div 
-              className="w-full bg-gray-50 border border-gray-300 px-3 py-2.5 rounded-md text-sm font-medium text-gray-700 text-center"
-              aria-live="polite" // Announces changes to screen readers
-            >
-              {/* You might want to format this with a currency symbol if applicable */}
-              {/* e.g., `₹${minPrice.toLocaleString()}` or `$${minPrice.toLocaleString()}` */}
-              {minPrice ? Number(minPrice).toLocaleString() : minPrice}
-            </div>
-          </div>
-
-          <span className="text-gray-400 pt-4">-</span> {/* Separator, pt-4 to align vertically with input-like boxes */}
-
-          {/* Max Price Display Box */}
-          <div className="relative flex-1">
-            <span className="absolute -top-2.5 left-2.5 inline-block bg-white px-1 text-xs font-medium text-gray-500">
-              Max
-            </span>
-            <div 
-              className="w-full bg-gray-50 border border-gray-300 px-3 py-2.5 rounded-md text-sm font-medium text-gray-700 text-center"
-              aria-live="polite" // Announces changes to screen readers
-            >
-              {Number(maxPrice).toLocaleString()}
-            </div>
-          </div>
-        </div>
-        
-        {/* Dual Range Slider */}
-        <div className="px-1 mb-2"> {/* Slight horizontal padding for slider thumbs clearance */}
-          <Slider
-            value={[Number(minPrice), Number(maxPrice)]}
-            onValueChange={handlePriceChange} // Your existing logic
-            max={200000} // Overall maximum value for the slider
-            min={0}      // Overall minimum value for the slider
-            step={1000}  // Step increment
-            className="w-full" // Assumes Slider component handles its internal styling
-            aria-labelledby="price-range-label" // Associates slider with the main label
-          />
-        </div>
-        
-        {/* Slider Min/Max Labels & Centered Selected Range Indicator */}
-        <div className="flex justify-between items-center mt-1 text-xs text-gray-500 px-1">
-          <span>{0..toLocaleString()}</span> {/* Overall Min possible value, formatted */}
-          
-          {/* Displaying the selected min-max range in the middle for clarity */}
-          <span className="font-medium text-sm text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md">
-            {/* Corrected order: minPrice first, then maxPrice */}
-            {Number(minPrice).toLocaleString()} - {Number(maxPrice).toLocaleString()}
-          </span>
-          
-          <span>{200000..toLocaleString()}</span> {/* Overall Max possible value, formatted */}
-        </div>
+    <div className="w-full bg-white p-5 shadow-md rounded-lg border border-gray-200">
+      <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-200">
+        <h2 className="text-xl font-bold text-gray-800">Filter by:</h2>
       </div>
 
+      {/* Clear All Filters Button - Placed near the top or bottom as preferred */}
+       <button
+            onClick={clearAllFilters}
+            className="w-full text-sm text-blue-600 hover:text-blue-700 font-medium py-2 px-3 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors duration-150 mb-4"
+          >
+            Clear All Filters
+      </button>
 
-
-
+      {/* Price Range Filter */}
+      <FilterSection title="Your budget (per night)">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between space-x-3">
+            <div className="relative flex-1">
+              <span className="absolute -top-2 left-2 inline-block bg-white px-1 text-xs font-medium text-gray-500">
+                Min price
+              </span>
+              <div className="w-full bg-white border border-gray-300 px-3 py-2 rounded-md text-sm text-gray-700 text-center">
+                ₹{Number(minPrice).toLocaleString()}
+              </div>
+            </div>
+            <span className="text-gray-400 pt-3">-</span>
+            <div className="relative flex-1">
+              <span className="absolute -top-2 left-2 inline-block bg-white px-1 text-xs font-medium text-gray-500">
+                Max price
+              </span>
+              <div className="w-full bg-white border border-gray-300 px-3 py-2 rounded-md text-sm text-gray-700 text-center">
+                ₹{Number(maxPrice).toLocaleString()}
+              </div>
+            </div>
+          </div>
+          <Slider
+            value={[Number(minPrice), Number(maxPrice)]}
+            onValueChange={handlePriceChange}
+            max={200000}
+            min={0}
+            step={1000}
+            className="w-full"
+          />
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>₹{(0).toLocaleString()}</span>
+            <span>₹{(200000).toLocaleString()}</span>
+          </div>
+        </div>
+      </FilterSection>
 
       {/* Property-specific filters */}
-      {filterMode === 'property' && (
-        <>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Property Type</label>
-            <select
-              value={propertyType}
-              onChange={(e) => setPropertyType(e.target.value as PropertyType)}
-              className="border rounded-md p-2 w-full"
-            >
-              <option value="">All</option>
-              {['Hotel' , 'Apartment' , 'Villa' , 'Hostel' , 'Resort'].map((type) => (
-                <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
-              ))}
-            </select>
-          </div>
+      <FilterSection title="Property Type" show={filterMode === 'property'}>
+        <select
+          value={propertyType}
+          onChange={(e) => setPropertyType(e.target.value as PropertyType)}
+          className={selectClassName}
+        >
+          <option value="">All property types</option>
+          {propertyTypeOptions.map((type) => (
+            <option key={type.value} value={type.value}>{type.label}</option>
+          ))}
+        </select>
+      </FilterSection>
 
-          {/* Property Rating */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Property Rating</label>
-            <select
-              value={propertyRating}
-              onChange={(e) => setPropertyRating(e.target.value)}
-              className="border rounded-md p-2 w-full"
-            >
-              <option value="0">Any</option>
-              <option value="1">1 Star</option>
-              <option value="2">2 Stars</option>
-              <option value="3">3 Stars</option>
-              <option value="4">4 Stars</option>
-              <option value="5">5 Stars</option>
-            </select>
-          </div>
+      <FilterSection title="Star Rating" show={filterMode === 'property'}>
+        <select
+          value={propertyRating}
+          onChange={(e) => setPropertyRating(e.target.value)}
+          className={selectClassName}
+        >
+          <option value="0">Any rating</option>
+          {[1, 2, 3, 4, 5].map(star => (
+            <option key={star} value={star.toString()}>{star} Star{star > 1 ? 's' : ''}</option>
+          ))}
+           <option value="unrated">Unrated</option>
+        </select>
+      </FilterSection>
+      
+      <FilterSection title="Popular Filters" show={filterMode === 'property' || filterMode === 'travelling' || filterMode === 'trip'}>
+        <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
+          {categoryOptions.popularFilters.map((item) => (
+            <CheckboxItem
+              key={item}
+              id={`popular-${item}`}
+              label={item}
+              checked={popularFilters.includes(item)}
+              onChange={() => handleCheckboxChange(item, popularFilters, setPopularFilters)}
+            />
+          ))}
+        </div>
+      </FilterSection>
 
-          {/* Popular Filters */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Popular Filters</label>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {categoryOptions.popularFilters.map((item) => (
-                <label key={item} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={popularFilters.includes(item)}
-                    onChange={() => handleCheckboxChange(item, popularFilters, setPopularFilters)}
-                    className="form-checkbox"
-                  />
-                  <span>{item}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+      <FilterSection title="Property Accessibility" show={filterMode === 'property'}>
+         <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
+          {categoryOptions.accessibility.map((item) => (
+             <CheckboxItem
+              key={item}
+              id={`prop-access-${item}`}
+              label={item}
+              checked={accessibility.includes(item)}
+              onChange={() => handleCheckboxChange(item, accessibility, setAccessibility)}
+            />
+          ))}
+        </div>
+      </FilterSection>
 
-          {/* Property Accessibility */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Property Accessibility</label>
-            <div className="space-y-2">
-              {categoryOptions.accessibility.map((item) => (
-                <label key={item} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={accessibility.includes(item)}
-                    onChange={() => handleCheckboxChange(item, accessibility, setAccessibility)}
-                    className="form-checkbox"
-                  />
-                  <span>{item}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+      <FilterSection title="Room Accessibility" show={filterMode === 'property'}>
+        <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
+          {categoryOptions.roomAccessibility.map((item) => (
+            <CheckboxItem
+              key={item}
+              id={`room-access-${item}`}
+              label={item}
+              checked={roomAccessibility.includes(item)}
+              onChange={() => handleCheckboxChange(item, roomAccessibility, setRoomAccessibility)}
+            />
+          ))}
+        </div>
+      </FilterSection>
 
-          {/* Room Accessibility */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Room Accessibility</label>
-            <div className="space-y-2">
-              {categoryOptions.roomAccessibility.map((item) => (
-                <label key={item} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={roomAccessibility.includes(item)}
-                    onChange={() => handleCheckboxChange(item, roomAccessibility, setRoomAccessibility)}
-                    className="form-checkbox"
-                  />
-                  <span>{item}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+      <FilterSection title="Bed Preference" show={filterMode === 'property'}>
+        <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
+          {categoryOptions.bedPreference.map((item) => (
+            <CheckboxItem
+              key={item}
+              id={`bed-${item}`}
+              label={item}
+              checked={bedPreference.includes(item)}
+              onChange={() => handleCheckboxChange(item, bedPreference, setBedPreference)}
+            />
+          ))}
+        </div>
+      </FilterSection>
 
-          {/* Bed Preference */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Bed Preference</label>
-            <div className="space-y-2">
-              {categoryOptions.bedPreference.map((item) => (
-                <label key={item} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={bedPreference.includes(item)}
-                    onChange={() => handleCheckboxChange(item, bedPreference, setBedPreference)}
-                    className="form-checkbox"
-                  />
-                  <span>{item}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+      <FilterSection title="Room Facilities" show={filterMode === 'property'}>
+         <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
+          {categoryOptions.roomFacilities.map((item) => (
+            <CheckboxItem
+              key={item}
+              id={`room-fac-${item}`}
+              label={item}
+              checked={roomFacilities.includes(item)}
+              onChange={() => handleCheckboxChange(item, roomFacilities, setRoomFacilities)}
+            />
+          ))}
+        </div>
+      </FilterSection>
 
-          {/* Room Facilities */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Room Facilities</label>
-            <div className="space-y-2">
-              {categoryOptions.roomFacilities.map((item) => (
-                <label key={item} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={roomFacilities.includes(item)}
-                    onChange={() => handleCheckboxChange(item, roomFacilities, setRoomFacilities)}
-                    className="form-checkbox"
-                  />
-                  <span>{item}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
 
       {/* Travelling-specific filters */}
-      {filterMode === 'travelling' && (
-        <>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Transportation Type</label>
-            <select
-              value={transportationType}
-              onChange={(e) => setTransportationType(e.target.value as TransportationType)}
-              className="border rounded-md p-2 w-full"
-            >
-              <option value="">All</option>
-              {Object.values(transportationType).map((type) => (
-                <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
-              ))}
-            </select>
-          </div>
+      <FilterSection title="Transportation Type" show={filterMode === 'travelling'}>
+        <select
+          value={transportationType}
+          onChange={(e) => setTransportationType(e.target.value as TransportationType)}
+          className={selectClassName}
+        >
+          <option value="">All transportation</option>
+          {transportationTypeOptions.map((type) => (
+            <option key={type.value} value={type.value}>{type.label}</option>
+          ))}
+        </select>
+      </FilterSection>
+      
+      <FilterSection title="Departure Time" show={filterMode === 'travelling'}>
+        <input
+          type="datetime-local"
+          value={departureTime}
+          onChange={(e) => setDepartureTime(e.target.value)}
+          className={inputClassName}
+        />
+      </FilterSection>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Departure Time</label>
-            <input
-              type="datetime-local"
-              value={departureTime}
-              onChange={(e) => setDepartureTime(e.target.value)}
-              className="border rounded-md p-2 w-full"
+      <FilterSection title="Arrival Time" show={filterMode === 'travelling'}>
+        <input
+          type="datetime-local"
+          value={arrivalTime}
+          onChange={(e) => setArrivalTime(e.target.value)}
+          className={inputClassName}
+        />
+      </FilterSection>
+
+      <FilterSection title="From Location" show={filterMode === 'travelling'}>
+        <input
+          type="text"
+          placeholder="e.g. New York JFK"
+          value={fromLocation}
+          onChange={(e) => setFromLocation(e.target.value)}
+          className={inputClassName}
+        />
+      </FilterSection>
+
+      <FilterSection title="To Location" show={filterMode === 'travelling'}>
+        <input
+          type="text"
+          placeholder="e.g. London LHR"
+          value={toLocation}
+          onChange={(e) => setToLocation(e.target.value)}
+          className={inputClassName}
+        />
+      </FilterSection>
+
+      <FilterSection title="Travel Accessibility" show={filterMode === 'travelling'}>
+         <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
+          {categoryOptions.accessibility.map((item) => ( // Using general accessibility options
+             <CheckboxItem
+              key={item}
+              id={`travel-access-${item}`}
+              label={item}
+              checked={accessibility.includes(item)}
+              onChange={() => handleCheckboxChange(item, accessibility, setAccessibility)}
             />
-          </div>
+          ))}
+        </div>
+      </FilterSection>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Arrival Time</label>
-            <input
-              type="datetime-local"
-              value={arrivalTime}
-              onChange={(e) => setArrivalTime(e.target.value)}
-              className="border rounded-md p-2 w-full"
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">From</label>
-            <input
-              type="text"
-              placeholder="Departure location"
-              value={fromLocation}
-              onChange={(e) => setFromLocation(e.target.value)}
-              className="border rounded-md p-2 w-full"
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">To</label>
-            <input
-              type="text"
-              placeholder="Arrival location"
-              value={toLocation}
-              onChange={(e) => setToLocation(e.target.value)}
-              className="border rounded-md p-2 w-full"
-            />
-          </div>
-
-          {/* Popular Filters */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Popular Filters</label>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {categoryOptions.popularFilters.map((item) => (
-                <label key={item} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={popularFilters.includes(item)}
-                    onChange={() => handleCheckboxChange(item, popularFilters, setPopularFilters)}
-                    className="form-checkbox"
-                  />
-                  <span>{item}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Travelling Accessibility */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Travel Accessibility</label>
-            <div className="space-y-2">
-              {categoryOptions.accessibility.map((item) => (
-                <label key={item} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={accessibility.includes(item)}
-                    onChange={() => handleCheckboxChange(item, accessibility, setAccessibility)}
-                    className="form-checkbox"
-                  />
-                  <span>{item}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
 
       {/* Trip-specific filters */}
-      {filterMode === 'trip' && (
-        <>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Trip Type</label>
-            <select
-              value={tripType}
-              onChange={(e) => setTripType(e.target.value)}
-              className="border rounded-md p-2 w-full"
-            >
-              <option value="">All</option>
-              <option value="Domestic">Domestic</option>
-              <option value="International">International</option>
-            </select>
-          </div>
+      <FilterSection title="Trip Type" show={filterMode === 'trip'}>
+        <select
+          value={tripType}
+          onChange={(e) => setTripType(e.target.value)}
+          className={selectClassName}
+        >
+          <option value="">All trip types</option>
+          <option value="Domestic">Domestic</option>
+          <option value="International">International</option>
+        </select>
+      </FilterSection>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">City</label>
-            <input
-              type="text"
-              placeholder="City"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              className="border rounded-md p-2 w-full"
+      <FilterSection title="City" show={filterMode === 'trip'}>
+        <input
+          type="text"
+          placeholder="e.g. Paris"
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          className={inputClassName}
+        />
+      </FilterSection>
+
+      <FilterSection title="State/Province" show={filterMode === 'trip'}>
+        <input
+          type="text"
+          placeholder="e.g. California"
+          value={state}
+          onChange={(e) => setState(e.target.value)}
+          className={inputClassName}
+        />
+      </FilterSection>
+
+      <FilterSection title="Country" show={filterMode === 'trip'}>
+        <input
+          type="text"
+          placeholder="e.g. France"
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          className={inputClassName}
+        />
+      </FilterSection>
+
+      <FilterSection title="Trip Accessibility" show={filterMode === 'trip'}>
+         <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
+          {categoryOptions.accessibility.map((item) => ( // Using general accessibility options
+             <CheckboxItem
+              key={item}
+              id={`trip-access-${item}`}
+              label={item}
+              checked={accessibility.includes(item)}
+              onChange={() => handleCheckboxChange(item, accessibility, setAccessibility)}
             />
-          </div>
+          ))}
+        </div>
+      </FilterSection>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">State/Province</label>
-            <input
-              type="text"
-              placeholder="State/Province"
-              value={state}
-              onChange={(e) => setState(e.target.value)}
-              className="border rounded-md p-2 w-full"
-            />
-          </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Country</label>
-            <input
-              type="text"
-              placeholder="Country"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              className="border rounded-md p-2 w-full"
-            />
-          </div>
-
-          {/* Popular Filters */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Popular Filters</label>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {categoryOptions.popularFilters.map((item) => (
-                <label key={item} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={popularFilters.includes(item)}
-                    onChange={() => handleCheckboxChange(item, popularFilters, setPopularFilters)}
-                    className="form-checkbox"
-                  />
-                  <span>{item}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Trip Accessibility */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Trip Accessibility</label>
-            <div className="space-y-2">
-              {categoryOptions.accessibility.map((item) => (
-                <label key={item} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={accessibility.includes(item)}
-                    onChange={() => handleCheckboxChange(item, accessibility, setAccessibility)}
-                    className="form-checkbox"
-                  />
-                  <span>{item}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Common category filters that apply to all modes */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-2">Amenities</label>
-        <div className="space-y-2 max-h-40 overflow-y-auto">
+      {/* Common category filters */}
+      <FilterSection title="Amenities">
+         <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
           {[
             'WiFi', 'Parking', 'Pool', 'Gym', 'Air conditioning', 'Pet friendly', 'Restaurant', 
             'Room service', 'Disabled facilities', 'TV', 'Laundry', 'Kitchen'
           ].map((item) => (
-            <label key={item} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={amenities.includes(item)}
-                onChange={() => handleCheckboxChange(item, amenities, setAmenities)}
-                className="form-checkbox"
-              />
-              <span>{item}</span>
-            </label>
+             <CheckboxItem
+              key={item}
+              id={`amenity-${item}`}
+              label={item}
+              checked={amenities.includes(item)}
+              onChange={() => handleCheckboxChange(item, amenities, setAmenities)}
+            />
           ))}
         </div>
-      </div>
+      </FilterSection>
 
-
-
-      {/* Fun Things To Do */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-2">Fun Things to Do</label>
-        <div className="space-y-2 max-h-40 overflow-y-auto">
+      <FilterSection title="Fun Things to Do">
+         <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
           {categoryOptions.funThingsToDo.map((item) => (
-            <label key={item} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={funThingsToDo.includes(item)}
-                onChange={() => handleCheckboxChange(item, funThingsToDo, setFunThingsToDo)}
-                className="form-checkbox"
-              />
-              <span>{item}</span>
-            </label>
+             <CheckboxItem
+              key={item}
+              id={`fun-${item}`}
+              label={item}
+              checked={funThingsToDo.includes(item)}
+              onChange={() => handleCheckboxChange(item, funThingsToDo, setFunThingsToDo)}
+            />
           ))}
         </div>
-      </div>
+      </FilterSection>
 
-      {/* Meals */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-2">Meals</label>
-        <div className="space-y-2 max-h-40 overflow-y-auto">
+      <FilterSection title="Meals">
+         <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
           {categoryOptions.meals.map((item) => (
-            <label key={item} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={meals.includes(item)}
-                onChange={() => handleCheckboxChange(item, meals, setMeals)}
-                className="form-checkbox"
-              />
-              <span>{item}</span>
-            </label>
+             <CheckboxItem
+              key={item}
+              id={`meal-${item}`}
+              label={item}
+              checked={meals.includes(item)}
+              onChange={() => handleCheckboxChange(item, meals, setMeals)}
+            />
           ))}
         </div>
-      </div>
+      </FilterSection>
 
-      {/* Facilities */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-2">Facilities</label>
-        <div className="space-y-2 max-h-40 overflow-y-auto">
-        {categoryOptions.facilities.map((item) => (
-                <label key={item} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={facilities.includes(item)}
-                    onChange={() => handleCheckboxChange(item, facilities, setFacilities)}
-                    className="form-checkbox"
-                  />
-                  <span>{item}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+      <FilterSection title="Facilities">
+         <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
+          {categoryOptions.facilities.map((item) => (
+            <CheckboxItem
+              key={item}
+              id={`facility-${item}`}
+              label={item}
+              checked={facilities.includes(item)}
+              onChange={() => handleCheckboxChange(item, facilities, setFacilities)}
+            />
+          ))}
+        </div>
+      </FilterSection>
 
-      {/* Reservation Policy */}
-      <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Reservation Policy</label>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {categoryOptions.reservationPolicy.map((item) => (
-                <label key={item} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={reservationPolicy.includes(item)}
-                    onChange={() => handleCheckboxChange(item, reservationPolicy, setReservationPolicy)}
-                    className="form-checkbox"
-                  />
-                  <span>{item}</span>
-                </label>
-              ))}
-            </div>
-      </div>
+      <FilterSection title="Reservation Policy">
+        <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
+          {categoryOptions.reservationPolicy.map((item) => (
+            <CheckboxItem
+              key={item}
+              id={`policy-${item}`}
+              label={item}
+              checked={reservationPolicy.includes(item)}
+              onChange={() => handleCheckboxChange(item, reservationPolicy, setReservationPolicy)}
+            />
+          ))}
+        </div>
+      </FilterSection>
 
-      {/* Brands */}
-      <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Brands</label>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {categoryOptions.brands.map((item) => (
-                <label key={item} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={brands.includes(item)}
-                    onChange={() => handleCheckboxChange(item, brands, setBrands)}
-                    className="form-checkbox"
-                  />
-                  <span>{item}</span>
-                </label>
-              ))}
-            </div>
-      </div>
-
-      {/* Clear All Filters Button */}
-      <button
-            onClick={clearAllFilters}
-            className="bg-gray-200 text-gray-800 py-2 px-4 rounded-md w-full hover:bg-gray-300 transition-all mb-2"
-          >
-            Clear All Filters
-      </button>
+      <FilterSection title="Brands">
+         <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
+          {categoryOptions.brands.map((item) => (
+            <CheckboxItem
+              key={item}
+              id={`brand-${item}`}
+              label={item}
+              checked={brands.includes(item)}
+              onChange={() => handleCheckboxChange(item, brands, setBrands)}
+            />
+          ))}
+        </div>
+      </FilterSection>
     </div>
   );
 }

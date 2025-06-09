@@ -73,6 +73,7 @@ const RazorpayPaymentButton: React.FC<RazorpayPaymentButtonProps> = ({
 }) => {
     const [isProcessing, setIsProcessing] = useState(false);
 
+    console.log("bookingPayload: ",bookingPayload);
     useEffect(() => {
         // Optionally pre-load script, or load on demand in handlePayment
         // loadRazorpayScript("https://checkout.razorpay.com/v1/checkout.js");

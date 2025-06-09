@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MapPin, Calendar, Bookmark, Heart, X, BedDouble, Sparkles, Plane, Train, Car as CarIcon } from 'lucide-react'; // Renamed Car to CarIcon to avoid conflict
+import { MapPin, Calendar, Bookmark, Heart, X, BedDouble, Sparkles, Plane, Train, Car as CarIcon } from 'lucide-react'; // Renamed Car to CarIcon
 import { Property } from '@/lib/mongodb/models/Property'; 
 import { Trip } from '@/lib/mongodb/models/Trip';
 import { Travelling } from '@/lib/mongodb/models/Travelling'; 
@@ -38,22 +38,36 @@ const formatReviewCount = (reviews?: Array<{ comment: string; rating: number }>)
   return `${count} review${count === 1 ? '' : 's'}`;
 };
 
+// Define Sort Tabs Configuration
+const sortTabsConfig: Array<{ key: string; label: string; sortByValue: string; sortOrderValue: string; forCategories?: string[] }> = [
+  { key: 'recommended_desc', label: 'Our Top Picks', sortByValue: 'recommended', sortOrderValue: 'desc' },
+  { key: 'price_asc', label: 'Price (lowest first)', sortByValue: 'price', sortOrderValue: 'asc' },
+  { key: 'rating_desc', label: 'Rating (highest first)', sortByValue: 'rating', sortOrderValue: 'desc', forCategories: ['property', 'trip'] },
+  // Example: To add "Newest"
+  // { key: 'createdAt_desc', label: 'Newest', sortByValue: 'createdAt', sortOrderValue: 'desc' },
+  // Example: To add "Most Reviews" (ensure backend supports sorting by 'reviewCount')
+  // { key: 'reviewCount_desc', label: 'Most Reviewed', sortByValue: 'reviewCount', sortOrderValue: 'desc', forCategories: ['property', 'trip'] },
+];
+
 
 export default function SearchResults() {
   const router = useRouter();
   const currentSearchParams = useSearchParams();
   const [results, setResults] = useState<Array<Property | Trip | Travelling>>([]);
-  const [isLoading, setIsLoading] = useState(true); // Start with loading true
+  const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
   const [category, setCategory] = useState<string>('property');
   const [filterChips, setFilterChips] = useState<Array<{key: string, value: string}>>([]);
+  const [activeSortKey, setActiveSortKey] = useState<string>('recommended_desc');
 
   useEffect(() => {
     const params: { [key: string]: string } = {};
     currentSearchParams?.forEach((value, key) => {
       params[key] = value;
     });
+
     setCurrentPage(parseInt(params.page || '1'));
     const currentCategory = params.category || 'property';
     setCategory(currentCategory);
@@ -65,6 +79,18 @@ export default function SearchResults() {
       }
     });
     setFilterChips(chips);
+
+    const currentSortBy = params.sortBy;
+    const currentSortOrder = params.sortOrder;
+    if (currentSortBy) {
+      setActiveSortKey(`${currentSortBy}_${currentSortOrder || 'desc'}`);
+    } else {
+      // If sortBy is not in URL, check if any sortTab matches the default 'recommended_desc'
+      // This ensures 'recommended_desc' is active if no sort params are present
+      const defaultSortTab = sortTabsConfig.find(tab => tab.sortByValue === 'recommended');
+      setActiveSortKey(defaultSortTab ? defaultSortTab.key : 'recommended_desc');
+    }
+
   }, [currentSearchParams]);
 
   useEffect(() => {
@@ -72,10 +98,22 @@ export default function SearchResults() {
       setIsLoading(true);
       const params = new URLSearchParams(currentSearchParams?.toString() || '');
       if (!params.has('category')) {
-        params.set('category', 'property'); // Default category if not present
+        params.set('category', category); // Use state category if not in URL
       }
       if (!params.has('page')) {
-        params.set('page', '1'); // Default page if not present
+        params.set('page', currentPage.toString()); // Use state page if not in URL
+      }
+      
+      // Ensure sortBy and sortOrder from activeSortKey are in params if not already
+      const activeSortOption = sortTabsConfig.find(tab => tab.key === activeSortKey);
+      if (activeSortOption) {
+        if(!params.has('sortBy') && activeSortOption.sortByValue !== 'recommended') { // Don't add 'recommended' if it implies no sort
+            params.set('sortBy', activeSortOption.sortByValue);
+            params.set('sortOrder', activeSortOption.sortOrderValue);
+        } else if (params.get('sortBy') !== activeSortOption.sortByValue || params.get('sortOrder') !== activeSortOption.sortOrderValue) {
+            // If URL params differ from activeSortKey, prioritize URL for fetch, but UI reflects activeSortKey
+            // This situation should resolve as activeSortKey is updated from URL in the other useEffect
+        }
       }
       
       try {
@@ -85,20 +123,23 @@ export default function SearchResults() {
         }
         const data = await response.json();
         setResults(data.results || []); 
-        setTotalPages(Math.ceil((data.total || 0) / (data.limit || 10))); // Use limit from response or default
+        console.log('Search results:', data.results);
+        setTotalResults(data.total || 0);
+        setTotalPages(Math.ceil((data.total || 0) / (data.limit || 10)));
       } catch (error) {
         console.error('Error fetching search results:', error);
-        setResults([]); 
+        setResults([]);
+        setTotalResults(0);
         setTotalPages(0);
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (currentSearchParams) { 
+    // if (currentSearchParams) { // This condition might delay initial load if currentSearchParams is initially null
         loadData();
-    }
-  }, [currentSearchParams]);
+    // }
+  }, [currentSearchParams, category, currentPage, activeSortKey]); // Added category, currentPage, activeSortKey to ensure data reloads if they change programmatically
 
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages || page === currentPage) return;
@@ -107,12 +148,34 @@ export default function SearchResults() {
     params.set('page', page.toString());
     router.push(`/customer/search?${params.toString()}`, { scroll: false });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    // setCurrentPage(page); // Handled by useEffect reacting to currentSearchParams
   };
 
   const handleRemoveFilter = (chipKey: string) => {
     const params = new URLSearchParams(currentSearchParams?.toString() || '');
     params.delete(chipKey);
     params.set('page', '1'); 
+    router.push(`/customer/search?${params.toString()}`, { scroll: false });
+  };
+
+  const handleSortChange = (newSortKey: string) => {
+    const selectedTab = sortTabsConfig.find(tab => tab.key === newSortKey);
+    if (!selectedTab) return;
+  
+    // setActiveSortKey(newSortKey); // This will be updated by useEffect from URL change
+  
+    const params = new URLSearchParams(currentSearchParams?.toString() || '');
+    if (selectedTab.sortByValue === 'recommended') {
+        // For 'recommended', some backends prefer no sortBy/sortOrder, or specific values
+        // Assuming 'recommended' means removing explicit sort or using specific 'recommended' sortBy
+        params.delete('sortBy'); // Or params.set('sortBy', 'recommended')
+        params.delete('sortOrder');
+    } else {
+        params.set('sortBy', selectedTab.sortByValue);
+        params.set('sortOrder', selectedTab.sortOrderValue);
+    }
+    params.set('page', '1'); // Reset to first page on sort change
+  
     router.push(`/customer/search?${params.toString()}`, { scroll: false });
   };
 
@@ -135,7 +198,6 @@ export default function SearchResults() {
         case 'propertyRating': return `Rating: ${value}+ Stars`;
         default:
           const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-          // For array values, show them nicely or indicate multiple selections
           if (value.includes(',')) {
             const values = value.split(',');
             if (values.length > 2) return `${formattedKey}: ${values.slice(0, 2).join(', ')} +${values.length - 2} more`;
@@ -155,7 +217,6 @@ export default function SearchResults() {
       key={property._id?.toString()} 
       className="flex flex-col sm:flex-row border border-gray-300 rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 bg-white group"
     >
-      {/* Image Section */}
       <div className="w-full sm:w-1/3 md:w-[250px] lg:w-[280px] h-48 sm:h-auto relative cursor-pointer" onClick={() => router.push(`/customer/property/${property._id}`)}>
         {property.bannerImage?.url ? (
           <Image 
@@ -163,7 +224,7 @@ export default function SearchResults() {
             alt={property.title || "Property image"}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 768px) 33vw, 280px"
-            className="object-cover" // Use className instead of style
+            className="object-cover"
           />
         ) : (
           <div className="w-full h-full bg-gray-200 flex items-center justify-center">
@@ -175,14 +236,13 @@ export default function SearchResults() {
         </button>
       </div>
       
-      {/* Content Section */}
       <div className="w-full sm:w-2/3 md:flex-grow p-3 sm:p-4 flex flex-col">
         <Link href={`/customer/property/${property._id}`} className="block mb-0.5 sm:mb-1">
           <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-blue-700 hover:text-blue-800 transition-colors line-clamp-2">{property.title || "Untitled Property"}</h3>
         </Link>
 
         <div className="flex items-center text-xs text-blue-600 hover:underline mb-1 sm:mb-2 cursor-pointer" onClick={() => router.push(`/customer/property/${property._id}#location`)}>
-          <MapPin size={12} className="mr-1 sm:mr-2 sm:w-8 sm:h-8" />
+          <MapPin size={12} className="mr-1 sm:mr-1.5" /> {/* Adjusted icon size/margin */}
           <span>{property.location?.city}, {property.location?.country}</span>
         </div>
 
@@ -196,16 +256,15 @@ export default function SearchResults() {
         </p>
 
         {property.amenities && property.amenities.length > 0 && (
-          <div className="mb-2 sm:mb-3 hidden sm:block"> {/* Hide on extra small for brevity */}
+          <div className="mb-2 sm:mb-3 hidden sm:block">
             <span className="text-xs sm:text-sm font-semibold text-green-700">
-              {property.amenities.slice(0, 3).join(' • ')} {/* Show fewer amenities on card */}
+              {property.amenities.slice(0, 3).join(' • ')}
               {property.amenities.length > 3 ? ' • ...' : ''}
             </span>
           </div>
         )}
       </div>
 
-      {/* Pricing & CTA Section (Right side on larger screens, bottom on smaller) */}
       <div className='w-full sm:w-auto md:w-[200px] lg:w-[220px] p-3 sm:p-4 flex flex-col justify-between items-center sm:items-end border-t sm:border-t-0 sm:border-l border-gray-200'>
         <div>
           {property.propertyRating !== undefined && property.propertyRating !== null && (
@@ -251,14 +310,13 @@ export default function SearchResults() {
   const renderTripCard = (trip: Trip) => {
     const ratingDesc = getRatingDescription(trip.rating);
     const reviewText = formatReviewCount(trip.review);
-    const placeholderImage = '/placeholder-trip.jpg'; // Ensure this image exists in public
+    const placeholderImage = '/placeholder-trip.jpg';
 
     return (
       <div 
         key={trip._id?.toString()} 
         className="flex flex-col sm:flex-row border border-gray-300 rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 bg-white group"
       >
-        {/* Image Section */}
         <div className="w-full sm:w-1/3 md:w-[250px] lg:w-[280px] h-48 sm:h-auto relative cursor-pointer" onClick={() => router.push(`/customer/trip/${trip._id}`)}>
           <Image 
             src={trip.bannerImage?.url || placeholderImage} 
@@ -273,7 +331,6 @@ export default function SearchResults() {
           </button>
         </div>
 
-        {/* Content Section */}
         <div className="w-full sm:w-2/3 md:flex-grow p-3 sm:p-4 flex flex-col">
             <div className="flex flex-col sm:flex-row justify-between sm:items-start mb-1">
                 <Link href={`/customer/trip/${trip._id}`} className="block">
@@ -293,18 +350,18 @@ export default function SearchResults() {
             </div>
 
           <div className="flex items-center text-xs text-blue-600 hover:underline mb-1 sm:mb-2 cursor-pointer" onClick={() => router.push(`/customer/trip/${trip._id}`)}>
-            <MapPin size={12} className="mr-1 sm:mr-2 sm:w-14 sm:h-14" />
+            <MapPin size={12} className="mr-1 sm:mr-1.5" />
             <span>{trip.destination?.city}, {trip.destination?.country}</span>
           </div>
           
           <div className="flex items-center text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">
-            <Calendar size={14} className="mr-1 sm:mr-2 text-gray-500" />
+            <Calendar size={14} className="mr-1 sm:mr-1.5 text-gray-500" />
             <span>{new Date(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(trip.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
           </div>
 
           {trip.activities && trip.activities.length > 0 && (
             <div className="flex items-center text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
-              <Sparkles size={14} className="mr-1 sm:mr-2 text-yellow-500" />
+              <Sparkles size={14} className="mr-1 sm:mr-1.5 text-yellow-500" />
               <span>{trip.activities.length} Activit{trip.activities.length === 1 ? 'y' : 'ies'} included</span>
             </div>
           )}
@@ -313,8 +370,7 @@ export default function SearchResults() {
             {trip.description || "Discover amazing places and experiences on this trip."}
           </p>
 
-          {/* Price and CTA Section */}
-          <div className="mt-auto pt-1 sm:pt-2 text-center sm:text-right"> {/* Centered on mobile, right on sm+ */}
+          <div className="mt-auto pt-1 sm:pt-2 text-center sm:text-right">
             {trip.costing && (
               <div className="mb-1 sm:mb-0">
                 {trip.costing.price > trip.costing.discountedPrice && (
@@ -341,14 +397,14 @@ export default function SearchResults() {
   };
   
   const renderTravellingCard = (itinerary: Travelling) => {
-    const placeholderImage = '/placeholder-itinerary.jpg'; // Ensure this image exists
-    const getTransportationIcon = (type?: TransportationType) => {
-      const iconSize = "14 sm:16";
-      const iconClasses = "mr-1 sm:mr-2";
+    const placeholderImage = '/placeholder-itinerary.jpg';
+    const getTransportationIcon = (type?: TransportationType | string) => { // Allow string for flexibility if enum isn't strictly used in data
+      const iconSize = 14; // Use number for size prop
+      const iconClasses = "mr-1 sm:mr-1.5";
       switch (type) {
         case TransportationType.flight: return <Plane size={iconSize} className={`${iconClasses} text-blue-500`} />;
         case TransportationType.train: return <Train size={iconSize} className={`${iconClasses} text-green-500`} />;
-        case TransportationType.bus: return <CarIcon size={iconSize} className={`${iconClasses} text-orange-500`} />;
+        case TransportationType.bus: return <CarIcon size={iconSize} className={`${iconClasses} text-orange-500`} />; // Assuming bus icon is CarIcon for now
         case TransportationType.car: return <CarIcon size={iconSize} className={`${iconClasses} text-red-500`} />;
         default: return <MapPin size={iconSize} className={`${iconClasses} text-gray-500`} />;
       }
@@ -359,7 +415,6 @@ export default function SearchResults() {
         key={itinerary._id?.toString()}
         className="flex flex-col sm:flex-row border border-gray-300 rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 bg-white group"
       >
-        {/* Image Section */}
         <div className="w-full sm:w-1/3 md:w-[250px] lg:w-[280px] h-48 sm:h-auto relative cursor-pointer" onClick={() => router.push(`/customer/travelling/${itinerary._id}`)}>
           <Image 
             src={itinerary.bannerImage?.url || placeholderImage} 
@@ -374,7 +429,6 @@ export default function SearchResults() {
           </button>
         </div>
 
-        {/* Content Section */}
         <div className="w-full sm:w-2/3 md:flex-grow p-3 sm:p-4 flex flex-col">
           <Link href={`/customer/travelling/${itinerary._id}`} className="block mb-1">
             <h3 className="text-lg sm:text-xl font-bold text-blue-700 hover:text-blue-800 transition-colors line-clamp-2">{itinerary.title || "Custom Itinerary"}</h3>
@@ -392,7 +446,7 @@ export default function SearchResults() {
           
           {itinerary.transportation?.departureTime && itinerary.transportation?.arrivalTime && (
             <div className="flex items-center text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
-              <Calendar className="mr-1 sm:mr-2 text-gray-500 w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <Calendar className="mr-1 sm:mr-1.5 text-gray-500 w-3.5 h-3.5" />
               <p>Dep: {new Date(itinerary.transportation.departureTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
               <span className="mx-1">•</span>
               <span>Arr: {new Date(itinerary.transportation.arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -403,7 +457,6 @@ export default function SearchResults() {
             {itinerary.description || "Plan your perfect journey with this itinerary."}
           </p>
           
-          {/* Price and CTA Section */}
           <div className="mt-auto pt-1 sm:pt-2 text-center sm:text-right">
             {itinerary.costing && (
               <div className="mb-1 sm:mb-0">
@@ -430,11 +483,12 @@ export default function SearchResults() {
     );
   };
 
+  const currentCategorySortTabs = sortTabsConfig.filter(tab => 
+    !tab.forCategories || tab.forCategories.includes(category)
+  );
 
   return (
-    // Removed container mx-auto px-4 py-8 from here, assuming parent SearchPage provides it
-    <div  > 
-      {/* Filter Chips Section */}
+    <div> 
       {filterChips.length > 0 && (
         <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
           <h3 className="text-sm sm:text-md font-semibold mb-2 sm:mb-3 text-gray-700">Active Filters:</h3>
@@ -458,23 +512,49 @@ export default function SearchResults() {
               <button 
                 onClick={() => {
                   const params = new URLSearchParams();
-                  if (category) params.set('category', category);
+                  if (category) params.set('category', category); // Preserve category
+                  // Preserve sort if needed, or reset sort
+                  const currentSortOption = sortTabsConfig.find(tab => tab.key === activeSortKey);
+                  if (currentSortOption && currentSortOption.sortByValue !== 'recommended') {
+                    params.set('sortBy', currentSortOption.sortByValue);
+                    params.set('sortOrder', currentSortOption.sortOrderValue);
+                  }
                   router.push(`/customer/search?${params.toString()}`);
                 }}
                 className="text-xs sm:text-sm text-red-600 hover:text-red-800 hover:underline font-medium ml-1 sm:ml-2"
               >
-                Clear all
+                Clear all filters
               </button>
             )}
           </div>
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 sm:mb-6">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-1"> {/* Reduced margin bottom */}
         <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2 sm:mb-0">
-          {isLoading ? 'Searching...' : `${results.length > 0 ? results.length : 'No'} ${category === 'property' ? 'Properties' : category === 'trip' ? 'Trips' : 'Itineraries'} Found`}
+          {isLoading ? 'Searching...' : `${totalResults} match${totalResults !== 1 ? 'es' : ''} found`}
         </h2>
       </div>
+
+      {/* Sorting Tabs Section */}
+      {currentCategorySortTabs.length > 0 && !isLoading && results.length > 0 && (
+        <div className="flex flex-wrap gap-x-1.5 gap-y-2 sm:gap-x-2 items-center border-b border-gray-200 pt-2 pb-3 mb-4 sm:mb-6">
+          <span className="text-sm font-semibold text-gray-700 mr-1 sm:mr-2 hidden sm:inline">Sort by:</span>
+          {currentCategorySortTabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => handleSortChange(tab.key)}
+              className={`px-3 py-1.5 text-xs sm:text-sm rounded-full font-medium transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 whitespace-nowrap
+                ${activeSortKey === tab.key
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-white text-blue-700 hover:bg-blue-50 border border-blue-300 hover:border-blue-500'
+                }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
       
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 sm:gap-6">
@@ -529,9 +609,9 @@ export default function SearchResults() {
             
             {[...Array(totalPages)].map((_, index) => {
               const pageNumber = index + 1;
-              const showPage = pageNumber === 1 || pageNumber === totalPages || (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1);
-              const showEllipsisStart = pageNumber === currentPage - 2 && currentPage > 3 && totalPages > 5;
-              const showEllipsisEnd = pageNumber === currentPage + 2 && currentPage < totalPages - 2 && totalPages > 5;
+              const showPage = pageNumber === 1 || pageNumber === totalPages || (pageNumber >= currentPage - 2 && pageNumber <= currentPage + 2); // Show more pages around current
+              const showEllipsisStart = pageNumber === currentPage - 3 && currentPage > 4 && totalPages > 7; // Adjusted ellipsis logic
+              const showEllipsisEnd = pageNumber === currentPage + 3 && currentPage < totalPages - 3 && totalPages > 7; // Adjusted ellipsis logic
 
               if (showPage) {
                 return (

@@ -33,7 +33,7 @@ export function Footer() {
         <div className="container mx-auto grid md:grid-cols-4 gap-8 px-4">
           
           <div>
-            <h2 className="text-2xl font-bold text-blue-600 mb-4">TravelNow</h2>
+            <h2 className="text-2xl font-bold text-blue-600 mb-4">Room Papa</h2>
             <p className="text-gray-600">
               Your trusted partner in creating unforgettable travel experiences.
             </p>
@@ -77,7 +77,7 @@ export function Footer() {
   
         <div className="border-t mt-8 py-4 text-center">
           <p className="text-gray-600">
-            © {currentYear} TravelNow. All rights reserved.
+            © {currentYear} Room Papa. All rights reserved.
           </p>
         </div>
       </footer>

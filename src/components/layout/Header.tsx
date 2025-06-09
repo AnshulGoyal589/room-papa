@@ -193,8 +193,8 @@ export function Header() {
           <Image
             src="/assets/logo.jpg" // Replace with your logo path
             alt="Logo"
-            width={140} // Slightly adjusted size for potentially tighter space
-            height={140}
+            width={120} // Slightly adjusted size for potentially tighter space
+            height={120}
             className="inline-block mr-2"
           />
         </Link>
@@ -210,6 +210,15 @@ export function Header() {
               <Home className="w-5 h-5" />
               <span>Home</span>
             </Link>
+            <SignedIn>
+              <Link 
+                href="/customer/bookings"
+                className="flex items-center space-x-2 hover:text-gray-300 transition"
+              >
+                <Home className="w-5 h-5" />
+                <span>My Bookings</span>
+              </Link>
+            </SignedIn>
             <Link 
               href="/customer/search?category=trip" 
               className="flex items-center space-x-2 hover:text-gray-300 transition"

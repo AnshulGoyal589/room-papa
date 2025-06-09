@@ -144,9 +144,9 @@ export default function SearchHeader() {
 
   return (
     <div className="bg-[#003b95] text-white">
-      <div className="container mx-auto px-4 pb-4 md:pb-8 lg:pb-12 w-full lg:w-[70vw]">
+      <div className="container mx-auto px-4 pb-4 md:pb-8 lg:pb-0  w-full lg:w-[70vw]">
         {/* Navigation Tabs */}
-        <div className="flex overflow-x-auto no-scrollbar mb-6 pb-2">
+        <div className="flex overflow-x-auto no-scrollbar mb-6 lg:mb-0 pb-2 lg:pb-0">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -169,14 +169,14 @@ export default function SearchHeader() {
         {/* Heading */}
         {
           showHeading && 
-          <div className="my-12 flex flex-col gap-4">
+          <div className="mt-12 mb-12 lg:mb-4 flex flex-col gap-4">
             <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold">{title}</h1>
             <p className="text-base md:text-xl">{subtitle}</p>
           </div>
         }
 
         {/* Search Form */}
-        <div className="relative z-10">
+        <div className="relative z-10 lg:top-8">
           {renderSearchForm()}
         </div>
       </div>

@@ -21,7 +21,10 @@ interface BaseBookingCoreDetails {
   checkIn: string;        // Start date/time of the booking (ISO format)
   checkOut: string;       // End date/time of the booking (ISO format)
   currency: string;       // Currency used for pricing
-  totalPrice: number;     // The final calculated total price for the entire booking
+  totalPrice: number;   
+  payment : {
+    provider: string; // Payment provider (e.g., 'razorpay')
+  }  // The final calculated total price for the entire booking
 }
 
 // Details about the primary guest making the booking
@@ -30,6 +33,12 @@ interface BaseGuestDetails {
   lastName: string;
   email: string;
   phone: string;
+  arrivalTime?: string; // Optional: Time of arrival, if applicable
+  travelingFor?: string; // Optional: Reason for travel, if applicable
+  addOns?: {
+    wantsAirportShuttle : boolean; // Optional: Whether the guest wants an airport shuttle
+    wantsCarRental: boolean; // Optional: Whether the guest wants a car rental
+  }; // Optional: Any additional services or add-ons selected
   // passengers removed, use adults/children in specific booking types
   specialRequests?: string; // Changed to optional based on frontend form
 }
@@ -181,6 +190,7 @@ export interface PropertyBookingInputData {
         // 'passengers' is not needed here if adults/children are provided
     };
     recipients: string[];      // Email recipients
+    userId : string;
 }
 
 // Define input types for other bookings if needed (keeping them simple here)

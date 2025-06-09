@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    console.log("hurrah check pint 1");
+    // console.log("hurrah check pint 1");
     const body = await request.json() as RequestBody;
     const { clerkId, role, email } = body;
     // console.log(clerkId , role , email);

@@ -62,13 +62,13 @@ const getPrice = (
 
 
 // --- Define Tax and Fee Constants ---
-const SERVICE_FEE_FIXED = 10; 
-const TAX_RATE_PERCENTAGE = 0.05; 
+// const SERVICE_FEE_FIXED = 10; 
+// const TAX_RATE_PERCENTAGE = 0.05; 
 
-// --- localStorage Key ---
-const LOCAL_STORAGE_KEY = 'propertyBookingPreferences_v3'; // Incremented version
-const MAX_COMBINED_ROOMS = 5; 
-const MAX_OCCUPANTS_PER_ROOM = 3; // Default if not specified by category
+// // --- localStorage Key ---
+// const LOCAL_STORAGE_KEY = 'propertyBookingPreferences_v3'; // Incremented version
+// const MAX_COMBINED_ROOMS = 5; 
+// const MAX_OCCUPANTS_PER_ROOM = 3; // Default if not specified by category
 
 // Helper to generate unique IDs if needed
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -89,6 +89,13 @@ const initialPricingState: RoomCategoryPricing = {
 
 
 export default function PropertyDetailPage() {
+    const LOCAL_STORAGE_KEY = 'propertyBookingPreferences_v3';
+    const RESERVATION_DATA_KEY = 'reservationData_v1';
+    const MAX_COMBINED_ROOMS = 5;
+    const MAX_OCCUPANTS_PER_ROOM = 3;
+    const SERVICE_FEE_FIXED = 10;
+    const TAX_RATE_PERCENTAGE = 0.05;
+
     const { openSignIn } = useClerk();
     const router = useRouter();
     const params = useParams();
@@ -439,8 +446,8 @@ export default function PropertyDetailPage() {
                         const priceInfo = calculateOfferPrice(oc.intendedAdults);
                          if (priceInfo.price > 0) {
                             offers.push({
-                                offerId: `${cat.id}_${oc.offerKeySuffix}`,
-                                categoryId: cat.id,
+                                offerId: `${cat._id || cat.id}_${oc.offerKeySuffix}`,
+                                categoryId: cat._id?.toString() || cat.id,
                                 categoryTitle: cat.title,
                                 bedConfiguration: cat.bedConfiguration,
                                 size: cat.size,
@@ -592,7 +599,6 @@ export default function PropertyDetailPage() {
                 }
             }
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         selectedOffers, 
         property, // Includes property.categoryRooms, property.costing.currency etc.
@@ -744,13 +750,12 @@ export default function PropertyDetailPage() {
          setAvailabilityError(null); 
     };
 
-    const handleBookNowOrReserveClick = () => { 
-        if (!isLoaded) return; 
+    const handleBookNowOrReserveClick = () => {
+        if (!isLoaded || !property) return;
         let localError: string | null = null;
-        setModalBookingError(null);
 
         if (!isSignedIn) {
-            openSignIn({redirectUrl: window.location.href}); 
+            openSignIn({ redirectUrl: window.location.href });
             return;
         }
 
@@ -758,33 +763,71 @@ export default function PropertyDetailPage() {
         else if (days <= 0) { localError = "Check-out date must be after check-in date."; }
         else if (totalSelectedPhysicalRooms <= 0) { localError = "Please select at least one room offer."; }
         else if (totalSelectedPhysicalRooms > MAX_COMBINED_ROOMS) { localError = `Cannot book more than ${MAX_COMBINED_ROOMS} rooms.`; }
-        
+
         const { available, message: availabilityMsg } = checkAvailabilityForSelection(checkInDate, checkOutDate, selectedOffers, property?.categoryRooms);
         if (!available) {
             setAvailabilityError(availabilityMsg);
-            return; 
+            return;
         } else {
             setAvailabilityError(null);
         }
 
-        if (bookingError) { 
+        if (bookingError) {
+            // This catches capacity errors etc.
             return;
         }
-        
+
         if (totalBookingPricing <= 0 && totalSelectedPhysicalRooms > 0 && days > 0) {
-           localError = "Calculated price is zero. Please check room rates or contact support.";
+            localError = "Calculated price is zero. Please check room rates or contact support.";
         }
 
-        if(localError) {
-            setBookingError(localError); 
+        if (localError) {
+            setBookingError(localError);
             return;
         }
-        setBookingError(null); 
+        setBookingError(null);
 
-        // globalGuestCount uses the adultCount state, which is updated by pricing useEffect
-        setBookingData(prev => ({ ...prev, passengers: globalGuestCount, rooms: totalSelectedPhysicalRooms }));
-        setShowBookingModal(true);
+        // --- Prepare data for reservation page ---
+        const reservationData = {
+            propertyId: property._id,
+            propertyTitle: property.title,
+            propertyImage: activeImage || property.bannerImage?.url,
+            propertyLocation: {
+                address: property.location.address,
+                city: property.location.city,
+                country: property.location.country,
+            },
+            propertyRating: property.totalRating,
+            checkInDate: checkInDate?.toISOString(),
+            checkOutDate: checkOutDate?.toISOString(),
+            days,
+            adultCount,
+            childCount,
+            globalGuestCount,
+            totalSelectedPhysicalRooms,
+            selectedOffers,
+            selectedMealPlan,
+            displayableRoomOffers, // Pass this to easily reconstruct summary
+            pricingDetails: {
+                subtotalNights,
+                serviceCharge,
+                taxesApplied,
+                totalBookingPricing,
+                currency: property.costing?.currency || 'USD',
+                totalBookingPricePerNight
+            },
+            // Pass necessary details for the final booking payload
+            ownerId: property.userId,
+            propertyType: property.type,
+        };
+
+        // Save to localStorage and navigate
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(RESERVATION_DATA_KEY, JSON.stringify(reservationData));
+            router.push(`/customer/book/${property._id}`);
+        }
     };
+
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -894,8 +937,7 @@ export default function PropertyDetailPage() {
     };
 
     if (loading) return <div className="flex justify-center items-center min-h-screen"><div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div></div>;
-    if (error || !property) return <div className="container mx-auto px-4 py-16 text-center"><h2 className="text-2xl font-bold text-red-600 mb-4">{error || 'Property details could not be loaded.'}</h2>{error && <p className="text-gray-600 mb-4">Please check the URL or try refreshing the page.</p>}<button onClick={() => router.push('/properties')} className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">View Other Properties</button></div>;
-
+    if (error || !property) return <div className="container mx-auto px-4 py-16 text-center"><h2 className="text-2xl font-bold text-red-600 mb-4">{error || 'Property details could not be loaded.'}</h2><p className="text-gray-600 mb-4">Please check the URL or try refreshing the page.</p><button onClick={() => router.push('/properties')} className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">View Other Properties</button></div>;
 
     return (
         <div className="bg-gray-100">
@@ -1167,22 +1209,22 @@ export default function PropertyDetailPage() {
                             </tbody>
                         </table>
                     </div>
-                     {displayableRoomOffers.length > 0 && days > 0 && totalSelectedPhysicalRooms > 0 && (
+                    {displayableRoomOffers.length > 0 && days > 0 && totalSelectedPhysicalRooms > 0 && (
                         <div className="p-4 border-t border-gray-200">
                             <div className="mb-2 text-left">
                                 {totalBookingPricing > 0 && !bookingError ? (
-                                     <p className="text-sm text-gray-700">
+                                    <p className="text-sm text-gray-700">
                                         Selected: <span className="font-semibold">{totalSelectedPhysicalRooms} room{totalSelectedPhysicalRooms !== 1 && 's'}</span> for <span className="font-semibold">{globalGuestCount} guest{globalGuestCount !== 1 && 's'}</span> ({adultCount} Ad, {childCount} Ch) for <span className="font-semibold">{days} night{days !== 1 && 's'}.</span>
                                         <br/>Total price: <strong className="text-xl ml-1 text-blue-700">{property.costing.currency} {totalBookingPricing.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                                     </p>
-                                ) : bookingError ? null 
-                                : ( totalSelectedPhysicalRooms > 0 && days > 0 && 
-                                     <p className="text-sm text-red-600">Total price cannot be calculated. Please review selections.</p>
+                                ) : bookingError ? null
+                                : ( totalSelectedPhysicalRooms > 0 && days > 0 &&
+                                    <p className="text-sm text-red-600">Total price cannot be calculated. Please review selections.</p>
                                 )}
                             </div>
                             <div className="text-right">
-                                <button 
-                                    onClick={handleBookNowOrReserveClick}
+                                <button
+                                    onClick={handleBookNowOrReserveClick} // This handler is now modified
                                     disabled={!checkInDate || !checkOutDate || days <= 0 || totalSelectedPhysicalRooms <= 0 || !!availabilityError || totalBookingPricing <=0 || !!bookingError}
                                     className="bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-md hover:bg-blue-700 text-md disabled:bg-gray-400 disabled:cursor-not-allowed"
                                 >
@@ -1306,12 +1348,14 @@ export default function PropertyDetailPage() {
                                         totalPrice: totalBookingPricing,
                                     },
                                     guestDetails: {
+                                        clerkId: user?.id,
                                         firstName: bookingData.firstName,
                                         lastName: bookingData.lastName,
                                         email: bookingData.email,
                                         phone: bookingData.phone,
                                         specialRequests: bookingData.specialRequests,
                                     },
+                                    userId : user?.id,
                                     recipients: [bookingData.email, user?.primaryEmailAddress?.emailAddress, 'your-admin-email@example.com'].filter(Boolean) as string[]
                                 }}
                                 prefill={{
