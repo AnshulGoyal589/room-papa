@@ -1,6 +1,6 @@
 
 // import HeroSection from '@/components/customer/HomePage/HeroSection';
-import PopularDestinations from '@/components/customer/HomePage/PopularDestinations';
+// import PopularDestinations from '@/components/customer/HomePage/PopularDestinations';
 import WhyChooseUs from '@/components/customer/HomePage/WhyChooseUs';
 import QuickTripPlanner from '@/components/customer/HomePage/QuickTripPlanner';
 import UniqueProperties from '@/components/customer/HomePage/UniqueProperties';
@@ -16,10 +16,10 @@ export default async function InitialRender() {
   return (
       <div className='max-w-7xl mx-auto' >
         <BookingOffers/>
-        <PropertyTypes />
-        <ExploreIndia /> 
         <QuickTripPlanner />
-        <PopularDestinations />
+        <ExploreIndia /> 
+        <PropertyTypes />
+        {/* <PopularDestinations /> */}
         <UniqueProperties />
         <WhyChooseUs />
       </div>
