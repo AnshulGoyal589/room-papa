@@ -357,7 +357,7 @@ export default function TravellingDetailPage() {
         recipients: [bookingData.email, 'anshulgoyal589@gmail.com']
       };
       
-      console.log("Travelling Booking Payload:", JSON.stringify(bookingPayload, null, 2));
+      // console.log("Travelling Booking Payload:", JSON.stringify(bookingPayload, null, 2));
 
       const response = await fetch('/api/bookings', {
         method: 'POST',

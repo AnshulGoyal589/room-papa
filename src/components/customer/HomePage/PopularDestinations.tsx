@@ -27,7 +27,7 @@ export default function PopularDestinations() {
     const fetchDestinations = async () => {
       try {
         const response = await fetch('/api/trips');
-        console.log(response);
+        // console.log(response);
         if (!response.ok) {
           throw new Error('Failed to fetch destinations');
         }

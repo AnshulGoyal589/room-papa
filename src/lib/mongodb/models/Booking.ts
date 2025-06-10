@@ -10,6 +10,7 @@ export interface BaseDetails {
   title: string;        // Title of the item
   locationFrom: string; // Starting point (can be 'NA' for properties)
   locationTo: string;   // Destination or Property address
+  reservationPolicy?: string[]; // Reservation policy (e.g., 'flexible', 'strict')
   // ownerId removed from here, will be added to specific booking types if needed
   type: string;         // Sub-type (e.g., 'Hotel', 'Villa', 'Flight', 'Train', 'Package')
 }
@@ -163,6 +164,7 @@ export interface PropertyBookingInputData {
         locationFrom: string;  // Should be 'NA' or similar from frontend
         locationTo: string;    // Property Address
         type: PropertyType;    // e.g., 'Hotel', 'Villa'
+        reservationPolicy: string[]; // Added reservation policy
     };
     bookingDetails: {          // Matches frontend 'bookingDetails' object
         checkIn: string;       // ISO Date string

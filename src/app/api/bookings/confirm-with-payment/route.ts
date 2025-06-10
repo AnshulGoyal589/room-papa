@@ -75,6 +75,7 @@ export async function POST(request: Request) {
                 locationTo: bookingPayload.details.locationTo,
                 type: bookingPayload.details.type, // e.g., 'Hotel', 'Apartment'
                 ownerId: bookingPayload.details.ownerId,
+                reservationPolicy : bookingPayload.details.reservationPolicy, // e.g., 'flexible', 'strict'
             },
             bookingDetails: {
                 ...bookingPayload.bookingDetails,

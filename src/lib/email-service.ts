@@ -105,7 +105,7 @@ export async function sendBookingConfirmationEmail(booking: BookingDetails) {
       html: emailHtml,
     });
     
-    console.log('Booking confirmation email sent successfully');
+    // console.log('Booking confirmation email sent successfully');
     return true;
   } catch (error) {
     console.error('Error sending booking confirmation email:', error);

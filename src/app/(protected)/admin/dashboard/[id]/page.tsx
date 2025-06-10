@@ -54,7 +54,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
           }
         } catch (fetchError) {
           console.error('Error fetching item:', fetchError);          
-          console.log(`Item not found in ${endpoint.category}`);
+          // console.log(`Item not found in ${endpoint.category}`);
         }
       }
       

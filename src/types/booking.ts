@@ -31,21 +31,7 @@ export interface StoredRoomCategory {
 }
 
 export interface ExtendedProperty extends Omit<Property, 'categoryRooms' | 'costing' | 'rooms' | 'startDate' | 'endDate' | 'createdAt' | 'updatedAt'> {
-    _id: ObjectId; 
-    categoryRooms: StoredRoomCategory[];
-    costing: { 
-        price: number; 
-        discountedPrice: number; 
-        currency: string;
-    };
-    rooms: number; 
-    startDate: string; 
-    endDate: string;   
-    createdAt: Date; 
-    updatedAt: Date; 
-    userId?: string;
-    title?: string;
-    description?: string;
+    _id?: ObjectId; 
     type: PropertyType;
     location: {
         address: string;
@@ -53,16 +39,13 @@ export interface ExtendedProperty extends Omit<Property, 'categoryRooms' | 'cost
         city: string;
         country: string;
     };
-    totalRating?: number;
-    review?: {
-        userId?: string;
-        userName?: string;
-        comment: string;
-        rating: number;
-        createdAt?: Date;
-    }[];
-    bannerImage?: Image;
-    detailImages?: Image[];
+    costing: { 
+        price: number; 
+        discountedPrice: number; 
+        currency: string;
+    };
+    rooms: number; 
+    categoryRooms: StoredRoomCategory[];
     amenities: string[];
     accessibility?: string[];
     roomAccessibility?: string[];
@@ -76,6 +59,24 @@ export interface ExtendedProperty extends Omit<Property, 'categoryRooms' | 'cost
     roomFacilities?: string[];
     propertyRating?: number;
     googleMaps?: string;
+
+    startDate?: string; 
+    endDate?: string;   
+    createdAt?: Date; 
+    updatedAt?: Date; 
+    userId?: string;
+    title?: string;
+    description?: string;
+    totalRating?: number;
+    review?: {
+        userId?: string;
+        userName?: string;
+        comment: string;
+        rating: number;
+        createdAt?: Date;
+    }[];
+    bannerImage?: Image;
+    detailImages?: Image[];
 }
 
 export interface DisplayableRoomOffer {

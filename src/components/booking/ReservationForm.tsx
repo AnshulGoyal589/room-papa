@@ -23,6 +23,7 @@ interface ReservationData {
     propertyRating: number | null;
     checkInDate: string;
     checkOutDate: string;
+    reservationPolicy : string[];
     days: number;
     adultCount: number;
     childCount: number;
@@ -117,6 +118,7 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                 localStorage.removeItem(RESERVATION_DATA_KEY);
                 router.push(`/properties/${propertyId}`); return;
             }
+            // console.log("testing: ", parsedData);
             setReservationDetails(parsedData);
         } catch (error) {
             console.error("Error parsing reservation data:", error);
@@ -331,7 +333,25 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                 <RazorpayPaymentButton
                                     className="bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700 transition-colors text-lg"
                                     amountInSubunits={Math.round(pricingDetails.totalBookingPricing * 100)} currency={pricingDetails.currency} receiptId={`booking_${propertyId}_${Date.now()}`}
-                                    bookingPayload={{ type: "property", details: { id: propertyId, title: propertyTitle, ownerId: reservationDetails.ownerId, locationFrom: "NA", locationTo: `${propertyLocation.address}, ${propertyLocation.city}`, type: reservationDetails.propertyType, }, bookingDetails: { checkIn: checkIn.toISOString(), checkOut: checkOut.toISOString(), adults: reservationDetails.adultCount, children: reservationDetails.childCount, totalGuests: globalGuestCount, totalRoomsSelected: reservationDetails.totalSelectedPhysicalRooms, selectedMealPlan: reservationDetails.selectedMealPlan, roomsDetail: Object.entries(reservationDetails.selectedOffers).filter(([, qty]) => qty > 0).map(([offerId, qty]) => { const offer = reservationDetails.displayableRoomOffers.find(o => o.offerId === offerId); return { categoryId: offer?.categoryId || 'unknown', offerKey: offerId.split('_').slice(1).join('_'), title: offer?.categoryTitle || 'Unknown', qty, estimatedPricePerRoomNight: offer?.pricePerNight || 0, currency: offer?.currency || pricingDetails.currency }; }), calculatedPricePerNight: pricingDetails.totalBookingPricePerNight, currency: pricingDetails.currency, numberOfNights: days, subtotal: pricingDetails.subtotalNights, serviceFee: pricingDetails.serviceCharge, taxes: pricingDetails.taxesApplied, totalPrice: pricingDetails.totalBookingPricing, }, guestDetails: { ...formData, country, countryCode : "+91", clerkId : user?.id , bookingFor, travelingFor, gstDetails: travelingFor === 'work' ? gstDetails : null, addOns: { wantsAirportShuttle, wantsCarRental }, specialRequests: `${specialRequests}${wantsRoomsTogether ? ' (Rooms close together requested)' : ''}`, arrivalTime, roomGuests: guestDetailsPerRoom }, userId : user?.id, recipients: [formData.email, user?.primaryEmailAddress?.emailAddress].filter(Boolean) as string[] }}
+                                    bookingPayload={{ 
+                                        type: "property", 
+                                        details: { 
+                                            id: propertyId, title: propertyTitle, ownerId: reservationDetails.ownerId, locationFrom: "NA", locationTo: `${propertyLocation.address}, ${propertyLocation.city}`, type: reservationDetails.propertyType, reservationPolicy: reservationDetails.reservationPolicy,
+                                        },
+                                        bookingDetails: { 
+                                            checkIn: checkIn.toISOString(), checkOut: checkOut.toISOString(), adults: reservationDetails.adultCount, children: reservationDetails.childCount, totalGuests: globalGuestCount, totalRoomsSelected: reservationDetails.totalSelectedPhysicalRooms, selectedMealPlan: reservationDetails.selectedMealPlan, roomsDetail: Object.entries(reservationDetails.selectedOffers).filter(([, qty]) => qty > 0).map(([offerId, qty]) => { const offer = reservationDetails.displayableRoomOffers.find(o => o.offerId === offerId); return { categoryId: offer?.categoryId || 'unknown', offerKey: offerId.split('_').slice(1).join('_'), title: offer?.categoryTitle || 'Unknown', qty, estimatedPricePerRoomNight: offer?.pricePerNight || 0, currency: offer?.currency || pricingDetails.currency }; 
+                                        }),
+                                        calculatedPricePerNight: pricingDetails.totalBookingPricePerNight, 
+                                        currency: pricingDetails.currency,
+                                        numberOfNights: days,
+                                        subtotal: pricingDetails.subtotalNights,
+                                        serviceFee: pricingDetails.serviceCharge,
+                                        taxes: pricingDetails.taxesApplied,
+                                        totalPrice: pricingDetails.totalBookingPricing, 
+                                    },
+                                    guestDetails: {
+                                        ...formData, country, countryCode : "+91", clerkId : user?.id , bookingFor, travelingFor, gstDetails: travelingFor === 'work' ? gstDetails : null, addOns: { wantsAirportShuttle, wantsCarRental }, specialRequests: `${specialRequests}${wantsRoomsTogether ? ' (Rooms close together requested)' : ''}`, arrivalTime, roomGuests: guestDetailsPerRoom }, userId : user?.id, recipients: [formData.email, user?.primaryEmailAddress?.emailAddress].filter(Boolean) as string[] 
+                                    }}
                                     prefill={{ name: `${formData.firstName} ${formData.lastName}`, email: formData.email, contact: `+91${formData.phone}` }}
                                     notes={{ propertyTitle, checkIn: checkIn.toISOString().split('T')[0], checkOut: checkOut.toISOString().split('T')[0] }}
                                     onPaymentSuccess={() => { setBookingConfirmed(true); localStorage.removeItem(RESERVATION_DATA_KEY); }}

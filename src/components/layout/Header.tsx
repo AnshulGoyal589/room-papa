@@ -78,7 +78,7 @@ export function Header() {
         throw new Error(error.error || 'Failed to save user role');
       }
       
-      console.log("Role saved successfully!");
+      // console.log("Role saved successfully!");
       return true;
     } catch (error) {
       console.error('Error saving user role:', error);
@@ -95,7 +95,7 @@ export function Header() {
     if (isLoaded && isSignedIn && user && pendingRole && !roleSaved) {
       const savePendingRole = async () => {
         // setIsSubmitting(true); // Commented out as in original
-        console.log("User signed in with pending role, saving role:", pendingRole);
+        // console.log("User signed in with pending role, saving role:", pendingRole);
         
         const saved = await saveUserRoleToDatabase(
           user.id,

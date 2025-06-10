@@ -4,10 +4,26 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MapPin, Calendar, Bookmark, Heart, X, BedDouble, Sparkles, Plane, Train, Car as CarIcon } from 'lucide-react'; // Renamed Car to CarIcon
+import { 
+    MapPin, 
+    Calendar, 
+    Bookmark, 
+    Heart, 
+    X, 
+    BedDouble, 
+    Sparkles, 
+    Plane, 
+    Train, 
+    Car as CarIcon, 
+    Star as StarIcon, // Explicitly import StarIcon
+    ThumbsUp,        // For "Very good" rating indicator
+    Check,           // For reservation policies
+    ChevronRight     // For "See availability" button
+} from 'lucide-react';
 import { Property } from '@/lib/mongodb/models/Property'; 
 import { Trip } from '@/lib/mongodb/models/Trip';
 import { Travelling } from '@/lib/mongodb/models/Travelling'; 
+// import { StoredRoomCategory } from '@/types/booking'; // Assuming this type is available
 
 // Define TransportationType as an enum
 export enum TransportationType {
@@ -43,11 +59,25 @@ const sortTabsConfig: Array<{ key: string; label: string; sortByValue: string; s
   { key: 'recommended_desc', label: 'Our Top Picks', sortByValue: 'recommended', sortOrderValue: 'desc' },
   { key: 'price_asc', label: 'Price (lowest first)', sortByValue: 'price', sortOrderValue: 'asc' },
   { key: 'rating_desc', label: 'Rating (highest first)', sortByValue: 'rating', sortOrderValue: 'desc', forCategories: ['property', 'trip'] },
-  // Example: To add "Newest"
-  // { key: 'createdAt_desc', label: 'Newest', sortByValue: 'createdAt', sortOrderValue: 'desc' },
-  // Example: To add "Most Reviews" (ensure backend supports sorting by 'reviewCount')
-  // { key: 'reviewCount_desc', label: 'Most Reviewed', sortByValue: 'reviewCount', sortOrderValue: 'desc', forCategories: ['property', 'trip'] },
 ];
+
+// Helper to calculate nights
+const calculateNights = (checkInStr?: string | null, checkOutStr?: string | null): number => {
+  if (!checkInStr || !checkOutStr) return 1; 
+  try {
+    const checkInDate = new Date(checkInStr);
+    const checkOutDate = new Date(checkOutStr);
+    if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime()) || checkOutDate <= checkInDate) {
+      return 1; 
+    }
+    const diffTime = Math.abs(checkOutDate.getTime() - checkInDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 1;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (e) {
+    return 1;
+  }
+};
 
 
 export default function SearchResults() {
@@ -85,8 +115,6 @@ export default function SearchResults() {
     if (currentSortBy) {
       setActiveSortKey(`${currentSortBy}_${currentSortOrder || 'desc'}`);
     } else {
-      // If sortBy is not in URL, check if any sortTab matches the default 'recommended_desc'
-      // This ensures 'recommended_desc' is active if no sort params are present
       const defaultSortTab = sortTabsConfig.find(tab => tab.sortByValue === 'recommended');
       setActiveSortKey(defaultSortTab ? defaultSortTab.key : 'recommended_desc');
     }
@@ -98,22 +126,18 @@ export default function SearchResults() {
       setIsLoading(true);
       const params = new URLSearchParams(currentSearchParams?.toString() || '');
       if (!params.has('category')) {
-        params.set('category', category); // Use state category if not in URL
+        params.set('category', category); 
       }
       if (!params.has('page')) {
-        params.set('page', currentPage.toString()); // Use state page if not in URL
+        params.set('page', currentPage.toString()); 
       }
       
-      // Ensure sortBy and sortOrder from activeSortKey are in params if not already
       const activeSortOption = sortTabsConfig.find(tab => tab.key === activeSortKey);
       if (activeSortOption) {
-        if(!params.has('sortBy') && activeSortOption.sortByValue !== 'recommended') { // Don't add 'recommended' if it implies no sort
+        if(!params.has('sortBy') && activeSortOption.sortByValue !== 'recommended') { 
             params.set('sortBy', activeSortOption.sortByValue);
             params.set('sortOrder', activeSortOption.sortOrderValue);
-        } else if (params.get('sortBy') !== activeSortOption.sortByValue || params.get('sortOrder') !== activeSortOption.sortOrderValue) {
-            // If URL params differ from activeSortKey, prioritize URL for fetch, but UI reflects activeSortKey
-            // This situation should resolve as activeSortKey is updated from URL in the other useEffect
-        }
+        } 
       }
       
       try {
@@ -123,7 +147,6 @@ export default function SearchResults() {
         }
         const data = await response.json();
         setResults(data.results || []); 
-        console.log('Search results:', data.results);
         setTotalResults(data.total || 0);
         setTotalPages(Math.ceil((data.total || 0) / (data.limit || 10)));
       } catch (error) {
@@ -135,11 +158,8 @@ export default function SearchResults() {
         setIsLoading(false);
       }
     };
-
-    // if (currentSearchParams) { // This condition might delay initial load if currentSearchParams is initially null
-        loadData();
-    // }
-  }, [currentSearchParams, category, currentPage, activeSortKey]); // Added category, currentPage, activeSortKey to ensure data reloads if they change programmatically
+    loadData();
+  }, [currentSearchParams, category, currentPage, activeSortKey]); 
 
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages || page === currentPage) return;
@@ -148,7 +168,6 @@ export default function SearchResults() {
     params.set('page', page.toString());
     router.push(`/customer/search?${params.toString()}`, { scroll: false });
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    // setCurrentPage(page); // Handled by useEffect reacting to currentSearchParams
   };
 
   const handleRemoveFilter = (chipKey: string) => {
@@ -158,29 +177,7 @@ export default function SearchResults() {
     router.push(`/customer/search?${params.toString()}`, { scroll: false });
   };
 
-  const handleSortChange = (newSortKey: string) => {
-    const selectedTab = sortTabsConfig.find(tab => tab.key === newSortKey);
-    if (!selectedTab) return;
-  
-    // setActiveSortKey(newSortKey); // This will be updated by useEffect from URL change
-  
-    const params = new URLSearchParams(currentSearchParams?.toString() || '');
-    if (selectedTab.sortByValue === 'recommended') {
-        // For 'recommended', some backends prefer no sortBy/sortOrder, or specific values
-        // Assuming 'recommended' means removing explicit sort or using specific 'recommended' sortBy
-        params.delete('sortBy'); // Or params.set('sortBy', 'recommended')
-        params.delete('sortOrder');
-    } else {
-        params.set('sortBy', selectedTab.sortByValue);
-        params.set('sortOrder', selectedTab.sortOrderValue);
-    }
-    params.set('page', '1'); // Reset to first page on sort change
-  
-    router.push(`/customer/search?${params.toString()}`, { scroll: false });
-  };
-
   const formatChipLabel = (key: string, value: string): string => {
-    // Keep existing formatting logic
     switch (key) {
         case 'minPrice': return `Min Price: ${Number(value).toLocaleString()}`;
         case 'maxPrice': 
@@ -208,98 +205,165 @@ export default function SearchResults() {
   };
 
   const renderPropertyCard = (property: Property) => {
-    const ratingDesc = getRatingDescription(property.propertyRating);
+    const ratingDesc = getRatingDescription(property.totalRating || property.propertyRating); // Use totalRating if available
     const reviewText = formatReviewCount(property.review);
-    const propertyTypeDisplay = property.type ? property.type.charAt(0).toUpperCase() + property.type.slice(1) : 'Property';
+    
+    const checkInQuery = localStorage.getItem('checkIn');
+    const checkOutQuery = localStorage.getItem('checkOut');
+    const adultsQuery = localStorage.getItem('adults') || '1';
+    const childrenQuery = localStorage.getItem('children') || '0';
+
+    const numNights = calculateNights(checkInQuery, checkOutQuery);
+
+    let guestSummary = `${numNights} night${numNights === 1 ? '' : 's'}`;
+    if (adultsQuery) guestSummary += `, ${adultsQuery} adult${parseInt(adultsQuery) === 1 ? '' : 's'}`;
+    if (childrenQuery && parseInt(childrenQuery) > 0) guestSummary += `, ${childrenQuery} child${parseInt(childrenQuery) === 1 ? '' : 'ren'}`;
+
+    // Attempt to get a representative room type
+    const representativeRoom = property.categoryRooms && property.categoryRooms.length > 0 ? property.categoryRooms[0] : null;
+    const roomTypeTitle = representativeRoom?.title || "Standard Room"; // Fallback
+    const bedConfiguration = representativeRoom?.bedConfiguration || "Comfortable bedding"; // Fallback
+    // console.log(property.reservationPolicy);
+    const hasFreeCancellation = property.reservationPolicy?.includes("Free Cancellation");
+    const hasNoPrepayment = property.reservationPolicy?.includes("No prepayment needed") || property.reservationPolicy?.includes("Pay at Property");
+
+    // For "Recommended for your group" badge - simple logic for demonstration
+    // const isRecommendedForGroup = parseInt(adultsQuery) > 1 || (property.amenities?.includes("Family rooms"));
+
+    const currencySymbol = property.costing?.currency === 'INR' ? '₹' : (property.costing?.currency || '$');
+    
+    // Taxes: This is a placeholder. Ideally, this comes pre-calculated from backend.
+    // For demonstration, if property.costing.price and discountedPrice are per night for the group already:
+    const taxesAndCharges = property.costing ? (property.costing.price * 0.1) : 0; // Example 10% of base price
 
     return (
     <div 
       key={property._id?.toString()} 
-      className="flex flex-col sm:flex-row border border-gray-300 rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 bg-white group"
+      className="flex flex-col sm:flex-row border border-gray-300 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 bg-white group"
     >
-      <div className="w-full sm:w-1/3 md:w-[250px] lg:w-[280px] h-48 sm:h-auto relative cursor-pointer" onClick={() => router.push(`/customer/property/${property._id}`)}>
-        {property.bannerImage?.url ? (
-          <Image 
-            src={property.bannerImage.url} 
-            alt={property.title || "Property image"}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 768px) 33vw, 280px"
-            className="object-cover"
-          />
-        ) : (
-          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-            <BedDouble size={48} className="text-gray-400" />
-          </div>
-        )}
-        <button className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-black bg-opacity-40 hover:bg-opacity-60 p-1.5 sm:p-2 rounded-full transition-colors">
-          <Heart size={18} className="text-white sm:w-5 sm:h-5" />
+      {/* Image Column */}
+      <div className="w-full sm:w-[240px] md:w-[260px] lg:w-[280px] h-52 sm:h-auto relative">
+        <Link href={`/customer/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}`} className="block w-full h-full">
+            {property.bannerImage?.url ? (
+            <Image 
+                src={property.bannerImage.url} 
+                alt={property.title || "Property image"}
+                fill
+                sizes="(max-width: 640px) 100vw, 280px"
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+            ) : (
+            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                <BedDouble size={48} className="text-gray-400" />
+            </div>
+            )}
+        </Link>
+        <button 
+            className="absolute top-3 right-3 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors"
+            // onClick={(e) => {e.stopPropagation(); alert("Add to wishlist clicked!");}} // Placeholder action
+        >
+          <Heart size={20} className="text-red-500" />
         </button>
       </div>
       
-      <div className="w-full sm:w-2/3 md:flex-grow p-3 sm:p-4 flex flex-col">
-        <Link href={`/customer/property/${property._id}`} className="block mb-0.5 sm:mb-1">
-          <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-blue-700 hover:text-blue-800 transition-colors line-clamp-2">{property.title || "Untitled Property"}</h3>
-        </Link>
-
-        <div className="flex items-center text-xs text-blue-600 hover:underline mb-1 sm:mb-2 cursor-pointer" onClick={() => router.push(`/customer/property/${property._id}#location`)}>
-          <MapPin size={12} className="mr-1 sm:mr-1.5" /> {/* Adjusted icon size/margin */}
-          <span>{property.location?.city}, {property.location?.country}</span>
+      {/* Middle Content Column */}
+      <div className="flex-grow p-4 flex flex-col">
+        <div className="flex justify-between items-start">
+            <Link href={`/customer/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}`} className="block mb-1">
+                <h3 className="text-xl md:text-2xl font-bold text-blue-600 hover:text-blue-700 transition-colors line-clamp-2">{property.title || "Untitled Property"}</h3>
+            </Link>
+            {/* Rating for very small screens, hidden on sm+ */}
+            {(property.totalRating || property.propertyRating) && (
+              <div className="sm:hidden flex flex-col items-end ml-2">
+                <div className={`text-xs font-semibold ${ratingDesc.className}`}>{ratingDesc.text}</div>
+                <div className="bg-blue-600 text-white text-sm font-bold px-2 py-0.5 rounded">
+                    {(property.totalRating || property.propertyRating)?.toFixed(1)}
+                </div>
+              </div>
+            )}
         </div>
 
-        <div className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
-          <span className="font-semibold">{propertyTypeDisplay}</span>
-          {property.rooms ? <> • <span>{property.rooms} Room{property.rooms === 1 ? '' : 's'}</span></> : ''}
+        <div className="flex items-center mb-2 text-sm">
+            {Array(5).fill(0).map((_, i) => (
+                <StarIcon key={i} size={16} className={`mr-0.5 ${ (property.propertyRating || 0) >= i + 0.5 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+            ))}
+            {(property.propertyRating || 0) >= 4 && <ThumbsUp size={16} className="ml-1 text-yellow-500" />}
         </div>
 
-        <p className="text-xs sm:text-sm text-gray-700 mb-2 sm:mb-3 line-clamp-2 md:line-clamp-3 flex-grow">
-          {property.description || "No description available."}
-        </p>
+        <div className="text-xs text-gray-600 mb-2">
+            <span className="text-blue-600 hover:underline">{property.location?.city}</span>
+            <span className="mx-1 text-gray-400">•</span>
+            <span className="text-blue-600 hover:underline">Show on map</span>
+            {/* Add distance from centre if available: e.g. <span className="mx-1 text-gray-400">•</span>12.8 km from centre */}
+        </div>
 
-        {property.amenities && property.amenities.length > 0 && (
-          <div className="mb-2 sm:mb-3 hidden sm:block">
-            <span className="text-xs sm:text-sm font-semibold text-green-700">
-              {property.amenities.slice(0, 3).join(' • ')}
-              {property.amenities.length > 3 ? ' • ...' : ''}
-            </span>
-          </div>
+        {/* {isRecommendedForGroup && ( */}
+            <div className="inline-block bg-gray-100 border border-gray-300 text-gray-700 text-xs font-medium px-2 py-1 rounded-sm mb-3 self-start">
+                Recommended for you
+            </div>
+        {/* )} */}
+        
+        <div className="text-sm text-gray-800 mb-1">
+            <span className="font-semibold">{roomTypeTitle}</span>
+        </div>
+        <div className="text-sm text-gray-600 mb-2">
+            {bedConfiguration}
+        </div>
+
+        {hasFreeCancellation && (
+            <div className="flex items-center text-green-600 text-sm mb-1">
+                <Check size={18} className="mr-1.5" />
+                <span>Free cancellation</span>
+            </div>
         )}
+        {hasNoPrepayment && (
+            <div className="flex items-center text-green-600 text-sm">
+                <Check size={18} className="mr-1.5" />
+                <span>No prepayment needed <span className="text-gray-500">– pay at the property</span></span>
+            </div>
+        )}
+        
+        {/* Spacer to push button to bottom if policies are few */}
+        <div className="flex-grow"></div> 
+
       </div>
 
-      <div className='w-full sm:w-auto md:w-[200px] lg:w-[220px] p-3 sm:p-4 flex flex-col justify-between items-center sm:items-end border-t sm:border-t-0 sm:border-l border-gray-200'>
-        <div>
-          {property.propertyRating !== undefined && property.propertyRating !== null && (
-            <div className="flex items-center sm:justify-end gap-2 w-full mb-2 sm:mb-0">
+      {/* Right Price/Button Column */}
+      <div className='w-full sm:w-auto sm:min-w-[200px] md:min-w-[220px] lg:min-w-[240px] p-4 flex flex-col justify-between items-center sm:items-end border-t sm:border-t-0 sm:border-l border-gray-200/80 bg-gray-50/30 sm:bg-transparent'>
+        <div className="w-full text-center sm:text-right mb-3 sm:mb-0">
+          {(property.totalRating || property.propertyRating) && (
+            <div className="hidden sm:flex items-center justify-end gap-2 mb-1">
               <div className="text-right">
-                <p className={`text-xs sm:text-sm font-semibold ${ratingDesc.className}`}>{ratingDesc.text}</p>
+                <p className={`text-sm font-semibold ${ratingDesc.className}`}>{ratingDesc.text}</p>
                 <p className="text-xs text-gray-500">{reviewText}</p>
               </div>
-              <div className="bg-blue-700 text-white text-sm sm:text-base font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md h-fit">
-                {property.propertyRating.toFixed(1)}
+              <div className="bg-blue-600 text-white text-base font-bold px-2 py-1 rounded h-fit">
+                {(property.totalRating || property.propertyRating)?.toFixed(1)}
               </div>
             </div>
           )}
         </div>
         
-        <div className="w-full text-center sm:text-right mt-2 sm:mt-auto">
+        <div className="w-full text-center sm:text-right">
+          <p className="text-xs text-gray-500 mb-0.5">{guestSummary}</p>
           {property.costing && (
             <>
-              {property.costing.price > property.costing.discountedPrice && (
-                  <span className="text-xs sm:text-sm text-gray-500 line-through mr-1 sm:mr-2">
-                      {property.costing.currency} {property.costing.price.toFixed(2)}
-                  </span>
-              )}
-              <span className="text-xl sm:text-2xl font-bold text-gray-800">
-                {property.costing.currency} {property.costing.discountedPrice.toFixed(2)}
+              <span className="text-2xl font-bold text-gray-800">
+                {currencySymbol}{(property.costing.discountedPrice * numNights).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})}
               </span>
-              <p className="text-xs text-gray-500">per night</p>
-              <p className="text-xs text-gray-500 hidden sm:block">Includes taxes & fees</p>
+              { taxesAndCharges > 0 && (
+                <p className="text-xs text-gray-500">
+                  +{currencySymbol}{(taxesAndCharges * numNights).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})} taxes and charges
+                </p>
+              )}
             </>
           )}
-          <Link 
-            href={`/customer/property/${property._id}?checkIn=${currentSearchParams?.get('checkIn') || ''}&checkOut=${currentSearchParams?.get('checkOut') || ''}&adults=${currentSearchParams?.get('adults') || '1'}`} 
-            className="mt-2 block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-3 sm:px-5 rounded-md text-xs sm:text-sm transition-colors w-full"
+           <Link 
+            href={`/customer/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}`} 
+            className="mt-2.5 block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-md text-sm transition-colors w-full flex items-center justify-center"
           >
             See availability
+            <ChevronRight size={18} className="ml-1" />
           </Link>
         </div>
       </div>
@@ -398,13 +462,13 @@ export default function SearchResults() {
   
   const renderTravellingCard = (itinerary: Travelling) => {
     const placeholderImage = '/placeholder-itinerary.jpg';
-    const getTransportationIcon = (type?: TransportationType | string) => { // Allow string for flexibility if enum isn't strictly used in data
-      const iconSize = 14; // Use number for size prop
+    const getTransportationIcon = (type?: TransportationType | string) => { 
+      const iconSize = 14; 
       const iconClasses = "mr-1 sm:mr-1.5";
       switch (type) {
         case TransportationType.flight: return <Plane size={iconSize} className={`${iconClasses} text-blue-500`} />;
         case TransportationType.train: return <Train size={iconSize} className={`${iconClasses} text-green-500`} />;
-        case TransportationType.bus: return <CarIcon size={iconSize} className={`${iconClasses} text-orange-500`} />; // Assuming bus icon is CarIcon for now
+        case TransportationType.bus: return <CarIcon size={iconSize} className={`${iconClasses} text-orange-500`} />; 
         case TransportationType.car: return <CarIcon size={iconSize} className={`${iconClasses} text-red-500`} />;
         default: return <MapPin size={iconSize} className={`${iconClasses} text-gray-500`} />;
       }
@@ -483,166 +547,155 @@ export default function SearchResults() {
     );
   };
 
-  const currentCategorySortTabs = sortTabsConfig.filter(tab => 
-    !tab.forCategories || tab.forCategories.includes(category)
-  );
+  // const currentCategorySortTabs = sortTabsConfig.filter(tab => 
+  //   !tab.forCategories || tab.forCategories.includes(category)
+  // );
 
   return (
-    <div> 
-      {filterChips.length > 0 && (
-        <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <h3 className="text-sm sm:text-md font-semibold mb-2 sm:mb-3 text-gray-700">Active Filters:</h3>
-          <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center">
-            {filterChips.map((chip) => (
-              <div 
-                key={`${chip.key}-${chip.value}`} 
-                className="flex items-center bg-blue-100 text-blue-700 rounded-full px-2.5 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-medium"
-              >
-                <span>{formatChipLabel(chip.key, chip.value)}</span>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); handleRemoveFilter(chip.key); }}
-                  className="ml-1.5 sm:ml-2 text-blue-500 hover:text-blue-700"
-                  aria-label={`Remove filter ${chip.key}`}
+    <div className="bg-blue-50/30 min-h-screen py-6 sm:py-8 px-2 sm:px-4 md:px-6 lg:px-8"> {/* Added light blue background to outer container */}
+      <div className="max-w-6xl mx-auto"> {/* Content wrapper */}
+        {filterChips.length > 0 && (
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-white rounded-lg border border-gray-200 shadow-sm"> {/* Filters on white bg */}
+            <h3 className="text-sm sm:text-md font-semibold mb-2 sm:mb-3 text-gray-700">Active Filters:</h3>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center">
+              {filterChips.map((chip) => (
+                <div 
+                  key={`${chip.key}-${chip.value}`} 
+                  className="flex items-center bg-blue-100 text-blue-700 rounded-full px-2.5 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-medium"
                 >
-                  <X size={14} />
+                  <span>{formatChipLabel(chip.key, chip.value)}</span>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleRemoveFilter(chip.key); }}
+                    className="ml-1.5 sm:ml-2 text-blue-500 hover:text-blue-700"
+                    aria-label={`Remove filter ${chip.key}`}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              {filterChips.length > 0 && (
+                <button 
+                  onClick={() => {
+                    const params = new URLSearchParams();
+                    if (category) params.set('category', category); 
+                    const currentSortOption = sortTabsConfig.find(tab => tab.key === activeSortKey);
+                    if (currentSortOption && currentSortOption.sortByValue !== 'recommended') {
+                      params.set('sortBy', currentSortOption.sortByValue);
+                      params.set('sortOrder', currentSortOption.sortOrderValue);
+                    }
+                    router.push(`/customer/search?${params.toString()}`);
+                  }}
+                  className="text-xs sm:text-sm text-red-600 hover:text-red-800 hover:underline font-medium ml-1 sm:ml-2"
+                >
+                  Clear all filters
                 </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-3 sm:mb-4"> 
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2 sm:mb-0">
+            {isLoading ? 'Searching...' : `${totalResults} match${totalResults !== 1 ? 'es' : ''} found`}
+          </h2>
+          {/* Sort tabs can go here if needed, or remain where they are if outside this component */}
+        </div>
+
+        
+        {isLoading ? (
+          <div className="grid grid-cols-1 gap-4 sm:gap-6">
+            {[...Array(3)].map((_, index) => ( 
+              <div key={index} className="flex flex-col sm:flex-row border border-gray-200 rounded-lg overflow-hidden bg-white h-[260px] sm:h-[220px] md:h-[200px]">
+                  <div className="w-full sm:w-[240px] md:w-[260px] lg:w-[280px] bg-gray-200 animate-pulse h-1/2 sm:h-full"></div>
+                  <div className="flex-grow p-3 sm:p-4 flex flex-col">
+                      <div className="h-5 sm:h-6 bg-gray-200 rounded w-3/4 mb-2 animate-pulse"></div>
+                      <div className="h-3 sm:h-4 bg-gray-200 rounded w-1/2 mb-3 sm:mb-4 animate-pulse"></div>
+                      <div className="h-3 sm:h-4 bg-gray-200 rounded w-full mb-1 animate-pulse"></div>
+                      <div className="h-3 sm:h-4 bg-gray-200 rounded w-5/6 mb-auto animate-pulse"></div>
+                      <div className="h-8 sm:h-10 bg-gray-200 rounded w-1/2 sm:w-1/3 ml-auto animate-pulse mt-2"></div>
+                  </div>
+                  <div className="w-full sm:w-auto sm:min-w-[200px] md:min-w-[220px] lg:min-w-[240px] p-4 bg-gray-100/50 sm:bg-transparent border-t sm:border-t-0 sm:border-l animate-pulse flex flex-col justify-end items-end">
+                      <div className="h-4 bg-gray-200 rounded w-20 mb-2 self-end"></div>
+                      <div className="h-6 bg-gray-200 rounded w-24 mb-1 self-end"></div>
+                      <div className="h-4 bg-gray-200 rounded w-28 mb-2 self-end"></div>
+                      <div className="h-10 bg-gray-200 rounded w-full"></div>
+                  </div>
               </div>
             ))}
-            {filterChips.length > 0 && (
-              <button 
-                onClick={() => {
-                  const params = new URLSearchParams();
-                  if (category) params.set('category', category); // Preserve category
-                  // Preserve sort if needed, or reset sort
-                  const currentSortOption = sortTabsConfig.find(tab => tab.key === activeSortKey);
-                  if (currentSortOption && currentSortOption.sortByValue !== 'recommended') {
-                    params.set('sortBy', currentSortOption.sortByValue);
-                    params.set('sortOrder', currentSortOption.sortOrderValue);
-                  }
-                  router.push(`/customer/search?${params.toString()}`);
-                }}
-                className="text-xs sm:text-sm text-red-600 hover:text-red-800 hover:underline font-medium ml-1 sm:ml-2"
-              >
-                Clear all filters
-              </button>
-            )}
           </div>
-        </div>
-      )}
-
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-1"> {/* Reduced margin bottom */}
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2 sm:mb-0">
-          {isLoading ? 'Searching...' : `${totalResults} match${totalResults !== 1 ? 'es' : ''} found`}
-        </h2>
-      </div>
-
-      {/* Sorting Tabs Section */}
-      {currentCategorySortTabs.length > 0 && !isLoading && results.length > 0 && (
-        <div className="flex flex-wrap gap-x-1.5 gap-y-2 sm:gap-x-2 items-center border-b border-gray-200 pt-2 pb-3 mb-4 sm:mb-6">
-          <span className="text-sm font-semibold text-gray-700 mr-1 sm:mr-2 hidden sm:inline">Sort by:</span>
-          {currentCategorySortTabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => handleSortChange(tab.key)}
-              className={`px-3 py-1.5 text-xs sm:text-sm rounded-full font-medium transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 whitespace-nowrap
-                ${activeSortKey === tab.key
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-white text-blue-700 hover:bg-blue-50 border border-blue-300 hover:border-blue-500'
-                }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      )}
-      
-      {isLoading ? (
-        <div className="grid grid-cols-1 gap-4 sm:gap-6">
-          {[...Array(3)].map((_, index) => ( 
-            <div key={index} className="flex flex-col sm:flex-row border border-gray-200 rounded-lg overflow-hidden bg-white h-[300px] sm:h-[220px] md:h-[200px]">
-                <div className="w-full sm:w-1/3 md:w-[250px] lg:w-[280px] bg-gray-200 animate-pulse h-1/2 sm:h-full"></div>
-                <div className="w-full sm:w-2/3 md:flex-grow p-3 sm:p-4 flex flex-col">
-                    <div className="h-5 sm:h-6 bg-gray-200 rounded w-3/4 mb-2 animate-pulse"></div>
-                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-1/2 mb-3 sm:mb-4 animate-pulse"></div>
-                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-full mb-1 animate-pulse"></div>
-                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-5/6 mb-auto animate-pulse"></div>
-                    <div className="h-8 sm:h-10 bg-gray-200 rounded w-1/2 sm:w-1/3 ml-auto animate-pulse mt-2"></div>
-                </div>
-            </div>
-          ))}
-        </div>
-      ) : results.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-8 sm:mb-12"> 
-          {results.map((item) => {
-            if (!item || typeof item._id === 'undefined') {
-                console.warn("Search result item is missing _id or is null:", item);
-                return null; 
-            }
-            switch (category) {
-              case 'trip':
-                return renderTripCard(item as Trip);
-              case 'travelling':
-                return renderTravellingCard(item as Travelling);
-              default: 
-                return renderPropertyCard(item as Property);
-            }
-          })}
-        </div>
-      ) : (
-        <div className="text-center py-10 sm:py-16">
-          <MapPin size={40} className="mx-auto text-gray-400 mb-3 sm:mb-4 sm:w-12 sm:h-12" />
-          <h3 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-1 sm:mb-2">No results found</h3>
-          <p className="text-sm sm:text-base text-gray-500">Try adjusting your search filters or check back later.</p>
-        </div>
-      )}
-      
-      {totalPages > 1 && !isLoading && (
-        <div className="flex justify-center mt-8 sm:mt-10">
-          <nav className="flex items-center space-x-1 sm:space-x-2">
-            <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md border bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm font-medium"
-            >
-              Previous
-            </button>
-            
-            {[...Array(totalPages)].map((_, index) => {
-              const pageNumber = index + 1;
-              const showPage = pageNumber === 1 || pageNumber === totalPages || (pageNumber >= currentPage - 2 && pageNumber <= currentPage + 2); // Show more pages around current
-              const showEllipsisStart = pageNumber === currentPage - 3 && currentPage > 4 && totalPages > 7; // Adjusted ellipsis logic
-              const showEllipsisEnd = pageNumber === currentPage + 3 && currentPage < totalPages - 3 && totalPages > 7; // Adjusted ellipsis logic
-
-              if (showPage) {
-                return (
-                  <button
-                    key={pageNumber}
-                    onClick={() => handlePageChange(pageNumber)}
-                    className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${
-                      pageNumber === currentPage
-                        ? 'bg-blue-600 text-white border border-blue-600'
-                        : 'border bg-white text-gray-600 hover:bg-gray-100 hover:border-gray-400'
-                    }`}
-                  >
-                    {pageNumber}
-                  </button>
-                );
-              } else if (showEllipsisStart || showEllipsisEnd) {
-                return <span key={`ellipsis-${pageNumber}`} className="px-1 sm:px-2 py-1.5 sm:py-2 text-gray-500 text-xs sm:text-sm">...</span>;
+        ) : results.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4 sm:gap-5 mb-8 sm:mb-12"> 
+            {results.map((item) => {
+              if (!item || typeof item._id === 'undefined') {
+                  console.warn("Search result item is missing _id or is null:", item);
+                  return null; 
               }
-              return null;
+              switch (category) {
+                case 'trip':
+                  return renderTripCard(item as Trip);
+                case 'travelling':
+                  return renderTravellingCard(item as Travelling);
+                default: 
+                  return renderPropertyCard(item as Property);
+              }
             })}
-            
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages || totalPages === 0}
-              className="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md border bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm font-medium"
-            >
-              Next
-            </button>
-          </nav>
-        </div>
-      )}
+          </div>
+        ) : (
+          <div className="text-center py-10 sm:py-16 bg-white rounded-lg shadow">
+            <MapPin size={40} className="mx-auto text-gray-400 mb-3 sm:mb-4 sm:w-12 sm:h-12" />
+            <h3 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-1 sm:mb-2">No results found</h3>
+            <p className="text-sm sm:text-base text-gray-500">Try adjusting your search filters or check back later.</p>
+          </div>
+        )}
+        
+        {totalPages > 1 && !isLoading && (
+          <div className="flex justify-center mt-8 sm:mt-10">
+            <nav className="flex items-center space-x-1 sm:space-x-2">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md border bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm font-medium shadow-sm"
+              >
+                Previous
+              </button>
+              
+              {[...Array(totalPages)].map((_, index) => {
+                const pageNumber = index + 1;
+                const showPage = pageNumber === 1 || pageNumber === totalPages || (pageNumber >= currentPage - 2 && pageNumber <= currentPage + 2); 
+                const showEllipsisStart = pageNumber === currentPage - 3 && currentPage > 4 && totalPages > 7; 
+                const showEllipsisEnd = pageNumber === currentPage + 3 && currentPage < totalPages - 3 && totalPages > 7; 
+
+                if (showPage) {
+                  return (
+                    <button
+                      key={pageNumber}
+                      onClick={() => handlePageChange(pageNumber)}
+                      className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors shadow-sm ${
+                        pageNumber === currentPage
+                          ? 'bg-blue-600 text-white border border-blue-600'
+                          : 'border bg-white text-gray-600 hover:bg-gray-100 hover:border-gray-400'
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                } else if (showEllipsisStart || showEllipsisEnd) {
+                  return <span key={`ellipsis-${pageNumber}`} className="px-1 sm:px-2 py-1.5 sm:py-2 text-gray-500 text-xs sm:text-sm">...</span>;
+                }
+                return null;
+              })}
+              
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md border bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm font-medium shadow-sm"
+              >
+                Next
+              </button>
+            </nav>
+          </div>
+        )}
+      </div> {/* End of max-w-6xl mx-auto */}
     </div>
   );
 }

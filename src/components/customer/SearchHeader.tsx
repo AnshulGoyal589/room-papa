@@ -144,7 +144,7 @@ export default function SearchHeader() {
 
   return (
     <div className="bg-[#003b95] text-white">
-      <div className="container mx-auto px-4 pb-4 md:pb-8 lg:pb-0  w-full lg:w-[70vw]">
+      <div className="container mx-auto px-8 pb-4 md:pb-8 lg:pb-0  w-full lg:w-7xl">
         {/* Navigation Tabs */}
         <div className="flex overflow-x-auto no-scrollbar mb-6 lg:mb-0 pb-2 lg:pb-0">
           {tabs.map((tab) => {

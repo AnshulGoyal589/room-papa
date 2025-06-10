@@ -1,13 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Booking, PropertyBooking } from '@/lib/mongodb/models/Booking';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Calendar, Clock, Hash, Hotel, MapPin, Moon, Users, X, FileText, CheckCircle, Briefcase, Plane, Car, User, AlertCircle
 } from 'lucide-react';
+import { Booking, PropertyBooking } from '@/lib/mongodb/models/Booking'; // Ensure this path and types are correct
 
-// --- Helper Functions and Components ---
 
 const getStatusClasses = (status: string) => {
     switch (status) {
@@ -25,9 +24,14 @@ const formatDate = (dateString: string) => new Date(dateString).toLocaleDateStri
 // --- Booking Card Component ---
 const BookingCard = ({ booking, onSelect }: { booking: Booking; onSelect: (booking: Booking) => void }) => {
     const isProperty = booking.type === 'property';
-    const propertyBooking = isProperty ? (booking as PropertyBooking) : null;
-    const checkIn = new Date(propertyBooking?.bookingDetails.checkIn || booking.tripDetails.locationFrom);
-    
+    // Cast to PropertyBooking only for accessing property-specific details safely
+    const propertyBookingAccess = isProperty ? (booking as PropertyBooking) : null;
+    const primaryDate = new Date(booking.bookingDetails.checkIn);
+
+    // For debugging: Log a snapshot of the booking prop when the card renders
+    // console.log(`BookingCard RENDER - ID: ${booking._id}, Type: ${booking.type}, Has reservationPolicy: ${!!(propertyBookingAccess?.tripDetails as any)?.reservationPolicy}`, JSON.parse(JSON.stringify(booking)));
+    // const reservationPolicy = isProperty ? (propertyBookingAccess?.tripDetails as any)?.reservationPolicy : null;
+    // console.log("reservation policy 1",booking);
     return (
         <motion.div
             layout
@@ -51,17 +55,19 @@ const BookingCard = ({ booking, onSelect }: { booking: Booking; onSelect: (booki
                 <div className="space-y-3 text-sm border-t pt-3">
                     <div className="flex items-center text-gray-700">
                         <Calendar size={14} className="mr-2.5 text-gray-500" />
-                        <span className="font-semibold">{formatDate(checkIn.toISOString())}</span>
+                        <span className="font-semibold">{formatDate(primaryDate.toISOString())}</span>
+                         {isProperty && propertyBookingAccess && <span className="ml-auto text-xs text-gray-500">{propertyBookingAccess.bookingDetails.numberOfNights} nights</span>}
                     </div>
                     <div className="flex items-center text-gray-700">
                         <Hash size={14} className="mr-2.5 text-gray-500" />
-                        <span>ID: {booking._id?.toString() || 'N/A'}</span>
+                        <span>ID: {booking._id?.toString().slice(-8) || 'N/A'}</span>
                     </div>
                 </div>
             </div>
             <div className="bg-gray-50 px-4 py-3 border-t flex justify-end">
                  <button 
-                    onClick={() => onSelect(booking)}
+
+                    onClick={() => {onSelect(booking)}}
                     className="bg-blue-600 text-white px-4 py-1.5 rounded-md text-sm font-semibold hover:bg-blue-700 transition-colors"
                 >
                     View Details
@@ -71,7 +77,7 @@ const BookingCard = ({ booking, onSelect }: { booking: Booking; onSelect: (booki
     );
 };
 
-// --- NEW: Cancel Confirmation Modal ---
+// --- Cancel Confirmation Modal ---
 const CancelConfirmationModal = ({ onConfirm, onCancel, isCancelling }: { onConfirm: () => void; onCancel: () => void; isCancelling: boolean; }) => {
     return (
         <motion.div
@@ -79,7 +85,7 @@ const CancelConfirmationModal = ({ onConfirm, onCancel, isCancelling }: { onConf
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[60] backdrop-blur-sm"
-            onClick={onCancel} // Allow closing by clicking outside
+            onClick={onCancel} 
         >
             <motion.div
                 initial={{ scale: 0.9, y: 20 }}
@@ -121,15 +127,60 @@ const CancelConfirmationModal = ({ onConfirm, onCancel, isCancelling }: { onConf
 };
 
 
-// --- Booking Detail Modal (Modified for Cancellation) ---
+// --- Booking Detail Modal ---
 const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Booking; onClose: () => void; onBookingUpdate: (updatedBooking: Booking) => void; }) => {
     const isProperty = booking.type === 'property';
     const propertyBooking = isProperty ? (booking as PropertyBooking) : null;
-    const guestDetails = propertyBooking?.guestDetails || booking.guestDetails;
+    const guestDetails = booking.guestDetails;
+
+    // console.log(`BookingDetailModal RENDER - ID: ${booking._id}, Type: ${booking.type}, Has reservationPolicy: ${!!(propertyBooking?.tripDetails as any)?.reservationPolicy}`, JSON.parse(JSON.stringify(booking)));
 
     const [isCancelling, setIsCancelling] = useState(false);
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [cancelError, setCancelError] = useState<string | null>(null);
+
+    const CANCELLABLE_POLICY_KEYWORDS = ["Free Cancellation", "Flexible", "Moderate"];
+    const NON_CANCELLABLE_POLICY_KEYWORDS = ["Non-refundable", "Non Refundable", "No cancellation"];
+
+    const isCheckInFuture = new Date(booking.bookingDetails.checkIn) > new Date();
+    
+    let canCancelBasedOnPolicy = true; 
+    let policyReason = "";
+    // console.log(`BookingDetailModal - Checking cancellation policy for booking ID ${booking._id}, Type: ${booking.type}, Has reservationPolicy: ${!!(propertyBooking?.tripDetails as any)?.reservationPolicy}`);
+    if (isProperty && propertyBooking) {
+        // Ensure tripDetails exists before accessing reservationPolicy
+        const policies = propertyBooking.tripDetails?.reservationPolicy; 
+        // console.log("BookingDetailModal - reservationPolicy:", policies);
+        if (policies && policies.length > 0) {
+            if (policies.some(p => NON_CANCELLABLE_POLICY_KEYWORDS.some(keyword => p.toLowerCase().includes(keyword.toLowerCase())))) {
+                canCancelBasedOnPolicy = false;
+                policyReason = "This booking cannot be cancelled due to a non-refundable reservation policy.";
+            } else if (!policies.some(p => CANCELLABLE_POLICY_KEYWORDS.some(keyword => p.toLowerCase().includes(keyword.toLowerCase())))) {
+                canCancelBasedOnPolicy = false; 
+                policyReason = "The reservation policy for this booking does not permit cancellation at this time.";
+            }
+        } else if (policies) { 
+             canCancelBasedOnPolicy = false; 
+             policyReason = "Cancellation policy details are unclear; please contact support.";
+        } else { // policies is undefined (tripDetails might be missing reservationPolicy or tripDetails itself is missing)
+            canCancelBasedOnPolicy = false; 
+            policyReason = "Reservation policy information is unavailable for this booking.";
+        }
+    }
+
+    const isCancellable = booking.status === 'confirmed' && isCheckInFuture && canCancelBasedOnPolicy;
+    
+    let cancellationNotAllowedMessage = "";
+    if (booking.status === 'confirmed' && !isCancellable) {
+        if (!isCheckInFuture) {
+            cancellationNotAllowedMessage = "This booking is past its check-in date or is for today.";
+        } else if (!canCancelBasedOnPolicy && policyReason) {
+            cancellationNotAllowedMessage = policyReason;
+        } else {
+            cancellationNotAllowedMessage = "This booking cannot be cancelled at this time."; 
+        }
+    }
+
 
     const handleConfirmCancel = async () => {
         setIsCancelling(true);
@@ -140,24 +191,23 @@ const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Bo
             });
 
             if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(errorData || "Failed to cancel booking.");
+                const errorData = await response.json(); 
+                throw new Error(errorData.message || errorData.error || "Failed to cancel booking.");
             }
 
-            const updatedBooking = await response.json();
-            onBookingUpdate(updatedBooking);
+            const updatedBookingFromAPI = await response.json();
+            // IMPORTANT: Check if updatedBookingFromAPI contains all necessary fields, including reservationPolicy for property bookings
+            // console.log("handleConfirmCancel - API response:", JSON.parse(JSON.stringify(updatedBookingFromAPI)));
+            onBookingUpdate(updatedBookingFromAPI);
             setShowCancelConfirm(false); 
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
             setCancelError(errorMessage);
-            // Hide the confirmation modal on error to show the error message in the main modal
-            setShowCancelConfirm(false);
         } finally {
             setIsCancelling(false);
         }
     };
 
-    const isCancellable = booking.status === 'confirmed' && new Date(booking.bookingDetails.checkIn) > new Date();
 
     const Section = ({ title, icon, children }: { title: string, icon: React.ReactNode, children: React.ReactNode }) => (
         <div>
@@ -217,7 +267,15 @@ const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Bo
                                 </div>
                             </Section>
                         )}
-                        
+                        {booking.type !== 'property' && (
+                            <Section title="Booking Details" icon={<Briefcase size={20} className="mr-3 text-blue-600"/>}>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                                     <div className="flex items-start"><Calendar size={16} className="mr-3 text-gray-500 mt-1"/><div><p className="font-semibold text-gray-500">Start Date</p><p className="text-gray-800 font-bold">{formatDate(booking.bookingDetails.checkIn)}</p></div></div>
+                                     <div className="flex items-start"><Calendar size={16} className="mr-3 text-gray-500 mt-1"/><div><p className="font-semibold text-gray-500">End Date</p><p className="text-gray-800 font-bold">{formatDate(booking.bookingDetails.checkOut)}</p></div></div>
+                                </div>
+                            </Section>
+                        )}
+
                         <Section title="Guest Details" icon={<User size={20} className="mr-3 text-blue-600"/>}>
                             <div className="text-sm space-y-2">
                                 <p><span className="font-semibold w-24 inline-block">Main Contact:</span> {guestDetails.firstName} {guestDetails.lastName}</p>
@@ -233,8 +291,8 @@ const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Bo
                                     <div>
                                         <h5 className="font-semibold mb-1">Add-ons Requested:</h5>
                                         <ul className="list-disc list-inside text-gray-700">
-                                            {guestDetails.addOns.wantsAirportShuttle && <li className="flex items-center"><Plane size={14} className="mr-2"/>Airport Shuttle</li>}
-                                            {guestDetails.addOns.wantsCarRental && <li className="flex items-center"><Car size={14} className="mr-2"/>Car Rental</li>}
+                                            {guestDetails.addOns?.wantsAirportShuttle && <li className="flex items-center"><Plane size={14} className="mr-2"/>Airport Shuttle</li>}
+                                            {guestDetails.addOns?.wantsCarRental && <li className="flex items-center"><Car size={14} className="mr-2"/>Car Rental</li>}
                                         </ul>
                                     </div>
                                 )}
@@ -244,16 +302,24 @@ const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Bo
                                         <p className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg italic text-gray-700">&apos;{guestDetails.specialRequests}&apos;</p>
                                     </div>
                                 )}
+                                 {!(guestDetails.addOns?.wantsAirportShuttle || guestDetails.addOns?.wantsCarRental) && !guestDetails.specialRequests && (
+                                    <p className="text-gray-500 italic">No extras or special requests were made for this booking.</p>
+                                )}
                             </div>
                         </Section>
                         
                         <Section title="Payment Details" icon={<FileText size={20} className="mr-3 text-blue-600"/>}>
-                            <div className="text-sm space-y-2 p-4 bg-white rounded-lg border border-gray-200">
-                                <div className="flex justify-between"><span>Subtotal</span><span>{propertyBooking?.bookingDetails.subtotal.toFixed(2)}</span></div>
-                                <div className="flex justify-between"><span>Service Fee</span><span>{propertyBooking?.bookingDetails.serviceFee.toFixed(2)}</span></div>
-                                <div className="flex justify-between pb-2 border-b"><span>Taxes</span><span>{propertyBooking?.bookingDetails.taxes.toFixed(2)}</span></div>
+                             <div className="text-sm space-y-2 p-4 bg-white rounded-lg border border-gray-200">
+                                {propertyBooking && ( 
+                                    <>
+                                    <div className="flex justify-between"><span>Subtotal</span><span>{propertyBooking.bookingDetails.subtotal.toFixed(2)}</span></div>
+                                    <div className="flex justify-between"><span>Service Fee</span><span>{propertyBooking.bookingDetails.serviceFee.toFixed(2)}</span></div>
+                                    <div className="flex justify-between pb-2 border-b"><span>Taxes</span><span>{propertyBooking.bookingDetails.taxes.toFixed(2)}</span></div>
+                                    </>
+                                )}
                                 <div className="flex justify-between font-bold text-lg mt-2"><span>Total Paid</span><span>{booking.bookingDetails.currency} {booking.bookingDetails.totalPrice.toFixed(2)}</span></div>
-                                {propertyBooking?.bookingDetails.payment && <p className="text-xs text-green-600 text-right mt-1">Paid via {propertyBooking.bookingDetails.payment.provider}</p>}
+                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                {booking.bookingDetails.payment && <p className="text-xs text-green-600 text-right mt-1">Paid via {(booking.bookingDetails.payment as any).provider}</p>} {/* Cast payment if provider isn't in CommonBookingDetails */}
                             </div>
                         </Section>
                     </div>
@@ -269,7 +335,7 @@ const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Bo
                                 </button>
                             )}
                             {booking.status === 'cancelled' && <p className="text-sm font-semibold text-red-500">This booking has been cancelled.</p>}
-                            {booking.status === 'confirmed' && !isCancellable && <p className="text-sm font-semibold text-gray-500">This booking can no longer be cancelled.</p>}
+                            {booking.status === 'confirmed' && !isCancellable && <p className="text-sm font-semibold text-gray-500">{cancellationNotAllowedMessage}</p>}
                          </div>
                         <button onClick={onClose} className="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700">Close</button>
                     </div>
@@ -284,7 +350,7 @@ const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Bo
                         onConfirm={handleConfirmCancel}
                         onCancel={() => {
                             setShowCancelConfirm(false);
-                            setCancelError(null); // Clear error when closing confirm modal
+                            setCancelError(null); 
                         }}
                     />
                 )}
@@ -295,24 +361,29 @@ const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Bo
 
 // --- Main List Component ---
 export default function BookingsList({ initialBookings }: { initialBookings: Booking[] }) {
-    const [bookings, setBookings] = useState<Booking[]>(initialBookings);
+    const [bookings, setBookings] = useState<Booking[]>(() => initialBookings.map(b => ({...b}))); // Create shallow copies initially
     const [filter, setFilter] = useState<'all' | 'upcoming' | 'past'>('all');
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
-    const handleBookingUpdate = (updatedBooking: Booking) => {
+    const handleBookingUpdate = (updatedBookingFromAPI: Booking) => {
+        // console.log("handleBookingUpdate - received:", JSON.parse(JSON.stringify(updatedBookingFromAPI)));
         setBookings(currentBookings =>
             currentBookings.map(b =>
-                b._id === updatedBooking._id ? updatedBooking : b
+                b._id === updatedBookingFromAPI._id ? { ...updatedBookingFromAPI } : b // Ensure new object reference
             )
         );
-        if (selectedBooking?._id === updatedBooking._id) {
-            setSelectedBooking(updatedBooking);
+        if (selectedBooking?._id === updatedBookingFromAPI._id) {
+            // console.log("handleBookingUpdate - updating selectedBooking with:", JSON.parse(JSON.stringify(updatedBookingFromAPI)));
+            setSelectedBooking({ ...updatedBookingFromAPI }); // Ensure new object reference for selectedBooking state
         }
     };
 
     const filteredBookings = bookings.filter(booking => {
         if (filter === 'all') return true;
+        if (!booking.bookingDetails?.checkIn) return true; 
         const checkInDate = new Date(booking.bookingDetails.checkIn);
+        if (isNaN(checkInDate.getTime())) return true; 
+
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
@@ -340,16 +411,17 @@ export default function BookingsList({ initialBookings }: { initialBookings: Boo
             <AnimatePresence>
                 {filteredBookings.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {filteredBookings.map(booking => (
-                            <BookingCard key={booking._id?.toString() || 'fallback-key'} booking={booking} onSelect={setSelectedBooking} />
-                        ))}
+                        {filteredBookings.map(booking => {
+                            // console.log(`BookingsList MAP - Rendering Booking ID ${booking._id}, Type: ${booking.type}, Has reservationPolicy: ${!!(booking.type === 'property' ? ((booking as PropertyBooking).tripDetails as any)?.reservationPolicy : false)}`);
+                            return <BookingCard key={booking._id?.toString() || `fallback-${Math.random()}`} booking={booking} onSelect={setSelectedBooking} />;
+                        })}
                     </div>
                 ) : (
                     <div className="text-center py-16 px-6 bg-white rounded-lg shadow-sm border">
                          <FileText size={48} className="mx-auto text-gray-300" />
                         <h3 className="mt-4 text-xl font-semibold text-gray-800">No Bookings Found</h3>
                         <p className="mt-1 text-gray-500">
-                            You have no {filter !== 'all' && filter} bookings. Why not plan your next trip?
+                            You have no {filter !== 'all' ? filter : ''} bookings. Why not plan your next trip?
                         </p>
                     </div>
                 )}

@@ -132,7 +132,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
         userId: userID,
       };
       
-      console.log(newItem);
+      // console.log(newItem);
 
       const response = await fetch(`/api/${apiRoute}`, {
         method: 'POST',

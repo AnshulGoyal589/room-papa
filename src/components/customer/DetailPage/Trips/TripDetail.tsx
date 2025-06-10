@@ -345,7 +345,7 @@ export default function TripDetailPage() {
         recipients: [bookingData.email, 'anshulgoyal589@gmail.com'] // Replace with dynamic owner email
       };
       
-      console.log("Trip Booking Payload:", JSON.stringify(bookingPayload, null, 2));
+      // console.log("Trip Booking Payload:", JSON.stringify(bookingPayload, null, 2));
 
       const response = await fetch('/api/bookings', {
         method: 'POST',

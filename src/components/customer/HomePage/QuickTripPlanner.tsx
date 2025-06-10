@@ -67,7 +67,7 @@ export default function QuickTripPlanner() {
   };
 
   return (
-    <div className="container mx-auto py-16 px-4">
+    <div className="container mx-auto pb-16 pt-12 px-4">
       <h2 className="text-3xl font-bold mb-2 text-center">Quick and Easy Trip Planner</h2>
       <p className="text-xl text-gray-600 mb-8 text-center">Pick a vibe and explore the top destinations in India</p>
       

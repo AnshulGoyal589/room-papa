@@ -78,7 +78,7 @@ const TravellingEditForm: React.FC<TravellingEditFormProps> = ({ item, onSave })
   };
 
   const handleSubmit = (e: React.FormEvent) => {
-    console.log(formData);
+    // console.log(formData);
     e.preventDefault();
     if (validateForm()) {
       onSave(formData);

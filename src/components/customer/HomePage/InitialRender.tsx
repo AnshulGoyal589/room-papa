@@ -7,19 +7,21 @@ import UniqueProperties from '@/components/customer/HomePage/UniqueProperties';
 import PropertyTypes from '@/components/customer/HomePage/PropertyTypes';
 // import WeekendDeals from '@/components/customer/HomePage/WeekendDeals';
 import ExploreIndia from '@/components/customer/HomePage/ExploreIndia';
+import BookingOffers from './BookingOffers';
 
 
 export default async function InitialRender() {
 
   
   return (
-      <>
+      <div className='max-w-7xl mx-auto' >
+        <BookingOffers/>
+        <PropertyTypes />
+        <ExploreIndia /> 
         <QuickTripPlanner />
         <PopularDestinations />
         <UniqueProperties />
-        <PropertyTypes />
-        <ExploreIndia /> 
         <WhyChooseUs />
-      </>
+      </div>
   );
 }

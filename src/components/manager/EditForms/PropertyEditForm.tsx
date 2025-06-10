@@ -464,11 +464,11 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     if (!formData.detailImages || formData.detailImages.length < 3 || formData.detailImages.some(img => !img.url)) {
       newErrors.detailImages = "At least 3 detail images are required";
     }
-    if (!formData.startDate) newErrors.startDate = "Start date is required";
-    if (!formData.endDate) newErrors.endDate = "End date is required";
-    if (formData.startDate && formData.endDate && formData.startDate > formData.endDate) {
-        newErrors.endDate = "End date cannot be before start date.";
-    }
+    // if (!formData.startDate) newErrors.startDate = "Start date is required";
+    // if (!formData.endDate) newErrors.endDate = "End date is required";
+    // if (formData.startDate && formData.endDate && formData.startDate > formData.endDate) {
+    //     newErrors.endDate = "End date cannot be before start date.";
+    // }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -563,8 +563,8 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div> <label className="font-medium text-gray-700">Property Rating (Stars)</label> <Input type="number" value={formData.propertyRating || 0} onChange={(e) => handleChange("propertyRating", parseFloat(e.target.value) || 0)} min={0} max={5} step={0.5} /> </div>
             <div> <label className="font-medium text-gray-700">Google Maps Link (Optional)</label> <Input value={formData.googleMaps || ""} onChange={(e) => handleChange("googleMaps", e.target.value || "")} placeholder="https://maps.app.goo.gl/..." /> </div>
-            <div> <label className="font-medium text-gray-700">Availability Start Date</label> <Input type="date" value={formData.startDate || ''} onChange={(e) => handleChange("startDate", e.target.value)} /> {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>} </div>
-            <div> <label className="font-medium text-gray-700">Availability End Date</label> <Input type="date" value={formData.endDate || ''} onChange={(e) => handleChange("endDate", e.target.value)} /> {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>} </div>
+            {/* <div> <label className="font-medium text-gray-700">Availability Start Date</label> <Input type="date" value={formData.startDate || ''} onChange={(e) => handleChange("startDate", e.target.value)} /> {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>} </div>
+            <div> <label className="font-medium text-gray-700">Availability End Date</label> <Input type="date" value={formData.endDate || ''} onChange={(e) => handleChange("endDate", e.target.value)} /> {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>} </div> */}
         </div>
       </div>
 

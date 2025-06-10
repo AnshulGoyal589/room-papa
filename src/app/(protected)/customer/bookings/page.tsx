@@ -22,7 +22,7 @@ export default async function MyBookingsPage() {
 
     // 2. Fetch bookings for the current user using the repository
     const bookingRepository = await getBookingRepository();
-    console.log('Fetching bookings for user:', userId);
+    // console.log('Fetching bookings for user:', userId);
     
     const userBookings = await bookingRepository.queryBookings({
         userId: userId,

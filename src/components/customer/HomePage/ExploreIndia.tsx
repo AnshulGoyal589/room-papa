@@ -1,118 +1,104 @@
 "use client"
 
 import React from 'react';
-import { MapPin } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 
-export default function ExploreIndia() {
+export default function TrendingDestinations() { // Renamed component for clarity
 
   const router = useRouter();
   const currentSearchParams = useSearchParams();
 
-  const indianDestinations = [
-    { 
-      name: 'Delhi', 
-      location : 'delhi',
+  // Using your existing destinations, adding flags, and taking the first 5 for the layout
+  const destinationsData = [
+    {
+      name: 'Delhi', // Corresponds to "New Delhi" visual slot
+      originalName: 'Delhi', // Keep original name if needed for search query
+      location: 'delhi',
       image: '/images/explore1.avif',
-      description: 'History & heritage sites',
-      properties: '1,245+ properties'
+      flag: '🇮🇳'
     },
-    { 
-      name: 'Mumbai', 
-      location : 'mumbai',
+    {
+      name: 'Mumbai', // Corresponds to "Bengaluru" visual slot
+      originalName: 'Mumbai',
+      location: 'mumbai',
       image: '/images/explore2.avif',
-      description: 'Coastal metropolis',
-      properties: '1,890+ properties'
+      flag: '🇮🇳'
     },
-    { 
-      name: 'Jaipur', 
-      location : 'jaipur',
+    {
+      name: 'Jaipur', // Corresponds to "Mumbai" visual slot in SS
+      originalName: 'Jaipur',
+      location: 'jaipur',
       image: '/images/explore3.avif',
-      description: 'Royal palaces & forts',
-      properties: '875+ properties'
+      flag: '🇮🇳'
     },
-    { 
-      name: 'Goa', 
-      location : 'goa',
+    {
+      name: 'Goa',    // Corresponds to "Chennai" visual slot in SS
+      originalName: 'Goa',
+      location: 'goa',
       image: '/images/explore4.avif',
-      description: 'Beaches & nightlife',
-      properties: '1,120+ properties'
+      flag: '🇮🇳'
     },
-    { 
-      name: 'Shimla', 
-      location : 'shimla',
+    {
+      name: 'Shimla', // Corresponds to "Varanasi" visual slot in SS
+      originalName: 'Shimla',
+      location: 'shimla',
       image: '/images/explore5.avif',
-      description: 'Hill station retreat',
-      properties: '645+ properties'
-    },
-    { 
-      name: 'Kochi', 
-      location : 'kochi',
-      image: '/images/explore6.avif',
-      description: 'Coastal cultural hub',
-      properties: '720+ properties'
+      flag: '🇮🇳'
     }
   ];
 
-  const handleSearch2 = () => {
-    const params = new URLSearchParams(currentSearchParams?.toString() || '');
-    params.set('category', 'trip');
-    router.push(`/customer/search?${params.toString()}`);
-  };
+  // If you want to use the exact names from screenshot (New Delhi, Bengaluru etc.) for display
+  // but search by your 'location' values, you can adjust the `name` field above.
+  // For this example, I'm using your original names for display.
 
   const handleSearch = (location: string) => {
     const params = new URLSearchParams(currentSearchParams?.toString() || '');
-    if (location) params.set('location', location);
-    params.set('category', 'trip');
-    
+    if (location) params.set('destination', location); // Changed 'location' to 'destination' to be more standard
+    // params.set('category', 'trip'); // You can set category if your search page needs it
     router.push(`/customer/search?${params.toString()}`);
   };
 
-  
-
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50  py-16 px-4">
-      <div className='container mx-auto' >
-      <h2 className="text-3xl font-bold mb-2 text-center">Explore India</h2>
-      <p className="text-xl text-gray-600 mb-8 text-center">These popular destinations have a lot to offer</p>
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {indianDestinations.map((destination) => (
-          <div 
-            key={destination.name} 
-            className="relative group overflow-hidden rounded-lg shadow-md"
-            onClick={() => handleSearch(destination.location)}
-          >
-            <Image
-              width={500}
-              height={300} 
-              src={destination.image} 
-              alt={destination.name}
-              className="w-full h-64 object-cover group-hover:scale-110 transition duration-500"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-4">
-              <h3 className="text-2xl font-bold text-white">{destination.name}</h3>
-              <p className="text-white/80 mb-2">{destination.description}</p>
-              <div className="flex items-center text-white/90">
-                <MapPin className="w-4 h-4 mr-1" />
-                <span className="text-sm">{destination.properties}</span>
+    <div className="py-10 px-4"> {/* Adjusted padding slightly */}
+      <div className='container mx-auto'>
+        <h2 className="text-2xl lg:text-[1.5vw] font-bold mb-1 text-gray-800">Trending destinations</h2>
+        <p className="text-sm text-gray-600 mb-6">Most popular choices for travellers from India</p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
+          {destinationsData.map((destination, index) => {
+            const isFirstRow = index < 2;
+            // Adjust height classes for desired aspect ratio and visual appeal
+            // For wider cells (first row), a less tall image might look more panoramic
+            // For narrower cells (second row), a taller image can fill the space well
+            const imageContainerHeightClass = isFirstRow ? "h-52 sm:h-60" : "h-64 sm:h-72";
+            const colSpanClass = isFirstRow ? "md:col-span-3" : "md:col-span-2";
+            return (
+              <div
+                key={destination.name + index} // Use index if names can repeat, though ideally names are unique
+                className={`group ${colSpanClass} rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer`}
+                onClick={() => handleSearch(destination.location)}
+              >
+                <div className={`relative w-full ${imageContainerHeightClass}`}>
+                  <Image
+                    fill // Replaces width and height for responsive fill
+                    src={destination.image}
+                    alt={destination.name}
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw" // Example sizes, adjust as needed
+                    priority={index < 2} // Prioritize loading images in the first row
+                  />
+                  <div className="absolute top-0 left-0 right-0 p-3 bg-gradient-to-b from-black/60 via-black/30 to-transparent">
+                    <h3 className="text-lg sm:text-xl font-bold text-white flex items-center">
+                      {destination.name}
+                      <span className="ml-2 text-sm sm:text-base">{destination.flag}</span>
+                    </h3>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      
-      <div className="mt-8 text-center">
-        <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-300"
-        onClick={(e) => {
-          e.stopPropagation();
-          handleSearch2();
-        }}
-        >
-          Discover All of India
-        </button>
-      </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

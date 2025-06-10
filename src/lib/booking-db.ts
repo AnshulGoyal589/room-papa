@@ -39,6 +39,7 @@ export class BookingRepository {
       title: details.title,
       locationFrom: details.locationFrom,
       locationTo: details.locationTo,
+      reservationPolicy: details.reservationPolicy, // Ensure this is included if relevant
       type: details.type, // This is the sub-type like 'Hotel', 'Flight'
       ownerId: details.ownerId, // Ensure ownerId from input details is mapped
     };
@@ -101,6 +102,8 @@ export class BookingRepository {
     }
 
     const result = await this.collection.insertOne(newBooking);
+    // console.log("New booking created with ID:", newBooking);
+    // console.log("Insert result:", result);
 
     return {
       id: result.insertedId.toString(),
