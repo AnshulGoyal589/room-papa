@@ -58,8 +58,8 @@ export default function SearchPage() {
         </button>
       </div>
 
-      <main className="container mx-auto py-16">
-        <div className="flex flex-col md:flex-row md:gap-8 relative">
+      <main className="container mx-auto max-w-7xl mt-12">
+        <div className="flex flex-col md:flex-row relative">
           
           {/* Overlay for mobile when filter is open */}
           {isFilterOpen && (
@@ -78,7 +78,7 @@ export default function SearchPage() {
               transform transition-transform duration-300 ease-in-out 
               ${isFilterOpen ? 'translate-x-0' : '-translate-x-full'}
               md:translate-x-0
-              md:static md:h-auto md:w-1/5 md:max-w-none md:transform-none md:shadow-none md:bg-transparent md:z-auto
+              md:static md:h-auto md:w-1/4 md:max-w-none md:transform-none md:shadow-none md:bg-transparent md:z-auto
               overflow-y-auto md:overflow-y-visible
             `}
           >
@@ -98,7 +98,7 @@ export default function SearchPage() {
           </div>
 
           {/* Results Section */}
-          <div className="w-full px-4 md:w-4/5">
+          <div className=" w-full md:w-3/4">
             <SearchResults />
           </div>
         </div>

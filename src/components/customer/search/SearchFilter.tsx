@@ -288,7 +288,20 @@ export default function SearchFilter() {
         </div>
       </FilterSection>
 
-      {/* Property-specific filters */}
+      <FilterSection title="Popular Filters" show={filterMode === 'property' || filterMode === 'travelling' || filterMode === 'trip'}>
+        <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
+          {categoryOptions.popularFilters.map((item) => (
+            <CheckboxItem
+              key={item}
+              id={`popular-${item}`}
+              label={item}
+              checked={popularFilters.includes(item)}
+              onChange={() => handleCheckboxChange(item, popularFilters, setPopularFilters)}
+            />
+          ))}
+        </div>
+      </FilterSection>
+      
       <FilterSection title="Property Type" show={filterMode === 'property'}>
         <select
           value={propertyType}
@@ -316,19 +329,6 @@ export default function SearchFilter() {
         </select>
       </FilterSection>
       
-      <FilterSection title="Popular Filters" show={filterMode === 'property' || filterMode === 'travelling' || filterMode === 'trip'}>
-        <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
-          {categoryOptions.popularFilters.map((item) => (
-            <CheckboxItem
-              key={item}
-              id={`popular-${item}`}
-              label={item}
-              checked={popularFilters.includes(item)}
-              onChange={() => handleCheckboxChange(item, popularFilters, setPopularFilters)}
-            />
-          ))}
-        </div>
-      </FilterSection>
 
       <FilterSection title="Property Accessibility" show={filterMode === 'property'}>
          <div className="space-y-1 max-h-60 overflow-y-auto pr-1">

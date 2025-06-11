@@ -8,8 +8,7 @@ import {
     MapPin, 
     Calendar, 
     Bookmark, 
-    Heart, 
-    X, 
+    Heart,
     BedDouble, 
     Sparkles, 
     Plane, 
@@ -89,7 +88,7 @@ export default function SearchResults() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [category, setCategory] = useState<string>('property');
-  const [filterChips, setFilterChips] = useState<Array<{key: string, value: string}>>([]);
+  // const [filterChips, setFilterChips] = useState<Array<{key: string, value: string}>>([]);
   const [activeSortKey, setActiveSortKey] = useState<string>('recommended_desc');
 
   useEffect(() => {
@@ -108,8 +107,6 @@ export default function SearchResults() {
         chips.push({ key, value });
       }
     });
-    setFilterChips(chips);
-
     const currentSortBy = params.sortBy;
     const currentSortOrder = params.sortOrder;
     if (currentSortBy) {
@@ -146,6 +143,8 @@ export default function SearchResults() {
           throw new Error(`API Error: ${response.status}`);
         }
         const data = await response.json();
+        console.log('Search results:', data);
+        // storingFrames(data.results.googleMaps);
         setResults(data.results || []); 
         setTotalResults(data.total || 0);
         setTotalPages(Math.ceil((data.total || 0) / (data.limit || 10)));
@@ -170,39 +169,39 @@ export default function SearchResults() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleRemoveFilter = (chipKey: string) => {
-    const params = new URLSearchParams(currentSearchParams?.toString() || '');
-    params.delete(chipKey);
-    params.set('page', '1'); 
-    router.push(`/customer/search?${params.toString()}`, { scroll: false });
-  };
+  // const handleRemoveFilter = (chipKey: string) => {
+  //   const params = new URLSearchParams(currentSearchParams?.toString() || '');
+  //   params.delete(chipKey);
+  //   params.set('page', '1'); 
+  //   router.push(`/customer/search?${params.toString()}`, { scroll: false });
+  // };
 
-  const formatChipLabel = (key: string, value: string): string => {
-    switch (key) {
-        case 'minPrice': return `Min Price: ${Number(value).toLocaleString()}`;
-        case 'maxPrice': 
-            return Number(value) > 200000 ? `Max Price: ${Number(200000).toLocaleString()}+` : `Max Price: ${Number(value).toLocaleString()}`;
-        case 'rooms': return `${value} Room${parseInt(value) > 1 ? 's' : ''}`;
-        case 'city': return `City: ${value}`;
-        case 'country': return `Country: ${value}`;
-        case 'checkIn': return `Check-in: ${new Date(value).toLocaleDateString()}`;
-        case 'checkOut': return `Check-out: ${new Date(value).toLocaleDateString()}`;
-        case 'adults': return `${value} Adult${parseInt(value) > 1 ? 's' : ''}`;
-        case 'children': return `${value} Child${parseInt(value) > 1 ? 'ren' : ''}`;
-        case 'pets': return value === 'true' ? 'Pets Allowed' : 'No Pets';
-        case 'title': return `Keyword: ${value}`;
-        case 'propertyType': return `Type: ${value}`;
-        case 'propertyRating': return `Rating: ${value}+ Stars`;
-        default:
-          const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-          if (value.includes(',')) {
-            const values = value.split(',');
-            if (values.length > 2) return `${formattedKey}: ${values.slice(0, 2).join(', ')} +${values.length - 2} more`;
-            return `${formattedKey}: ${values.join(', ')}`;
-          }
-          return `${formattedKey}: ${value}`;
-      }
-  };
+  // const formatChipLabel = (key: string, value: string): string => {
+  //   switch (key) {
+  //       case 'minPrice': return `Min Price: ${Number(value).toLocaleString()}`;
+  //       case 'maxPrice': 
+  //           return Number(value) > 200000 ? `Max Price: ${Number(200000).toLocaleString()}+` : `Max Price: ${Number(value).toLocaleString()}`;
+  //       case 'rooms': return `${value} Room${parseInt(value) > 1 ? 's' : ''}`;
+  //       case 'city': return `City: ${value}`;
+  //       case 'country': return `Country: ${value}`;
+  //       case 'checkIn': return `Check-in: ${new Date(value).toLocaleDateString()}`;
+  //       case 'checkOut': return `Check-out: ${new Date(value).toLocaleDateString()}`;
+  //       case 'adults': return `${value} Adult${parseInt(value) > 1 ? 's' : ''}`;
+  //       case 'children': return `${value} Child${parseInt(value) > 1 ? 'ren' : ''}`;
+  //       case 'pets': return value === 'true' ? 'Pets Allowed' : 'No Pets';
+  //       case 'title': return `Keyword: ${value}`;
+  //       case 'propertyType': return `Type: ${value}`;
+  //       case 'propertyRating': return `Rating: ${value}+ Stars`;
+  //       default:
+  //         const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+  //         if (value.includes(',')) {
+  //           const values = value.split(',');
+  //           if (values.length > 2) return `${formattedKey}: ${values.slice(0, 2).join(', ')} +${values.length - 2} more`;
+  //           return `${formattedKey}: ${values.join(', ')}`;
+  //         }
+  //         return `${formattedKey}: ${value}`;
+  //     }
+  // };
 
   const renderPropertyCard = (property: Property) => {
     const ratingDesc = getRatingDescription(property.totalRating || property.propertyRating); // Use totalRating if available
@@ -554,51 +553,11 @@ export default function SearchResults() {
   return (
     <div className="bg-blue-50/30 min-h-screen py-6 sm:py-8 px-2 sm:px-4 md:px-6 lg:px-8"> {/* Added light blue background to outer container */}
       <div className="max-w-6xl mx-auto"> {/* Content wrapper */}
-        {filterChips.length > 0 && (
-          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-white rounded-lg border border-gray-200 shadow-sm"> {/* Filters on white bg */}
-            <h3 className="text-sm sm:text-md font-semibold mb-2 sm:mb-3 text-gray-700">Active Filters:</h3>
-            <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center">
-              {filterChips.map((chip) => (
-                <div 
-                  key={`${chip.key}-${chip.value}`} 
-                  className="flex items-center bg-blue-100 text-blue-700 rounded-full px-2.5 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-medium"
-                >
-                  <span>{formatChipLabel(chip.key, chip.value)}</span>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); handleRemoveFilter(chip.key); }}
-                    className="ml-1.5 sm:ml-2 text-blue-500 hover:text-blue-700"
-                    aria-label={`Remove filter ${chip.key}`}
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
-              {filterChips.length > 0 && (
-                <button 
-                  onClick={() => {
-                    const params = new URLSearchParams();
-                    if (category) params.set('category', category); 
-                    const currentSortOption = sortTabsConfig.find(tab => tab.key === activeSortKey);
-                    if (currentSortOption && currentSortOption.sortByValue !== 'recommended') {
-                      params.set('sortBy', currentSortOption.sortByValue);
-                      params.set('sortOrder', currentSortOption.sortOrderValue);
-                    }
-                    router.push(`/customer/search?${params.toString()}`);
-                  }}
-                  className="text-xs sm:text-sm text-red-600 hover:text-red-800 hover:underline font-medium ml-1 sm:ml-2"
-                >
-                  Clear all filters
-                </button>
-              )}
-            </div>
-          </div>
-        )}
 
         <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-3 sm:mb-4"> 
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2 sm:mb-0">
             {isLoading ? 'Searching...' : `${totalResults} match${totalResults !== 1 ? 'es' : ''} found`}
           </h2>
-          {/* Sort tabs can go here if needed, or remain where they are if outside this component */}
         </div>
 
         
