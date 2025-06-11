@@ -6,7 +6,7 @@ import Image from 'next/image';
 const BookingOffers = () => {
   const { openSignIn } = useClerk();
   return (
-    <section className="bg-white py-8 font-sans mt-16">
+    <section className="bg-white py-8 font-sans mt-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}

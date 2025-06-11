@@ -7,6 +7,52 @@ interface DateRange {
   endDate: Date;
 }
 
+// Type for recent search items
+export interface RecentSearchItem {
+  id: string; // Unique ID, can be a composite of search params
+  title: string;
+  checkIn: string; // YYYY-MM-DD format
+  checkOut: string; // YYYY-MM-DD format
+  adults: number;
+  children: number;
+  rooms: number;
+  pets: boolean;
+  timestamp: number; // For sorting
+}
+
+const MAX_RECENT_SEARCHES = 3;
+const RECENT_SEARCHES_KEY = 'recentStaysSearches';
+
+
+// Helper function to save a search to recent searches list
+const saveSearchToRecentList = (searchData: Omit<RecentSearchItem, 'id' | 'timestamp'>) => {
+  try {
+    const existingSearchesString = localStorage.getItem(RECENT_SEARCHES_KEY);
+    let searches: RecentSearchItem[] = existingSearchesString ? JSON.parse(existingSearchesString) : [];
+
+    const newSearchItem: RecentSearchItem = {
+      ...searchData,
+      // Create a simple composite ID to identify unique searches
+      id: `${searchData.title}-${searchData.checkIn}-${searchData.checkOut}-${searchData.adults}-${searchData.children}-${searchData.rooms}-${searchData.pets}`,
+      timestamp: Date.now(),
+    };
+
+    // Remove any existing search with the same composite ID to avoid duplicates and refresh timestamp
+    searches = searches.filter(s => s.id !== newSearchItem.id);
+
+    // Add the new search to the beginning of the list
+    searches.unshift(newSearchItem);
+
+    // Keep only the top MAX_RECENT_SEARCHES
+    searches = searches.slice(0, MAX_RECENT_SEARCHES);
+
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches));
+  } catch (error) {
+    console.error("Error saving recent search to list:", error);
+  }
+};
+
+
 export default function StaysSearchForm() {
   // State variables with proper typing
   const [title, setLocation] = useState<string>('');
@@ -36,7 +82,7 @@ export default function StaysSearchForm() {
     }).replace(',', '');
   };
 
-  // Format date for URL parameters (YYYY-MM-DD)
+  // Format date for URL parameters AND localStorage (YYYY-MM-DD)
   const formatDateForURL = (date: Date): string => {
     const year = date.getFullYear();
     const month = date.getMonth() + 1; 
@@ -48,178 +94,145 @@ export default function StaysSearchForm() {
     return `${year}-${monthFormatted}-${dayFormatted}`;
   };
 
-  // Parse date from URL parameter (YYYY-MM-DD string)
+  // Parse date from URL parameter OR localStorage (YYYY-MM-DD string)
   const parseDateFromURL = (dateString: string): Date => {
     const parts = dateString.split('-');
+    if (parts.length !== 3) return new Date(NaN); // Invalid format
+
     const year = parseInt(parts[0], 10);
     const month = parseInt(parts[1], 10); 
     const day = parseInt(parts[2], 10);
     
+    // Check if parts are valid numbers
+    if (isNaN(year) || isNaN(month) || isNaN(day)) {
+        return new Date(NaN);
+    }
+    // Create date in local timezone. Month is 0-indexed for Date constructor.
     return new Date(year, month - 1, day, 0, 0, 0, 0);
   };
 
-  // Get initial values from URL parameters
+
+  // Get initial values from URL parameters or localStorage
   const setDefaultsFromURL = () => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const today = new Date();
-      today.setHours(0, 0, 0, 0); // Today at midnight
+      today.setHours(0, 0, 0, 0); 
 
       let effectiveStartDate: Date;
       let effectiveEndDate: Date;
 
-      // Default values
       const defaultStartDate = new Date(today);
       const defaultEndDate = new Date(today);
       defaultEndDate.setDate(today.getDate() + 7);
 
-      // Attempt to load from URL
       let urlStartDate: Date | null = null;
       let urlEndDate: Date | null = null;
 
       const checkInParam = urlParams.get('checkIn');
       if (checkInParam) {
         const parsed = parseDateFromURL(checkInParam);
-        if (!isNaN(parsed.getTime())) {
-          urlStartDate = parsed;
-        }
+        if (!isNaN(parsed.getTime())) urlStartDate = parsed;
       }
 
       const checkOutParam = urlParams.get('checkOut');
       if (checkOutParam) {
         const parsed = parseDateFromURL(checkOutParam);
-        if (!isNaN(parsed.getTime())) {
-          urlEndDate = parsed;
-        }
+        if (!isNaN(parsed.getTime())) urlEndDate = parsed;
       }
 
-      // Attempt to load from localStorage
       let storedStartDate: Date | null = null;
       let storedEndDate: Date | null = null;
 
-      const storedCheckInString = localStorage.getItem('checkIn');
+      const storedCheckInString = localStorage.getItem('checkIn'); // Expect YYYY-MM-DD
       if (storedCheckInString) {
-        const parsed = new Date(storedCheckInString);
-        if (!isNaN(parsed.getTime())) {
-          parsed.setHours(0, 0, 0, 0); // Normalize
-          storedStartDate = parsed;
-        }
+        const parsed = parseDateFromURL(storedCheckInString);
+        if (!isNaN(parsed.getTime())) storedStartDate = parsed;
       }
 
-      const storedCheckOutString = localStorage.getItem('checkOut');
+      const storedCheckOutString = localStorage.getItem('checkOut'); // Expect YYYY-MM-DD
       if (storedCheckOutString) {
-        const parsed = new Date(storedCheckOutString);
-        if (!isNaN(parsed.getTime())) {
-          parsed.setHours(0, 0, 0, 0); // Normalize
-          storedEndDate = parsed;
-        }
+        const parsed = parseDateFromURL(storedCheckOutString);
+        if (!isNaN(parsed.getTime())) storedEndDate = parsed;
       }
 
-      // Determine effectiveStartDate:
-      // Priority: URL > localStorage > Default. Must be >= today.
       if (urlStartDate && urlStartDate.getTime() >= today.getTime()) {
         effectiveStartDate = urlStartDate;
       } else if (storedStartDate && storedStartDate.getTime() >= today.getTime()) {
         effectiveStartDate = storedStartDate;
       } else {
-        effectiveStartDate = defaultStartDate; // Today
+        effectiveStartDate = defaultStartDate;
       }
 
-      // Determine effectiveEndDate:
-      // Priority: URL > localStorage > Default. Must be >= effectiveStartDate.
       if (urlEndDate && urlEndDate.getTime() >= effectiveStartDate.getTime()) {
         effectiveEndDate = urlEndDate;
       } else if (storedEndDate && storedEndDate.getTime() >= effectiveStartDate.getTime()) {
         effectiveEndDate = storedEndDate;
       } else {
-        // If no valid URL/stored end date, or if they are before start date,
-        // calculate default duration from effectiveStartDate.
         effectiveEndDate = new Date(effectiveStartDate);
         effectiveEndDate.setDate(effectiveStartDate.getDate() + 7);
       }
       
-      // Final safeguard: If endDate somehow ended up before startDate (should be prevented by above logic)
       if (effectiveEndDate.getTime() < effectiveStartDate.getTime()) {
           effectiveEndDate = new Date(effectiveStartDate);
           effectiveEndDate.setDate(effectiveStartDate.getDate() + 7);
       }
 
-      // Set state and update localStorage for dates
       setDateRange({ startDate: effectiveStartDate, endDate: effectiveEndDate });
-      localStorage.setItem('checkIn', effectiveStartDate.toISOString());
-      localStorage.setItem('checkOut', effectiveEndDate.toISOString());
+      localStorage.setItem('checkIn', formatDateForURL(effectiveStartDate));
+      localStorage.setItem('checkOut', formatDateForURL(effectiveEndDate));
 
       setSelectedMonth(effectiveStartDate.getMonth());
       setSelectedYear(effectiveStartDate.getFullYear());
       
-      // --- Location ---
       const titleParam = urlParams.get('title');
       const storedTitle = localStorage.getItem('title');
-      let currentTitle = ''; // Default if nothing else
-      if (titleParam !== null) { // URL param takes precedence, even if empty string
+      let currentTitle = ''; 
+      if (titleParam !== null) {
           currentTitle = titleParam;
-      } else if (storedTitle !== null) { // Fallback to localStorage
+      } else if (storedTitle !== null) {
           currentTitle = storedTitle;
       }
       setLocation(currentTitle);
-      localStorage.setItem('title', currentTitle); // Store the determined value
+      localStorage.setItem('title', currentTitle);
 
-      // --- Adults ---
-      let currentAdults = 2; // Default
+      let currentAdults = 2;
       const adultsParam = urlParams.get('adults');
       const storedAdults = localStorage.getItem('adults');
-      if (adultsParam !== null) {
-          currentAdults = parseInt(adultsParam, 10);
-      } else if (storedAdults !== null) {
-          currentAdults = parseInt(storedAdults, 10);
-      }
+      if (adultsParam !== null) currentAdults = parseInt(adultsParam, 10);
+      else if (storedAdults !== null) currentAdults = parseInt(storedAdults, 10);
       currentAdults = (isNaN(currentAdults) || currentAdults < 1) ? 2 : currentAdults;
       setAdults(currentAdults);
       localStorage.setItem('adults', currentAdults.toString());
 
-      // --- Children ---
-      let currentChildren = 0; // Default
+      let currentChildren = 0;
       const childrenParam = urlParams.get('children');
       const storedChildren = localStorage.getItem('children');
-      if (childrenParam !== null) {
-          currentChildren = parseInt(childrenParam, 10);
-      } else if (storedChildren !== null) {
-          currentChildren = parseInt(storedChildren, 10);
-      }
+      if (childrenParam !== null) currentChildren = parseInt(childrenParam, 10);
+      else if (storedChildren !== null) currentChildren = parseInt(storedChildren, 10);
       currentChildren = (isNaN(currentChildren) || currentChildren < 0) ? 0 : currentChildren;
       setChildren(currentChildren);
       localStorage.setItem('children', currentChildren.toString());
 
-      // --- Rooms ---
-      let currentRooms = 1; // Default
+      let currentRooms = 1;
       const roomsParam = urlParams.get('rooms');
       const storedRooms = localStorage.getItem('rooms');
-      if (roomsParam !== null) {
-          currentRooms = parseInt(roomsParam, 10);
-      } else if (storedRooms !== null) {
-          currentRooms = parseInt(storedRooms, 10);
-      }
+      if (roomsParam !== null) currentRooms = parseInt(roomsParam, 10);
+      else if (storedRooms !== null) currentRooms = parseInt(storedRooms, 10);
       currentRooms = (isNaN(currentRooms) || currentRooms < 1) ? 1 : currentRooms;
-      // The useEffect for rooms will adjust it based on adults later if needed, and update localStorage.
-      // Setting state here first, then useEffect might re-evaluate.
       setRooms(currentRooms); 
-      localStorage.setItem('rooms', currentRooms.toString()); // Initial set, might be overridden by useEffect
+      localStorage.setItem('rooms', currentRooms.toString());
 
-      // --- Pets ---
-      let currentHasPets = false; // Default
+      let currentHasPets = false;
       const petsParam = urlParams.get('pets');
       const storedPets = localStorage.getItem('pets');
-      if (petsParam !== null) {
-          currentHasPets = petsParam === 'true';
-      } else if (storedPets !== null) {
-          currentHasPets = storedPets === 'true';
-      }
+      if (petsParam !== null) currentHasPets = petsParam === 'true';
+      else if (storedPets !== null) currentHasPets = storedPets === 'true';
       setHasPets(currentHasPets);
       localStorage.setItem('pets', currentHasPets.toString());
 
     } catch (error) {
       console.error("Error initializing from URL/localStorage:", error);
-      // Fallback to hardcoded defaults if any error occurs
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const sevenDaysLater = new Date(today);
       sevenDaysLater.setDate(today.getDate() + 7);
@@ -227,19 +240,11 @@ export default function StaysSearchForm() {
       setDateRange({ startDate: today, endDate: sevenDaysLater });
       setSelectedMonth(today.getMonth());
       setSelectedYear(today.getFullYear());
-      setLocation('');
-      setAdults(2);
-      setChildren(0);
-      setRooms(1);
-      setHasPets(false);
+      setLocation(''); setAdults(2); setChildren(0); setRooms(1); setHasPets(false);
 
-      // Clear potentially problematic localStorage items to prevent recurring issues
-      localStorage.removeItem('checkIn');
-      localStorage.removeItem('checkOut');
-      localStorage.removeItem('title');
-      localStorage.removeItem('adults');
-      localStorage.removeItem('children');
-      localStorage.removeItem('rooms');
+      localStorage.removeItem('checkIn'); localStorage.removeItem('checkOut');
+      localStorage.removeItem('title'); localStorage.removeItem('adults');
+      localStorage.removeItem('children'); localStorage.removeItem('rooms');
       localStorage.removeItem('pets');
     }
   };
@@ -262,14 +267,29 @@ export default function StaysSearchForm() {
     
     if (title) params.set('title', title);
     
-    params.set('checkIn', formatDateForURL(dateRange.startDate));
-    params.set('checkOut', formatDateForURL(dateRange.endDate));
+    const checkInStr = formatDateForURL(dateRange.startDate);
+    const checkOutStr = formatDateForURL(dateRange.endDate);
+
+    params.set('checkIn', checkInStr);
+    params.set('checkOut', checkOutStr);
     
     params.set('adults', adults.toString());
     params.set('children', children.toString());
     params.set('rooms', rooms.toString());
     
     if (hasPets) params.set('pets', 'true');
+
+    // Save to recent searches list
+    const currentSearchData = {
+      title: title,
+      checkIn: checkInStr,
+      checkOut: checkOutStr,
+      adults: adults,
+      children: children,
+      rooms: rooms,
+      pets: hasPets,
+    };
+    saveSearchToRecentList(currentSearchData);
 
     window.location.href = `/customer/search?${params.toString()}`;
   };
@@ -280,29 +300,29 @@ export default function StaysSearchForm() {
     if (selectionPhase === 0) {
       setDateRange({ 
         startDate: newDate,
-        endDate: newDate // Temporarily set end date to new date
+        endDate: newDate 
       });
-      setSelectedMonth(newDate.getMonth()); // Update calendar view to month of startDate
+      setSelectedMonth(newDate.getMonth()); 
       setSelectedYear(newDate.getFullYear());
       setSelectionPhase(1);
+      // Don't save to localStorage yet, wait for end date
     } else if (selectionPhase === 1) {
       const currentStartDate = dateRange.startDate;
+      let finalStartDate = currentStartDate;
+      let finalEndDate = newDate;
       
-      if (newDate.getTime() >= currentStartDate.getTime()) { // Allow same day selection for start and end
-        setDateRange({ 
-          startDate: currentStartDate,
-          endDate: newDate
-        });
-        localStorage.setItem('checkIn', currentStartDate.toISOString());
-        localStorage.setItem('checkOut', newDate.toISOString());
-      } else { 
-        setDateRange({
-          startDate: newDate,
-          endDate: currentStartDate 
-        });
-        localStorage.setItem('checkIn', newDate.toISOString());
-        localStorage.setItem('checkOut', currentStartDate.toISOString());
+      if (newDate.getTime() < currentStartDate.getTime()) { 
+        finalStartDate = newDate;
+        finalEndDate = currentStartDate;
       }
+      
+      setDateRange({ 
+        startDate: finalStartDate,
+        endDate: finalEndDate
+      });
+      localStorage.setItem('checkIn', formatDateForURL(finalStartDate));
+      localStorage.setItem('checkOut', formatDateForURL(finalEndDate));
+      
       setSelectionPhase(0); 
       setTimeout(() => setShowCalendar(false), 300);
     }
@@ -320,7 +340,6 @@ export default function StaysSearchForm() {
   const prevMonth = () => {
     const today = new Date();
     const currentCalendarDate = new Date(selectedYear, selectedMonth, 1);
-    // Prevent navigating to months before the current real-world month
     if (currentCalendarDate.getFullYear() === today.getFullYear() && currentCalendarDate.getMonth() === today.getMonth()) {
       return; 
     }
@@ -391,24 +410,30 @@ export default function StaysSearchForm() {
       if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
         setShowCalendar(false);
         if (selectionPhase === 1) {
-          // If mid-selection and calendar closes, reset to a valid range or clear.
-          // Here, we'll reset to the last confirmed dateRange if only startDate was picked.
-          // Or simply reset selectionPhase.
-          const today = new Date(); today.setHours(0,0,0,0);
-          const sevenDaysLater = new Date(today); sevenDaysLater.setDate(today.getDate()+7); sevenDaysLater.setHours(0,0,0,0);
-          
-          const lastCheckIn = localStorage.getItem('checkIn');
-          const lastCheckOut = localStorage.getItem('checkOut');
+          // If only start date was picked and calendar closed, finalize with stored/default end date
+          const storedCheckIn = localStorage.getItem('checkIn');
+          const storedCheckOut = localStorage.getItem('checkOut');
+          const sDate = dateRange.startDate; // Keep the picked start date
+          let eDate = dateRange.startDate; // Default end date to start date
 
-          let sDate = today;
-          let eDate = sevenDaysLater;
-
-          if(lastCheckIn && lastCheckOut){
-            sDate = new Date(lastCheckIn); sDate.setHours(0,0,0,0);
-            eDate = new Date(lastCheckOut); eDate.setHours(0,0,0,0);
+          if(storedCheckIn && storedCheckOut){
+             const parsedStoredCheckIn = parseDateFromURL(storedCheckIn);
+             const parsedStoredCheckOut = parseDateFromURL(storedCheckOut);
+             if(!isNaN(parsedStoredCheckIn.getTime()) && !isNaN(parsedStoredCheckOut.getTime()) && parsedStoredCheckOut.getTime() >= sDate.getTime()){
+                eDate = parsedStoredCheckOut;
+             } else {
+                // If stored checkout is invalid or before picked start date, set it same as start date or +7 days
+                eDate = new Date(sDate);
+                eDate.setDate(sDate.getDate() + 7); // Default to 7 days if closing mid-pick
+             }
+          } else {
+             eDate = new Date(sDate);
+             eDate.setDate(sDate.getDate() + 7);
           }
           
-          setDateRange({startDate: sDate, endDate: eDate}); // Revert to last saved/default
+          setDateRange({startDate: sDate, endDate: eDate});
+          localStorage.setItem('checkIn', formatDateForURL(sDate));
+          localStorage.setItem('checkOut', formatDateForURL(eDate));
           setSelectionPhase(0);
         }
       }
@@ -418,7 +443,7 @@ export default function StaysSearchForm() {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [selectionPhase]);
+  }, [selectionPhase, dateRange.startDate, parseDateFromURL, formatDateForURL]); // Added dependencies
 
   const adjustGuests = (type: 'adults' | 'children' | 'rooms', operation: 'add' | 'subtract') => {
     let currentAdults = adults;
@@ -429,11 +454,10 @@ export default function StaysSearchForm() {
       if (type === 'adults') currentAdults++;
       if (type === 'children') currentChildren++;
       if (type === 'rooms') currentRooms++;
-    } else { // subtract
+    } else { 
       if (type === 'adults' && adults > 1) currentAdults--;
       if (type === 'children' && children > 0) currentChildren--;
       if (type === 'rooms' && rooms > 1) {
-         // Prevent reducing rooms below what's needed for current adults
         const minRoomsForAdults = Math.ceil(adults / 3);
         if (rooms -1 >= minRoomsForAdults) {
             currentRooms--;
@@ -441,7 +465,6 @@ export default function StaysSearchForm() {
       }
     }
     
-    // Auto-adjust rooms if adults changed
     if (type === 'adults') {
         const requiredRoomsForNewAdults = Math.ceil(currentAdults / 3);
         if (currentRooms < requiredRoomsForNewAdults) {
@@ -451,7 +474,7 @@ export default function StaysSearchForm() {
     
     setAdults(currentAdults);
     setChildren(currentChildren);
-    setRooms(currentRooms); // This will trigger the useEffect for rooms if adults changed it
+    setRooms(currentRooms);
 
     localStorage.setItem('adults', currentAdults.toString());
     localStorage.setItem('children', currentChildren.toString());
@@ -498,11 +521,10 @@ export default function StaysSearchForm() {
           <div 
             className="bg-white text-black p-4 h-full rounded-md flex items-center justify-between border-yellow-400 border-3 cursor-pointer"
             onClick={() => {
-              if (!showCalendar) { // Opening calendar
+              if (!showCalendar) { 
                 const currentStartDate = dateRange.startDate;
                 setSelectedMonth(currentStartDate.getMonth());
                 setSelectedYear(currentStartDate.getFullYear());
-                 // If no selection is in progress, set phase to 0, ready for start date.
                 if(selectionPhase === 1 && dateRange.startDate.getTime() === dateRange.endDate.getTime()){
                   // If only start date was selected, keep phase 1
                 } else {
@@ -528,7 +550,7 @@ export default function StaysSearchForm() {
           {showCalendar && (
             <div 
               ref={calendarRef}
-              className="absolute left-0 mt-2 bg-white shadow-lg rounded-lg p-4 z-20 border border-gray-200 w-full md:w-[650px]" // Responsive width
+              className="absolute left-0 mt-2 bg-white shadow-lg rounded-lg p-4 z-20 border border-gray-200 w-full md:w-[650px]"
             >
               <div className="flex justify-between items-center mb-4">
                  <button className="text-blue-600">
@@ -536,11 +558,9 @@ export default function StaysSearchForm() {
                 </button>
               </div>
               
-              {/* Container for months with responsive flex direction */}
               <div className="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
-                {/* Current Month */}
                 <div className="flex-1">
-                  <div className="flex justify-between items-center mb-2"> {/* Changed justify-start to justify-between */}
+                  <div className="flex justify-between items-center mb-2">
                     <button 
                       onClick={prevMonth} 
                       className={`text-gray-500 p-1 hover:bg-gray-100 rounded-full ${isPrevMonthDisabled() ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -548,8 +568,8 @@ export default function StaysSearchForm() {
                     >
                       {'<'}
                     </button>
-                    <h3 className="font-bold text-center">{currentMonthName} {selectedYear}</h3> {/* Added text-center */}
-                    <div className="w-6"></div> {/* Spacer to balance the layout if next button is not here */}
+                    <h3 className="font-bold text-center">{currentMonthName} {selectedYear}</h3>
+                    <div className="w-6"></div> 
                   </div>
                   
                   <div className="grid grid-cols-7 gap-1">
@@ -565,19 +585,12 @@ export default function StaysSearchForm() {
                       const isSingleDaySelection = isStart && isEnd;
                       
                       let cellClass = `text-center py-2 rounded-full ${!day ? 'text-transparent' : 'cursor-pointer'}`;
-                      if (disabled) {
-                        cellClass += ' text-gray-300 cursor-not-allowed';
-                      } else if (isSingleDaySelection) {
-                        cellClass += ' bg-blue-600 text-white !rounded-full';
-                      } else if (isStart) {
-                        cellClass += ' bg-blue-600 text-white rounded-l-full rounded-r-none';
-                      } else if (isEnd) {
-                        cellClass += ' bg-blue-600 text-white rounded-r-full rounded-l-none';
-                      } else if (inRange) {
-                        cellClass += ' bg-blue-300 text-blue-800 rounded-none'; // No rounding for mid-range dates
-                      } else {
-                        cellClass += ' hover:bg-blue-100';
-                      }
+                      if (disabled) cellClass += ' text-gray-300 cursor-not-allowed';
+                      else if (isSingleDaySelection) cellClass += ' bg-blue-600 text-white !rounded-full';
+                      else if (isStart) cellClass += ' bg-blue-600 text-white rounded-l-full rounded-r-none';
+                      else if (isEnd) cellClass += ' bg-blue-600 text-white rounded-r-full rounded-l-none';
+                      else if (inRange) cellClass += ' bg-blue-300 text-blue-800 rounded-none';
+                      else cellClass += ' hover:bg-blue-100';
 
                       return (
                         <div 
@@ -592,11 +605,10 @@ export default function StaysSearchForm() {
                   </div>
                 </div>
                 
-                {/* Next Month */}
                 <div className="flex-1">
-                  <div className="flex justify-between items-center mb-2"> {/* Changed justify-start to justify-between */}
-                     <div className="w-6"></div> {/* Spacer to balance the layout */}
-                    <h3 className="font-bold text-center"> {/* Added text-center */}
+                  <div className="flex justify-between items-center mb-2">
+                     <div className="w-6"></div>
+                    <h3 className="font-bold text-center">
                       {nextMonthName} {selectedMonth === 11 ? selectedYear + 1 : selectedYear}
                     </h3>
                     <button onClick={nextMonth} className="text-gray-500 p-1 hover:bg-gray-100 rounded-full">{'>'}</button>
@@ -617,19 +629,12 @@ export default function StaysSearchForm() {
                       const isSingleDaySelection = isStart && isEnd;
 
                       let cellClass = `text-center py-2 rounded-full ${!day ? 'text-transparent' : 'cursor-pointer'}`;
-                      if (disabled) {
-                        cellClass += ' text-gray-300 cursor-not-allowed';
-                      } else if (isSingleDaySelection) {
-                        cellClass += ' bg-blue-600 text-white !rounded-full';
-                      } else if (isStart) {
-                        cellClass += ' bg-blue-600 text-white rounded-l-full rounded-r-none';
-                      } else if (isEnd) {
-                        cellClass += ' bg-blue-600 text-white rounded-r-full rounded-l-none';
-                      } else if (inRange) {
-                        cellClass += ' bg-blue-300 text-blue-800 rounded-none';
-                      } else {
-                        cellClass += ' hover:bg-blue-100';
-                      }
+                      if (disabled) cellClass += ' text-gray-300 cursor-not-allowed';
+                      else if (isSingleDaySelection) cellClass += ' bg-blue-600 text-white !rounded-full';
+                      else if (isStart) cellClass += ' bg-blue-600 text-white rounded-l-full rounded-r-none';
+                      else if (isEnd) cellClass += ' bg-blue-600 text-white rounded-r-full rounded-l-none';
+                      else if (inRange) cellClass += ' bg-blue-300 text-blue-800 rounded-none';
+                      else cellClass += ' hover:bg-blue-100';
                       
                       return (
                         <div 
@@ -669,7 +674,6 @@ export default function StaysSearchForm() {
               className="absolute right-0 mt-2 bg-white shadow-lg rounded-lg p-4 z-20 border border-gray-200 w-72"
             >
               <div className="space-y-4">
-                {/* Adults */}
                 <div className="flex justify-between items-center">
                   <div>
                     <span className="font-medium">Adults</span>
@@ -680,20 +684,15 @@ export default function StaysSearchForm() {
                       className={`p-1 rounded-full ${adults > 1 ? 'text-blue-600 hover:bg-blue-100' : 'text-gray-300 cursor-not-allowed'}`}
                       onClick={() => adjustGuests('adults', 'subtract')}
                       disabled={adults <= 1}
-                    >
-                      <Minus className="h-5 w-5" />
-                    </button>
+                    ><Minus className="h-5 w-5" /></button>
                     <span className="w-8 text-center">{adults}</span>
                     <button 
                       className="p-1 rounded-full text-blue-600 hover:bg-blue-100"
                       onClick={() => adjustGuests('adults', 'add')}
-                    >
-                      <Plus className="h-5 w-5" />
-                    </button>
+                    ><Plus className="h-5 w-5" /></button>
                   </div>
                 </div>
                 
-                {/* Children */}
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Children</span>
                   <div className="flex items-center space-x-4 border-2 p-1 border-gray-400 rounded">
@@ -701,20 +700,15 @@ export default function StaysSearchForm() {
                       className={`p-1 rounded-full ${children > 0 ? 'text-blue-600 hover:bg-blue-100' : 'text-gray-300 cursor-not-allowed'}`}
                       onClick={() => adjustGuests('children', 'subtract')}
                       disabled={children <= 0}
-                    >
-                      <Plus className="h-5 w-5" />
-                    </button>
+                    ><Minus className="h-5 w-5" /></button> {/* Corrected icon */}
                     <span className="w-8 text-center">{children}</span>
                     <button 
                       className="p-1 rounded-full text-blue-600 hover:bg-blue-100"
                       onClick={() => adjustGuests('children', 'add')}
-                    >
-                      <Minus className="h-5 w-5" />
-                    </button>
+                    ><Plus className="h-5 w-5" /></button> {/* Corrected icon */}
                   </div>
                 </div>
                 
-                {/* Rooms */}
                 <div className="flex justify-between items-center">
                   <div>
                     <span className="font-medium">Rooms</span>
@@ -727,35 +721,26 @@ export default function StaysSearchForm() {
                       className={`p-1 rounded-full ${rooms > 1 && rooms > Math.ceil(adults / 3) ? 'text-blue-600 hover:bg-blue-100' : 'text-gray-300 cursor-not-allowed'}`}
                       onClick={() => adjustGuests('rooms', 'subtract')}
                       disabled={rooms <= 1 || rooms <= Math.ceil(adults / 3)}
-                    >
-                      <Minus className="h-5 w-5" />
-                    </button>
+                    ><Minus className="h-5 w-5" /></button>
                     <span className="w-8 text-center">{rooms}</span>
                     <button 
                       className="p-1 rounded-full text-blue-600 hover:bg-blue-100"
                       onClick={() => adjustGuests('rooms', 'add')}
-                    >
-                      <Plus className="h-5 w-5" />
-                    </button>
+                    ><Plus className="h-5 w-5" /></button>
                   </div>
                 </div>
                 
-                {/* Pets */}
                 <div className="flex justify-between items-center">
                   <div>
                     <div className="font-medium">Travelling with pets?</div>
                     <div className="text-xs ">
                       <span>Assistance animals aren&apos;t considered pets.</span>
-                      <div>
-                        <a href="#" className="text-blue-600 hover:underline">Read more...</a>
-                      </div>
+                      <div><a href="#" className="text-blue-600 hover:underline">Read more...</a></div>
                     </div>
                   </div>
                   <div className="relative inline-block w-10 align-middle select-none">
                     <input 
-                      type="checkbox" 
-                      name="pets" 
-                      id="pets" 
+                      type="checkbox" name="pets" id="pets" 
                       className="opacity-0 absolute peer block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
                       checked={hasPets}
                       onChange={() => {
@@ -764,10 +749,7 @@ export default function StaysSearchForm() {
                         localStorage.setItem('pets', newHasPets.toString());
                       }}
                     />
-                    <label 
-                      htmlFor="pets" 
-                      className="block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer peer-checked:bg-blue-600 transition-colors duration-200 ease-in-out"
-                    >
+                    <label htmlFor="pets" className="block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer peer-checked:bg-blue-600 transition-colors duration-200 ease-in-out">
                       <span className={`block w-6 h-6 rounded-full bg-white shadow transform peer-checked:translate-x-4 transition-transform duration-200 ease-in-out`}></span>
                     </label>
                   </div>
@@ -776,9 +758,7 @@ export default function StaysSearchForm() {
                 <button 
                   className="w-full py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700"
                   onClick={() => setShowGuests(false)}
-                >
-                  Done
-                </button>
+                >Done</button>
               </div>
             </div>
           )}
@@ -789,10 +769,7 @@ export default function StaysSearchForm() {
           <button 
             className="bg-blue-600 hover:bg-blue-700 text-white w-full text-xl py-4 rounded-md font-bold flex items-center justify-center h-full"
             onClick={handleSearch}
-          >
-            Search
-            {/* <Search className="h-5 w-5" /> */}
-          </button>
+          >Search</button>
         </div>
       </div>
     </div>

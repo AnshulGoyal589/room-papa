@@ -8,6 +8,7 @@ import PropertyTypes from '@/components/customer/HomePage/PropertyTypes';
 // import WeekendDeals from '@/components/customer/HomePage/WeekendDeals';
 import ExploreIndia from '@/components/customer/HomePage/ExploreIndia';
 import BookingOffers from './BookingOffers';
+import RecentSearches from './RecentSearches';
 
 
 export default async function InitialRender() {
@@ -15,6 +16,7 @@ export default async function InitialRender() {
   
   return (
       <div className='max-w-7xl mx-auto' >
+        <RecentSearches/>
         <BookingOffers/>
         <QuickTripPlanner />
         <ExploreIndia /> 
