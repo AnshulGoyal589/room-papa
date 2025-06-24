@@ -17,17 +17,23 @@ export interface RoomCategoryPricing {
 }
 
 export interface StoredRoomCategory {
-    id: string; 
-    _id?: string; 
+    id: string;
+    _id?: string; // from your schema
     title: string;
-    qty: number; // Total physical rooms of this type
+    qty: number;
     currency: string;
-    pricing: RoomCategoryPricing; 
+    pricing: RoomCategoryPricing;
     unavailableDates: string[];
-    size?: string; 
-    bedConfiguration?: string; 
-    maxOccupancy?: number; // Max people a single room of this type can hold
-    roomSpecificAmenities?: string[]; 
+    // New fields for availability, activities, and facilities
+    availabilityStartDate?: string;
+    availabilityEndDate?: string;
+    categoryActivities?: string[];
+    categoryFacilities?: string[];
+    // Other fields from your schema
+    size?: string;
+    bedConfiguration?: string;
+    maxOccupancy?: number;
+    roomSpecificAmenities?: string[];
 }
 
 export interface ExtendedProperty extends Omit<Property, 'categoryRooms' | 'costing' | 'rooms' | 'startDate' | 'endDate' | 'createdAt' | 'updatedAt'> {
@@ -98,4 +104,9 @@ export interface DisplayableRoomOffer {
     originalPricePerNight?: number;
     isDiscounted: boolean;
     currency: string;
+    categoryAvailabilityStartDate ?: string;
+    categoryAvailabilityEndDate?: string;
+    categoryActivities?: string[];
+    categoryFacilities?: string[];
+
 }

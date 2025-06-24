@@ -111,7 +111,7 @@ export default function Dashboard() {
     : items.filter(item => item.category.toLowerCase() === activeTab.toLowerCase());
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto py-8 px-16">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
         <Button onClick={() => setIsModalOpen(true)}>

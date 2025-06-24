@@ -162,7 +162,16 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
     // No need to check isAdvancedMode here, it's checked by the caller
     switch (selectedCategory) {
       case 'Property':
-        return <PropertyForm propertyData={propertyData as Property} setPropertyData={setPropertyData} />;
+        return (
+          <PropertyForm
+            propertyData={{
+              ...(propertyData as Property),
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              categoryRooms: (propertyData as any).categoryRooms ?? [],
+            }}
+            setPropertyData={setPropertyData}
+          />
+        );
       case 'Trip':
         return <TripForm tripData={tripData as Trip} setTripData={setTripData} />;
       case 'Travelling':
