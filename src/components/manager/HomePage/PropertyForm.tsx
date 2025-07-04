@@ -170,15 +170,87 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
     currentCategoryFacilities: string[];
   }>(initialNewCategoryState);
 
-  useEffect(() => {
-    if (propertyData.categoryRooms && propertyData.categoryRooms.length > 0) {
+  // useEffect(() => {
+  //   if (propertyData.categoryRooms && propertyData.categoryRooms.length > 0) {
+  //     let minOverallPrice = Infinity;
+  //     let minOverallDiscountedPrice = Infinity;
+  //     let leadCurrency = propertyData.categoryRooms[0].currency || 'USD';
+
+  //     propertyData.categoryRooms.forEach(cat => {
+  //       // Note: This calculation does not currently factor in category availability dates.
+  //       // It reflects the lowest possible price if the category *were* available.
+  //       const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
+  //       const categoryPricesPerAdult: number[] = [];
+  //       const categoryDiscountedPricesPerAdult: number[] = [];
+
+  //       mealPlans.forEach(mealPlan => {
+  //           const singleBase = getPrice(cat.pricing.singleOccupancyAdultPrice, mealPlan);
+  //           const singleDisc = getPrice(cat.pricing.discountedSingleOccupancyAdultPrice, mealPlan);
+  //           if (singleBase > 0) categoryPricesPerAdult.push(singleBase);
+  //           if (singleDisc > 0) categoryDiscountedPricesPerAdult.push(singleDisc);
+  //           else if (singleBase > 0) categoryDiscountedPricesPerAdult.push(singleBase);
+
+  //           const doubleBase = getPrice(cat.pricing.doubleOccupancyAdultPrice, mealPlan);
+  //           const doubleDisc = getPrice(cat.pricing.discountedDoubleOccupancyAdultPrice, mealPlan);
+  //           if (doubleBase > 0) categoryPricesPerAdult.push(doubleBase / 2);
+  //           if (doubleDisc > 0) categoryDiscountedPricesPerAdult.push(doubleDisc / 2);
+  //           else if (doubleBase > 0) categoryDiscountedPricesPerAdult.push(doubleBase / 2);
+
+  //           const tripleBase = getPrice(cat.pricing.tripleOccupancyAdultPrice, mealPlan);
+  //           const tripleDisc = getPrice(cat.pricing.discountedTripleOccupancyAdultPrice, mealPlan);
+  //           if (tripleBase > 0) categoryPricesPerAdult.push(tripleBase / 3);
+  //           if (tripleDisc > 0) categoryDiscountedPricesPerAdult.push(tripleDisc / 3);
+  //           else if (tripleBase > 0) categoryDiscountedPricesPerAdult.push(tripleBase / 3);
+  //       });
+        
+  //       const currentCatMinPrice = Math.min(...categoryPricesPerAdult.filter(p => p > 0 && isFinite(p)), Infinity);
+  //       const currentCatMinDiscountedPrice = Math.min(...categoryDiscountedPricesPerAdult.filter(p => p > 0 && isFinite(p)), Infinity);
+
+  //       if (currentCatMinPrice < minOverallPrice) {
+  //         minOverallPrice = currentCatMinPrice;
+  //         leadCurrency = cat.currency;
+  //       }
+  //       if (currentCatMinDiscountedPrice < minOverallDiscountedPrice) {
+  //         minOverallDiscountedPrice = currentCatMinDiscountedPrice;
+  //       }
+  //     });
+
+  //     const totalRooms = propertyData.categoryRooms.reduce((sum, category) => sum + (category.qty || 0), 0);
+
+  //     setPropertyData(prev => ({
+  //       ...prev,
+  //       costing: {
+  //         price: minOverallPrice === Infinity ? 0 : parseFloat(minOverallPrice.toFixed(2)),
+  //         discountedPrice: minOverallDiscountedPrice === Infinity ? 0 : parseFloat(minOverallDiscountedPrice.toFixed(2)),
+  //         currency: leadCurrency
+  //       },
+  //       rooms: totalRooms
+  //     }));
+  //   } else {
+  //     setPropertyData(prev => ({
+  //       ...prev,
+  //       costing: { price: 0, discountedPrice: 0, currency: 'USD' },
+  //       rooms: 0
+  //     }));
+  //   }
+  // }, [propertyData.categoryRooms, propertyData.costing, propertyData.rooms , setPropertyData]);
+
+
+  // Replace this entire useEffect block in your code
+useEffect(() => {
+    // Get the current summary values from the propertyData prop
+    const { costing, rooms, categoryRooms } = propertyData;
+    const currentPrice = costing?.price ?? 0;
+    const currentDiscountedPrice = costing?.discountedPrice ?? 0;
+    const currentCurrency = costing?.currency ?? 'USD';
+    const currentRooms = rooms ?? 0;
+
+    if (categoryRooms && categoryRooms.length > 0) {
       let minOverallPrice = Infinity;
       let minOverallDiscountedPrice = Infinity;
-      let leadCurrency = propertyData.categoryRooms[0].currency || 'USD';
+      let leadCurrency = categoryRooms[0].currency || 'USD';
 
-      propertyData.categoryRooms.forEach(cat => {
-        // Note: This calculation does not currently factor in category availability dates.
-        // It reflects the lowest possible price if the category *were* available.
+      categoryRooms.forEach(cat => {
         const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
         const categoryPricesPerAdult: number[] = [];
         const categoryDiscountedPricesPerAdult: number[] = [];
@@ -215,25 +287,39 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
         }
       });
 
-      const totalRooms = propertyData.categoryRooms.reduce((sum, category) => sum + (category.qty || 0), 0);
-
-      setPropertyData(prev => ({
-        ...prev,
-        costing: {
-          price: minOverallPrice === Infinity ? 0 : parseFloat(minOverallPrice.toFixed(2)),
-          discountedPrice: minOverallDiscountedPrice === Infinity ? 0 : parseFloat(minOverallDiscountedPrice.toFixed(2)),
-          currency: leadCurrency
-        },
-        rooms: totalRooms
-      }));
+      const newTotalRooms = categoryRooms.reduce((sum, category) => sum + (category.qty || 0), 0);
+      const newPrice = minOverallPrice === Infinity ? 0 : parseFloat(minOverallPrice.toFixed(2));
+      const newDiscountedPrice = minOverallDiscountedPrice === Infinity ? 0 : parseFloat(minOverallDiscountedPrice.toFixed(2));
+      
+      // *** THE FIX: Only update state if the calculated values have changed ***
+      if (
+        newTotalRooms !== currentRooms ||
+        newPrice !== currentPrice ||
+        newDiscountedPrice !== currentDiscountedPrice ||
+        leadCurrency !== currentCurrency
+      ) {
+        setPropertyData(prev => ({
+          ...prev,
+          costing: {
+            price: newPrice,
+            discountedPrice: newDiscountedPrice,
+            currency: leadCurrency
+          },
+          rooms: newTotalRooms
+        }));
+      }
     } else {
-      setPropertyData(prev => ({
-        ...prev,
-        costing: { price: 0, discountedPrice: 0, currency: 'USD' },
-        rooms: 0
-      }));
+      // Handle the case with no rooms: reset if necessary
+      if (currentPrice !== 0 || currentDiscountedPrice !== 0 || currentRooms !== 0) {
+        setPropertyData(prev => ({
+          ...prev,
+          costing: { price: 0, discountedPrice: 0, currency: 'USD' },
+          rooms: 0
+        }));
+      }
     }
-  }, [propertyData.categoryRooms, setPropertyData]);
+    // *** THE FIX: Update dependency array to include all compared values ***
+  }, [propertyData.categoryRooms, propertyData.costing, propertyData.rooms, setPropertyData]);
 
   const handlePropertyChange = (field: string, value: unknown) => {
     if (field.includes('.')) {

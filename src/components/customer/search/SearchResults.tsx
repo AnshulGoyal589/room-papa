@@ -345,10 +345,12 @@ export default function SearchResults() {
         
         <div className="w-full text-center sm:text-right">
           <p className="text-xs text-gray-500 mb-0.5">{guestSummary}</p>
-          {property.costing && (
+          {property.categoryRooms && property.categoryRooms.length > 0 && property.categoryRooms[0]?.pricing?.discountedDoubleOccupancyAdultPrice?.noMeal !== undefined && (
             <>
               <span className="text-2xl font-bold text-gray-800">
-                {currencySymbol}{(property.costing.discountedPrice * numNights).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})}
+                {/* {currencySymbol}{(property.costing.discountedPrice* numNights).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})} */}
+                {currencySymbol}
+                {(property.categoryRooms[0].pricing.discountedDoubleOccupancyAdultPrice.noMeal * numNights).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})}
               </span>
               { taxesAndCharges > 0 && (
                 <p className="text-xs text-gray-500">
@@ -546,10 +548,6 @@ export default function SearchResults() {
     );
   };
 
-  // const currentCategorySortTabs = sortTabsConfig.filter(tab => 
-  //   !tab.forCategories || tab.forCategories.includes(category)
-  // );
-
   return (
     <div className="bg-blue-50/30 min-h-screen py-6 sm:py-8 px-2 sm:px-4 md:px-6 lg:px-8"> {/* Added light blue background to outer container */}
       <div className="max-w-6xl mx-auto"> {/* Content wrapper */}
@@ -585,6 +583,7 @@ export default function SearchResults() {
         ) : results.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:gap-5 mb-8 sm:mb-12"> 
             {results.map((item) => {
+              console.log("Rendering item:", item);
               if (!item || typeof item._id === 'undefined') {
                   console.warn("Search result item is missing _id or is null:", item);
                   return null; 

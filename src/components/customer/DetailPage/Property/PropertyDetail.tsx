@@ -1040,10 +1040,26 @@ export default function PropertyDetailPage() {
                                                 </td>
                                             ) : null }
                                             
-                                            <td className="block py-2 border-b lg:border-b-0 lg:table-cell lg:px-3 lg:py-3 lg:align-top lg:text-center lg:border-r lg:border-gray-300">
-                                                <span className="text-sm font-semibold text-gray-500 lg:hidden">Sleeps:</span>
-                                                <div className="flex justify-start items-center mt-1 lg:justify-center"> {[...Array(offer.intendedAdults)].map((_, i) => <UsersIcon key={i} size={18} className={`text-gray-600 ${i > 0 ? '-ml-1' : ''}`} />)} </div>
-                                            </td>
+                              <td className="block py-2 border-b lg:border-b-0 lg:table-cell lg:px-3 lg:py-3 lg:align-top lg:text-center lg:border-r lg:border-gray-300">
+    <span className="text-sm font-semibold text-gray-500 lg:hidden">Sleeps:</span>
+    
+    {/* Container to center the content vertically */}
+    <div className="flex flex-col items-center justify-center mt-1 lg:mt-0">
+        
+        {/* The icons */}
+        <div className="flex justify-start items-center lg:justify-center">
+            {[...Array(offer.intendedAdults)].map((_, i) => (
+                <UsersIcon key={i} size={18} className={`text-gray-600 ${i > 0 ? '-ml-1' : ''}`} />
+            ))}
+        </div>
+
+        {/* The new descriptive text */}
+        <p className="text-sm text-gray-700 mt-1">
+            {offer.intendedAdults} {offer.intendedAdults === 1 ? 'person' : 'people'}
+        </p>
+
+    </div>
+</td>
                                             <td className="block py-2 border-b lg:border-b-0 lg:table-cell lg:px-3 lg:py-3 lg:align-top lg:border-r lg:border-gray-300">
                                                 <span className="text-sm font-semibold text-gray-500 lg:hidden">Price for {days > 0 ? `${days} night${days > 1 ? 's' : ''}` : 'selection'}:</span>
                                                 <div className="mt-1 lg:mt-0">
@@ -1067,7 +1083,7 @@ export default function PropertyDetailPage() {
                                             </td>
 
                                             {overallOfferIndex === 0 && displayableRoomOffers.length > 0 && (
-                                                <td className="block pt-4 lg:pt-0 lg:table-cell lg:px-4 lg:py-3 lg:align-top lg:text-left relative" rowSpan={displayableRoomOffers.length}>
+                                                <td className="lg:block pt-4 lg:pt-2 lg:table-cell lg:px-4 lg:py-3 lg:align-top lg:text-left relative hidden " rowSpan={displayableRoomOffers.length}>
                                                     {totalSelectedPhysicalRooms > 0 && totalBookingPricing > 0 && days > 0 && ( <div className="mb-3 text-sm"> <p className="font-semibold text-md"> {totalSelectedPhysicalRooms} room{totalSelectedPhysicalRooms > 1 ? 's' : ''} for </p> <p className="text-2xl font-bold text-gray-800"> {currencySymbol} {totalBookingPricing.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} </p> <p className="text-xs text-gray-500"> for {days} night{days > 1 ? 's' : ''}, incl. taxes </p> </div> )}
                                                     <button onClick={handleBookNowOrReserveClick} onMouseEnter={() => setShowReservePopover(true)} onMouseLeave={() => setShowReservePopover(false)} disabled={!checkInDate || !checkOutDate || days <= 0 || totalSelectedPhysicalRooms <= 0 || !!availabilityError || totalBookingPricing <=0 || !!bookingError} className="bg-blue-600 text-white font-semibold py-2.5 px-5 rounded-md hover:bg-blue-700 text-sm disabled:bg-gray-300 disabled:cursor-not-allowed w-full" > I&apos;ll reserve </button>
                                                     <p className="text-xs text-gray-500 mt-1.5"><span className="inline-block mr-1">•</span>You&apos;ll be taken to the next step</p>
@@ -1078,6 +1094,13 @@ export default function PropertyDetailPage() {
                                         </tr>
                                     );
                                 })}
+                                <td className="pt-4 lg:pt-0 lg:px-4 lg:py-3 lg:align-top lg:text-left relative block lg:hidden" rowSpan={displayableRoomOffers.length}>
+                                    {totalSelectedPhysicalRooms > 0 && totalBookingPricing > 0 && days > 0 && ( <div className="mb-3 text-sm"> <p className="font-semibold text-md"> {totalSelectedPhysicalRooms} room{totalSelectedPhysicalRooms > 1 ? 's' : ''} for </p> <p className="text-2xl font-bold text-gray-800"> {currencySymbol} {totalBookingPricing.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} </p> <p className="text-xs text-gray-500"> for {days} night{days > 1 ? 's' : ''}, incl. taxes </p> </div> )}
+                                    <button onClick={handleBookNowOrReserveClick} onMouseEnter={() => setShowReservePopover(true)} onMouseLeave={() => setShowReservePopover(false)} disabled={!checkInDate || !checkOutDate || days <= 0 || totalSelectedPhysicalRooms <= 0 || !!availabilityError || totalBookingPricing <=0 || !!bookingError} className="bg-blue-600 text-white font-semibold py-2.5 px-5 rounded-md hover:bg-blue-700 text-sm disabled:bg-gray-300 disabled:cursor-not-allowed w-full" > I&apos;ll reserve </button>
+                                    <p className="text-xs text-gray-500 mt-1.5"><span className="inline-block mr-1">•</span>You&apos;ll be taken to the next step</p>
+                                    <p className="text-xs text-green-600 mt-1"><span className="inline-block mr-1">•</span>Confirmation is immediate</p>
+                                    {showReservePopover && checkInDate && checkOutDate && days > 0 && property && totalSelectedPhysicalRooms > 0 && ( <div className="hidden lg:block absolute top-0 right-full mr-4 w-[340px] p-4 bg-slate-800 text-white rounded-lg shadow-xl z-20" > <h3 className="text-xl font-bold mb-1">{property.title}</h3> <p className="text-sm font-normal text-gray-300 mb-3">Enhanced personal experience</p> <div className="text-sm space-y-1 mb-4"> <p><strong>Total length of stay:</strong> {days} {days === 1 ? 'night' : 'nights'}</p> <p><strong>Check-in:</strong> {checkInDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p> <p><strong>Check-out:</strong> {checkOutDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p> </div> <div className="bg-yellow-400 text-black text-sm font-semibold p-3 rounded-md text-center"> No account needed! Booking takes just 2 minutes. </div> </div> )}
+                                </td>
                             </tbody>
                         </table>
                     </div>
