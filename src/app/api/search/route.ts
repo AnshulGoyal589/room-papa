@@ -98,10 +98,10 @@ function validateSearchParams(searchParams: URLSearchParams) {
 function buildSearchQuery(searchParams: URLSearchParams): QueryType {
   const query: QueryType = {};
   const category = searchParams.get('category') || 'property';
-
   // Basic text search for general search input
   if (searchParams.has('title')) {
     const titleQuery = searchParams.get('title') as string;
+    // console.log("Title Query: ", titleQuery);
     query.$or = [
       { 'title': { $regex: titleQuery, $options: 'i' } },
       { 'destination.city': { $regex: titleQuery, $options: 'i' } },

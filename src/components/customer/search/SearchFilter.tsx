@@ -104,6 +104,7 @@ export default function SearchFilter() {
     debounceTimerRef.current = setTimeout(() => {
       const scrollPosition = window.scrollY;
       const params: { [key: string]: string | undefined } = {
+        title: searchParams?.get('title') || undefined, // Preserve title if it exists
         category: filterMode,
         minPrice: minPrice || undefined,
         maxPrice: maxPrice || undefined,

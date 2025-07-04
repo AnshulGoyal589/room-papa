@@ -187,7 +187,7 @@ export default function StaysSearchForm() {
       
       const titleParam = urlParams.get('title');
       const storedTitle = localStorage.getItem('title');
-      let currentTitle = ''; 
+      let currentTitle = '';
       if (titleParam !== null) {
           currentTitle = titleParam;
       } else if (storedTitle !== null) {

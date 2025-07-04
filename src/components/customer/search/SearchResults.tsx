@@ -350,7 +350,7 @@ export default function SearchResults() {
               <span className="text-2xl font-bold text-gray-800">
                 {/* {currencySymbol}{(property.costing.discountedPrice* numNights).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})} */}
                 {currencySymbol}
-                {(property.categoryRooms[0].pricing.discountedDoubleOccupancyAdultPrice.noMeal * numNights).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})}
+                {(property.categoryRooms[0].pricing.discountedDoubleOccupancyAdultPrice.noMeal ).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})}
               </span>
               { taxesAndCharges > 0 && (
                 <p className="text-xs text-gray-500">
