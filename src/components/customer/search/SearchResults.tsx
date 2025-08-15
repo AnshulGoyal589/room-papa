@@ -22,6 +22,7 @@ import {
 import { Property } from '@/lib/mongodb/models/Property'; 
 import { Trip } from '@/lib/mongodb/models/Trip';
 import { Travelling } from '@/lib/mongodb/models/Travelling'; 
+import { Review } from '@/lib/mongodb/models/Components';
 // import { StoredRoomCategory } from '@/types/booking'; // Assuming this type is available
 
 // Define TransportationType as an enum
@@ -47,7 +48,7 @@ const getRatingDescription = (rating?: number): { text: string; className: strin
 };
 
 // Helper to format review count
-const formatReviewCount = (reviews?: Array<{ comment: string; rating: number }>): string => {
+const formatReviewCount = (reviews?: Array<Review>): string => {
   const count = reviews?.length || 0;
   if (count === 0) return "No reviews yet";
   return `${count} review${count === 1 ? '' : 's'}`;
@@ -205,7 +206,7 @@ export default function SearchResults() {
 
   const renderPropertyCard = (property: Property) => {
     const ratingDesc = getRatingDescription(property.totalRating || property.propertyRating); // Use totalRating if available
-    const reviewText = formatReviewCount(property.review);
+    const reviewText = formatReviewCount(Array.isArray(property.review) ? property.review : property.review ? [property.review] : []);
     
     const checkInQuery = localStorage.getItem('checkIn');
     const checkOutQuery = localStorage.getItem('checkOut');
@@ -374,7 +375,7 @@ export default function SearchResults() {
   
   const renderTripCard = (trip: Trip) => {
     const ratingDesc = getRatingDescription(trip.rating);
-    const reviewText = formatReviewCount(trip.review);
+    const reviewText = formatReviewCount(Array.isArray(trip.review) ? trip.review : trip.review ? [trip.review] : []);
     const placeholderImage = '/placeholder-trip.jpg';
 
     return (

@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox'; // Import Checkbox
 import { Label } from '@/components/ui/label'; // Import Label
 import { X, Globe, MapPin, DollarSign, Star, ListChecks, Activity, Settings2 } from 'lucide-react'; // Added more icons
 import { Trip } from '@/lib/mongodb/models/Trip';
+import { TripFormProps } from '@/lib/mongodb/models/Components';
 
 // Define options for each multi-select category (shared or imported if used elsewhere)
 const categoryOptions = {
@@ -59,10 +60,7 @@ const initialTripData: Trip = {
   brands: [],
 };
 
-interface TripFormProps {
-  tripData: Trip;
-  setTripData: React.Dispatch<React.SetStateAction<Trip>>;
-}
+
 
 const TripForm: React.FC<TripFormProps> = ({ 
   tripData = initialTripData, 

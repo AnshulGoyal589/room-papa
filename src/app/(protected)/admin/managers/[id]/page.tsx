@@ -13,21 +13,9 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, User, Mail, Calendar } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { UserRole } from '@/types';
+import { ManagerDetails } from '@/lib/mongodb/models/Components';
 
-interface ManagerDetails {
-  _id?: string;
-  clerkId: string;
-  role: UserRole;
-  email: string;
-  createdAt: Date;
-  updatedAt: Date;
-  name?: string;
-  // Add any additional fields you want to display
-  properties?: number;
-  trips?: number;
-  travellings?: number;
-}
+
 
 export default function ManagerDetailsPage() {
   const [manager, setManager] = useState<ManagerDetails | null>(null);

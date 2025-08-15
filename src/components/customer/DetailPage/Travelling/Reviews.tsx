@@ -1,13 +1,7 @@
 import React from 'react';
 import { formatDistanceToNow, subDays } from 'date-fns';
+import { Review } from '@/lib/mongodb/models/Components';
 
-// Types
-interface Review {
-  comment: string;
-  rating: number;
-  name?: string;
-  date?: Date;
-}
 
 const reviewComments = [
   "Absolutely incredible experience! The guides were knowledgeable and friendly.",

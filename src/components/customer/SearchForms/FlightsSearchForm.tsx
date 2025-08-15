@@ -1,11 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, X, Plus, Minus } from 'lucide-react';
+import { DateRange } from '@/lib/mongodb/models/Components';
 
 // Define types for our component
-interface DateRange {
-  startDate: Date;
-  endDate: Date;
-}
+
 
 export default function FlightsSearchForm() {
   // State variables with proper typing

@@ -12,20 +12,9 @@ import { useUser } from '@clerk/nextjs';
 import { Property } from '@/lib/mongodb/models/Property';
 import { Trip } from '@/lib/mongodb/models/Trip';
 import { Travelling } from '@/lib/mongodb/models/Travelling';
+import { BaseItem, ItemCategory } from '@/lib/mongodb/models/Components';
 
 // Define our unified item type to handle all three types
-type ItemCategory = 'Property' | 'Trip' | 'Travelling';
-
-interface BaseItem {
-  _id?: string;
-  title: string;
-  description: string;
-  category: ItemCategory;
-  bannerImage?: {
-    url: string;
-  };
-  createdAt: Date;
-}
 
 export default function Dashboard() {
 

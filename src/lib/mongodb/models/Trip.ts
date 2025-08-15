@@ -1,7 +1,7 @@
 import { Collection ,ObjectId} from 'mongodb';
 import { getDb } from '..';
 import { TripType } from '@/types';
-import { Costing, Image } from './Components';
+import { Costing, Image, Review } from './Components';
 
 export interface Trip {
   _id?: ObjectId;
@@ -18,10 +18,7 @@ export interface Trip {
   endDate: string;
   costing: Costing;
   totalRating?: number; 
-  review?: {
-    comment: string;
-    rating: number;
-  }[];
+  review?: Review[];
   activities:string[];
   rat ?: number | '1';
   createdAt?: Date;

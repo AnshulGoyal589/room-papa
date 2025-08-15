@@ -2,10 +2,9 @@
 
 import React, { useState } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
+import { SearchFormProps } from '@/lib/mongodb/models/Components';
 
-interface SearchFormProps {
-  defaultCategory?: 'stays' | 'flights' | 'flight+hotel' | 'car-rentals' | 'attractions' | 'airport-taxis';
-}
+
 
 export default function Stays() {
   const [activeTab, setActiveTab] = useState<SearchFormProps['defaultCategory']>('stays');

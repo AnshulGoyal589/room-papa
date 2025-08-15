@@ -8,42 +8,12 @@ import {
     Star as StarIcon, CheckCircle, Users, Wifi, ParkingSquare, Wind, Utensils, Info, AlertTriangle, Car, Bus, ChevronDown, ChevronUp
 } from 'lucide-react';
 import RazorpayPaymentButton from '@/components/payment/RazorpayPaymentButton';
-import { PropertyType } from '@/types';
 import { DisplayableRoomOffer } from '@/types/booking';
-import { Location } from '@/lib/mongodb/models/Components';
+import { ReservationData } from '@/lib/mongodb/models/Components';
 
-// --- Constants and Interfaces (Unchanged) ---
 const RESERVATION_DATA_KEY = 'reservationData_v1';
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "";
 
-interface ReservationData {
-    propertyId: string;
-    propertyTitle: string;
-    propertyImage: string | null;
-    propertyLocation: Location;
-    propertyRating: number | null;
-    checkInDate: string;
-    checkOutDate: string;
-    reservationPolicy : string[];
-    days: number;
-    adultCount: number;
-    childCount: number;
-    globalGuestCount: number;
-    totalSelectedPhysicalRooms: number;
-    selectedOffers: Record<string, number>;
-    selectedMealPlan: string;
-    displayableRoomOffers: DisplayableRoomOffer[];
-    pricingDetails: {
-        subtotalNights: number;
-        serviceCharge: number;
-        taxesApplied: number;
-        totalBookingPricing: number;
-        currency: string;
-        totalBookingPricePerNight: number;
-    };
-    ownerId: string;
-    propertyType: PropertyType;
-}
 
 // --- Helper Components ---
 const renderRatingStars = (rating: number) => (

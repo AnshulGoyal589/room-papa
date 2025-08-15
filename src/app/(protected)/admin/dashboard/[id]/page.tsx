@@ -13,8 +13,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { Property } from '@/lib/mongodb/models/Property';
 import { Trip } from '@/lib/mongodb/models/Trip';
 import { Travelling } from '@/lib/mongodb/models/Travelling';
-import { GeneralItem, Review } from '@/types';
-import { Image } from '@/lib/mongodb/models/Components';
+import { GeneralItem } from '@/types';
+import { Image, Review } from '@/lib/mongodb/models/Components';
 
 
 export default function ItemDetail({ params }: { params: Promise<{ id: string }> }) {

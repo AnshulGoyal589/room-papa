@@ -5,14 +5,9 @@ import { NextPage } from 'next';
 import Head from 'next/head';
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { ChevronDown, ChevronUp, Search, MessageSquare, Phone, HelpCircle } from 'lucide-react';
+import { FAQItem } from '@/lib/mongodb/models/Components';
 
-interface FAQItem {
-  id: number;
-  question: string;
-  answer: string;
-  category: string;
-  keywords?: string[];
-}
+
 
 const faqsData: FAQItem[] = [
   {

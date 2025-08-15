@@ -73,11 +73,6 @@ export interface DateFilter {
 }
 
 
-export interface Review {
-  comment: string;
-  rating: number;
-}
-
 // Define general item type
 export interface GeneralItem {
   id: string;

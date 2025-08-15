@@ -1,24 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, X, Plus, Minus } from 'lucide-react';
+import { DateRange, RecentSearchItem } from '@/lib/mongodb/models/Components';
 
-// Define types for our component
-interface DateRange {
-  startDate: Date;
-  endDate: Date;
-}
-
-// Type for recent search items
-export interface RecentSearchItem {
-  id: string; // Unique ID, can be a composite of search params
-  title: string;
-  checkIn: string; // YYYY-MM-DD format
-  checkOut: string; // YYYY-MM-DD format
-  adults: number;
-  children: number;
-  rooms: number;
-  pets: boolean;
-  timestamp: number; // For sorting
-}
 
 const MAX_RECENT_SEARCHES = 3;
 const RECENT_SEARCHES_KEY = 'recentStaysSearches';

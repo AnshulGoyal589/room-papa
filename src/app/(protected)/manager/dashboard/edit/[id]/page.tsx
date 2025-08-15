@@ -12,7 +12,8 @@ import { Travelling } from '@/lib/mongodb/models/Travelling';
 import PropertyEditForm from '@/components/manager/EditForms/PropertyEditForm';
 import TripEditForm from '@/components/manager/EditForms/TripEditForm';
 import TravellingEditForm from '@/components/manager/EditForms/TravellingEditForm';
-import { GeneralItem, Image, Review } from '@/types';
+import { GeneralItem, Image } from '@/types';
+import { Review } from '@/lib/mongodb/models/Components';
 
 export default function ItemEdit({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = React.use(params);

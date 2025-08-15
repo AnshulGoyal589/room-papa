@@ -4,12 +4,9 @@ import { NextResponse } from 'next/server';
 import { saveUserRole } from '@/lib/mongodb';
 import { validateUser } from '@/lib/mongodb/models/User';
 import { getUserRole } from '@/lib/mongodb';
+import { RequestBody } from '@/lib/mongodb/models/Components';
 
-interface RequestBody {
-  clerkId: string;
-  role: 'customer' | 'manager';
-  email: string;
-}
+
 
 export async function POST(request: Request) {
   try {

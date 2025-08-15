@@ -2,14 +2,12 @@
 
 import { useAuth, useClerk } from '@clerk/nextjs';
 import { useRouter, usePathname } from 'next/navigation';
-import { ReactNode, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { UserRole } from '@/types';
 import { routeConfig } from '@/config/routes';
+import { RoleProtectionProps } from '@/lib/mongodb/models/Components';
 
-interface RoleProtectionProps {
-  children: ReactNode;
-  loadingComponent?: ReactNode;
-}
+
 
 export default function RoleProtection({
   children,

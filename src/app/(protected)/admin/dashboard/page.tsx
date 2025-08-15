@@ -8,20 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ListingItem from '@/components/manager/HomePage/ListingItem';
 import AddItemModal from '@/components/manager/HomePage/AddItemModal';
 import { useToast } from '@/components/ui/use-toast';
+import { BaseItem, ItemCategory } from '@/lib/mongodb/models/Components';
 
-// Define our unified item type to handle all three types
-type ItemCategory = 'Property' | 'Trip' | 'Travelling';
-
-interface BaseItem {
-  _id?: string;
-  title: string;
-  description: string;
-  category: ItemCategory;
-  bannerImage?: {
-    url: string;
-  };
-  createdAt: Date;
-}
 
 export default function Dashboard() {
 

@@ -19,17 +19,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { UserRole } from '@/types';
+import { User } from '@/lib/mongodb/models/User';
 
-interface User {
-  _id?: string;
-  clerkId: string;
-  role: UserRole;
-  email: string;
-  status: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 export default function ManagerUsersPage() {
   const [managers, setManagers] = useState<User[]>([]);

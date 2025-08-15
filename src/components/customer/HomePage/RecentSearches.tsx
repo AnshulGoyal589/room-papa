@@ -1,7 +1,7 @@
 "use client"
 
+import { RecentSearchItem } from '@/lib/mongodb/models/Components';
 import React, { useEffect, useState } from 'react';
-import { RecentSearchItem } from '../SearchForms/StaysSearchForm';
 // Import the RecentSearchItem type if it's in a shared types file, or redefine if StaysSearchForm is not exporting it
 // For this example, assuming StaysSearchForm exports it or it's defined in a shared types.ts
 

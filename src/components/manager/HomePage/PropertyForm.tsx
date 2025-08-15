@@ -14,17 +14,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Plus, X, Home, MapPin, DollarSign, BedDouble, ListChecks, ShieldCheck, Users, Baby, Utensils, CalendarOff, Sparkles, Wrench, CalendarDays } from 'lucide-react'; // Added Sparkles, Wrench, CalendarDays
-import { Property } from '@/lib/mongodb/models/Property'; // Assuming this is your base Property type
+import { Plus, X, Home, MapPin, DollarSign, BedDouble, ListChecks, ShieldCheck, Users, Baby, Utensils, CalendarOff, Sparkles, Wrench, CalendarDays } from 'lucide-react';
 import { categoryOptions } from '../../../../public/assets/data';
 
 import { DiscountedPricingByMealPlan, PricingByMealPlan, PropertyType } from '@/types'; // Assuming these are correctly defined
 
 import { RoomCategoryPricing, StoredRoomCategory } from '@/types/booking';
 import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
-import { Image } from '@/lib/mongodb/models/Components';
+import { ExtendedProperty, Image, PropertyFormProps } from '@/lib/mongodb/models/Components';
 
-export type ExtendedProperty = Omit<Property, 'startDate' | 'endDate' | 'createdAt' | 'updatedAt'>;
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 // Initial state for the form to add a new room category
@@ -86,10 +84,6 @@ const initialPropertyData: ExtendedProperty = {
   googleMaps: '',
 };
 
-interface PropertyFormProps {
-  propertyData: ExtendedProperty;
-  setPropertyData: React.Dispatch<React.SetStateAction<ExtendedProperty>>;
-}
 
 const getPrice = (pricing: Partial<PricingByMealPlan> | undefined, mealPlan: keyof PricingByMealPlan): number => {
     return pricing?.[mealPlan] ?? 0;

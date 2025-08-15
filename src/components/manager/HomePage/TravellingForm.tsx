@@ -17,6 +17,7 @@ import { X, Plane, Train, Bus, Car, Ship, MapPin, DollarSign, Star, Settings2, A
 import { Travelling } from '@/lib/mongodb/models/Travelling';
 import { TransportationType } from '@/types';
 import { categoryOptions } from '../../../../public/assets/data'; // Assuming this has all necessary keys
+import { TravellingFormProps } from '@/lib/mongodb/models/Components';
 
 
 // Default/initial state for TravellingData
@@ -64,11 +65,6 @@ const travelAmenitiesOptions = [
   { id: 'accessibleSeating', label: 'Accessible Seating' },
 ];
 
-
-interface TravellingFormProps {
-  travellingData: Travelling;
-  setTravellingData: React.Dispatch<React.SetStateAction<Travelling>>;
-}
 
 const TravellingForm: React.FC<TravellingFormProps> = ({ 
   travellingData = initialTravellingData, 

@@ -4,7 +4,7 @@ import { Collection, ObjectId } from 'mongodb';
 import { getDb } from '..';
 import {  PropertyAmenities, PropertyType } from '@/types';
 import { StoredRoomCategory } from '@/types/booking';
-import { Costing, Image, Location } from './Components';
+import { Costing, Image, Location, Review } from './Components';
 
 
 export interface Property {
@@ -18,10 +18,7 @@ export interface Property {
   endDate: string;
   costing: Costing;
   totalRating?: number;
-  review?: {
-    comment: string;
-    rating: number;
-  }[];
+  review?: Review[];
   createdAt?: Date;
   updatedAt?: Date;
   bannerImage?: Image;
@@ -63,14 +60,7 @@ export interface Property {
         throw new Error(`Missing required field: ${field}`);
       }
     }
-    
-    // Validate location sub-fields
-    // const requiredLocationFields = ['address', 'city', 'country'];
-    // for (const field of requiredLocationFields) {
-    //   if (!propertyData.location[field]) {
-    //     throw new Error(`Missing required location field: ${field}`);
-    //   }
-    // }
+
     
     // Validate property type
     const validPropertyTypes: PropertyType[] = ['hotel', 'apartment', 'villa', 'hostel', 'resort'];
