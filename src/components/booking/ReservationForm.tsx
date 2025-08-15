@@ -10,6 +10,7 @@ import {
 import RazorpayPaymentButton from '@/components/payment/RazorpayPaymentButton';
 import { PropertyType } from '@/types';
 import { DisplayableRoomOffer } from '@/types/booking';
+import { Location } from '@/lib/mongodb/models/Components';
 
 // --- Constants and Interfaces (Unchanged) ---
 const RESERVATION_DATA_KEY = 'reservationData_v1';
@@ -19,7 +20,7 @@ interface ReservationData {
     propertyId: string;
     propertyTitle: string;
     propertyImage: string | null;
-    propertyLocation: { address: string; city: string; country: string; };
+    propertyLocation: Location;
     propertyRating: number | null;
     checkInDate: string;
     checkOutDate: string;

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { CldImage } from 'next-cloudinary';
 import { Button } from '@/components/ui/button';
-import { Image } from '@/lib/mongodb/models/Image';
+import { Image } from '@/lib/mongodb/models/Components';
 
 interface ImageUploadProps {
   label: string;

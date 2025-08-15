@@ -33,7 +33,6 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import ImageUpload from '@/components/cloudinary/ImageUpload';
 import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
-import { Image as CustomImage } from '@/lib/mongodb/models/Image'; // Renamed to avoid conflict with HTMLImageElement
 import PropertyForm from './PropertyForm';
 import TripForm from './TripForm';
 import TravellingForm from './TravellingForm';
@@ -41,6 +40,7 @@ import { useUser } from "@clerk/nextjs";
 import { Property } from '@/lib/mongodb/models/Property';
 import { Trip } from '@/lib/mongodb/models/Trip';
 import { Travelling } from '@/lib/mongodb/models/Travelling';
+import { Image } from '@/lib/mongodb/models/Components';
 
 interface AddItemModalProps {
   onClose: () => void;
@@ -56,8 +56,8 @@ const formSchema = z.object({
 const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
   const [isAdvancedMode, setIsAdvancedMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [bannerImage, setBannerImage] = useState<CustomImage | null>(null);
-  const [detailImages, setDetailImages] = useState<CustomImage[]>([]);
+  const [bannerImage, setBannerImage] = useState<Image | null>(null);
+  const [detailImages, setDetailImages] = useState<Image[]>([]);
   const [userID, setUserID] = useState<string | null>(null);
   const { user, isLoaded } = useUser();
 

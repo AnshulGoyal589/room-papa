@@ -1,7 +1,7 @@
 import { Collection ,ObjectId} from 'mongodb';
 import { getDb } from '..';
 import { TripType } from '@/types';
-import { Image } from './Image';
+import { Costing, Image } from './Components';
 
 export interface Trip {
   _id?: ObjectId;
@@ -16,11 +16,7 @@ export interface Trip {
   };
   startDate: string;
   endDate: string;
-  costing: {
-    price: number;
-    discountedPrice: number;
-    currency: string;
-  };
+  costing: Costing;
   totalRating?: number; 
   review?: {
     comment: string;

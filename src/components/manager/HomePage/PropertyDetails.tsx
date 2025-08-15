@@ -1,6 +1,6 @@
 // src/components/PropertyDetails.tsx
-import React from 'react';
-import { MapPin, Users, Tag, Star, Calendar, X, Plus, Baby, DollarSign as PriceIcon, Utensils, CalendarDays, Sparkles, Wrench } from 'lucide-react'; // Added CalendarDays, Sparkles, Wrench
+import React, { useEffect } from 'react';
+import { MapPin, Users, Tag, Star, Calendar, X, Plus, Baby, DollarSign as PriceIcon, Utensils, CalendarDays, Sparkles, Wrench, ImageIcon } from 'lucide-react'; // Added CalendarDays, Sparkles, Wrench
 import { Badge } from '@/components/ui/badge';
 import { Property } from '@/lib/mongodb/models/Property'; // Base Property type
 import Image from 'next/image';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormItem, FormLabel } from '@/components/ui/form';
 import GoogleMapsSection from './GoogleMapsSection';
+import { Image as ImageType } from '@/lib/mongodb/models/Components'; 
 
 // --- Assuming these types are defined correctly in '@/types' based on previous updates ---
 import {
@@ -17,6 +18,8 @@ import {
 import { Label } from '@/components/ui/label'; // Label is used in the form
 import { Button } from '@/components/ui/button'; // Button is used in the form
 import { RoomCategoryPricing, StoredRoomCategory } from '@/types/booking'; // StoredRoomCategory should have the new fields
+import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
+import { CldImage } from 'next-cloudinary';
 // --- End Type Assumption ---
 
 // Helper to generate unique IDs if adding categories locally
@@ -61,6 +64,7 @@ const initialNewCategoryFormState = {
     currentCategoryActivities: [] as string[],
     newCategoryFacility: '',
     currentCategoryFacilities: [] as string[],
+    categoryImages: [] as ImageType[],
 };
 
 
@@ -147,11 +151,11 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
             id: cat.id || generateId(),
             pricing: cat.pricing || initialNewCategoryFormState.pricing,
             unavailableDates: cat.unavailableDates || [],
-            // Initialize new fields from item or default
             availabilityStartDate: cat.availabilityStartDate || '',
             availabilityEndDate: cat.availabilityEndDate || '',
             categoryActivities: cat.categoryActivities || [],
             categoryFacilities: cat.categoryFacilities || [],
+            categoryImages: cat.categoryImages || [], // Ensure images are initialized
         })) : []
     }));
 
@@ -166,12 +170,13 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
         currentCategoryActivities: string[];
         newCategoryFacility: string;
         currentCategoryFacilities: string[];
+        categoryImages: ImageType[]; // <-- Add this line
     }>({
         ...initialNewCategoryFormState,
         currency: item.costing?.currency || "USD"
     });
 
-    React.useEffect(() => {
+    useEffect(() => {
         setEnsurePropertyData({
             ...item,
             categoryRooms: Array.isArray(item.categoryRooms) ? item.categoryRooms.map(cat => ({
@@ -183,9 +188,10 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                 availabilityEndDate: cat.availabilityEndDate || '',
                 categoryActivities: cat.categoryActivities || [],
                 categoryFacilities: cat.categoryFacilities || [],
+                categoryImages: cat.categoryImages || [], // Ensure images are initialized on update
             })) : []
         });
-        setNewCategory(prev => ({ // Keep previous currency if item changes
+        setNewCategory(prev => ({
             ...initialNewCategoryFormState,
             currency: item.costing?.currency || prev.currency || "USD"
          }));
@@ -197,6 +203,10 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
         value: string | number
     ) => {
         setNewCategory(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleNewCategoryImagesChange = (images: ImageType[]) => {
+        setNewCategory(prev => ({ ...prev, categoryImages: images }));
     };
 
     const handleNewCategoryPricingChange = (
@@ -260,10 +270,10 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
     const handleAddCategory = () => {
         if (!newCategory.title.trim()) { alert("Category title is required."); return; }
         if (newCategory.qty <= 0) { alert("Quantity must be greater than 0."); return; }
+        if (newCategory.categoryImages.length < 3) { alert('Please upload at least 3 images for the category.'); return; } // Validation for images
         if (getPrice(newCategory.pricing.singleOccupancyAdultPrice, 'noMeal') <= 0) {
             alert("Base Price for 1 Adult (Room Only) must be greater than 0."); return;
         }
-
         if (newCategory.availabilityStartDate && newCategory.availabilityEndDate) {
             if (new Date(newCategory.availabilityEndDate) < new Date(newCategory.availabilityStartDate)) {
                 alert('Availability End Date cannot be before Start Date.'); return;
@@ -455,6 +465,27 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                                             )}
                                         </div>
 
+                                        
+                                        {/* Display Category Images */}
+                                        {cat.categoryImages && cat.categoryImages.length > 0 && (
+                                            <div className="mb-3">
+                                                <p className="font-semibold text-gray-700 flex items-center mb-2"><ImageIcon className="inline h-4 w-4 mr-1.5 text-gray-500"/>Images:</p>
+                                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                                                    {cat.categoryImages.map((img, index) => (
+                                                        <CldImage
+                                                            key={img.publicId || index}
+                                                            src={img.publicId || img.url}
+                                                            width={150}
+                                                            height={100}
+                                                            crop="fill"
+                                                            alt={img.alt || cat.title}
+                                                            className="rounded-md object-cover w-full h-auto aspect-[4/3]"
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {/* Display Availability Period */}
                                         {(cat.availabilityStartDate || cat.availabilityEndDate) && (
                                             <div className="text-sm mb-3">
@@ -507,6 +538,16 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                                 <FormItem className="md:col-span-1"> <FormLabel htmlFor={`new-cat-title-${ensurePropertyData._id || 'new'}`}>Category Title</FormLabel> <Input id={`new-cat-title-${ensurePropertyData._id || 'new'}`} value={newCategory.title} onChange={(e) => handleNewCategoryFieldChange('title', e.target.value)} placeholder="e.g. Deluxe Room" /> </FormItem>
                                 <FormItem> <FormLabel htmlFor={`new-cat-qty-${ensurePropertyData._id || 'new'}`}>Quantity</FormLabel> <Input id={`new-cat-qty-${ensurePropertyData._id || 'new'}`} type="number" value={newCategory.qty} onChange={(e) => handleNewCategoryFieldChange('qty', Number(e.target.value))} min={1} /> </FormItem>
                                 <FormItem> <FormLabel htmlFor={`new-cat-curr-${ensurePropertyData._id || 'new'}`}>Currency</FormLabel> <Select value={newCategory.currency} onValueChange={(value) => handleNewCategoryFieldChange('currency', value)}> <SelectTrigger id={`new-cat-curr-${ensurePropertyData._id || 'new'}`}><SelectValue placeholder="Currency" /></SelectTrigger> <SelectContent>{['USD', 'EUR', 'GBP', 'INR', 'JPY', 'KES'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent> </Select> </FormItem>
+                            </div>
+
+                             <div className="pt-4 border-t border-gray-300">
+                                <MultipleImageUpload
+                                    label="Category Images"
+                                    value={newCategory.categoryImages}
+                                    onChange={handleNewCategoryImagesChange}
+                                    minImages={3}
+                                    maxImages={10}
+                                />
                             </div>
 
                             {/* Availability Period Inputs */}

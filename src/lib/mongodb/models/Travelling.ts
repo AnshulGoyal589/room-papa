@@ -1,7 +1,7 @@
 import { Collection , ObjectId } from 'mongodb';
 import { getDb } from '..';
 import { ItineraryDayWeather, ItineraryVisibility, TransportationType } from '@/types';
-import { Image } from './Image';
+import { Costing, Image } from './Components';
 
 export interface Travelling {
   _id?: ObjectId;
@@ -15,11 +15,7 @@ export interface Travelling {
     from: string;
     to: string;
   };
-  costing: {
-    price: number;
-    discountedPrice: number;
-    currency: string;
-  };
+  costing: Costing;
   review?: {
     comment: string;
     rating: number;

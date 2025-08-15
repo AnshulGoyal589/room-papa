@@ -1,7 +1,6 @@
-import { Image } from "@/lib/mongodb/models/Image";
-import { DiscountedPricingByMealPlan, PricingByMealPlan, PropertyType } from ".";
-import { ObjectId } from "mongodb";
+import { DiscountedPricingByMealPlan, PricingByMealPlan } from ".";
 import { Property } from "@/lib/mongodb/models/Property";
+import { Image } from "@/lib/mongodb/models/Components";
 
 export interface RoomCategoryPricing {
   singleOccupancyAdultPrice: PricingByMealPlan;
@@ -29,6 +28,7 @@ export interface StoredRoomCategory {
     availabilityEndDate?: string;
     categoryActivities?: string[];
     categoryFacilities?: string[];
+    categoryImages?: Image[];
     // Other fields from your schema
     size?: string;
     bedConfiguration?: string;
@@ -36,54 +36,55 @@ export interface StoredRoomCategory {
     roomSpecificAmenities?: string[];
 }
 
-export interface ExtendedProperty extends Omit<Property, 'categoryRooms' | 'costing' | 'rooms' | 'startDate' | 'endDate' | 'createdAt' | 'updatedAt'> {
-    _id?: ObjectId; 
-    type: PropertyType;
-    location: {
-        address: string;
-        state: string;
-        city: string;
-        country: string;
-    };
-    costing: { 
-        price: number; 
-        discountedPrice: number; 
-        currency: string;
-    };
-    rooms: number; 
-    categoryRooms: StoredRoomCategory[];
-    amenities: string[];
-    accessibility?: string[];
-    roomAccessibility?: string[];
-    popularFilters?: string[];
-    funThingsToDo?: string[];
-    meals?: string[];
-    facilities?: string[];
-    bedPreference?: string[];
-    reservationPolicy?: string[];
-    brands?: string[];
-    roomFacilities?: string[];
-    propertyRating?: number;
-    googleMaps?: string;
+export type ExtendedProperty = Omit<Property, 'categoryRooms' | 'costing' | 'rooms' | 'startDate' | 'endDate' | 'createdAt' | 'updatedAt'>;
+// {
+//     // _id?: ObjectId; 
+//     type: PropertyType;
+//     location: {
+//         address: string;
+//         state: string;
+//         city: string;
+//         country: string;
+//     };
+//     costing: { 
+//         price: number; 
+//         discountedPrice: number; 
+//         currency: string;
+//     };
+//     rooms: number; 
+//     categoryRooms: StoredRoomCategory[];
+//     amenities: string[];
+//     accessibility?: string[];
+//     roomAccessibility?: string[];
+//     popularFilters?: string[];
+//     funThingsToDo?: string[];
+//     meals?: string[];
+//     facilities?: string[];
+//     bedPreference?: string[];
+//     reservationPolicy?: string[];
+//     brands?: string[];
+//     roomFacilities?: string[];
+//     propertyRating?: number;
+//     googleMaps?: string;
 
-    startDate?: string; 
-    endDate?: string;   
-    createdAt?: Date; 
-    updatedAt?: Date; 
-    userId?: string;
-    title?: string;
-    description?: string;
-    totalRating?: number;
-    review?: {
-        userId?: string;
-        userName?: string;
-        comment: string;
-        rating: number;
-        createdAt?: Date;
-    }[];
-    bannerImage?: Image;
-    detailImages?: Image[];
-}
+//     startDate?: string; 
+//     endDate?: string;   
+//     createdAt?: Date; 
+//     updatedAt?: Date; 
+//     userId?: string;
+//     title?: string;
+//     description?: string;
+//     totalRating?: number;
+//     review?: {
+//         userId?: string;
+//         userName?: string;
+//         comment: string;
+//         rating: number;
+//         createdAt?: Date;
+//     }[];
+//     bannerImage?: Image;
+//     detailImages?: Image[];
+// }
 
 export interface DisplayableRoomOffer {
     offerId: string;

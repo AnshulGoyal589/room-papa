@@ -20,68 +20,11 @@ import { categoryOptions } from '../../../../public/assets/data';
 
 import { DiscountedPricingByMealPlan, PricingByMealPlan, PropertyType } from '@/types'; // Assuming these are correctly defined
 
-
-// Ensure Property type reflects the changes (no top-level start/end dates)
-// Using your provided ExtendedProperty interface
-import { ObjectId } from "mongodb"; // Assuming you have mongodb installed or use a mock
 import { RoomCategoryPricing, StoredRoomCategory } from '@/types/booking';
-// Mock Image type if not available
-// interface Image { url: string; public_id: string; }
+import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
+import { Image } from '@/lib/mongodb/models/Components';
 
-export interface ExtendedProperty extends Omit<Property, 'categoryRooms' | 'costing' | 'rooms' | 'startDate' | 'endDate' | 'createdAt' | 'updatedAt'> {
-    _id?: ObjectId;
-    type: PropertyType;
-    location: {
-        address: string;
-        state: string;
-        city: string;
-        country: string;
-    };
-    costing: {
-        price: number;
-        discountedPrice: number;
-        currency: string;
-    };
-    rooms: number;
-    categoryRooms: StoredRoomCategory[]; // Uses the updated StoredRoomCategory
-    amenities: string[];
-    accessibility?: string[];
-    roomAccessibility?: string[];
-    popularFilters?: string[];
-    funThingsToDo?: string[];
-    meals?: string[];
-    facilities?: string[];
-    bedPreference?: string[];
-    reservationPolicy?: string[];
-    brands?: string[];
-    roomFacilities?: string[];
-    propertyRating?: number;
-    googleMaps?: string;
-
-    // These were in your provided ExtendedProperty, ensure they are intended
-    // If these are top-level and distinct from category availability, they can remain
-    startDate?: string;
-    endDate?: string;
-    createdAt?: Date;
-    updatedAt?: Date;
-    userId?: string;
-    title?: string;
-    description?: string;
-    totalRating?: number;
-    review?: {
-        userId?: string;
-        userName?: string;
-        comment: string;
-        rating: number;
-        createdAt?: Date;
-    }[];
-    // bannerImage?: Image;
-    // detailImages?: Image[];
-}
-// --- END MOCK TYPES ---
-
-
-// Helper to generate unique IDs
+export type ExtendedProperty = Omit<Property, 'startDate' | 'endDate' | 'createdAt' | 'updatedAt'>;
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 // Initial state for the form to add a new room category
@@ -108,6 +51,7 @@ const initialNewCategoryState = {
   currentCategoryActivities: [] as string[],
   newCategoryFacility: '',
   currentCategoryFacilities: [] as string[],
+  categoryImages: [] as Image[],
 };
 
 
@@ -155,90 +99,9 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
   propertyData = initialPropertyData,
   setPropertyData
 }) => {
-  const [newCategory, setNewCategory] = useState<{
-    title: string;
-    qty: number;
-    currency: string;
-    pricing: RoomCategoryPricing;
-    newUnavailableDate: string;
-    currentUnavailableDates: string[];
-    availabilityStartDate: string;
-    availabilityEndDate: string;
-    newCategoryActivity: string;
-    currentCategoryActivities: string[];
-    newCategoryFacility: string;
-    currentCategoryFacilities: string[];
-  }>(initialNewCategoryState);
+  const [newCategory, setNewCategory] = useState<typeof initialNewCategoryState>(initialNewCategoryState);
 
-  // useEffect(() => {
-  //   if (propertyData.categoryRooms && propertyData.categoryRooms.length > 0) {
-  //     let minOverallPrice = Infinity;
-  //     let minOverallDiscountedPrice = Infinity;
-  //     let leadCurrency = propertyData.categoryRooms[0].currency || 'USD';
-
-  //     propertyData.categoryRooms.forEach(cat => {
-  //       // Note: This calculation does not currently factor in category availability dates.
-  //       // It reflects the lowest possible price if the category *were* available.
-  //       const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
-  //       const categoryPricesPerAdult: number[] = [];
-  //       const categoryDiscountedPricesPerAdult: number[] = [];
-
-  //       mealPlans.forEach(mealPlan => {
-  //           const singleBase = getPrice(cat.pricing.singleOccupancyAdultPrice, mealPlan);
-  //           const singleDisc = getPrice(cat.pricing.discountedSingleOccupancyAdultPrice, mealPlan);
-  //           if (singleBase > 0) categoryPricesPerAdult.push(singleBase);
-  //           if (singleDisc > 0) categoryDiscountedPricesPerAdult.push(singleDisc);
-  //           else if (singleBase > 0) categoryDiscountedPricesPerAdult.push(singleBase);
-
-  //           const doubleBase = getPrice(cat.pricing.doubleOccupancyAdultPrice, mealPlan);
-  //           const doubleDisc = getPrice(cat.pricing.discountedDoubleOccupancyAdultPrice, mealPlan);
-  //           if (doubleBase > 0) categoryPricesPerAdult.push(doubleBase / 2);
-  //           if (doubleDisc > 0) categoryDiscountedPricesPerAdult.push(doubleDisc / 2);
-  //           else if (doubleBase > 0) categoryDiscountedPricesPerAdult.push(doubleBase / 2);
-
-  //           const tripleBase = getPrice(cat.pricing.tripleOccupancyAdultPrice, mealPlan);
-  //           const tripleDisc = getPrice(cat.pricing.discountedTripleOccupancyAdultPrice, mealPlan);
-  //           if (tripleBase > 0) categoryPricesPerAdult.push(tripleBase / 3);
-  //           if (tripleDisc > 0) categoryDiscountedPricesPerAdult.push(tripleDisc / 3);
-  //           else if (tripleBase > 0) categoryDiscountedPricesPerAdult.push(tripleBase / 3);
-  //       });
-        
-  //       const currentCatMinPrice = Math.min(...categoryPricesPerAdult.filter(p => p > 0 && isFinite(p)), Infinity);
-  //       const currentCatMinDiscountedPrice = Math.min(...categoryDiscountedPricesPerAdult.filter(p => p > 0 && isFinite(p)), Infinity);
-
-  //       if (currentCatMinPrice < minOverallPrice) {
-  //         minOverallPrice = currentCatMinPrice;
-  //         leadCurrency = cat.currency;
-  //       }
-  //       if (currentCatMinDiscountedPrice < minOverallDiscountedPrice) {
-  //         minOverallDiscountedPrice = currentCatMinDiscountedPrice;
-  //       }
-  //     });
-
-  //     const totalRooms = propertyData.categoryRooms.reduce((sum, category) => sum + (category.qty || 0), 0);
-
-  //     setPropertyData(prev => ({
-  //       ...prev,
-  //       costing: {
-  //         price: minOverallPrice === Infinity ? 0 : parseFloat(minOverallPrice.toFixed(2)),
-  //         discountedPrice: minOverallDiscountedPrice === Infinity ? 0 : parseFloat(minOverallDiscountedPrice.toFixed(2)),
-  //         currency: leadCurrency
-  //       },
-  //       rooms: totalRooms
-  //     }));
-  //   } else {
-  //     setPropertyData(prev => ({
-  //       ...prev,
-  //       costing: { price: 0, discountedPrice: 0, currency: 'USD' },
-  //       rooms: 0
-  //     }));
-  //   }
-  // }, [propertyData.categoryRooms, propertyData.costing, propertyData.rooms , setPropertyData]);
-
-
-  // Replace this entire useEffect block in your code
-useEffect(() => {
-    // Get the current summary values from the propertyData prop
+  useEffect(() => {
     const { costing, rooms, categoryRooms } = propertyData;
     const currentPrice = costing?.price ?? 0;
     const currentDiscountedPrice = costing?.discountedPrice ?? 0;
@@ -291,7 +154,6 @@ useEffect(() => {
       const newPrice = minOverallPrice === Infinity ? 0 : parseFloat(minOverallPrice.toFixed(2));
       const newDiscountedPrice = minOverallDiscountedPrice === Infinity ? 0 : parseFloat(minOverallDiscountedPrice.toFixed(2));
       
-      // *** THE FIX: Only update state if the calculated values have changed ***
       if (
         newTotalRooms !== currentRooms ||
         newPrice !== currentPrice ||
@@ -309,7 +171,6 @@ useEffect(() => {
         }));
       }
     } else {
-      // Handle the case with no rooms: reset if necessary
       if (currentPrice !== 0 || currentDiscountedPrice !== 0 || currentRooms !== 0) {
         setPropertyData(prev => ({
           ...prev,
@@ -318,16 +179,16 @@ useEffect(() => {
         }));
       }
     }
-    // *** THE FIX: Update dependency array to include all compared values ***
   }, [propertyData.categoryRooms, propertyData.costing, propertyData.rooms, setPropertyData]);
 
-  const handlePropertyChange = (field: string, value: unknown) => {
+
+ const handlePropertyChange = (field: string, value: unknown) => {
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
       setPropertyData(prev => ({
         ...prev,
         [parent]: {
-          ...(prev[parent as keyof typeof prev] as Record<string, unknown>),
+          ...(prev[parent as keyof typeof prev] as object),
           [child]: value
         }
       }));
@@ -352,6 +213,10 @@ useEffect(() => {
 
   const handleNewCategoryFieldChange = (field: keyof typeof newCategory, value: string | number) => {
     setNewCategory(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleNewCategoryImagesChange = (images: Image[]) => {
+    setNewCategory(prev => ({ ...prev, categoryImages: images }));
   };
 
   const handleNewCategoryPricingChange = (
@@ -406,7 +271,6 @@ useEffect(() => {
       }));
   };
 
-  // Handlers for category-specific activities
   const handleAddCategoryActivity = () => {
     const activityToAdd = newCategory.newCategoryActivity.trim();
     if (activityToAdd && !newCategory.currentCategoryActivities.includes(activityToAdd)) {
@@ -419,6 +283,7 @@ useEffect(() => {
         alert("This activity is already added.");
     }
   };
+
   const handleRemoveCategoryActivity = (activityToRemove: string) => {
       setNewCategory(prev => ({
           ...prev,
@@ -426,7 +291,6 @@ useEffect(() => {
       }));
   };
 
-  // Handlers for category-specific facilities
   const handleAddCategoryFacility = () => {
     const facilityToAdd = newCategory.newCategoryFacility.trim();
     if (facilityToAdd && !newCategory.currentCategoryFacilities.includes(facilityToAdd)) {
@@ -439,6 +303,7 @@ useEffect(() => {
         alert("This facility is already added.");
     }
   };
+
   const handleRemoveCategoryFacility = (facilityToRemove: string) => {
       setNewCategory(prev => ({
           ...prev,
@@ -446,15 +311,14 @@ useEffect(() => {
       }));
   };
 
-
   const handleAddCategory = () => {
     if (!newCategory.title.trim()) { alert('Category title is required.'); return; }
     if (newCategory.qty <= 0) { alert('Quantity must be greater than 0.'); return; }
+    if (newCategory.categoryImages.length < 3) { alert('Please upload at least 3 images for the category.'); return; }
     if (getPrice(newCategory.pricing.singleOccupancyAdultPrice, 'noMeal') <= 0) {
         alert('Base Price for 1 Adult (No Meal) must be greater than 0.'); return;
     }
 
-    // Date validation for availability period
     if (newCategory.availabilityStartDate && newCategory.availabilityEndDate) {
         if (new Date(newCategory.availabilityEndDate) < new Date(newCategory.availabilityStartDate)) {
             alert('Availability End Date cannot be before Start Date.'); return;
@@ -462,7 +326,6 @@ useEffect(() => {
     } else if (newCategory.availabilityEndDate && !newCategory.availabilityStartDate) {
         alert('Please provide an Availability Start Date if End Date is set.'); return;
     }
-
 
     const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
     const priceFieldsToCheck: (keyof RoomCategoryPricing)[] = [
@@ -491,9 +354,9 @@ useEffect(() => {
       currency: newCategory.currency,
       pricing: JSON.parse(JSON.stringify(newCategory.pricing)),
       unavailableDates: [...newCategory.currentUnavailableDates],
-      // Add new fields
-      availabilityStartDate: newCategory.availabilityStartDate || undefined, // Store as undefined if empty
-      availabilityEndDate: newCategory.availabilityEndDate || undefined, // Store as undefined if empty
+      categoryImages: [...newCategory.categoryImages], // Added images
+      availabilityStartDate: newCategory.availabilityStartDate || undefined,
+      availabilityEndDate: newCategory.availabilityEndDate || undefined,
       categoryActivities: [...newCategory.currentCategoryActivities],
       categoryFacilities: [...newCategory.currentCategoryFacilities],
     };
@@ -592,7 +455,6 @@ useEffect(() => {
           </div>
       );
   };
-
   return (
     <div className="space-y-8 max-h-[75vh] overflow-y-auto p-1 pr-4">
       <div className="space-y-4">
@@ -819,6 +681,16 @@ useEffect(() => {
             <FormItem className="md:col-span-1"> <FormLabel>Category Title</FormLabel> <Input value={newCategory.title} onChange={(e) => handleNewCategoryFieldChange('title', e.target.value)} placeholder="e.g., Deluxe Room" /> </FormItem>
             <FormItem> <FormLabel>Quantity (Rooms)</FormLabel> <Input type="number" value={newCategory.qty} onChange={(e) => handleNewCategoryFieldChange('qty', Number(e.target.value))} min={1} /> </FormItem>
             <FormItem> <FormLabel>Currency</FormLabel> <Select value={newCategory.currency} onValueChange={(value) => handleNewCategoryFieldChange('currency', value)}> <SelectTrigger><SelectValue placeholder="Currency" /></SelectTrigger> <SelectContent>{['USD', 'EUR', 'GBP', 'INR', 'JPY', 'KES'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent> </Select> </FormItem>
+          </div>
+
+          <div className="pt-4 border-t">
+            <MultipleImageUpload
+              label="Category Images"
+              value={newCategory.categoryImages}
+              onChange={handleNewCategoryImagesChange}
+              minImages={3}
+              maxImages={10}
+            />
           </div>
 
           {/* Availability Period */}

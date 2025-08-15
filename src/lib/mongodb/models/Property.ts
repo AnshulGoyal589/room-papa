@@ -3,8 +3,8 @@
 import { Collection, ObjectId } from 'mongodb';
 import { getDb } from '..';
 import {  PropertyAmenities, PropertyType } from '@/types';
-import { Image } from './Image';
 import { StoredRoomCategory } from '@/types/booking';
+import { Costing, Image, Location } from './Components';
 
 
 export interface Property {
@@ -13,19 +13,10 @@ export interface Property {
   title?: string;
   description?: string;
   type: PropertyType;
-  location: {
-    address: string;
-    state: string;
-    city: string;
-    country: string;
-  };
-  startDate: string; // Overall listing start
-  endDate: string;   // Overall listing end
-  costing: {         // Calculated summary: lowest starting price
-    price: number;
-    discountedPrice: number;
-    currency: string;
-  };
+  location: Location;
+  startDate: string;
+  endDate: string;
+  costing: Costing;
   totalRating?: number;
   review?: {
     comment: string;
@@ -56,12 +47,7 @@ export interface Property {
   interface PropertyValidationInput {
     name: string;
     type: string;
-    location: {
-      address: string;
-      city: string;
-      country: string;
-      [key: string]: unknown;
-    };
+    location: Location;
     description: string;
     amenities: string[];
     pricePerNight: number;
@@ -79,12 +65,12 @@ export interface Property {
     }
     
     // Validate location sub-fields
-    const requiredLocationFields = ['address', 'city', 'country'];
-    for (const field of requiredLocationFields) {
-      if (!propertyData.location[field]) {
-        throw new Error(`Missing required location field: ${field}`);
-      }
-    }
+    // const requiredLocationFields = ['address', 'city', 'country'];
+    // for (const field of requiredLocationFields) {
+    //   if (!propertyData.location[field]) {
+    //     throw new Error(`Missing required location field: ${field}`);
+    //   }
+    // }
     
     // Validate property type
     const validPropertyTypes: PropertyType[] = ['hotel', 'apartment', 'villa', 'hostel', 'resort'];
