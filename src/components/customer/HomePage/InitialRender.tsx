@@ -21,7 +21,6 @@ export default async function InitialRender() {
         <QuickTripPlanner />
         <ExploreIndia /> 
         <PropertyTypes />
-        {/* <PopularDestinations /> */}
         <UniqueProperties />
         <WhyChooseUs />
       </div>

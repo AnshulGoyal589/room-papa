@@ -178,7 +178,7 @@ export default function UniqueProperties(): React.ReactElement {
                   <div className="text-right flex items-center justify-end gap-2 ">
                     <p className="text-base text-gray-500">Starting from</p>
                     <p className="text-xl font-bold text-gray-800">
-                      {property.costing.currency} {property.costing.price.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                      {property.costing?.currency} {property.costing?.price.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                     </p>
                   </div>
                 </div>
