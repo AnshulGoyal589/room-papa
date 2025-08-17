@@ -717,7 +717,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
                            <div key={mealPlan} className="space-y-2">
                                 <FormLabel className="text-xs font-medium flex items-center"> <Utensils className="h-3 w-3 mr-1 inline"/> {mealPlan.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} </FormLabel>
                                 <FormItem> <Label className="text-xs text-muted-foreground">Base Price</Label> <Input type="number" value={getPrice(newCategory.pricing[occ.baseField as keyof RoomCategoryPricing], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(occ.baseField as keyof RoomCategoryPricing, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01"/> </FormItem>
-                                <FormItem> <Label className="text-xs text-muted-foreground">Discounted (Opt.)</Label> <Input type="number" value={getPrice(newCategory.pricing[occ.discField as keyof RoomCategoryPricing], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(occ.discField as keyof RoomCategoryPricing, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01"/> </FormItem>
+                                <FormItem> <Label className="text-xs text-muted-foreground">Discounted</Label> <Input type="number" value={getPrice(newCategory.pricing[occ.discField as keyof RoomCategoryPricing], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(occ.discField as keyof RoomCategoryPricing, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01"/> </FormItem>
                             </div>
                         ))}
                     </div>
@@ -736,7 +736,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
                            <div key={mealPlan} className="space-y-2">
                                 <FormLabel className="text-xs font-medium flex items-center"> <Utensils className="h-3 w-3 mr-1 inline"/> {mealPlan.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} </FormLabel>
                                 <FormItem> <Label className="text-xs text-muted-foreground">Base Price</Label> <Input type="number" value={getPrice(newCategory.pricing[child.baseField as keyof RoomCategoryPricing], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(child.baseField as keyof RoomCategoryPricing, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01"/> </FormItem>
-                                <FormItem> <Label className="text-xs text-muted-foreground">Discounted (Opt.)</Label> <Input type="number" value={getPrice(newCategory.pricing[child.discField as keyof RoomCategoryPricing], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(child.discField as keyof RoomCategoryPricing, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01"/> </FormItem>
+                                <FormItem> <Label className="text-xs text-muted-foreground">Discounted</Label> <Input type="number" value={getPrice(newCategory.pricing[child.discField as keyof RoomCategoryPricing], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(child.discField as keyof RoomCategoryPricing, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01"/> </FormItem>
                             </div>
                         ))}
                     </div>
