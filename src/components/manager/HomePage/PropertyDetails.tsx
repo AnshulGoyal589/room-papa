@@ -59,6 +59,7 @@ const initialNewCategoryFormState = {
     } as RoomCategoryPricing,
     // New fields for availability, activities, facilities
     availabilityStartDate: '',
+    roomSize: '',
     availabilityEndDate: '',
     newCategoryActivity: '',
     currentCategoryActivities: [] as string[],
@@ -153,6 +154,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
             unavailableDates: cat.unavailableDates || [],
             availabilityStartDate: cat.availabilityStartDate || '',
             availabilityEndDate: cat.availabilityEndDate || '',
+            roomSize: cat.roomSize || "Unknown",
             categoryActivities: cat.categoryActivities || [],
             categoryFacilities: cat.categoryFacilities || [],
             categoryImages: cat.categoryImages || [], // Ensure images are initialized
@@ -168,12 +170,14 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
         availabilityEndDate: string;
         newCategoryActivity: string;
         currentCategoryActivities: string[];
+        roomSize: string;
         newCategoryFacility: string;
         currentCategoryFacilities: string[];
         categoryImages: ImageType[]; // <-- Add this line
     }>({
         ...initialNewCategoryFormState,
-        currency: item.costing?.currency || "USD"
+        currency: item.costing?.currency || "USD",
+        roomSize: initialNewCategoryFormState.roomSize || "Unknown"
     });
 
     useEffect(() => {
@@ -310,6 +314,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
             pricing: JSON.parse(JSON.stringify(newCategory.pricing)),
             unavailableDates: [], // New categories start with no unavailable dates from this form
             availabilityStartDate: newCategory.availabilityStartDate || undefined,
+            roomSize: newCategory.roomSize || "Unknown",
             availabilityEndDate: newCategory.availabilityEndDate || undefined,
             categoryActivities: [...newCategory.currentCategoryActivities],
             categoryFacilities: [...newCategory.currentCategoryFacilities],
@@ -458,6 +463,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                                         <div className="flex items-start justify-between mb-4 pb-3 border-b">
                                             <div>
                                                 <p className="font-bold text-gray-800 text-lg">{cat.title} <span className="text-base text-gray-500 font-normal">({cat.qty} rooms)</span></p>
+                                                <p className="text-sm text-gray-500">Room Size: {cat.roomSize || 'Unknown'}</p>
                                                 <p className="text-sm text-gray-500">Currency: {currency}</p>
                                             </div>
                                             {isEditable && (

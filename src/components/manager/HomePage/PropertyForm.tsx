@@ -44,6 +44,7 @@ const initialNewCategoryState = {
   currentUnavailableDates: [] as string[],
   // New fields for availability, activities, facilities
   availabilityStartDate: '',
+  roomSize: '',
   availabilityEndDate: '',
   newCategoryActivity: '',
   currentCategoryActivities: [] as string[],
@@ -343,6 +344,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
 
     const categoryToAdd: StoredRoomCategory = {
       id: generateId(),
+      roomSize: newCategory.roomSize || "Unknown",
       title: newCategory.title,
       qty: newCategory.qty,
       currency: newCategory.currency,

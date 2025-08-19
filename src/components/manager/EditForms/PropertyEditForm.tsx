@@ -40,7 +40,6 @@ import {
 } from "lucide-react";
 import { RoomCategoryPricing, StoredRoomCategory } from "@/types/booking";
 import { CldImage } from "next-cloudinary";
-
 // Helper to generate unique IDs
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -76,6 +75,7 @@ const initialNewCategoryState = {
   } as RoomCategoryPricing,
   unavailableDates: [] as string[],
   availabilityStartDate: '',
+  roomSize: '',
   availabilityEndDate: '',
   categoryActivities: [] as string[],
   categoryFacilities: [] as string[],
@@ -171,6 +171,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
               unavailableDates: Array.isArray(cat.unavailableDates) ? cat.unavailableDates.map(String).sort() : [],
               availabilityStartDate: cat.availabilityStartDate || '',
               availabilityEndDate: cat.availabilityEndDate || '',
+              roomSize: cat.roomSize || "Unknown",
               categoryActivities: Array.isArray(cat.categoryActivities) ? cat.categoryActivities.map(String) : [],
               categoryFacilities: Array.isArray(cat.categoryFacilities) ? cat.categoryFacilities.map(String) : [],
               categoryImages: Array.isArray(cat.categoryImages) ? cat.categoryImages : [], // Corrected initialization
@@ -184,7 +185,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
 
   const [newCategory, setNewCategory] = useState<typeof initialNewCategoryState>({
     ...initialNewCategoryState,
-    currency: item.costing?.currency || "USD"
+    currency: item.costing?.currency || "USD",
   });
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -387,6 +388,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       currency: newCategory.currency,
       pricing: JSON.parse(JSON.stringify(newCategory.pricing)),
       unavailableDates: newCategory.unavailableDates.sort(),
+      roomSize: newCategory.roomSize || "Unknown",
       availabilityStartDate: newCategory.availabilityStartDate || undefined,
       availabilityEndDate: newCategory.availabilityEndDate || undefined,
       categoryActivities: [...newCategory.categoryActivities],
@@ -417,6 +419,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         qty: categoryToEdit.qty,
         currency: categoryToEdit.currency,
         pricing: fullPricing,
+        roomSize: categoryToEdit.roomSize || "Unknown",
         unavailableDates: Array.isArray(categoryToEdit.unavailableDates) ? categoryToEdit.unavailableDates.map(String).sort() : [],
         availabilityStartDate: categoryToEdit.availabilityStartDate || '',
         availabilityEndDate: categoryToEdit.availabilityEndDate || '',
@@ -491,7 +494,10 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
                 return (
                 <div key={cat.id} className="p-4 bg-white border border-gray-200 rounded-lg shadow">
                     <div className="flex items-start justify-between mb-4 pb-3 border-b">
-                        <div> <p className="font-bold text-gray-800 text-xl">{cat.title} <span className="text-base text-gray-500 font-normal">({cat.qty} rooms)</span></p> <p className="text-sm text-gray-500">Currency: {currency}</p> </div>
+                        <div> 
+                          <p className="font-bold text-gray-800 text-xl">{cat.title} <span className="text-base text-gray-500 font-normal">({cat.qty} rooms)</span></p> <p className="text-sm text-gray-500">Currency: {currency}</p>
+                          Room Size: <span className="text-sm text-gray-500">{cat.roomSize || "Unknown"}</span>
+                        </div>
                         <div className="flex space-x-2"> <Button variant="outline" size="icon" type="button" onClick={() => handleEditCategory(cat)} disabled={isEditMode && newCategory.id === cat.id} aria-label={`Edit ${cat.title}`}> <Edit size={18} /> </Button> <Button variant="destructive" size="icon" type="button" onClick={() => handleRemoveCategory(cat.id!)} aria-label={`Remove ${cat.title}`}> <X size={18} /> </Button> </div>
                     </div>
                     
@@ -573,6 +579,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-1"> <label className="font-medium text-gray-700">Category Title</label> <Input value={newCategory.title} onChange={(e) => handleNewCategoryFieldChange('title', e.target.value)} placeholder="e.g., Deluxe Double Room" /> </div>
                 <div> <label className="font-medium text-gray-700">Quantity (Rooms)</label> <Input type="number" value={newCategory.qty} onChange={(e) => handleNewCategoryFieldChange('qty', Number(e.target.value))} min={1} /> </div>
+                <div> <label className="font-medium text-gray-700">Room Size (Optional)</label> <Input value={newCategory.roomSize} onChange={(e) => handleNewCategoryFieldChange('roomSize', e.target.value)} placeholder="e.g., 25 sqm" /> </div>
                 <div> <label className="font-medium text-gray-700">Currency</label> <Select value={newCategory.currency} onValueChange={(value) => handleNewCategoryFieldChange('currency', value)}> <SelectTrigger><SelectValue placeholder="Currency" /></SelectTrigger> <SelectContent>{['USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'KES'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent> </Select> </div>
             </div>
 

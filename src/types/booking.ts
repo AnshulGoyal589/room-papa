@@ -23,6 +23,7 @@ export interface StoredRoomCategory {
     currency: string;
     pricing: RoomCategoryPricing;
     unavailableDates: string[];
+    roomSize: string;
     // New fields for availability, activities, and facilities
     availabilityStartDate?: string;
     availabilityEndDate?: string;
@@ -106,6 +107,7 @@ export interface DisplayableRoomOffer {
     isDiscounted: boolean;
     currency: string;
     categoryAvailabilityStartDate ?: string;
+    roomSize: string;
     categoryAvailabilityEndDate?: string;
     categoryActivities?: string[];
     categoryFacilities?: string[];

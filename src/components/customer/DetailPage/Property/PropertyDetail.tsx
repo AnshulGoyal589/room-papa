@@ -309,6 +309,7 @@ export default function PropertyDetailPage() {
                         title: cat.title || "Unnamed Room",
                         qty: typeof cat.qty === 'number' ? cat.qty : 0,
                         currency: cat.currency || data.costing?.currency || "USD",
+                        roomSize: cat.roomSize || "Unknown",
                         pricing: (cat.pricing && typeof cat.pricing === 'object' && 'singleOccupancyAdultPrice' in cat.pricing)
                             ? {
                                 singleOccupancyAdultPrice: { ...initialPricingState.singleOccupancyAdultPrice, ...(cat.pricing.singleOccupancyAdultPrice || {})},
@@ -582,6 +583,7 @@ export default function PropertyDetailPage() {
                                 isDiscounted: priceInfo.isDiscounted,
                                 currency: cat.currency,
                                 categoryAvailabilityStartDate: cat.availabilityStartDate,
+                                roomSize: cat.roomSize || "Unknown",
                                 categoryAvailabilityEndDate: cat.availabilityEndDate,
                                 categoryActivities: cat.categoryActivities,
                                 categoryFacilities: cat.categoryFacilities,
@@ -1215,7 +1217,10 @@ export default function PropertyDetailPage() {
                 </div>
             </div>
             <div className="w-[96vw] m-2 fixed bottom-0 block lg:hidden">
-                {totalSelectedPhysicalRooms > 0 && totalBookingPricing > 0 && days > 0 && ( <div className="mb-3 text-sm"> <p className="font-semibold text-md"> {totalSelectedPhysicalRooms} room{totalSelectedPhysicalRooms > 1 ? 's' : ''} for </p> <p className="text-2xl font-bold text-gray-800"> {currencySymbol} {totalBookingPricing.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} </p> <p className="text-xs text-gray-500"> for {days} night{days > 1 ? 's' : ''}, incl. taxes </p> </div> )}
+                {totalSelectedPhysicalRooms > 0 && totalBookingPricing > 0 && days > 0 && ( <div className="mb-1 w-full bg-gray-200 p-2 text-sm">
+                    <p className="font-semibold text-md"> {totalSelectedPhysicalRooms} room{totalSelectedPhysicalRooms > 1 ? 's' : ''} for </p>
+                    <p className="text-2xl font-bold text-gray-800"> {currencySymbol} {totalBookingPricing.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} </p>
+                    <p className="text-xs text-gray-500"> for {days} night{days > 1 ? 's' : ''}, incl. taxes </p> </div> )}
                 <button onClick={handleBookNowOrReserveClick} onMouseEnter={() => setShowReservePopover(true)} onMouseLeave={() => setShowReservePopover(false)} disabled={!checkInDate || !checkOutDate || days <= 0 || totalSelectedPhysicalRooms <= 0 || !!availabilityError || totalBookingPricing <=0 || !!bookingError} className="bg-blue-600 text-white font-semibold py-3 px-5 border-3 border-black/40 rounded-md hover:bg-blue-700 text-sm disabled:bg-gray-300 disabled:cursor-not-allowed w-full" > I&apos;ll reserve </button>
                 {showReservePopover && checkInDate && checkOutDate && days > 0 && property && totalSelectedPhysicalRooms > 0 && ( <div className="hidden lg:block absolute top-0 right-full mr-4 w-[340px] p-4 bg-slate-800 text-white rounded-lg shadow-xl z-20" > <h3 className="text-xl font-bold mb-1">{property.title}</h3> <p className="text-sm font-normal text-gray-300 mb-3">Enhanced personal experience</p> <div className="text-sm space-y-1 mb-4"> <p><strong>Total length of stay:</strong> {days} {days === 1 ? 'night' : 'nights'}</p> <p><strong>Check-in:</strong> {checkInDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p> <p><strong>Check-out:</strong> {checkOutDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p> </div> <div className="bg-yellow-400 text-black text-sm font-semibold p-3 rounded-md text-center"> No account needed! Booking takes just 2 minutes. </div> </div> )}
             </div>
