@@ -13,6 +13,38 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+export async function sendRoleConfirmationEmail(email: string) {
+  const subject = 'New User Registration on Room Papa';
+
+  // Create email content
+  const emailHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+      <h2 style="color: #333;">User Approval</h2>
+      <p>Hello,</p>
+      <p>Please visit admin portal to verify new user with email id ${email}.</p>
+      <p>Thank you,</p>
+      <p><strong>The Team</strong></p>
+      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #777;">
+        <p>This is an automated email. Please do not reply to this message.</p>
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: email,
+      to: process.env.admin_mail || 'legendrical64@gmail.com' ,
+      subject: subject,
+      html: emailHtml,
+    });
+    console.log(`Role approval email sent successfully from ${email}`);
+  } catch (error) {
+    console.error(`Error sending role confirmation email to ${email}:`, error);
+    // Re-throw the error so the API route can catch it and send a 500 response
+    throw new Error('Failed to send role confirmation email.');
+  }
+}
+
 // Helper function to send booking confirmation email
 export async function sendBookingConfirmationEmail(booking: BookingDetails) {
   const { details, bookingDetails, guestDetails, recipients } = booking;

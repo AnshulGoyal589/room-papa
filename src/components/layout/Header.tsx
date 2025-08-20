@@ -85,6 +85,21 @@ export function Header() {
     }
   };
 
+  // Function to send role confirmation email
+  const sendRoleConfirmationEmail = async (email: string): Promise<void> => {
+    try {
+      await fetch('/api/send-role-confirmation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+    } catch (error) {
+      console.error('Error sending role confirmation email:', error);
+    }
+  };
+
   // Effect to save selected role to localStorage before sign-up
   useEffect(() => {
     // Get the pending role from localStorage (if any)
@@ -103,6 +118,10 @@ export function Header() {
         );
         
         if (saved) {
+          // send conformation mail for verification if the pending role is manager
+          if (pendingRole === 'manager') {
+            await sendRoleConfirmationEmail(user.primaryEmailAddress?.emailAddress || '');
+          }
           setRole(pendingRole);
           setRoleSaved(true);
           localStorage.removeItem('pendingUserRole');
