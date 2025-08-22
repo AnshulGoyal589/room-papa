@@ -33,7 +33,7 @@ export async function sendRoleConfirmationEmail(email: string) {
   try {
     await transporter.sendMail({
       from: email,
-      to: process.env.admin_mail || 'legendrical64@gmail.com' ,
+      to: process.env.admin_mail || 'roompapa7@gmail.com' ,
       subject: subject,
       html: emailHtml,
     });

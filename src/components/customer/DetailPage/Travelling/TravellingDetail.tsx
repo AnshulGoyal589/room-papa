@@ -354,7 +354,7 @@ export default function TravellingDetailPage() {
             phone: bookingData.phone,
             specialRequests: bookingData.specialRequests
         },
-        recipients: [bookingData.email, 'anshulgoyal589@gmail.com']
+        recipients: [bookingData.email, 'roompapa7@gmail.com']
       };
       
       // console.log("Travelling Booking Payload:", JSON.stringify(bookingPayload, null, 2));

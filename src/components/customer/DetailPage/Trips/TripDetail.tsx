@@ -342,7 +342,7 @@ export default function TripDetailPage() {
             phone: bookingData.phone,
             specialRequests: bookingData.specialRequests
         },
-        recipients: [bookingData.email, 'anshulgoyal589@gmail.com'] // Replace with dynamic owner email
+        recipients: [bookingData.email, 'roompapa7@gmail.com'] // Replace with dynamic owner email
       };
       
       // console.log("Trip Booking Payload:", JSON.stringify(bookingPayload, null, 2));

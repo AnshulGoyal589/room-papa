@@ -81,7 +81,7 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({ title, images, on
                 layout="fill"
                 objectFit="contain"
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onError={(e: any) => e.currentTarget.src = '/images/placeholder-property.jpg'}
+                onError={(e: any) => e.currentTarget.src = '/images/placeholder-property.png'}
               />
             </div>
           )}
@@ -98,7 +98,7 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({ title, images, on
                   layout="fill"
                   objectFit="cover"
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  onError={(e: any) => e.currentTarget.src = '/images/placeholder-property.jpg'}
+                  onError={(e: any) => e.currentTarget.src = '/images/placeholder-property.png'}
                 />
               </div>
             ))}
@@ -341,7 +341,7 @@ export default function PropertyDetailPage() {
                 setProperty(parsedProperty);
                 if (parsedProperty.bannerImage?.url) setActiveImage(parsedProperty.bannerImage.url);
                 else if (parsedProperty.detailImages?.[0]?.url) setActiveImage(parsedProperty.detailImages[0].url);
-                else setActiveImage('/images/placeholder-property.jpg');
+                else setActiveImage('/images/placeholder-property.png');
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (err: any) {
                 setError(`Error fetching details: ${err.message}.`);
@@ -996,13 +996,13 @@ export default function PropertyDetailPage() {
                             <div className="grid grid-cols-3 grid-rows-3 gap-1.5 h-[300px] md:h-[420px] rounded-lg overflow-hidden">
                                 {mainGalleryImage && (
                                     <div className="col-span-2 row-span-3 relative cursor-pointer group" onClick={() => handleImageClick(mainGalleryImage.url)}>
-                                        <Image src={activeImage || mainGalleryImage.url} alt={mainGalleryImage.alt || property.title || 'Main property view'} layout="fill" objectFit="cover" priority className="transition-opacity hover:opacity-90" onError={(e) => e.currentTarget.src = '/images/placeholder-property.jpg'} />
+                                        <Image src={activeImage || mainGalleryImage.url} alt={mainGalleryImage.alt || property.title || 'Main property view'} layout="fill" objectFit="cover" priority className="transition-opacity hover:opacity-90" onError={(e) => e.currentTarget.src = '/images/placeholder-property.png'} />
                                     </div>
                                 )}
                                 {!mainGalleryImage && <div className="col-span-2 row-span-3 bg-gray-200 flex items-center justify-center text-gray-500">No Image</div>}
                                 {sideGalleryImages.map((image, index) => (
                                     <div key={`side-img-${index}`} className={`col-span-1 ${index === 0 ? 'row-span-2' : 'row-span-1'} relative cursor-pointer group`} onClick={() => handleImageClick(image.url)}>
-                                        <Image src={image.url} alt={image.alt || `Property view ${index + 2}`} layout="fill" objectFit="cover" sizes="25vw" className="transition-opacity hover:opacity-90" onError={(e) => e.currentTarget.src = '/images/placeholder-property.jpg'} />
+                                        <Image src={image.url} alt={image.alt || `Property view ${index + 2}`} layout="fill" objectFit="cover" sizes="25vw" className="transition-opacity hover:opacity-90" onError={(e) => e.currentTarget.src = '/images/placeholder-property.png'} />
                                     </div>
                                 ))}
                                 {mainGalleryImage && sideGalleryImages.length < 1 && <div className="col-span-1 row-span-2 bg-gray-200"></div>}
@@ -1113,31 +1113,68 @@ export default function PropertyDetailPage() {
                                             <tr key={offer.offerId} className={`block p-4 border rounded-lg mb-4 lg:p-0 lg:table-row lg:border-none lg:mb-0 lg:rounded-none lg:shadow-none ${currentQtySelected > 0 ? 'bg-blue-50/50 ring-1 ring-blue-200 lg:bg-blue-50/10' : 'bg-white'}`}>
                                                 {offerIndexInCategory === 0 ? (
                                                     <td className="block border-b pb-4 mb-4 lg:border-b-0 lg:pb-0 lg:mb-0 lg:table-cell lg:px-4 lg:py-3 lg:align-top lg:border-r lg:border-gray-300" rowSpan={offersForThisCategory.length}>
-                                                        <a href="#" onClick={(e) => { e.preventDefault(); handleCategoryTitleClick(category); }} className="font-semibold text-blue-600 hover:underline text-xl">{offer.categoryTitle}</a>
-                                                        <div className="mt-1.5 p-1.5 bg-green-50 border border-green-200 rounded-sm text-xs text-green-700 flex items-center">
-                                                            <UserCheck size={14} className="mr-1.5 shrink-0"/> Recommended for {offer.intendedAdults} adult{offer.intendedAdults > 1 ? 's' : ''}
-                                                            {offer.guestCapacityInOffer > offer.intendedAdults ? ` (up to ${offer.guestCapacityInOffer - offer.intendedAdults} child${offer.guestCapacityInOffer - offer.intendedAdults > 1 ? 'ren' : ''})` : ''}
+                                               
+                                                <div
+                                                    className="relative w-full aspect-[4/3] rounded-lg overflow-hidden cursor-pointer group mb-3 shadow-sm"
+                                                    onClick={() => handleCategoryTitleClick(category)}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleCategoryTitleClick(category)}
+                                                    aria-label={`View photos for ${category.title}`}
+                                                >
+                                                    <CldImage
+                                                        src={category.categoryImages?.[0]?.publicId || category.categoryImages?.[0]?.url || '/images/placeholder-property.png'}
+                                                        alt={`Image of ${category.title}`}
+                                                        layout="fill"
+                                                        objectFit="cover"
+                                                        className="group-hover:scale-105 transition-transform duration-300"
+                                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                        onError={(e: any) => e.currentTarget.src = '/images/placeholder-property.png'}
+                                                    />
+                                                    {category.categoryImages && category.categoryImages.length > 0 && (
+                                                        <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-sm text-gray-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center space-x-1.5 transition-all group-hover:bg-white group-hover:shadow-xl">
+                                                            <span>{category.categoryImages.length} PHOTOS</span>
+                                                            <span className="font-mono text-sm leading-none">→</span>
                                                         </div>
-                                                        {category.qty > 0 && category.qty <= 5 && <p className="text-xs text-red-600 mt-1.5 flex items-center"><AlertCircleIcon size={14} className="mr-1 shrink-0"/>Only {category.qty} rooms left on our site</p>}
-                                                        {offer.bedConfiguration && <p className="text-xs text-gray-700 mt-1.5 flex items-center"><Bed size={14} className="mr-1.5 text-gray-500" />{offer.bedConfiguration}</p>}
-                                                        {offer.size && <p className="text-xs text-gray-700 mt-1 flex items-center"><ImageIconLucide size={14} className="mr-1.5 text-gray-500" />{offer.size}</p>}
-                                                        {category.categoryActivities && category.categoryActivities.length > 0 && (
-                                                            <div className="mt-2">
-                                                                <p className="text-xs font-semibold text-yellow-700 flex items-center"><Sparkles size={13} className="mr-1" />Activities:</p>
-                                                                <div className="flex flex-wrap gap-1 mt-0.5">
-                                                                    {category.categoryActivities.slice(0,3).map(act => <span key={act} className="text-[10px] bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-sm">{act}</span>)}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                        {category.categoryFacilities && category.categoryFacilities.length > 0 && (
-                                                            <div className="mt-1.5">
-                                                                <p className="text-xs font-semibold text-indigo-700 flex items-center"><Wrench size={13} className="mr-1" />Facilities:</p>
-                                                                    <div className="flex flex-wrap gap-1 mt-0.5">
-                                                                    {category.categoryFacilities.slice(0,3).map(fac => <span key={fac} className="text-[10px] bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded-sm">{fac}</span>)}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </td>
+                                                    )}
+                                                </div>
+
+                                                {/* Room Title and Size, mimicking the screenshot */}
+                                                <h3 className="font-bold text-gray-800 text-xl">{offer.categoryTitle}</h3>
+                                                {offer.size && (
+                                                    <div className="flex items-center text-sm text-gray-600 mt-1">
+                                                        {/* Simple square icon similar to the screenshot */}
+                                                        <div className="w-4 h-4 border border-gray-500 mr-2 flex-shrink-0"></div>
+                                                        <span>{offer.size}</span>
+                                                    </div>
+                                                )}
+                                                {/* === MODIFICATION END === */}
+                                                
+                                                {/* Rest of the original content for this cell, with adjusted margin */}
+                                                <div className="mt-3 p-1.5 bg-green-50 border border-green-200 rounded-sm text-xs text-green-700 flex items-center">
+                                                    <UserCheck size={14} className="mr-1.5 shrink-0"/> Recommended for {offer.intendedAdults} adult{offer.intendedAdults > 1 ? 's' : ''}
+                                                    {offer.guestCapacityInOffer > offer.intendedAdults ? ` (up to ${offer.guestCapacityInOffer - offer.intendedAdults} child${offer.guestCapacityInOffer - offer.intendedAdults > 1 ? 'ren' : ''})` : ''}
+                                                </div>
+                                                {category.qty > 0 && category.qty <= 5 && <p className="text-xs text-red-600 mt-1.5 flex items-center"><AlertCircleIcon size={14} className="mr-1 shrink-0"/>Only {category.qty} rooms left on our site</p>}
+                                                {offer.bedConfiguration && <p className="text-xs text-gray-700 mt-1.5 flex items-center"><Bed size={14} className="mr-1.5 text-gray-500" />{offer.bedConfiguration}</p>}
+                                                {/* The original offer.size display is removed from here as it's moved to the top */}
+                                                {category.categoryActivities && category.categoryActivities.length > 0 && (
+                                                    <div className="mt-2">
+                                                        <p className="text-xs font-semibold text-yellow-700 flex items-center"><Sparkles size={13} className="mr-1" />Activities:</p>
+                                                        <div className="flex flex-wrap gap-1 mt-0.5">
+                                                            {category.categoryActivities.slice(0,3).map(act => <span key={act} className="text-[10px] bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-sm">{act}</span>)}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {category.categoryFacilities && category.categoryFacilities.length > 0 && (
+                                                    <div className="mt-1.5">
+                                                        <p className="text-xs font-semibold text-indigo-700 flex items-center"><Wrench size={13} className="mr-1" />Facilities:</p>
+                                                            <div className="flex flex-wrap gap-1 mt-0.5">
+                                                            {category.categoryFacilities.slice(0,3).map(fac => <span key={fac} className="text-[10px] bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded-sm">{fac}</span>)}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </td>
                                                 ) : null }
                                                 
                                                 <td className="block py-2 border-b lg:border-b-0 lg:table-cell lg:px-3 lg:py-3 lg:align-top lg:text-center lg:border-r lg:border-gray-300">
