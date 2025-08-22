@@ -60,15 +60,17 @@ export default function ItemEdit({ params }: { params: Promise<{ id: string }> }
       if (!foundItem) {
         throw new Error('Item not found in any category');
       }
+
+      
       
       // Create unified item for UI rendering
       const generalItem: GeneralItem = {
         id: itemId,
-        title: foundItem.title,
-        description: foundItem.description,
-        createdAt: foundItem.createdAt || new Date().toISOString(),
+        title: foundItem?.title || "NA" ,
+        description: foundItem?.description || "NA" ,
+        createdAt: foundItem?.createdAt || new Date().toISOString(),
         category: foundCategory === 'properties' ? 'Property' : 
-                 foundCategory === 'trips' ? 'Trip' : 'Travelling'
+        foundCategory === 'trips' ? 'Trip' : 'Travelling'
       };
       
       setItem(generalItem);
@@ -76,52 +78,52 @@ export default function ItemEdit({ params }: { params: Promise<{ id: string }> }
       if (foundCategory === 'properties') {
         setPropertyDetails({
            userId: foundItem.userId,
-                    title: foundItem.title,
-                    description: foundItem.description,
-                    type: foundItem.type || 'hotel',
-                    location: foundItem.location || {
+                    title: foundItem?.title || "NA" ,
+                    description: foundItem?.description || "NA" ,
+                    type: foundItem?.type || 'hotel',
+                    location: foundItem?.location || {
                       address: '',
                       city: '',
                       state: '',
                       country: '',
                     },
-                    startDate: foundItem.startDate,
-                    endDate: foundItem.endDate,
+                    startDate: foundItem?.startDate || new Date().toISOString(),
+                    endDate: foundItem?.endDate || new Date().toISOString(),
                     costing: {
-                      price: foundItem.costing.price || 0,
-                      discountedPrice: foundItem.costing.discountedPrice || 0,
-                      currency: foundItem.costing.currency || 'USD'
+                      price: foundItem?.costing?.price || 0,
+                      discountedPrice: foundItem?.costing?.discountedPrice || 0,
+                      currency: foundItem?.costing?.currency || 'USD'
                     },
-                    totalRating: foundItem.totalRating || 0,
-                    review: foundItem.review?.map((review: Review) => ({
+                    totalRating: foundItem?.totalRating || 0,
+                    review: foundItem?.review?.map((review: Review) => ({
                       comment: review.comment,
                       rating: review.rating
                     })) || [],
                     bannerImage: {
-                      url: foundItem.bannerImage.url,
-                      publicId: foundItem.bannerImage.publicId,
-                      alt: foundItem.bannerImage.alt
+                      url: foundItem?.bannerImage?.url,
+                      publicId: foundItem?.bannerImage?.publicId,
+                      alt: foundItem?.bannerImage?.alt
                     },
-                    detailImages: foundItem.detailImages?.map((image: Image) => ({
+                    detailImages: foundItem?.detailImages?.map((image: Image) => ({
                       url: image.url
                     })),
-                    rooms: foundItem.rooms || 1,
-          
-                    categoryRooms : foundItem.categoryRooms || [''],
-                    amenities: foundItem.amenities || [''],
-                    accessibility : foundItem.accessibility || [''],
-                    roomAccessibility : foundItem.roomAccessibility || [''],
-                    popularFilters : foundItem.popularFilters || [''],
-                    funThingsToDo : foundItem.funThingsToDo || [''],
-                    meals : foundItem.meals || [''],
-                    facilities : foundItem.facilities || [''],
-                    bedPreference : foundItem.bedPreference || [''],
-                    reservationPolicy : foundItem.reservationPolicy || [''],
-                    brands : foundItem.brands || [''],
-                    roomFacilities : foundItem.roomFacilities || [''],
-          
-                    propertyRating : foundItem.propertyRating || 3,
-                    googleMaps : foundItem.googleMaps || 3,
+                    rooms: foundItem?.rooms || 1,
+
+                    categoryRooms : foundItem?.categoryRooms || [''],
+                    amenities: foundItem?.amenities || [''],
+                    accessibility : foundItem?.accessibility || [''],
+                    roomAccessibility : foundItem?.roomAccessibility || [''],
+                    popularFilters : foundItem?.popularFilters || [''],
+                    funThingsToDo : foundItem?.funThingsToDo || [''],
+                    meals : foundItem?.meals || [''],
+                    facilities : foundItem?.facilities || [''],
+                    bedPreference : foundItem?.bedPreference || [''],
+                    reservationPolicy : foundItem?.reservationPolicy || [''],
+                    brands : foundItem?.brands || [''],
+                    roomFacilities : foundItem?.roomFacilities || [''],
+
+                    propertyRating : foundItem?.propertyRating || 3,
+                    googleMaps : foundItem?.googleMaps || 3,
         });
       } else if (foundCategory === 'trips') {
         setTripDetails({
@@ -203,8 +205,10 @@ export default function ItemEdit({ params }: { params: Promise<{ id: string }> }
 
         });
       }
-      
+
+      // console.log( "PProperty FoundItem Testing: " , foundItem );
     } catch (error) {
+      
       console.error('Error fetching item details:', error);
       toast({
         title: 'Error',

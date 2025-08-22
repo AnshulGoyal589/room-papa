@@ -436,7 +436,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
 
     return (
         <div className="p-4 md:p-6 bg-white rounded-lg shadow-lg">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 border-b pb-4">{ensurePropertyData.title || "Property Details"}</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 border-b pb-4">{ensurePropertyData?.title || "Property Details"}</h2>
 
              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6 mb-8">
                 {/* ... (existing property summary display) ... */}
@@ -456,7 +456,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                      {currentCategories && currentCategories.length > 0 && (
                         <div className="mb-6 space-y-4">
                              {currentCategories.map((cat: StoredRoomCategory) => {
-                                const pricing = cat.pricing || initialNewCategoryFormState.pricing;
+                                const pricing = cat?.pricing || initialNewCategoryFormState.pricing;
                                 const currency = cat.currency || 'USD';
                                 return (
                                     <div key={cat.id} className="p-4 bg-gray-50 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
