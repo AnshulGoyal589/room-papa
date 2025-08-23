@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+   <!-- 1. Sitemap for core static pages (Homepage, About, Contact, etc.) -->
+   <sitemap>
+      <loc>https://roompapa.com/static-pages-sitemap.xml</loc>
+      <lastmod>2023-10-27T10:00:00+00:00</lastmod>
+   </sitemap>
+
+   <!-- 2. Sitemap for main destination landing pages (Countries, Cities) -->
+   <!-- <sitemap>
+      <loc>https://roompapa.com/destinations-sitemap.xml</loc>
+      <lastmod>2023-10-27T18:30:00+00:00</lastmod>
+   </sitemap> -->
+
+   <!-- 3. Sitemaps for all individual property pages, split into multiple files -->
+   <!-- Each file contains up to 50,000 property URLs -->
+   <!-- <sitemap>
+      <loc>https://roompapa.com/properties-1-sitemap.xml</loc>
+      <lastmod>2023-10-28T04:15:00+00:00</lastmod>
+   </sitemap>
+   <sitemap>
+      <loc>https://roompapa.com/properties-2-sitemap.xml</loc>
+      <lastmod>2023-10-28T04:15:00+00:00</lastmod>
+   </sitemap>
+   <sitemap>
+      <loc>https://roompapa.com/properties-3-sitemap.xml</loc>
+      <lastmod>2023-10-28T04:15:00+00:00</lastmod>
+   </sitemap> -->
+   <!-- ... continue this pattern for as many property sitemaps as you need ... -->
+   <!-- For a site with 1 million properties, you would have 20 of these files (1,000,000 / 50,000) -->
+
+   <!-- 4. Sitemap for the paginated search results pages for your most important destinations -->
+   <sitemap>
+      <loc>https://roompapa.com/paginated-search-sitemap.xml</loc>
+      <lastmod>2023-10-28T05:00:00+00:00</lastmod>
+   </sitemap>
+
+</sitemapindex>
