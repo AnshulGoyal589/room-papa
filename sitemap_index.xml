@@ -3,7 +3,7 @@
 
    <!-- 1. Sitemap for core static pages (Homepage, About, Contact, etc.) -->
    <sitemap>
-      <loc>https://roompapa.com/static-pages-sitemap.xml</loc>
+      <loc>https://www.roompapa.com/static-pages-sitemap.xml</loc>
       <lastmod>2023-10-27T10:00:00+00:00</lastmod>
    </sitemap>
 
@@ -32,7 +32,7 @@
 
    <!-- 4. Sitemap for the paginated search results pages for your most important destinations -->
    <sitemap>
-      <loc>https://roompapa.com/paginated-search-sitemap.xml</loc>
+      <loc>https://www.roompapa.com/paginated-search-sitemap.xml</loc>
       <lastmod>2023-10-28T05:00:00+00:00</lastmod>
    </sitemap>
 
