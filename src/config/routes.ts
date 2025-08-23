@@ -1,7 +1,7 @@
 import { RouteConfig } from "@/types";
 
 export const routeConfig: RouteConfig = {
-  publicRoutes: ['/customer','/login', '/register',],
+  publicRoutes: ['/customer','/login', '/register','/sitemap_index.xml'],
   roleRoutes: {
     admin: {
       allowedRoutes: ['/admin'],
