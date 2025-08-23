@@ -53,4 +53,4 @@ Allow: /images/properties/
 
 # 5. Point all crawlers to the Sitemap Index file.
 # This must be the full, absolute URL.
-Sitemap: https://roompapa.com.com/sitemap_index.xml
+Sitemap: https://www.roompapa.com/sitemap_index.xml
