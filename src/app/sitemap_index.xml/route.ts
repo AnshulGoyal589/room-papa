@@ -1,6 +1,6 @@
 // This route handler generates the sitemap index file
 
-export async function GET(request: Request) {
+export async function GET() {
   const sitemapIndex = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
