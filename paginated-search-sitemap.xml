@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-   <!-- Paginated series for Paris -->
    <url>
-      <loc>https://roompapa.com/customer/dashboard?tab=property&amp;category=property</loc>
+      <loc>https://www.roompapa.com/customer/dashboard?tab=property&amp;category=property</loc>
    </url>
-   <!-- ... and so on for all pages for Rome ... -->
 </urlset>
