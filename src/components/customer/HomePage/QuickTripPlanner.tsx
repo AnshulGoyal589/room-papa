@@ -95,13 +95,13 @@ export default function QuickTripPlanner() {
   //   const params = new URLSearchParams(currentSearchParams?.toString() || '');
   //   if (domain) params.set('domain', domain);
   //   params.set('category', 'trip');
-  //   router.push(`/customer/search?${params.toString()}`);
+  //   router.push(`/search?${params.toString()}`);
   // };
 
   // const handleSearch = () => {
   //   const params = new URLSearchParams(currentSearchParams?.toString() || '');
   //   params.set('category', 'trip');
-  //   router.push(`/customer/search?${params.toString()}`);
+  //   router.push(`/search?${params.toString()}`);
   // };
   // END OF UNCHANGED LOGIC
 

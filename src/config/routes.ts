@@ -1,7 +1,7 @@
 import { RouteConfig } from "@/types";
 
 export const routeConfig: RouteConfig = {
-  publicRoutes: ['/customer','/login', '/register','/sitemap_index.xml'],
+  publicRoutes: ['/search', '/property' , '/sitemap_index.xml'],
   roleRoutes: {
     admin: {
       allowedRoutes: ['/admin'],
@@ -14,10 +14,9 @@ export const routeConfig: RouteConfig = {
       defaultRoute: '/manager/dashboard'
     },
     customer: {
-      // allowedRoutes: ['/home','/shops', '/query', '/order-history', '/profile','/track-order','/orders','/get-appointment','/listed-products','/product-details','/cart','/products','/my-orders','/add-new-product','/get-it-fixed','/ecommerce-orders', '/receipt','/missing-information','/missing-info'],
       allowedRoutes: ['/customer'],
-      redirectTo: '/customer/dashboard',
-      defaultRoute: '/customer/dashboard'
+      redirectTo: '/',
+      defaultRoute: '/'
     }
   } 
 };

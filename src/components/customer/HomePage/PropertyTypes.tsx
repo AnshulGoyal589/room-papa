@@ -40,7 +40,7 @@ export default function PropertyTypes() {
     const params = new URLSearchParams(currentSearchParams?.toString() || '');
     if (type) params.set('type', type);
     params.set('category', 'property');
-    router.push(`/customer/search?${params.toString()}`);
+    router.push(`/search?${params.toString()}`);
   };
 
   return (

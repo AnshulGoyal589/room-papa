@@ -355,7 +355,7 @@ export default function PropertyDetailPage() {
         if (typeof window === 'undefined') return null;
         const storedValue = localStorage.getItem(LOCAL_STORAGE_KEY);
         const parsedValue = storedValue ? JSON.parse(storedValue) : null;
-        const checkInDate = parsedValue?.checkInDate || localStorage.getItem('checkIn');
+        const checkInDate = localStorage.getItem('checkIn') || parsedValue?.checkInDate;
         const date =  new Date(checkInDate);
         if (date && !isNaN(date.getTime())) {
             const year = date.getFullYear();
@@ -723,6 +723,7 @@ export default function PropertyDetailPage() {
             setCheckOutDate(null);
         } else {
             validatedCheckIn = validateDate(selectedValue, property.startDate, property.endDate);
+            // localStorage.setItem('checkInDate', validatedCheckIn.toISOString());
             setCheckInDate(validatedCheckIn);
 
             if (checkOutDate && validatedCheckIn >= checkOutDate) {
@@ -731,6 +732,7 @@ export default function PropertyDetailPage() {
                 const maxEndDate = new Date(property.endDate ?? Date.now());
                  const validNextDay = nextDay <= maxEndDate ? nextDay : maxEndDate;
                  if (validNextDay > validatedCheckIn) {
+                    // localStorage.setItem('checkOutDate', validNextDay.toISOString());
                     setCheckOutDate(validNextDay);
                  } else {
                     setCheckOutDate(null);
@@ -740,6 +742,7 @@ export default function PropertyDetailPage() {
                 nextDay.setDate(validatedCheckIn.getDate() + 1);
                 const maxEndDate = new Date(property.endDate || Date.now());
                 if (nextDay <= maxEndDate) {
+                    // localStorage.setItem('checkOutDate', nextDay.toISOString());
                     setCheckOutDate(nextDay);
                 }
             }
@@ -767,6 +770,8 @@ export default function PropertyDetailPage() {
                  validatedCheckOut = dayAfterCI <= maxEndDate ? dayAfterCI : null;
              }
             setCheckOutDate(validatedCheckOut);
+            // localStorage.setItem('checkOutDate', validatedCheckOut ? validatedCheckOut.toISOString() : '');
+            
         }
          const { available, message } = checkAvailabilityForSelection(checkInDate, validatedCheckOut, selectedOffers, property.categoryRooms);
          setAvailabilityError(available ? null : message);

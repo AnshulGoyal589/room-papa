@@ -32,7 +32,7 @@ export default function SearchForm() {
       params.set('endDate', endDate);
     }
     
-    router.push(`/customer/search?${params.toString()}`);
+    router.push(`/search?${params.toString()}`);
 
   };
 

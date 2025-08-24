@@ -166,7 +166,7 @@ export default function SearchResults() {
     
     const params = new URLSearchParams(currentSearchParams?.toString() || '');
     params.set('page', page.toString());
-    router.push(`/customer/search?${params.toString()}`, { scroll: false });
+    router.push(`/search?${params.toString()}`, { scroll: false });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -174,7 +174,7 @@ export default function SearchResults() {
   //   const params = new URLSearchParams(currentSearchParams?.toString() || '');
   //   params.delete(chipKey);
   //   params.set('page', '1'); 
-  //   router.push(`/customer/search?${params.toString()}`, { scroll: false });
+  //   router.push(`/search?${params.toString()}`, { scroll: false });
   // };
 
   // const formatChipLabel = (key: string, value: string): string => {
@@ -243,7 +243,7 @@ export default function SearchResults() {
     >
       {/* Image Column */}
       <div className="w-full sm:w-[240px] md:w-[260px] lg:w-[280px] h-52 sm:h-auto relative">
-        <Link href={`/customer/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}`} className="block w-full h-full">
+        <Link href={`/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}`} className="block w-full h-full">
             {property.bannerImage?.url ? (
             <Image 
                 src={property.bannerImage.url} 
@@ -269,7 +269,7 @@ export default function SearchResults() {
       {/* Middle Content Column */}
       <div className="flex-grow p-4 flex flex-col">
         <div className="flex justify-between items-start">
-            <Link href={`/customer/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}`} className="block mb-1">
+            <Link href={`/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}`} className="block mb-1">
                 <h3 className="text-xl md:text-2xl font-bold text-blue-600 hover:text-blue-700 transition-colors line-clamp-2">{property.title || "Untitled Property"}</h3>
             </Link>
             {/* Rating for very small screens, hidden on sm+ */}
@@ -361,7 +361,7 @@ export default function SearchResults() {
             </>
           )}
            <Link 
-            href={`/customer/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}`} 
+            href={`/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}`} 
             className="mt-2.5 block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-md text-sm transition-colors w-full flex items-center justify-center"
           >
             See availability

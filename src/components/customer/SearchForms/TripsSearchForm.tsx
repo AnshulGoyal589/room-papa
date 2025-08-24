@@ -124,7 +124,7 @@ export default function FlightsSearchForm() {
     if (hasPets) params.set('pets', 'true');
 
     // Redirect to the search page with params
-    window.location.href = `/customer/search?${params.toString()}`;
+    window.location.href = `/search?${params.toString()}`;
   };
 
   // Handle date selection in calendar

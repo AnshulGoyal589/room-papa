@@ -63,7 +63,7 @@ const RecentSearches: React.FC = () => {
     params.set('rooms', search.rooms.toString());
     if (search.pets) params.set('pets', 'true');
 
-    window.location.href = `/customer/search?${params.toString()}`;
+    window.location.href = `/search?${params.toString()}`;
   };
 
   if (searches.length === 0) {

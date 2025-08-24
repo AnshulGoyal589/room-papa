@@ -17,7 +17,7 @@ export default async function MyBookingsPage() {
 
     if (!userId) {
         // Redirect to sign-in page if not authenticated
-        redirect('/customer/dashboard');
+        redirect('/');
     }
 
     // 2. Fetch bookings for the current user using the repository

@@ -33,10 +33,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${siteUrl}/customer-care`,
       lastModified: new Date(),
     },
-    {
-      url: `${siteUrl}/customer/dashboard?tab=property&amp;category=property`,
-      lastModified: new Date(),
-    },
   ];
 
   // // 2. Get dynamic property pages

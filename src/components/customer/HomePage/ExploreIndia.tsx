@@ -56,7 +56,7 @@ export default function TrendingDestinations() { // Renamed component for clarit
     const params = new URLSearchParams(currentSearchParams?.toString() || '');
     if (location) params.set('destination', location); // Changed 'location' to 'destination' to be more standard
     // params.set('category', 'trip'); // You can set category if your search page needs it
-    router.push(`/customer/search?${params.toString()}`);
+    router.push(`/search?${params.toString()}`);
   };
 
   return (

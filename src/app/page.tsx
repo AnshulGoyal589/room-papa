@@ -1,8 +1,13 @@
-import React from 'react'
+import InitialRender from '@/components/customer/HomePage/InitialRender'
+import SearchHeader from '@/components/customer/SearchHeader'
+
 
 const page = () => {
   return (
-    <div>page</div>
+    <div className="min-h-screen bg-gray-50">   
+        <SearchHeader/>
+        <InitialRender/>
+    </div>
   )
 }
 

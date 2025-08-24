@@ -21,68 +21,34 @@ export default function RoleProtection({
   const router = useRouter();
   const pathname = usePathname();
 
-  const isPublicRoute = pathname && routeConfig.publicRoutes.some(route => 
-    pathname.startsWith(route)
-  );
+  const isPublicRoute = pathname && (pathname.includes("/") || routeConfig.publicRoutes.some(route => pathname.startsWith(route)));
 
   useEffect(() => {
     async function fetchUserRole() {
       if (!isSignedIn) {
-        // Not logged in - only allow public routes
         if (isPublicRoute) {
           setAuthorized(true);
         } else {
-          // Redirect to customer dashboard and open sign-in popup
-          router.push('/customer/dashboard');
-          // Small delay to ensure navigation happens before opening the modal
-          // setTimeout(() => {
-          //   openSignIn();
-          // }, 100);
+          router.push('/');
         }
         setLoading(false);
         return;
       }
 
       try {
-        // Rest of your existing code for handling logged-in users
         const response = await fetch('/api/user-role');
         const data = await response.json();
         const role = data.role as UserRole;
-        // setUserRole(role);
-        
-        // Check authorization based on user role
-        if (role) {
+        if (isPublicRoute) {
+          setAuthorized(true);
+        } else if (role) {
           const roleConfig = routeConfig.roleRoutes[role];
           
-          // Allow access to public routes for all users
-          // console.log("hurrah: ",role);
-          if (isPublicRoute) {
-            setAuthorized(true);
-          } 
-
-          // For homepage, redirect to role-specific default route
-          else if (pathname && pathname === '/') {
-            router.push(roleConfig.defaultRoute);
-          }
-          // Check if the route is allowed for this role
-          else if (pathname && roleConfig.allowedRoutes.some(route => pathname.startsWith(route))) {
+          if (pathname && roleConfig.allowedRoutes.some(route => pathname.startsWith(route))) {
             setAuthorized(true);
           }
           // If not authorized, redirect to the default route for this role
           else {
-            router.push(roleConfig.defaultRoute);
-          }
-        } else {
-          // If we can't determine the role but user is signed in,
-          // treat as customer (default role)
-          const defaultRole = 'customer';
-          const roleConfig = routeConfig.roleRoutes[defaultRole];
-          
-          if (isPublicRoute) {
-            setAuthorized(true);
-          } else if (pathname && roleConfig.allowedRoutes.some(route => pathname.startsWith(route))) {
-            setAuthorized(true);
-          } else {
             router.push(roleConfig.defaultRoute);
           }
         }
@@ -92,7 +58,7 @@ export default function RoleProtection({
         if (isPublicRoute) {
           setAuthorized(true);
         } else {
-          router.push('/customer/dashboard');
+          router.push('/');
           setTimeout(() => {
             openSignIn();
           }, 100);

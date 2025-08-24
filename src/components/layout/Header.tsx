@@ -205,7 +205,7 @@ export function Header() {
     <header className="bg-[#003b95]"> 
       <div className="flex justify-between items-center mx-auto px-4 w-full lg:w-[70vw] "> {/* Added some padding */}
         {/* Logo with dynamic routing based on role */}
-        <Link href={role === 'customer' ? "/customer/dashboard" : role === 'manager' ? "/manager/dashboard" : role === 'admin' ? "/admin/dashboard" : "/"} 
+        <Link href={role === 'customer' ? "/" : role === 'manager' ? "/manager/dashboard" : role === 'admin' ? "/admin/dashboard" : "/"} 
           // Changed logo text color to white for contrast
           className="text-2xl font-bold text-white flex items-center"> 
           <Image
@@ -222,7 +222,7 @@ export function Header() {
           // Adjusted text color to white and hover color for contrast
           <nav className="hidden md:flex space-x-6 items-center text-white"> 
             <Link 
-              href="/customer/dashboard"
+              href="/"
               className="flex items-center space-x-2 hover:text-gray-300 transition"
             >
               <Home className="w-5 h-5" />
@@ -238,21 +238,21 @@ export function Header() {
               </Link>
             </SignedIn>
             <Link 
-              href="/customer/search?category=trip" 
+              href="/search?category=trip" 
               className="flex items-center space-x-2 hover:text-gray-300 transition"
             >
               <Plane className="w-5 h-5" />
               <span>Trips</span>
             </Link>
             <Link 
-              href="/customer/search?category=property" 
+              href="/search?category=property" 
               className="flex items-center space-x-2 hover:text-gray-300 transition"
             >
               <Hotel className="w-5 h-5" />
               <span>Properties</span>
             </Link>
             <Link 
-              href="/customer/search?category=travelling" 
+              href="/search?category=travelling" 
               className="flex items-center space-x-2 hover:text-gray-300 transition"
             >
               <ShoppingBag className="w-5 h-5" />

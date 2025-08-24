@@ -274,7 +274,7 @@ export default function StaysSearchForm() {
     };
     saveSearchToRecentList(currentSearchData);
 
-    window.location.href = `/customer/search?${params.toString()}`;
+    window.location.href = `/search?${params.toString()}`;
   };
 
   const handleDateClick = (day: number, month: number, year: number) => {

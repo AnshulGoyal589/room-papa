@@ -11,21 +11,45 @@ import {
 import StaysSearchForm from './SearchForms/StaysSearchForm';
 import FlightsSearchForm from './SearchForms/FlightsSearchForm';
 import TripsSearchForm from './SearchForms/TripsSearchForm';
-import { usePathname, useSearchParams } from 'next/navigation';
+// useSearchParams is no longer needed
+import { usePathname } from 'next/navigation';
 
-// Define visible tab IDs
+// Define visible tab IDs and a validator array
 export type TabId = 'property' | 'travelling' | 'flight+hotel' | 'car-rentals' | 'attractions' | 'airport-taxis';
+const VALID_TABS: TabId[] = ['property', 'travelling', 'flight+hotel', 'car-rentals', 'attractions', 'airport-taxis'];
 
 // Define backend categories
 export type CategoryType = 'property' | 'trip' | 'travelling';
 
+// Safely gets the initial tab from localStorage on the client-side
+const getInitialTab = (): TabId => {
+  // Return default for server-side rendering
+  if (typeof window === 'undefined') {
+    return 'property';
+  }
+  try {
+    const savedTab = localStorage.getItem('activeSearchTab') as TabId;
+    // Validate that the saved value is a real TabId before using it
+    if (savedTab && VALID_TABS.includes(savedTab)) {
+      return savedTab;
+    }
+  } catch (error) {
+    // Handle potential errors, e.g., in private browsing mode
+    console.error('Could not read from localStorage:', error);
+  }
+  // Return default if nothing is found or an error occurs
+  return 'property';
+};
+
 export default function SearchHeader() {
-  const searchParams = useSearchParams();
   const pathname = usePathname();
-  const [activeTab, setActiveTab] = useState<TabId>(
-    (searchParams?.get('tab') as TabId) || 'property'
-  );
-  const showHeading = pathname ? pathname.includes('dashboard') : false; 
+  
+  // Initialize state by calling a function that reads from localStorage.
+  // This runs only once on the initial client-side render.
+  const [activeTab, setActiveTab] = useState<TabId>(getInitialTab);
+
+  const showHeading = pathname ? pathname.includes('/') : false; 
+  
   // Map tabs to categories
   const getCategory = (tabId: TabId): CategoryType => {
     switch (tabId) {
@@ -42,15 +66,6 @@ export default function SearchHeader() {
         return 'property';
     }
   };
-
-  useEffect(() => {
-    // Get the tab from URL parameters when component mounts
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const tabParam = urlParams.get('tab') as TabId;
-      if (tabParam) setActiveTab(tabParam);
-    }
-  }, []);
 
   // Define tab configurations with icons and labels
   const tabs = [
@@ -104,20 +119,16 @@ export default function SearchHeader() {
   };
 
   const renderSearchForm = () => {
-    // Get the category for the current tab
     const category = getCategory(activeTab);
 
-    // For trip category, use specific forms based on the active tab
     if (category === 'trip') {
       return <TripsSearchForm />;
     }
     
-    // For travelling category, use specific forms based on the active tab
     if (category === 'travelling') {
-        return <FlightsSearchForm />;
+      return <FlightsSearchForm />;
     }
     
-    // For property category
     if (category === 'property') {
       return <StaysSearchForm />;
     }
@@ -125,13 +136,16 @@ export default function SearchHeader() {
     return null;
   };
 
-  // Update URL when activeTab changes
+  // This useEffect now saves the active tab and category to localStorage
+  // whenever the activeTab state changes.
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.set('tab', activeTab);
-      url.searchParams.set('category', getCategory(activeTab));
-      window.history.pushState({}, '', url);
+      try {
+        localStorage.setItem('activeSearchTab', activeTab);
+        localStorage.setItem('activeSearchCategory', getCategory(activeTab));
+      } catch (error) {
+        console.error('Could not write to localStorage:', error);
+      }
     }
   }, [activeTab]);
 
@@ -144,7 +158,7 @@ export default function SearchHeader() {
 
   return (
     <div className="bg-[#003b95] text-white">
-      <div className="container mx-auto px-8 pb-4 md:pb-8 lg:pb-0  w-full lg:w-7xl">
+      <div className="container mx-auto px-8 pb-4 md:pb-8 lg:pb-0 w-full lg:w-7xl">
         {/* Navigation Tabs */}
         <div className="flex overflow-x-auto no-scrollbar mb-6 lg:mb-0 pb-2 lg:pb-0">
           {tabs.map((tab) => {
@@ -167,8 +181,7 @@ export default function SearchHeader() {
         </div>
 
         {/* Heading */}
-        {
-          showHeading && 
+        {showHeading && 
           <div className="mt-12 mb-12 lg:mb-4 flex flex-col gap-4">
             <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold">{title}</h1>
             <p className="text-base md:text-xl">{subtitle}</p>

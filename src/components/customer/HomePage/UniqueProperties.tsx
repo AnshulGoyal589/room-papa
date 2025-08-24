@@ -68,7 +68,7 @@ export default function UniqueProperties(): React.ReactElement {
 
   // --- LOGIC FROM ORIGINAL CODE - UNCHANGED ---
   const handleSearch = (id: string) => {
-    router.push(`/customer/property/${id}`);
+    router.push(`/property/${id}`);
   };
 
 
