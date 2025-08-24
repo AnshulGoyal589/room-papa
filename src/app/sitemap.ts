@@ -1,59 +1,31 @@
-import { MetadataRoute } from 'next';
+import { NextResponse } from 'next/server';
 
-// // Placeholder: Replace this with your actual database fetching logic
-// async function getPropertiesFromDB() {
-//   // Example: const properties = await prisma.property.findMany(...);
-//   // Return an array of objects with slug and updatedAt
-//   return [
-//     { slug: 'grand-hotel-eiffel-paris', updatedAt: new Date() },
-//     { slug: 'colosseum-view-loft-rome', updatedAt: new Date() },
-//   ];
-// }
-
-// // Placeholder: Replace this with your actual database fetching logic
-// async function getDestinationsFromDB() {
-//   // Example: const destinations = await prisma.destination.findMany(...);
-//   return [
-//     { slug: 'france/paris', updatedAt: new Date() },
-//     { slug: 'italy/rome', updatedAt: new Date() },
-//   ];
-// }
-
-
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+export async function GET() {
   const siteUrl = 'https://www.roompapa.com';
+  const now = new Date().toISOString();
 
-  // 1. Get static pages
-  const staticPages = [
-    {
-      url: siteUrl,
-      lastModified: new Date(),
-    },
-    {
-      url: `${siteUrl}/customer-care`,
-      lastModified: new Date(),
-    },
-    {
-      url: `${siteUrl}/customer/dashboard?tab=property&category=property`,
-      lastModified: new Date(),
-    },
+  const staticUrls = [
+    '', // homepage
+    'customer-care',
+    'customer/dashboard?tab=property&category=property',
   ];
 
-  // // 2. Get dynamic property pages
-  // const properties = await getPropertiesFromDB();
-  // const propertyPages = properties.map((property) => ({
-  //   url: `${siteUrl}/property/${property.slug}`,
-  //   lastModified: property.updatedAt,
-  // }));
+  const urlsXml = staticUrls.map(
+    path => `
+  <url>
+    <loc>${siteUrl}/${path}</loc>
+    <lastmod>${now}</lastmod>
+  </url>`
+  ).join('');
 
-  // // 3. Get dynamic destination pages
-  // const destinations = await getDestinationsFromDB();
-  // const destinationPages = destinations.map((destination) => ({
-  //   url: `${siteUrl}/destination/${destination.slug}`,
-  //   lastModified: destination.updatedAt,
-  // }));
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  ${urlsXml}
+</urlset>`;
 
-  // Combine all pages
-  // return [...staticPages, ...propertyPages, ...destinationPages];
-  return [...staticPages];
+  return new NextResponse(xml, {
+    headers: {
+      'Content-Type': 'application/xml'
+    }
+  });
 }
