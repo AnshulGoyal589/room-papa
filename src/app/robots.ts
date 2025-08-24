@@ -8,14 +8,8 @@ export default function robots(): MetadataRoute.Robots {
         // Block private, user-specific, and action-oriented pages
         disallow: [
           '/admin/',
-          '/login',
-          '/register',
-          '/my-account/',
-          '/my-bookings/',
-          '/checkout/',
-          '/payment/',
-          '/cart/',
-          '/wishlist/',
+          '/manager/',
+          '/customer/',
           '/api/',
         ],
       },
