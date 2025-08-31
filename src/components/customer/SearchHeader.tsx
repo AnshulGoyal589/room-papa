@@ -11,7 +11,6 @@ import {
 import StaysSearchForm from './SearchForms/StaysSearchForm';
 import FlightsSearchForm from './SearchForms/FlightsSearchForm';
 import TripsSearchForm from './SearchForms/TripsSearchForm';
-// useSearchParams is no longer needed
 import { usePathname } from 'next/navigation';
 
 // Define visible tab IDs and a validator array

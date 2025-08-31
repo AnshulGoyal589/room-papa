@@ -16,8 +16,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// This helps ensure all your social sharing images and canonical URLs are absolute.
-// Set this in your .env.local file for production.
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
 export const metadata: Metadata = {
@@ -44,7 +42,7 @@ export const metadata: Metadata = {
     siteName: 'Room Papa',
     images: [
       {
-        url: `${siteUrl}/og-image.png`, // Create this image and place it in your `public` folder
+        url: `${process.env.NEXT_PUBLIC_SITE_URL}/assets/logo.jpg`,
         width: 1200,
         height: 630,
         alt: 'Room Papa - Your Ultimate Booking Companion',
@@ -59,15 +57,15 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Room Papa | Find & Book Hotels, Apartments & More',
     description: 'Find great deals on hotels, apartments, and unique places to stay.',
-    images: [`${siteUrl}/twitter-image.png`], // Create this image and place it in your `public` folder
+    // images: [`${siteUrl}/twitter-image.png`], // Create this image and place it in your `public` folder
   },
 
   // Favicons and icons
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png',
-  },
+  // icons: {
+  //   icon: '/favicon.ico',
+  //   shortcut: '/favicon-16x16.png',
+  //   apple: '/apple-touch-icon.png',
+  // },
 
   // Helps search engines verify your site ownership
   verification: {
