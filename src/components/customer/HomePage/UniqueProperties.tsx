@@ -94,7 +94,7 @@ export default function UniqueProperties({ initialProperties }: UniqueProperties
                   </div>
                 </div>
 
-              </div>
+              </div> 
             ))}
 
             {initialProperties.length === 0 && (
