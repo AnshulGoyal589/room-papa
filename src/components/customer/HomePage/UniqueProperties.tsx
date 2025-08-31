@@ -1,7 +1,7 @@
 "use client"
 
 import Image from 'next/image';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Property } from '@/lib/mongodb/models/Property';
 
