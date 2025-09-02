@@ -156,7 +156,6 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                         
                         {/* Left Column - Booking Summary */}
                         <div className="lg:col-span-1 space-y-4 lg:sticky top-5 self-start">
-                            {/* ... (This section is unchanged, so it is collapsed for brevity) ... */}
                             <div className="border border-gray-300 rounded-md p-4 space-y-4">
                                 <div className="flex space-x-4">
                                     {propertyImage && <div className="relative w-24 h-20 rounded-md overflow-hidden flex-shrink-0"><Image src={propertyImage} alt={propertyTitle} layout="fill" objectFit="cover" /></div>}

@@ -1,5 +1,5 @@
 // app/customer-care/page.tsx
-'use client'; // This page uses client-side interactivity (useState, useEffect)
+'use client';
 
 import { NextPage } from 'next';
 import Head from 'next/head';

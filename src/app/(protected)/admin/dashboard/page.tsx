@@ -1,151 +1,80 @@
-'use client';
-
-import React, { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ListingItem from '@/components/manager/HomePage/ListingItem';
-import AddItemModal from '@/components/manager/HomePage/AddItemModal';
-import { useToast } from '@/components/ui/use-toast';
+import type { Metadata } from 'next';
 import { BaseItem, ItemCategory } from '@/lib/mongodb/models/Components';
+import DashboardClientView from './DashboardClientView';
 
+export const metadata: Metadata = {
+  title: 'Admin Dashboard | Room Papa',
+  description: 'Manage all properties, trips, and travelling items.',
+};
 
-export default function Dashboard() {
+// --- SERVER-SIDE DATA FETCHING FUNCTION ---
+// This function runs on the server to get all items.
+async function fetchAllItems(): Promise<BaseItem[]> {
+  try {
+    // Fetch all data sources in parallel for maximum performance.
+    const propertiesPromise = fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/properties`, { cache: 'no-store' });
+    const tripsPromise = fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/trips`, { cache: 'no-store' });
+    const travellingsPromise = fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/travellings`, { cache: 'no-store' });
 
-  const router = useRouter();
-  const { toast } = useToast();
-  const [items, setItems] = useState<BaseItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
+    const [propertiesRes, tripsRes, travellingsRes] = await Promise.all([
+      propertiesPromise,
+      tripsPromise,
+      travellingsPromise
+    ]);
 
-  
+    // Check responses and parse JSON
+    const properties = propertiesRes.ok ? await propertiesRes.json() : [];
+    const trips = tripsRes.ok ? await tripsRes.json() : [];
+    const travellings = travellingsRes.ok ? await travellingsRes.json() : [];
 
+    // Format and combine the data on the server.
+    const formattedProperties = properties.map((prop: BaseItem) => ({
+      _id: prop._id,
+      title: prop.title,
+      description: prop.description,
+      bannerImage: prop.bannerImage,
+      category: 'Property' as ItemCategory,
+      createdAt: new Date(prop.createdAt)
+    }));
 
-  const fetchItems = useCallback( async () => {
-    setIsLoading(true);
-    try {
-      
-      const propertiesRes = await fetch('/api/properties');
-      const properties = await propertiesRes.json();
-      const formattedProperties = properties.map((prop: BaseItem) => ({
-        _id: prop._id,
-        title: prop.title,
-        description: prop.description,
-        bannerImage: prop.bannerImage,
-        category: 'Property' as ItemCategory,
-        createdAt: new Date(prop.createdAt)
-      }));
+    const formattedTrips = trips.map((trip: BaseItem) => ({
+      _id: trip._id,
+      title: trip.title,
+      description: trip.description || '',
+      category: 'Trip' as ItemCategory,
+      bannerImage: trip.bannerImage,
+      createdAt: new Date(trip.createdAt)
+    }));
 
-      const tripsRes = await fetch('/api/trips');
-      const trips = await tripsRes.json();
-      const formattedTrips = trips.map((trip: BaseItem) => ({
-        _id: trip._id,
-        title: trip.title,
-        description: trip.description || '',
-        category: 'Trip' as ItemCategory,
-        bannerImage: trip.bannerImage,
-        createdAt: new Date(trip.createdAt)
-      }));
+    const formattedTravellings = travellings.map((travelling: BaseItem) => ({
+      _id: travelling._id,
+      title: travelling.title,
+      description: travelling.description || '',
+      category: 'Travelling' as ItemCategory,
+      bannerImage: travelling.bannerImage,
+      createdAt: new Date(travelling.createdAt)
+    }));
 
-      
-      const travellingsRes = await fetch('/api/travellings');
-      const travellings = await travellingsRes.json();
-      const formattedTravellings = travellings.map((travelling: BaseItem) => ({
-        _id: travelling._id,
-        title: travelling.title,
-        description: travelling.description || '',
-        category: 'Travelling' as ItemCategory,
-        bannerImage: travelling.bannerImage,
-        createdAt: new Date(travelling.createdAt)
-      }));
+    const allItems = [
+      ...formattedProperties,
+      ...formattedTrips,
+      ...formattedTravellings
+    ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-      
-      const allItems = [
-        ...formattedProperties,
-        ...formattedTrips,
-        ...formattedTravellings
-      ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return allItems;
 
-      setItems(allItems);
-    } catch (error) {
-      console.error('Error fetching items:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch items. Please try again.',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  },[toast]);
+  } catch (error) {
+    console.error('Failed to fetch dashboard items on server:', error);
+    // Return an empty array so the page doesn't crash. The client can show a message.
+    return [];
+  }
+}
 
-  useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
+// --- THE MAIN PAGE COMPONENT (SERVER) ---
+export default async function DashboardPage() {
+  // Fetch all data on the server before rendering.
+  const initialItems = await fetchAllItems();
 
-  const handleAddItem = async () => {
-      fetchItems();
-      setIsModalOpen(false);
-    };
-
-  const handleItemClick = (id: string) => {
-    router.push(`/admin/dashboard/${id}`);
-  };
-
-  const filteredItems = activeTab === 'all' 
-    ? items 
-    : items.filter(item => item.category.toLowerCase() === activeTab.toLowerCase());
-
-  return (
-    <div className="container mx-auto py-8 px-16">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <Button onClick={() => setIsModalOpen(true)}>
-          Add New Item
-        </Button>
-      </div>
-
-      <Tabs defaultValue="all" onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="all">All Items</TabsTrigger>
-          <TabsTrigger value="property">Property</TabsTrigger>
-          <TabsTrigger value="trip">Trip</TabsTrigger>
-          <TabsTrigger value="travelling">Travelling</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value={activeTab}>
-          {isLoading ? (
-            <div className="text-center py-8">Loading items...</div>
-          ) : filteredItems.length === 0 ? (
-            <Card>
-              <CardContent className="py-8">
-                <p className="text-center text-gray-500">
-                  No items found. Add a new item to get started.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredItems.map((item) => (
-                <ListingItem 
-                  key={item._id} 
-                  item={item} 
-                  onClick={() => handleItemClick(item._id as string)} 
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
-
-      {isModalOpen && (
-        <AddItemModal 
-          onClose={() => setIsModalOpen(false)} 
-          onAdd={handleAddItem} 
-        />
-      )}
-    </div>
-  );
+  // Render the Client Component, passing the pre-fetched data as a prop.
+  return <DashboardClientView initialItems={initialItems} />;
 }

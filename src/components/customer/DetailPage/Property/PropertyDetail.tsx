@@ -222,6 +222,7 @@ export default function PropertyDetailPage() {
         setModalData(null);
     };
 
+    
 
     const validateDate = (selectedDateStr: string, propertyStartDateStr?: string, propertyEndDateStr?: string): Date => {
         const date = new Date(selectedDateStr); date.setHours(12, 0, 0, 0);
@@ -280,7 +281,6 @@ export default function PropertyDetailPage() {
         }
         return { available: true, message: null };
     }, []);
-
 
     useEffect(() => {
         const fetchPropertyDetails = async () => {
@@ -367,6 +367,7 @@ export default function PropertyDetailPage() {
         }
         return null;
     };
+
     const getCheckOutDateFromLocalStorage = () => {
         if (typeof window === 'undefined') return null;
         const storedValue = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -488,7 +489,6 @@ export default function PropertyDetailPage() {
         setSelectedMealPlan('breakfastOnly');
     };
 
-
     useEffect(() => {
         if (property && typeof window !== 'undefined' && !loading) {
             const preferencesToSave = {
@@ -595,7 +595,6 @@ export default function PropertyDetailPage() {
         });
         return offers;
     }, [property?.categoryRooms, selectedMealPlan, checkInDate, checkOutDate]);
-
 
     useEffect(() => {
         if (!property?.categoryRooms || !displayableRoomOffers || !checkInDate || !checkOutDate || days <= 0) {
@@ -711,7 +710,6 @@ export default function PropertyDetailPage() {
         adultCount, childCount, selectedMealPlan, checkInDate, checkOutDate,
         totalSelectedPhysicalRooms,
     ]);
-
 
     const handleCheckInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!property) return;
@@ -830,7 +828,6 @@ export default function PropertyDetailPage() {
         setBookingError(null);
         setAvailabilityError(null);
     };
-
     const handleBookNowOrReserveClick = () => {
         if (!isLoaded || !property) return;
         let localError: string | null = null;
@@ -875,7 +872,6 @@ export default function PropertyDetailPage() {
             router.push(`/customer/book/${property._id}`);
         }
     };
-
     const renderRatingStars = (rating: number, starSize: string = "w-4 h-4") => (
         <div className="flex items-center">
             {[1, 2, 3, 4, 5].map(star => (
@@ -883,7 +879,6 @@ export default function PropertyDetailPage() {
             ))}
         </div>
     );
-
     const getAmenityIcon = (amenity: string, size = 16, color = "text-green-600"): React.ReactNode => {
         const lowerAmenity = amenity.toLowerCase();
         if (lowerAmenity.includes('wifi') || lowerAmenity.includes('internet')) return <Wifi size={size} className={color} />;
@@ -900,14 +895,13 @@ export default function PropertyDetailPage() {
         if (lowerAmenity.includes('hand sanitiser')) return <Droplet size={size} className={color} />;
         return <CheckCircle size={size} className={color} />;
     };
-
-     const formatAmenityName = (amenity: string): string => {
+    const formatAmenityName = (amenity: string): string => {
         let name = amenity.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
         if (name.toLowerCase() === 'wifi') return 'Wi-Fi';
         if (name.startsWith("Is ")) name = name.substring(3);
         if (name.startsWith("Has ")) name = name.substring(4);
         return name;
-     };
+    };
 
     const allImages = useMemo(() => {
         if (!property) return [];
@@ -1234,7 +1228,6 @@ export default function PropertyDetailPage() {
                             
                         </div>
                     </div>
-
 
                     {/* Popular Facilities Section */}
                     <section className="bg-white p-4 sm:p-6 rounded-md border border-gray-200 mb-6">

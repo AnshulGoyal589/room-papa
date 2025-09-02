@@ -1,170 +1,105 @@
-'use client';
+// FILE: app/manager/dashboard/page.tsx
+// ROLE: A Server Component to handle authentication, authorization, and initial data fetching for the manager.
 
-import React, { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ListingItem from '@/components/manager/HomePage/ListingItem';
-import AddItemModal from '@/components/manager/HomePage/AddItemModal';
-import { useToast } from '@/components/ui/use-toast';
-import { useUser } from '@clerk/nextjs';
+import type { Metadata } from 'next';
+import { auth } from '@clerk/nextjs/server'; // Import the server-side auth helper
+import { redirect } from 'next/navigation';
+import { BaseItem, ItemCategory } from '@/lib/mongodb/models/Components';
 import { Property } from '@/lib/mongodb/models/Property';
 import { Trip } from '@/lib/mongodb/models/Trip';
 import { Travelling } from '@/lib/mongodb/models/Travelling';
-import { BaseItem, ItemCategory } from '@/lib/mongodb/models/Components';
+import Unauthorized from '@/components/manager/Unauthorized';
+import DashboardClientView from './DashboardClientView';
 
-// Define our unified item type to handle all three types
+export const metadata: Metadata = {
+  title: 'Manager Dashboard | Room Papa',
+  description: 'Manage your properties, trips, and travelling items.',
+};
 
-export default function Dashboard() {
+// --- SERVER-SIDE DATA FETCHING FUNCTION ---
+async function fetchAllManagerItems(userId: string): Promise<BaseItem[]> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    // Fetch all user-specific data in parallel for maximum performance.
+    const propertiesPromise = fetch(`${baseUrl}/api/properties?userId=${userId}`, { cache: 'no-store' });
+    const tripsPromise = fetch(`${baseUrl}/api/trips?userId=${userId}`, { cache: 'no-store' });
+    const travellingsPromise = fetch(`${baseUrl}/api/travellings?userId=${userId}`, { cache: 'no-store' });
 
-  // await checkAuth('manager');
+    const [propertiesRes, tripsRes, travellingsRes] = await Promise.all([
+      propertiesPromise, tripsPromise, travellingsPromise
+    ]);
 
-  const router = useRouter();
-  const { toast } = useToast();
-  const [items, setItems] = useState<BaseItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
-  const { user } = useUser();
-  const [managerStatus , setManagerStatus] = useState<boolean>(false);
+    const properties: Property[] = propertiesRes.ok ? await propertiesRes.json() : [];
+    const trips: Trip[] = tripsRes.ok ? await tripsRes.json() : [];
+    const travellings: Travelling[] = travellingsRes.ok ? await travellingsRes.json() : [];
 
-  
+    // Format and combine the data on the server.
+    const formattedProperties = properties.map(p => ({
+      ...p,
+      category: 'Property' as ItemCategory,
+      createdAt: new Date(p.createdAt!),
+      _id: p._id ? p._id.toString() : '',
+      title: p.title ?? '', // Ensure title is always a string
+      description: p.description ?? '', // Ensure description is always a string
+    }));
+    const formattedTrips = trips.map(t => ({
+      ...t,
+      category: 'Trip' as ItemCategory,
+      createdAt: new Date(t.createdAt!),
+      _id: t._id ? t._id.toString() : '',
+      title: t.title ?? '',
+      description: t.description ?? '',
+    }));
+    const formattedTravellings = travellings.map(tv => ({
+      ...tv,
+      category: 'Travelling' as ItemCategory,
+      createdAt: new Date(tv.createdAt!),
+      _id: tv._id ? tv._id.toString() : '',
+      title: tv.title ?? '',
+      description: tv.description ?? '',
+    }));
 
+    return [...formattedProperties, ...formattedTrips, ...formattedTravellings]
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-  const fetchItems = useCallback( async () => {
-    setIsLoading(true);
+  } catch (error) {
+    console.error('Failed to fetch manager items on server:', error);
+    return [];
+  }
+}
+
+// A server-side function to check manager status
+async function isManager(): Promise<boolean> {
     try {
-
-      const managerStatusRes = await fetch(`/api/managerStatus`);
-      const managerStatus = await managerStatusRes.json();
-      if (!managerStatus.isManager) {
-        alert('You are not authorized to access this page.');          
-        return;
-      }
-      setManagerStatus(true);
-      const propertiesRes = await fetch(`/api/properties?userId=${user?.id}`);
-      const properties = await propertiesRes.json();
-      const formattedProperties = properties.map((prop: Property) => ({
-        _id: prop._id,
-        title: prop.title,
-        description: prop.description,
-        bannerImage: prop.bannerImage,
-        category: 'Property' as ItemCategory,
-        createdAt: new Date(prop.createdAt || Date.now())
-      }));
-
-      const tripsRes = await fetch(`/api/trips?userId=${user?.id}`);
-      const trips = await tripsRes.json();
-      const formattedTrips = trips.map((trip: Trip) => ({
-        _id: trip._id,
-        title: trip.title,
-        description: trip.description || '',
-        category: 'Trip' as ItemCategory,
-        bannerImage: trip.bannerImage,
-        createdAt: new Date(trip.createdAt || Date.now())
-      }));
-
-      
-      const travellingsRes = await fetch(`/api/travellings?userId=${user?.id}`);
-      const travellings = await travellingsRes.json();
-      const formattedTravellings = travellings.map((travelling: Travelling) => ({
-        _id: travelling._id,
-        title: travelling.title,
-        description: travelling.description || '',
-        category: 'Travelling' as ItemCategory,
-        bannerImage: travelling.bannerImage,
-        createdAt: travelling.createdAt
-      }));
-
-      
-      const allItems = [
-        ...formattedProperties,
-        ...formattedTrips,
-        ...formattedTravellings
-      ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-      // console.log(allItems);
-
-      setItems(allItems);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/managerStatus`, { cache: 'no-store' });
+        if (!res.ok) return false;
+        const data = await res.json();
+        return data.isManager === true;
     } catch (error) {
-      console.error('Error fetching items:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch items. Please try again.',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoading(false);
+        console.error("Failed to check manager status:", error);
+        return false;
     }
-  },[user, toast]);
+}
 
-  useEffect(() => {
-    fetchItems();
-  }, [toast , fetchItems]); 
+// --- THE MAIN PAGE COMPONENT (SERVER) ---
+export default async function ManagerDashboardPage() {
+  // 1. Get user session on the server.
+  const { userId } = await auth();
 
-  
-  const handleAddItem = async () => {
-      fetchItems();
-      setIsModalOpen(false);
-    };
+  // 2. If no user, redirect to sign-in page.
+  if (!userId) {
+    redirect('/sign-in');
+  }
 
-  const handleItemClick = (id: string) => {
-    router.push(`/manager/dashboard/${id}`);
-  };
+  // 3. Check for manager role on the server.
+  const managerStatus = await isManager();
+  if (!managerStatus) {
+    return <Unauthorized />; // Render an unauthorized message page.
+  }
 
-  const filteredItems = activeTab === 'all' 
-    ? items 
-    : items.filter(item => item.category.toLowerCase() === activeTab.toLowerCase());
+  // 4. Fetch all data on the server using the authenticated userId.
+  const initialItems = await fetchAllManagerItems(userId);
 
-  return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Manager Dashboard</h1>
-        <Button onClick={() => setIsModalOpen(true)}>
-          Add New Item
-        </Button>
-      </div>
-
-      <Tabs defaultValue="all" onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="all">All Items</TabsTrigger>
-          <TabsTrigger value="property">Property</TabsTrigger>
-          <TabsTrigger value="trip">Trip</TabsTrigger>
-          <TabsTrigger value="travelling">Travelling</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value={activeTab}>
-          {isLoading ? (
-            <div className="text-center py-8">Loading items...</div>
-          ) : filteredItems.length === 0 ? (
-            <Card>
-              <CardContent className="py-8">
-                <p className="text-center text-gray-500">
-                  No items found. Add a new item to get started.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredItems.map((item) => (
-                <ListingItem 
-                  key={item._id} 
-                  item={item} 
-                  onClick={() => handleItemClick(item._id as string)} 
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
-
-      {isModalOpen && managerStatus && (
-        <AddItemModal 
-          onClose={() => setIsModalOpen(false)} 
-          onAdd={handleAddItem} 
-        />
-      )}
-    </div>
-  );
+  // 5. Render the Client Component, passing the pre-fetched data as a prop.
+  return <DashboardClientView initialItems={initialItems} />;
 }
