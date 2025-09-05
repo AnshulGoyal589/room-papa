@@ -73,7 +73,7 @@ export const metadata: Metadata = {
 
   // Helps search engines verify your site ownership
   verification: {
-    google: 'googlee24569a7061b9a85.html', // Add your Google Search Console code here
+    google: 'WOOEKjxrs-7yPhQ8ShnfACrk8r8eC82LNlvo5J2sVjs', // Add your Google Search Console code here
   },
 
   // Instructs search engine crawlers
@@ -98,6 +98,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
+        <meta name="google-site-verification" content="WOOEKjxrs-7yPhQ8ShnfACrk8r8eC82LNlvo5J2sVjs" />
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <RoleProtection>
             <Header />
