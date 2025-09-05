@@ -24,7 +24,9 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   // Use a template to automatically add your brand name to page titles
+
   title: {
+    
     template: '%s | Room Papa', // %s will be replaced by the title of individual pages
     default: 'Room Papa | Find & Book Hotels, Apartments & More', // Default title for the homepage
   },

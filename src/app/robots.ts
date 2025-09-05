@@ -5,21 +5,28 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        // Block private, user-specific, and action-oriented pages
+        allow: '/',
         disallow: [
+          '/api/',
+          '/_not-found',
           '/admin/',
           '/manager/',
-          '/customer/',
-          '/api/',
+          '/edit/',
+          '/cancel/',
+          '/confirm-with-payment/',
+          '/upload/',
+          '/user-role/',
+          '/payment/',
+          '/register/',
+          '/login/'
         ],
       },
       {
         userAgent: 'Googlebot-Image',
         allow: ['/images/properties/'],
-      },
-      // You can add more specific rules for other user agents here
+      }
     ],
-    // IMPORTANT: Point to your sitemap index file
-    sitemap: 'https://www.roompapa.com/sitemap_index.xml',
+    sitemap: 'https://www.roompapa.com/sitemap.xml',
+    host: 'https://www.roompapa.com',
   };
 }
