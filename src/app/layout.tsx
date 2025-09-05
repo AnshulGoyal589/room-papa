@@ -73,7 +73,7 @@ export const metadata: Metadata = {
 
   // Helps search engines verify your site ownership
   verification: {
-    google: 'your-google-site-verification-code', // Add your Google Search Console code here
+    google: 'googlee24569a7061b9a85.html', // Add your Google Search Console code here
   },
 
   // Instructs search engine crawlers
