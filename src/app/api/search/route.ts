@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import clientPromise from '@/lib/mongodb/client';
+import getClient from '@/lib/mongodb/client';
 import { Document, Sort } from 'mongodb';
 import { QueryType } from '@/types';
 
 export async function GET(request: NextRequest) {
   try {
-    const client = await clientPromise;
+    const client = await getClient();
     const db = client.db('travel-app');
     const { searchParams } = request.nextUrl;
     

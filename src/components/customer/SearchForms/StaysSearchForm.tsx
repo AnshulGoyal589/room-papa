@@ -65,8 +65,9 @@ export default function StaysSearchForm() {
     }).replace(',', '');
   };
 
+
   // Format date for URL parameters AND localStorage (YYYY-MM-DD)
-  const formatDateForURL = (date: Date): string => {
+  const formatDateForURL = React.useCallback((date: Date): string => {
     const year = date.getFullYear();
     const month = date.getMonth() + 1; 
     const day = date.getDate();      
@@ -75,10 +76,10 @@ export default function StaysSearchForm() {
     const dayFormatted = day < 10 ? `0${day}` : day.toString();
 
     return `${year}-${monthFormatted}-${dayFormatted}`;
-  };
+  }, []);
 
   // Parse date from URL parameter OR localStorage (YYYY-MM-DD string)
-  const parseDateFromURL = (dateString: string): Date => {
+  const parseDateFromURL = React.useCallback((dateString: string): Date => {
     const parts = dateString.split('-');
     if (parts.length !== 3) return new Date(NaN); // Invalid format
 
@@ -92,7 +93,7 @@ export default function StaysSearchForm() {
     }
     // Create date in local timezone. Month is 0-indexed for Date constructor.
     return new Date(year, month - 1, day, 0, 0, 0, 0);
-  };
+  }, []);
 
 
   // Get initial values from URL parameters or localStorage

@@ -174,7 +174,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
         }));
       }
     }
-  }, [propertyData.categoryRooms, propertyData.costing, propertyData.rooms, setPropertyData]);
+  }, [propertyData, setPropertyData]);
 
 
  const handlePropertyChange = (field: string, value: unknown) => {

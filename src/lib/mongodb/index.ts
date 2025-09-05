@@ -1,4 +1,4 @@
-import clientPromise from './client';
+import getClient from './client';
 import { Collection, Db } from 'mongodb';
 import { User } from './models/User';
 import { UserRole } from '@/types';
@@ -8,7 +8,7 @@ const dbName = process.env.MONGODB_DB || 'travel-app';
 
 
 export async function getDb(): Promise<Db> {
-  const client = await clientPromise;
+  const client = await getClient();
   return client.db(dbName);
 }
 

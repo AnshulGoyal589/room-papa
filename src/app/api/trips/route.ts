@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllTrips, Trip } from '@/lib/mongodb/models/Trip';
-import clientPromise from '@/lib/mongodb/client';
+import getClient from '@/lib/mongodb/client';
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const client = await clientPromise;
+    const client = await getClient();
     const db = client.db('travel-app');
     
     const tripData = await req.json();

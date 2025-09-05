@@ -1,4 +1,3 @@
-// app/customer-care/page.tsx
 'use client';
 
 import { NextPage } from 'next';

@@ -2,15 +2,24 @@ import { NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 import { v4 as uuidv4 } from 'uuid';
 
-// Initialize Razorpay client
-// It's best practice to use environment variables for keys
-const razorpay = new Razorpay({
-    key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-    key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
-
 export async function POST(request: Request) {
     try {
+        // Initialize Razorpay client with environment variables validation
+        const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+        const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+        if (!keyId || !keySecret) {
+            console.error('Missing Razorpay credentials in environment variables');
+            return NextResponse.json({ 
+                message: "Payment service configuration error" 
+            }, { status: 500 });
+        }
+
+        const razorpay = new Razorpay({
+            key_id: keyId,
+            key_secret: keySecret,
+        });
+
         const { amount, currency } = await request.json();
 
         if (!amount || !currency) {

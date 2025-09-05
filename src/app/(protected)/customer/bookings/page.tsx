@@ -3,14 +3,15 @@ import { redirect } from 'next/navigation';
 import { getBookingRepository } from '@/lib/booking-db';
 import BookingsList from '@/components/booking/BookingsList';
 import { Suspense } from 'react';
-import { Metadata } from 'next';
+
+import type { Metadata } from 'next';
+import { seoMetadata } from '@/seo-metadata';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import BookingsListSkeleton from '@/components/booking/BookingsListSkeleton';
-export const metadata: Metadata = {
-  title: 'My Bookings',
-  description: 'View and manage all your past and upcoming bookings.',
-};
+
+export const metadata: Metadata = seoMetadata.bookings;
+
 
 async function fetchUserBookings(userId: string) {
     try {
@@ -20,7 +21,6 @@ async function fetchUserBookings(userId: string) {
             sortBy: 'bookingDetails.checkIn',
             sortOrder: 'desc',
         });
-        
         return JSON.parse(JSON.stringify(userBookings));
     } catch (error) {
         console.error("Failed to fetch user bookings:", error);

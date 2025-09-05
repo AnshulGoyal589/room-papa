@@ -6,6 +6,9 @@ import { Footer } from "@/components/layout/Footer";
 import { ClerkProvider } from '@clerk/nextjs';
 import RoleProtection from "@/components/auth/RoleProtection";
 
+// Force dynamic rendering to prevent build-time issues with Clerk
+export const dynamic = 'force-dynamic';
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -19,6 +22,7 @@ const geistMono = Geist_Mono({
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   // Use a template to automatically add your brand name to page titles
   title: {
     template: '%s | Room Papa', // %s will be replaced by the title of individual pages

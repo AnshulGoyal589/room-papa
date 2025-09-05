@@ -1,28 +1,39 @@
 import { MongoClient } from 'mongodb';
 
-if (!process.env.MONGODB_URI) {
-  throw new Error('Please add your MongoDB URI to .env.local');
-}
-
-const uri = process.env.MONGODB_URI;
-
-let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
-
 declare global {
-  // eslint-disable-next-line no-var
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-if (process.env.NODE_ENV === 'development') {
-  if (!global._mongoClientPromise) {
-    client = new MongoClient(uri);
-    global._mongoClientPromise = client.connect();
+let clientPromise: Promise<MongoClient> | undefined;
+
+function getClientPromise(): Promise<MongoClient> {
+  if (clientPromise) {
+    return clientPromise;
   }
-  clientPromise = global._mongoClientPromise;
-} else {
-  client = new MongoClient(uri);
-  clientPromise = client.connect();
+
+  const uri = process.env.MONGODB_URI;
+  
+  if (!uri) {
+    throw new Error('Please add your MongoDB URI to .env.local');
+  }
+
+  let client: MongoClient;
+
+  if (process.env.NODE_ENV === 'development') {
+    if (!global._mongoClientPromise) {
+      client = new MongoClient(uri);
+      global._mongoClientPromise = client.connect();
+    }
+    clientPromise = global._mongoClientPromise;
+  } else {
+    client = new MongoClient(uri);
+    clientPromise = client.connect();
+  }
+
+  return clientPromise;
 }
 
-export default clientPromise;
+// Export a function that returns the client promise instead of the promise itself
+export default function getClient(): Promise<MongoClient> {
+  return getClientPromise();
+}

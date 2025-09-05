@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllProperties, Property } from '@/lib/mongodb/models/Property';
-import clientPromise from '@/lib/mongodb/client';
+import getClient from '@/lib/mongodb/client';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const client = await clientPromise;
+    const client = await getClient();
     const db = client.db('travel-app');
     
     const propertyData = await req.json();

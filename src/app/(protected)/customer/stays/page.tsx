@@ -1,4 +1,9 @@
 
+import type { Metadata } from 'next';
+import { seoMetadata } from '@/seo-metadata';
+
+export const metadata: Metadata = seoMetadata.stays;
+
 import Stays from '@/components/customer/HomePage/HeroSection/Stays';
 import InitialRender from '@/components/customer/HomePage/InitialRender';
 import { Property } from '@/lib/mongodb/models/Property';

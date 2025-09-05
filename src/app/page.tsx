@@ -1,25 +1,11 @@
 import type { Metadata } from 'next';
+import { seoMetadata } from '@/seo-metadata';
 import InitialRender from '@/components/customer/HomePage/InitialRender';
 import { Property } from '@/lib/mongodb/models/Property';
 import SearchHeader from '@/components/customer/SearchHeader';
 
 
-export const metadata: Metadata = {
-  title: 'Room Papa | Find & Book Hotels, Apartments & More',
-  description: 'Find the best deals on hotels, apartments, vacation rentals, and more with Room Papa. Book your next stay with confidence and save on your travel.',
-  openGraph: {
-    title: 'Room Papa | Your Ultimate Booking Companion',
-    description: 'Discover thousands of high-quality stays at the best prices.',
-    url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-    images: [
-      {
-        url: `${process.env.NEXT_PUBLIC_SITE_URL}/assets/logo.jpg`,
-        width: 1200,
-        height: 630,
-      },
-    ],
-  },
-};
+export const metadata: Metadata = seoMetadata.home;
 
 async function getUniquePropertiesData(): Promise<Property[]> {
   try {
