@@ -1,17 +1,18 @@
 // This route handler generates the sitemap index file
 
 export async function GET() {
+  const now = new Date().toISOString();
+  const sitemapFiles = [
+    'sitemap.xml',
+  ];
+
   const sitemapIndex = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <sitemap>
-    <loc>https://www.roompapa.com/sitemap.xml</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-  </sitemap>
-  <!-- 
-    PRO TIP: If your site grows to millions of pages, you can create
-    more dynamic sitemaps (e.g., properties-1.xml, properties-2.xml)
-    and list them all here.
-  -->
+  ${sitemapFiles.map(file => `
+    <sitemap>
+      <loc>https://www.roompapa.com/${file}</loc>
+      <lastmod>${now}</lastmod>
+    </sitemap>`).join('')}
 </sitemapindex>
 `;
 
