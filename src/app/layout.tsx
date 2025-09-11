@@ -26,14 +26,40 @@ export const metadata: Metadata = {
   // Use a template to automatically add your brand name to page titles
 
   title: {
-    
+
     template: '%s | Room Papa', // %s will be replaced by the title of individual pages
     default: 'Room Papa | Find & Book Hotels, Apartments & More', // Default title for the homepage
   },
   description: 'Find the best deals on hotels, apartments, vacation rentals, and more with Room Papa. Book your next stay with confidence and save on your travel.',
 
   // More specific metadata for your niche
-  keywords: ['hotel booking', 'apartments', 'vacation rentals', 'travel deals', 'room booking', 'accommodation'],
+  keywords: [
+    "hotel booking",
+    "apartments",
+    "vacation rentals",
+    "travel deals",
+    "room booking",
+    "accommodation",
+    "room papa",
+    "roompapa",
+    "travel",
+    "booking",
+    "short stay",
+    "holiday homes",
+    "budget stays",
+    "luxury stays",
+    "city rentals",
+    "last-minute deals",
+    "weekend escapes",
+    "extended stays",
+    "homestays",
+    "family friendly",
+    "business travel",
+    "online booking",
+    "traveller tips",
+    "unique stays",
+    "room offers"
+  ],
 
   // Set the canonical URL for your homepage to prevent duplicate content issues
   alternates: {
@@ -100,13 +126,15 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <meta name="google-site-verification" content="WOOEKjxrs-7yPhQ8ShnfACrk8r8eC82LNlvo5J2sVjs" />
+        <head>
+          <meta name="google-site-verification" content="WOOEKjxrs-7yPhQ8ShnfACrk8r8eC82LNlvo5J2sVjs" />
+        </head>
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <RoleProtection>
+          <RoleProtection>
             <Header />
             <main className="flex-grow">{children}</main>
             <Footer />
-        </RoleProtection>
+          </RoleProtection>
         </body>
       </html>
     </ClerkProvider>
