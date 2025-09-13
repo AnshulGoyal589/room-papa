@@ -128,6 +128,8 @@ export default function RootLayout({
       <html lang="en">
         <head>
           <meta name="google-site-verification" content="WOOEKjxrs-7yPhQ8ShnfACrk8r8eC82LNlvo5J2sVjs" />
+          {/* Ensure robots meta tag allows indexing */}
+          <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
         </head>
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
           <RoleProtection>
