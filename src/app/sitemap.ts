@@ -26,7 +26,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let propertyPages: MetadataRoute.Sitemap = [];
   let adminDashboardPages: MetadataRoute.Sitemap = [];
   let adminDashboardEditPages: MetadataRoute.Sitemap = [];
-  let adminManagerPages: MetadataRoute.Sitemap = [];
+  // let adminManagerPages: MetadataRoute.Sitemap = [];
   let managerDashboardPages: MetadataRoute.Sitemap = [];
   let managerDashboardEditPages: MetadataRoute.Sitemap = [];
   let customerBookPages: MetadataRoute.Sitemap = [];
