@@ -9,37 +9,8 @@ interface Property {
   // Add other fields if needed
 }
 
-// Function to fetch all property IDs for dynamic sitemap generation
-async function getPropertyIds(): Promise<string[]> {
-  try {
-    const response = await fetch(`${baseUrl}/api/properties`, {
-      next: { revalidate: 3600 } // Cache for 1 hour
-    });
-    
-    if (!response.ok) {
-      console.error(`Failed to fetch properties for sitemap. Status: ${response.status} ${response.statusText}`);
-      return [];
-    }
-    
-    const properties: Property[] = await response.json();
-    return properties.map((property: Property) => property._id);
-  } catch (error) {
-    console.error('Error fetching property IDs for sitemap:', {
-      error,
-      url: `${baseUrl}/api/properties`
-    });
-    // Optionally rethrow for production diagnostics
-    // throw error;
-    return [];
-  }
-}
-
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const currentDate = new Date();
-  
-  // Get dynamic property IDs
-  const propertyIds = await getPropertyIds();
-  
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
     {
