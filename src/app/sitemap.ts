@@ -5,6 +5,8 @@ import { getAllTrips } from '@/lib/mongodb/models/Trip';
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = 'https://www.roompapa.com';
 
+
+
   // 1. Get static pages
   const staticPages = [
     { url: siteUrl, lastModified: new Date() },
@@ -18,11 +20,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   let propertyPages: MetadataRoute.Sitemap = [];
-  let adminDashboardPages: MetadataRoute.Sitemap = [];
-  let adminDashboardEditPages: MetadataRoute.Sitemap = [];
-  // let adminManagerPages: MetadataRoute.Sitemap = [];
-  let managerDashboardPages: MetadataRoute.Sitemap = [];
-  let managerDashboardEditPages: MetadataRoute.Sitemap = [];
   let customerBookPages: MetadataRoute.Sitemap = [];
   let customerTripPages: MetadataRoute.Sitemap = [];
   let customerTravellingPages: MetadataRoute.Sitemap = [];
@@ -42,7 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${siteUrl}/trips/${trip._id}`,
       lastModified: trip.updatedAt || trip.createdAt || new Date(),
     }));
-    
+
     // Dynamic customer book pages
     customerBookPages = properties.map((property) => ({
       url: `${siteUrl}/customer/book/${property._id}`,
@@ -67,15 +64,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: travelling.updatedAt || travelling.createdAt || new Date(),
     }));
 
-    // Dynamic admin manager pages (if you have manager users)
-    // You may need to implement getAllManagers in your models
-    // Example:
-    // const { getAllManagers } = await import('@/lib/mongodb/models/Manager');
-    // const managers = await getAllManagers();
-    // adminManagerPages = managers.map((manager) => ({
-    //   url: `${siteUrl}/admin/managers/${manager._id}`,
-    //   lastModified: manager.updatedAt || manager.createdAt || new Date(),
-    // }));
   } catch {
     // Ignore DB errors and fallback to static pages only
     console.warn('MongoDB not available during build, sitemap will only include static pages.');
@@ -86,14 +74,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...staticPages,
     ...propertyPages,
     ...tripPages,
-    ...managerDashboardPages,
-    ...managerDashboardEditPages,
-    ...adminDashboardPages,
-    ...adminDashboardEditPages,
     ...customerBookPages,
     ...customerTripPages,
     ...customerTravellingPages,
     ...travellingPages,
-    // ...adminManagerPages, // Uncomment if you implement manager user fetching
   ];
 }
