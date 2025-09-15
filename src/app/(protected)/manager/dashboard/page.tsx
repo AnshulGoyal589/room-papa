@@ -69,9 +69,9 @@ async function fetchAllManagerItems(userId: string): Promise<BaseItem[]> {
 }
 
 // A server-side function to check manager status
-async function isManager(): Promise<boolean> {
+async function isManager(userId: string): Promise<boolean> {
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/managerStatus`, { cache: 'no-store' });
+        const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/managerStatus?userId=${userId}`, { cache: 'no-store' });
         if (!res.ok) return false;
         const data = await res.json();
         return data.isManager === true;
@@ -92,7 +92,7 @@ export default async function ManagerDashboardPage() {
   }
 
   // 3. Check for manager role on the server.
-  const managerStatus = await isManager();
+  const managerStatus = await isManager(userId);
   if (!managerStatus) {
     return <Unauthorized />; // Render an unauthorized message page.
   }
