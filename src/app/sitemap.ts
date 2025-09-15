@@ -10,14 +10,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: siteUrl, lastModified: new Date() },
     { url: `${siteUrl}/customer-care`, lastModified: new Date() },
     { url: `${siteUrl}/search`, lastModified: new Date() },
-    { url: `${siteUrl}/login`, lastModified: new Date() },
-    { url: `${siteUrl}/register`, lastModified: new Date() },
     { url: `${siteUrl}/property`, lastModified: new Date() },
     { url: `${siteUrl}/trips`, lastModified: new Date() },
-    { url: `${siteUrl}/manager/appointments`, lastModified: new Date() },
-    { url: `${siteUrl}/manager/dashboard`, lastModified: new Date() },
-    { url: `${siteUrl}/admin/dashboard`, lastModified: new Date() },
-    { url: `${siteUrl}/admin/managers`, lastModified: new Date() },
     { url: `${siteUrl}/customer/bookings`, lastModified: new Date() },
     { url: `${siteUrl}/customer/stays`, lastModified: new Date() },
     { url: `${siteUrl}/travellings`, lastModified: new Date() },
@@ -48,29 +42,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${siteUrl}/trips/${trip._id}`,
       lastModified: trip.updatedAt || trip.createdAt || new Date(),
     }));
-
-    // Dynamic manager dashboard item pages
-    managerDashboardPages = properties.map((property) => ({
-      url: `${siteUrl}/manager/dashboard/${property._id}`,
-      lastModified: property.updatedAt || property.createdAt || new Date(),
-    }));
-    // Dynamic manager dashboard edit pages
-    managerDashboardEditPages = properties.map((property) => ({
-      url: `${siteUrl}/manager/dashboard/edit/${property._id}`,
-      lastModified: property.updatedAt || property.createdAt || new Date(),
-    }));
-
-    // Dynamic admin dashboard item pages
-    adminDashboardPages = properties.map((property) => ({
-      url: `${siteUrl}/admin/dashboard/${property._id}`,
-      lastModified: property.updatedAt || property.createdAt || new Date(),
-    }));
-    // Dynamic admin dashboard edit pages
-    adminDashboardEditPages = properties.map((property) => ({
-      url: `${siteUrl}/admin/dashboard/edit/${property._id}`,
-      lastModified: property.updatedAt || property.createdAt || new Date(),
-    }));
-
+    
     // Dynamic customer book pages
     customerBookPages = properties.map((property) => ({
       url: `${siteUrl}/customer/book/${property._id}`,
