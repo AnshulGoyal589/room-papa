@@ -101,7 +101,7 @@ export const metadata: Metadata = {
 
   // Helps search engines verify your site ownership
   verification: {
-    google: 'WOOEKjxrs-7yPhQ8ShnfACrk8r8eC82LNlvo5J2sVjs', // Add your Google Search Console code here
+    google: '', // Add your Google Search Console code here
   },
 
   // Instructs search engine crawlers
@@ -127,7 +127,6 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <head>
-          <meta name="google-site-verification" content="WOOEKjxrs-7yPhQ8ShnfACrk8r8eC82LNlvo5J2sVjs" />
           {/* Ensure robots meta tag allows indexing */}
           <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
         </head>
