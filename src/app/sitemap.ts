@@ -1,82 +1,20 @@
-import { MetadataRoute } from 'next';
-import { getAllProperties } from '@/lib/mongodb/models/Property';
-import { getAllTrips } from '@/lib/mongodb/models/Trip';
+// sitemap.ts should look like this:
+import { MetadataRoute } from 'next'
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const siteUrl = 'https://www.roompapa.com';
-
-
-
-  // 1. Get static pages
-  const staticPages = [
-    { url: siteUrl, lastModified: new Date() },
-    { url: `${siteUrl}/customer-care`, lastModified: new Date() },
-    { url: `${siteUrl}/search`, lastModified: new Date() },
-    { url: `${siteUrl}/property`, lastModified: new Date() },
-    { url: `${siteUrl}/trips`, lastModified: new Date() },
-    { url: `${siteUrl}/customer/bookings`, lastModified: new Date() },
-    { url: `${siteUrl}/customer/stays`, lastModified: new Date() },
-    { url: `${siteUrl}/travellings`, lastModified: new Date() },
-  ];
-
-  let propertyPages: MetadataRoute.Sitemap = [];
-  let customerBookPages: MetadataRoute.Sitemap = [];
-  let customerTripPages: MetadataRoute.Sitemap = [];
-  let customerTravellingPages: MetadataRoute.Sitemap = [];
-  let tripPages: MetadataRoute.Sitemap = [];
-  let travellingPages: MetadataRoute.Sitemap = [];
-  try {
-    // Dynamic property pages
-    const properties = await getAllProperties();
-    propertyPages = properties.map((property) => ({
-      url: `${siteUrl}/property/${property._id}`,
-      lastModified: property.updatedAt || property.createdAt || new Date(),
-    }));
-
-    // Dynamic trip pages
-    const trips = await getAllTrips();
-    tripPages = trips.map((trip) => ({
-      url: `${siteUrl}/trips/${trip._id}`,
-      lastModified: trip.updatedAt || trip.createdAt || new Date(),
-    }));
-
-    // Dynamic customer book pages
-    customerBookPages = properties.map((property) => ({
-      url: `${siteUrl}/customer/book/${property._id}`,
-      lastModified: property.updatedAt || property.createdAt || new Date(),
-    }));
-
-    // Dynamic customer trip pages
-    customerTripPages = trips.map((trip) => ({
-      url: `${siteUrl}/customer/trip/${trip._id}`,
-      lastModified: trip.updatedAt || trip.createdAt || new Date(),
-    }));
-
-    // Dynamic customer travelling pages
-    const { getAllTravellings } = await import('@/lib/mongodb/models/Travelling');
-    const travellings = await getAllTravellings();
-    travellingPages = travellings.map((travelling) => ({
-      url: `${siteUrl}/travellings/${travelling._id}`,
-      lastModified: travelling.updatedAt || travelling.createdAt || new Date(),
-    }));
-    customerTravellingPages = travellings.map((travelling) => ({
-      url: `${siteUrl}/customer/travelling/${travelling._id}`,
-      lastModified: travelling.updatedAt || travelling.createdAt || new Date(),
-    }));
-
-  } catch {
-    // Ignore DB errors and fallback to static pages only
-    console.warn('MongoDB not available during build, sitemap will only include static pages.');
-  }
-
-  // Combine all pages
+export default function sitemap(): MetadataRoute.Sitemap {
   return [
-    ...staticPages,
-    ...propertyPages,
-    ...tripPages,
-    ...customerBookPages,
-    ...customerTripPages,
-    ...customerTravellingPages,
-    ...travellingPages,
-  ];
+    {
+      url: 'https://www.roompapa.com',
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 1,
+    },
+    {
+      url: 'https://www.roompapa.com/search',
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.8,
+    },
+    // Add your dynamic property URLs, etc.
+  ]
 }

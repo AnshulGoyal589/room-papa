@@ -1,15 +1,18 @@
-import { MetadataRoute } from 'next';
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /_not-found
+Disallow: /admin/
+Disallow: /manager/
+Disallow: /cancel/
+Disallow: /confirm-with-payment/
+Disallow: /upload/
+Disallow: /user-role/
+Disallow: /payment/
+Disallow: /register/
+Disallow: /login/
 
-export default function robots(): MetadataRoute.Robots {
-  return {
-    rules: [
-      {
-        userAgent: '*',
-        allow: '/',
-        disallow: ['/api/', '/_not-found', '/admin/', '/manager/', '/cancel/', '/confirm-with-payment/', '/upload/', '/user-role/', '/payment/', '/register/', '/login/'],
-      },
-    ],
-    sitemap: 'https://www.roompapa.com/sitemap.xml',
-    host: 'https://www.roompapa.com',
-  };
-}
+User-agent: Googlebot-Image
+Allow: /images/properties/
+
+Sitemap: https://www.roompapa.com/sitemap.xml
