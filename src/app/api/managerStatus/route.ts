@@ -1,11 +1,13 @@
 
-import { auth } from '@clerk/nextjs/server';
-import { NextResponse } from 'next/server';
+// import { auth } from '@clerk/nextjs/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getManagerStatus } from '@/lib/mongodb';
 
-export async function GET() {
+export async function GET(request:NextRequest) {
   try {
-    const { userId } = await auth();
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    
     // console.log('User role:', userId);
     if (!userId) {
       return NextResponse.json({ role: 'guest' });
