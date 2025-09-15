@@ -3,6 +3,15 @@
 
 const baseUrl = 'https://www.roompapa.com';
 
+interface Property {
+  _id: string;
+  title: string;
+  description: string;
+  location: string;
+  type: string;
+  images?: string[];
+}
+
 export const seoMetadata = {
   home: {
     title: 'Room Papa | Find & Book Hotels, Apartments & Vacation Rentals Online',
@@ -91,7 +100,7 @@ export const seoMetadata = {
 };
 
 // Helper function to generate property-specific metadata
-export function generatePropertyMetadata(property: any) {
+export function generatePropertyMetadata(property: Property) {
   const title = `${property.title} | Book Now on Room Papa`;
   const description = `Book ${property.title} - ${property.description.substring(0, 120)}... Located in ${property.location}. Check availability, photos, and guest reviews.`;
   
