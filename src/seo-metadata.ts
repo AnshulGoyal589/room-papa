@@ -22,6 +22,7 @@ export const seoMetadata = {
       description: 'Discover amazing accommodations worldwide. Book hotels, apartments, and vacation rentals with confidence.',
       type: 'website' as const,
       url: baseUrl,
+      robots: { index: true, follow: true },
     },
   },
   search: {
@@ -32,6 +33,7 @@ export const seoMetadata = {
       title: 'Search Accommodations | Room Papa',
       description: 'Find your perfect accommodation from thousands of properties worldwide.',
       type: 'website' as const,
+      robots: { index: true, follow: true },
     },
   },
   register: {
@@ -64,6 +66,7 @@ export const seoMetadata = {
       title: 'Property Details | Room Papa',
       description: 'Explore detailed property information, photos, amenities, and reviews.',
       type: 'website' as const,
+      robots: { index: true, follow: true },
     },
   },
   stays: {
