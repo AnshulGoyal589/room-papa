@@ -14,6 +14,10 @@ export async function POST(request: Request) {
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const roleCheck = await getUserRole(userId);
+    if(roleCheck && roleCheck === 'admin') {
+      return NextResponse.json({ error: 'Role already assigned' }, { status: 400 });
+    }
     // console.log("hurrah check pint 1");
     const body = await request.json() as RequestBody;
     const { clerkId, role, email } = body;
