@@ -30,8 +30,9 @@ export async function PUT(
     const propertyData = await request.json();
 
     const {id} = await params;
+    // console.log("Updating property with id:", id, "and data:", propertyData);
     const property = await updateProperty(id, propertyData);
-    
+    // console.log("Updated property:", property);
     if (!property) {
       return NextResponse.json({ error: 'Property not found' }, { status: 404 });
     }

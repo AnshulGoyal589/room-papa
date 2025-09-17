@@ -134,22 +134,56 @@ export interface Property {
     }
   }
   
-  export async function updateProperty(id: string , propertyData: Partial<Property>): Promise<Property | null> {
-    const properties = await getPropertiesCollection();
-    
-    await properties.updateOne(
-      { _id: new ObjectId(id) },
-      { 
+// import { ObjectId } from 'mongodb'; // <-- Make sure this import is present
+
+// Assuming you have these types and functions defined elsewhere
+// type Property = { _id: ObjectId; name: string; /* ...other fields */ updatedAt: Date; };
+// async function getPropertiesCollection(): Promise<Collection<Property>> { /* ... */ }
+
+export async function updateProperty(id: string, propertyData: Partial<Property>): Promise<Property | null> {
+  
+  // --- Safety Check 1: Validate the ID format ---
+  if (!ObjectId.isValid(id)) {
+    console.error("Invalid ID format provided:", id);
+    return null; // Or throw a specific error
+  }
+
+  const properties = await getPropertiesCollection();
+
+  // --- Safety Check 2: Prevent updating the immutable _id ---
+  // It's good practice to ensure the _id is not part of the update payload.
+  const updatePayload = { ...propertyData };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  delete (updatePayload as any)._id; // Use 'as any' to bypass TypeScript strictness here
+
+  try {
+    const result = await properties.findOneAndUpdate(
+      { _id: new ObjectId(id) }, // The filter to find the document
+      {
         $set: {
-          ...propertyData,
+          ...updatePayload,
           updatedAt: new Date()
-        } 
+        }
+      },
+      {
+        // This option is crucial: it tells MongoDB to return the document *after* the update has been applied.
+        // The default is to return the document *before* the update.
+        returnDocument: 'after' 
       }
     );
-    
-    return getPropertyById(id);
+
+    // findOneAndUpdate returns the modified document object, or null if no document was found.
+    // In driver v3, the result was in `result.value`. In v4+, it's the top-level return.
+    // The code below works for modern versions of the driver.
+    return result;
+
+  } catch (error) {
+    console.error("Failed to update property:", error);
+    // Depending on your app's needs, you might re-throw the error or return null
+    throw new Error("Database update failed.");
   }
-  
+}
+
   export async function deleteProperty(id: string): Promise<boolean> {
     const properties = await getPropertiesCollection();
     const result = await properties.deleteOne({ _id: new ObjectId(id) });
