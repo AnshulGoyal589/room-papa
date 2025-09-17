@@ -24,7 +24,7 @@ interface UniquePropertiesProps {
 export default function UniqueProperties({ initialProperties }: UniquePropertiesProps): React.ReactElement {
   const router = useRouter();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-
+// console.log("Initial Properties in UniqueProperties component:", initialProperties);
   const handleSearch = (id: string) => {
     router.push(`/property/${id}`);
   };
@@ -76,7 +76,7 @@ export default function UniqueProperties({ initialProperties }: UniqueProperties
 
                 <div className="p-4">
                   <h3 className="text-base font-bold text-gray-800 truncate mb-0.5">{property.title}</h3>
-                  <p className="text-xs text-gray-500 mb-2">{property.location.city}, {property.location.state}, { property.location.country }</p>
+                  <p className="text-xs text-gray-500 mb-2">{property?.location?.city}, {property?.location?.state}, {property?.location?.country}</p>
                   
                   {property.propertyRating && (
                     <div className="flex items-center space-x-2 mb-3">
