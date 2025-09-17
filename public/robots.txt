@@ -15,4 +15,5 @@ Disallow: /login/
 User-agent: Googlebot-Image
 Allow: /images/properties/
 
-Sitemap: https://www.roompapa.com/sitemap.xml
+Host: https://roompapa.com
+Sitemap: https://roompapa.com//sitemap.xml

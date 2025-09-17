@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 // Define base URL once for consistency
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.roompapa.com';
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://roompapa.com';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const currentDate = new Date();

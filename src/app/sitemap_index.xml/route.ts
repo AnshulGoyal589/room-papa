@@ -10,7 +10,7 @@ export async function GET() {
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   ${sitemapFiles.map(file => `
     <sitemap>
-      <loc>https://www.roompapa.com/${file}</loc>
+      <loc>https://roompapa.com/${file}</loc>
       <lastmod>${now}</lastmod>
     </sitemap>`).join('')}
 </sitemapindex>

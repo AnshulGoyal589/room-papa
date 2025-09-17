@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://roompapa.com';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -175,10 +175,10 @@ export default function RootLayout({
     "@type": "TravelAgency",
     "name": "Room Papa",
     "description": "Find and book the best hotels, apartments, vacation rentals, and unique accommodations worldwide",
-    "url": "https://www.roompapa.com",
+    "url": "https://roompapa.com",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://www.roompapa.com/assets/logo.jpg",
+      "url": "https://roompapa.com/assets/logo.jpg",
       "width": 1200,
       "height": 630
     },
@@ -203,7 +203,7 @@ export default function RootLayout({
       "@type": "SearchAction",
       "target": {
         "@type": "EntryPoint",
-        "urlTemplate": "https://www.roompapa.com/search?q={search_term_string}"
+        "urlTemplate": "https://roompapa.com/search?q={search_term_string}"
       },
       "query-input": "required name=search_term_string"
     }

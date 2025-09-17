@@ -26,7 +26,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: ['/images/properties/'],
       }
     ],
-    sitemap: 'https://www.roompapa.com/sitemap.xml',
-    host: 'https://www.roompapa.com',
+    sitemap: 'https://roompapa.com/sitemap.xml',
+    host: 'https://roompapa.com',
   };
 }
