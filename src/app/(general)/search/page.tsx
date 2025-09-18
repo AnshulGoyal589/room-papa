@@ -50,7 +50,7 @@ export default function SearchPage() {
       <div className="md:hidden sticky top-0 z-20 bg-gray-50 p-4 shadow-sm">
         <button
           onClick={() => setIsFilterOpen(true)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#005A9C] text-white rounded-md font-medium hover:bg-[#005A9C] transition-colors"
           aria-expanded={isFilterOpen}
           aria-controls="search-filter-panel"
         >

@@ -1,8 +1,9 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { 
   Home, 
   Plane, 
@@ -10,12 +11,19 @@ import {
   ShoppingBag, 
   Briefcase,
   BookAIcon,
-  CircleHelp
+  Menu,
+  X,
+  Ticket,
+  LogIn,
+  UserPlus,
+  PlusCircle,
+  MessageSquareText
 } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
+  TooltipProvider,
 } from "@/components/ui/tooltip"
 import {
   SignedIn,
@@ -28,56 +36,64 @@ import {
 // Type definition for user role
 type UserRole = 'customer' | 'manager' | 'admin' | 'guest';
 
+// --- Data structure for navigation links to make the component cleaner ---
+type NavLinkType = {
+  href: string;
+  label: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  signedInOnly?: boolean;
+};
+
+const navLinks: {
+  customer: NavLinkType[];
+  manager: NavLinkType[];
+  admin: NavLinkType[];
+} = {
+  customer: [
+    { href: "/", label: "Home", icon: Home },
+    { href: "/customer/bookings", label: "My Bookings", icon: Ticket, signedInOnly: true },
+    { href: "/search?category=trip", label: "Trips", icon: Plane },
+    { href: "/search?category=property", label: "Properties", icon: Hotel },
+    { href: "/search?category=travelling", label: "Travelling", icon: ShoppingBag },
+  ],
+  manager: [
+    { href: "/manager/dashboard", label: "Dashboard", icon: Home },
+    { href: "/manager/appointments", label: "Bookings", icon: BookAIcon },
+  ],
+  admin: [
+    { href: "/admin/dashboard", label: "Dashboard", icon: Home },
+    { href: "/admin/managers", label: "Managers", icon: Briefcase },
+  ],
+};
+
 // Main Header Component
 export function Header() {
   const { isSignedIn, user, isLoaded } = useUser();
   const { openSignUp, openSignIn } = useClerk();
   
-  // State management
   const [role, setRole] = useState<UserRole>('guest');
-  // const [isSubmitting, setIsSubmitting] = useState(false); // Commented out as in original
   const [loading, setLoading] = useState(true);
-  
-  // Track if we've already attempted to save the role to avoid duplicate saves
   const [roleSaved, setRoleSaved] = useState(false);
 
-  // Effect to listen for auth state changes
+  // --- All your original logic for role management remains unchanged ---
   useEffect(() => {
-    const handleAuthStateChange = () => {
-      if (isSignedIn === false) {
-        setRole('guest');
-        setRoleSaved(false);
-      }
-    };
-
-    handleAuthStateChange();
+    if (!isSignedIn) {
+      setRole('guest');
+      setRoleSaved(false);
+    }
   }, [isSignedIn]);
 
-  // Save user role to database
-  const saveUserRoleToDatabase = async (
-    clerkId: string, 
-    userRole: UserRole, 
-    email: string
-  ): Promise<boolean> => {
+  const saveUserRoleToDatabase = async (clerkId: string, userRole: UserRole, email: string): Promise<boolean> => {
     try {
       const response = await fetch('/api/user-role', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          clerkId,
-          role: userRole,
-          email
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clerkId, role: userRole, email }),
       });
-
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to save user role');
       }
-      
-      // console.log("Role saved successfully!");
       return true;
     } catch (error) {
       console.error('Error saving user role:', error);
@@ -85,14 +101,11 @@ export function Header() {
     }
   };
 
-  // Function to send role confirmation email
   const sendRoleConfirmationEmail = async (email: string): Promise<void> => {
     try {
       await fetch('/api/send-role-confirmation', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
     } catch (error) {
@@ -100,25 +113,16 @@ export function Header() {
     }
   };
 
-  // Effect to save selected role to localStorage before sign-up
   useEffect(() => {
-    // Get the pending role from localStorage (if any)
     const pendingRole = localStorage.getItem('pendingUserRole') as UserRole | null;
-    
-    // If user is signed in and we have a pending role, save it
     if (isLoaded && isSignedIn && user && pendingRole && !roleSaved) {
       const savePendingRole = async () => {
-        // setIsSubmitting(true); // Commented out as in original
-        // console.log("User signed in with pending role, saving role:", pendingRole);
-        
         const saved = await saveUserRoleToDatabase(
           user.id,
           pendingRole,
           user.primaryEmailAddress?.emailAddress || ''
         );
-        
         if (saved) {
-          // send conformation mail for verification if the pending role is manager
           if (pendingRole === 'manager') {
             await sendRoleConfirmationEmail(user.primaryEmailAddress?.emailAddress || '');
           }
@@ -126,31 +130,21 @@ export function Header() {
           setRoleSaved(true);
           localStorage.removeItem('pendingUserRole');
         }
-        
-        // setIsSubmitting(false); // Commented out as in original
       };
-      
       savePendingRole();
     }
   }, [isLoaded, isSignedIn, user, roleSaved]);
 
-  // Effect to fetch user role on mount and after sign-in
   useEffect(() => {
     const fetchUserRole = async () => {
-      // Wait until Clerk is loaded
       if (!isLoaded) return;
-      
-      // If user is signed in, fetch their role
       if (isSignedIn && user) {
         setLoading(true);
         try {
           const response = await fetch(`/api/user-role?clerkId=${user.id}`);
-          
           if (response.ok) {
             const data = await response.json();
-            if (data.role) {
-              setRole(data.role);
-            }
+            if (data.role) setRole(data.role);
           }
         } catch (error) {
           console.error('Error fetching user role:', error);
@@ -161,209 +155,178 @@ export function Header() {
         setLoading(false);
       }
     };
-
     fetchUserRole();
   }, [isLoaded, isSignedIn, user]);
 
-  // Handle standard sign up process (as customer)
   const handleCustomerSignUp = () => {
     localStorage.setItem('pendingUserRole', 'customer');
-    openSignUp({
-      redirectUrl: window.location.href,
-      afterSignUpUrl: window.location.href
-    });
+    openSignUp({ afterSignUpUrl: window.location.href });
   };
 
-  // Handle property listing sign up (as manager)
   const handleManagerSignUp = () => {
     localStorage.setItem('pendingUserRole', 'manager');
-    openSignUp({
-      redirectUrl: window.location.href,
-      afterSignUpUrl: window.location.href
-    });
+    openSignUp({ afterSignUpUrl: window.location.href });
   };
+  
+  // --- UI Logic ---
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const navRole: keyof typeof navLinks = role === 'guest' ? 'customer' : role;
+  const currentNavLinks = navLinks[navRole];
 
-  // Handle sign out - Commented out as in original
-  // const handleSignOut = async () => {
-  //   await signOut();
-  //   setRole('guest');
-  //   setRoleSaved(false);
-  // };
-
-  // Render loading state if still loading
   if (loading) {
     return (
-      // Adjusted loading state background and spinner color
-      <div className="flex justify-center items-center h-16 bg-[#003b95]">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-      </div>
+      <header className="flex justify-center items-center h-20 bg-[#005A9C]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      </header>
     );
   }
 
+  // Helper component for navigation links
+  const NavLink: React.FC<NavLinkType & { isMobile?: boolean }> = ({ href, label, icon: Icon, isMobile = false }) => {
+    const isActive = pathname === href;
+    return (
+      <Link
+        href={href}
+        onClick={() => isMobile && setIsMobileMenuOpen(false)}
+        className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 relative
+          ${isActive ? 'text-white bg-white/10' : 'text-gray-300 hover:text-white hover:bg-white/5'}
+          ${isMobile ? 'text-base w-full' : "after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-0 after:bg-white after:transition-all after:duration-300 hover:after:w-full"}`}
+      >
+        <Icon className="w-5 h-5" />
+        <span>{label}</span>
+      </Link>
+    );
+  };
+  
   return (
-    // Changed background color to #003b95 and removed shadow
-    <header className="bg-[#003b95]"> 
-      <div className="flex justify-between items-center mx-auto px-4 w-full lg:w-[70vw] "> {/* Added some padding */}
-        {/* Logo with dynamic routing based on role */}
-        <Link href={role === 'customer' ? "/" : role === 'manager' ? "/manager/dashboard" : role === 'admin' ? "/admin/dashboard" : "/"} 
-          // Changed logo text color to white for contrast
-          className="text-2xl font-bold text-white flex items-center"> 
+    <header className="bg-[#005A9C] text-white sticky top-0 z-50 shadow-md">
+      <div className="container mx-auto flex justify-between items-center h-20 px-4 sm:px-6 lg:px-8">
+        
+        <Link 
+          href={role === 'customer' ? "/" : role === 'manager' ? "/manager/dashboard" : role === 'admin' ? "/admin/dashboard" : "/"} 
+          className="text-2xl font-bold flex items-center shrink-0"
+        > 
           <Image
-            src="/assets/logo.jpg" // Replace with your logo path
+            src="/assets/logo.jpg"
             alt="Logo"
-            width={120} // Slightly adjusted size for potentially tighter space
-            height={120}
-            className="inline-block mr-2"
+            width={90}
+            height={90}
+            className="mr-2"
+            priority
           />
         </Link>
 
-        {/* Customer Navigation */}
-        {role === 'customer' && (
-          // Adjusted text color to white and hover color for contrast
-          <nav className="hidden md:flex space-x-6 items-center text-white"> 
-            <Link 
-              href="/"
-              className="flex items-center space-x-2 hover:text-gray-300 transition"
-            >
-              <Home className="w-5 h-5" />
-              <span>Home</span>
-            </Link>
-            <SignedIn>
-              <Link 
-                href="/customer/bookings"
-                className="flex items-center space-x-2 hover:text-gray-300 transition"
-              >
-                <Home className="w-5 h-5" />
-                <span>My Bookings</span>
-              </Link>
-            </SignedIn>
-            <Link 
-              href="/search?category=trip" 
-              className="flex items-center space-x-2 hover:text-gray-300 transition"
-            >
-              <Plane className="w-5 h-5" />
-              <span>Trips</span>
-            </Link>
-            <Link 
-              href="/search?category=property" 
-              className="flex items-center space-x-2 hover:text-gray-300 transition"
-            >
-              <Hotel className="w-5 h-5" />
-              <span>Properties</span>
-            </Link>
-            <Link 
-              href="/search?category=travelling" 
-              className="flex items-center space-x-2 hover:text-gray-300 transition"
-            >
-              <ShoppingBag className="w-5 h-5" />
-              <span>Travelling</span>
-            </Link>
-          </nav>
-        )}
+        {/* --- Desktop Navigation --- */}
+        <nav className="hidden md:flex flex-1 justify-center items-center gap-2 lg:gap-4">
+          {currentNavLinks.map((link) => (
+            link.signedInOnly ? (
+              <SignedIn key={link.href}><NavLink {...link} /></SignedIn>
+            ) : (
+              <NavLink key={link.href} {...link} />
+            )
+          ))}
+        </nav>
 
-        {/* Manager Navigation */}
-        {role === 'manager' && (
-          // Adjusted text color to white and hover color for contrast
-          <nav className="hidden md:flex space-x-6 items-center text-white">
-            <Link 
-              href="/manager/dashboard"
-              className="flex items-center space-x-2 hover:text-gray-300 transition"
-            >
-              <Home className="w-5 h-5" />
-              <span>Dashboard</span>
-            </Link>
-            <Link 
-              href="/manager/appointments"
-              className="flex items-center space-x-2 hover:text-gray-300 transition"
-            >
-              <BookAIcon className="w-5 h-5" />
-              <span>Bookings</span>
-            </Link>
-          </nav>
-        )}
-
-        {/* Admin Navigation */}
-        {role === 'admin' && (
-          // Adjusted text color to white and hover color for contrast
-          <nav className="hidden md:flex space-x-6 items-center text-white">
-            <Link 
-              href="/admin/dashboard"
-              className="flex items-center space-x-2 hover:text-gray-300 transition"
-            >
-              <Home className="w-5 h-5" />
-              <span>Dashboard</span>
-            </Link>
-            <Link 
-              href="/admin/managers"
-              className="flex items-center space-x-2 hover:text-gray-300 transition"
-            >
-              <Briefcase className="w-5 h-5" />
-              <span>Managers</span>
-            </Link>
-          </nav>
-        )}
-
-
-        {/* Authentication and User Actions */}
-        <div className="flex items-center space-x-4 lg:space-x-8 ">
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link href="/customer-care" >
-                <CircleHelp className='text-white h-7 w-7 ' />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Contact Customer Service</p>
-            </TooltipContent>
-          </Tooltip>
-
-          
+        {/* --- Desktop Authentication & Actions --- */}
+        <div className="hidden md:flex items-center gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link href="/customer-care" className="p-2 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-300">
+                  <MessageSquareText className='h-6 w-6' />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent><p>Help & Support</p></TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
           <SignedOut>
-            <div className="flex items-center gap-2">
-              {/* Adjusted Login Button Style */}
+            <div className="flex items-center gap-2 sm:gap-3">
               <button 
                 onClick={handleManagerSignUp}
-                // className="flex items-center space-x-1 bg-green-500 text-white px-3 py-2 rounded-full hover:bg-green-600 transition text-sm font-medium" // Slightly brighter green
-                className="flex items-center space-x-1 text-white px-3 py-2 rounded-full transition text-[1rem] font-semibold " // Slightly brighter green
+                className="hidden lg:flex items-center gap-2 text-white px-4 py-2 rounded-full border-2 border-transparent hover:border-white transition-all duration-300 text-sm font-semibold"
               >
-                {/* <Building className="w-4 h-4 mr-1" /> */}
-                <span>List Your Property</span>
+                <PlusCircle className="h-5 w-5" />
+                <span>Become a Host</span>
               </button>
-              <button 
-                onClick={handleCustomerSignUp}
-                className="hidden md:flex items-center space-x-1 bg-white text-[#003b95] px-3 py-2 rounded-[3px] hover:bg-gray-200 transition text-sm font-medium"
-              >
-                <span>Register</span>
-              </button>
+
               <button 
                 onClick={() => openSignIn()}
-                className="flex items-center space-x-1 bg-white text-[#003b95] px-3 py-2 rounded-[3px] hover:bg-gray-200 transition text-sm font-medium"
+                className="group flex items-center gap-2 border border-white/80 text-white px-4 py-2 rounded-full hover:bg-white hover:text-[#005A9C] transition-all duration-300 text-sm font-semibold active:scale-95"
               >
-                <span>Sign In</span>
+                <LogIn className="h-5 w-5" />
+                <span>Log In</span>
               </button>
-              {/* Adjusted Sign Up Button Style */}
-               {/* Kept List Property button green for distinction, ensured text contrast */}
+              
+              <button 
+                onClick={handleCustomerSignUp}
+                className="group flex items-center gap-2 bg-white text-[#005A9C] px-4 py-2 rounded-full hover:bg-gray-100 transition-all duration-300 text-sm font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-px active:scale-95"
+              >
+                <UserPlus className="h-5 w-5 transition-transform duration-300 group-hover:rotate-12" />
+                <span>Sign Up</span>
+              </button>
             </div>
           </SignedOut>
            
           <SignedIn>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
               {role && role !== 'guest' && (
-                
-                <span className="hidden md:inline-block px-2 py-1 bg-white text-[#003b95] rounded-full text-xs font-medium">
-                  {role === 'customer' ? 'Customer' : role === 'manager' ? 'Manager' : 'Admin'}
+                <span className="hidden lg:inline-block px-3 py-1 bg-white text-[#005A9C] rounded-full text-xs font-semibold uppercase tracking-wider">
+                  {role}
                 </span>
               )}
-             
               <UserButton afterSignOutUrl="/" />
             </div>
           </SignedIn>
+        </div>
 
-         
+        {/* --- Mobile Menu Button --- */}
+        <div className="md:hidden">
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-md hover:bg-white/10 transition-colors">
+              {isMobileMenuOpen ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
+          </button>
         </div>
       </div>
+
+      {/* --- Mobile Menu Panel --- */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden bg-[#005A9C] border-t border-white/20 absolute w-full left-0 shadow-xl">
+          <nav className="flex flex-col gap-1 p-4">
+            {currentNavLinks.map((link) => (
+              link.signedInOnly ? (
+                <SignedIn key={`${link.href}-mobile`}><NavLink {...link} isMobile={true} /></SignedIn>
+              ) : (
+                <NavLink key={`${link.href}-mobile`} {...link} isMobile={true} />
+              )
+            ))}
+          </nav>
+
+          <div className="p-4 border-t border-white/20">
+            <SignedOut>
+              <div className="flex flex-col gap-3">
+                <button onClick={handleCustomerSignUp} className="w-full text-center bg-white text-[#005A9C] px-4 py-3 rounded-md font-semibold hover:bg-gray-100 transition-colors active:scale-95">
+                  Sign Up
+                </button>
+                <button onClick={() => openSignIn()} className="w-full text-center border border-white/80 text-white px-4 py-3 rounded-md font-semibold hover:bg-white hover:text-[#005A9C] transition-colors active:scale-95">
+                  Log In
+                </button>
+                <button onClick={handleManagerSignUp} className="w-full text-center text-white/80 px-4 py-3 rounded-md font-medium hover:bg-white/10 hover:text-white transition-colors">
+                  Become a Host
+                </button>
+              </div>
+            </SignedOut>
+            <SignedIn>
+                <div className="flex items-center justify-between">
+                     <span className="px-3 py-1 bg-white text-[#005A9C] rounded-full text-xs font-semibold uppercase tracking-wider">
+                        {role}
+                     </span>
+                    <UserButton afterSignOutUrl="/" />
+                </div>
+            </SignedIn>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

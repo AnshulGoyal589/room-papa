@@ -32,7 +32,7 @@ const GoogleMapsSection: React.FC<GoogleMapsSectionProps> = ({ item }) => {
           {hasGoogleMapsEmbed ? (
             <button
               onClick={toggleMapPreview}
-              className="text-sm text-blue-600 hover:underline focus:outline-none py-1"
+              className="text-sm text-[#005A9C] hover:underline focus:outline-none py-1"
             >
               {showMapPreview ? 'Hide Map Preview' : 'Show Map Preview'}
             </button>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, X, Plus, Minus } from 'lucide-react';
+import { ChevronDown, X, Plus, Minus, Search, Users, CalendarDays, MapPin } from 'lucide-react';
 import { DateRange, RecentSearchItem } from '@/lib/mongodb/models/Components';
 
 
@@ -35,6 +35,15 @@ const saveSearchToRecentList = (searchData: Omit<RecentSearchItem, 'id' | 'times
   }
 };
 
+
+// Helper to check if two dates are the same calendar day
+function isSameDay(date1: Date, date2: Date): boolean {
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  );
+}
 
 export default function StaysSearchForm() {
   // State variables with proper typing
@@ -347,9 +356,11 @@ export default function StaysSearchForm() {
   };
 
   const { days: currentDays, monthName: currentMonthName } = generateCalendar(selectedMonth, selectedYear);
+  const nextMonthIdx = selectedMonth === 11 ? 0 : selectedMonth + 1;
+  const nextYearVal = selectedMonth === 11 ? selectedYear + 1 : selectedYear;
   const { days: nextDays, monthName: nextMonthName } = generateCalendar(
-    selectedMonth === 11 ? 0 : selectedMonth + 1, 
-    selectedMonth === 11 ? selectedYear + 1 : selectedYear
+    nextMonthIdx, 
+    nextYearVal
   );
 
   const isDateDisabled = (day: number | null, month: number, year: number): boolean => {
@@ -473,112 +484,131 @@ export default function StaysSearchForm() {
   };
   
   return (
-    <div className=" text-black shadow-lg border-yellow-400 border-1 p-0.5 pl-1 pr-1 bg-yellow-400 rounded-lg">
-      <div className="flex flex-wrap ">
+    <div className="relative z-10 w-full max-w-7xl mx-auto bg-white rounded-2xl shadow-2xl p-3 md:p-4 border border-gray-100">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         {/* Location Input */}
-        <div className="w-full md:w-1/3 relative">
-            <div className="bg-white text-black  h-full p-4 rounded-md flex items-center border-yellow-400 border-3">
-             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bed-double-icon lucide-bed-double"><path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 4v6"/><path d="M2 18h20"/></svg>
-              <input 
-                type="text" 
-                placeholder="Where are you going?" 
-                className="flex-1 outline-none text-sm ml-4"
-                value={title}
-                onChange={(e) => {
-                  setLocation(e.target.value);
-                  localStorage.setItem('title', e.target.value);
-                }}
-              />
-              {title && (
-                <button className="text-gray-400" onClick={() => {
-                  setLocation('');
-                  localStorage.removeItem('title');
-                }}>
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
+        <div className="flex items-center bg-gray-50 rounded-lg px-4 py-3 border border-transparent has-[:focus]:border-[#005A9C] transition-all duration-200">
+          <MapPin className="text-gray-500 mr-3 h-5 w-5" />
+          <input
+            type="text"
+            placeholder="Where are you going?"
+            className="flex-1 outline-none text-sm bg-transparent placeholder-gray-400 text-gray-800"
+            value={title}
+            onChange={(e) => {
+              setLocation(e.target.value);
+              localStorage.setItem('title', e.target.value);
+            }}
+          />
+          {title && (
+            <button className="text-gray-400 hover:text-gray-600 ml-2" onClick={() => {
+              setLocation('');
+              localStorage.removeItem('title');
+            }}>
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
-        
+
         {/* Date Range */}
-        <div className="w-full md:w-1/3 relative">
-          <div 
-            className="bg-white text-black p-4 h-full rounded-md flex items-center justify-between border-yellow-400 border-3 cursor-pointer"
+        <div className="relative col-span-1 md:col-span-1">
+          <div
+            className={`date-range-input bg-gray-50 rounded-lg px-4 py-3 flex items-center justify-between transition-all duration-200 cursor-pointer ${showCalendar ? 'border-[#005A9C] border' : 'border border-transparent hover:border-gray-200'}`}
             onClick={() => {
-              if (!showCalendar) { 
+              if (!showCalendar) {
                 const currentStartDate = dateRange.startDate;
                 setSelectedMonth(currentStartDate.getMonth());
                 setSelectedYear(currentStartDate.getFullYear());
-                if(selectionPhase === 1 && dateRange.startDate.getTime() === dateRange.endDate.getTime()){
-                  // If only start date was selected, keep phase 1
-                } else {
-                   setSelectionPhase(0); 
-                }
+                setSelectionPhase(0);
               }
               setShowCalendar(!showCalendar);
+              setShowGuests(false);
             }}
           >
-            <div className="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-calendar-days-icon lucide-calendar-days"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg> 
-            <div className="text-sm ml-4">
-                <div>
-                  {selectionPhase === 1 && dateRange.startDate.getTime() === dateRange.endDate.getTime()
-                    ? `Picking end: ${formatDisplayDate(dateRange.startDate)}`
-                    : `${formatDisplayDate(dateRange.startDate)} — ${formatDisplayDate(dateRange.endDate)}`}
-                </div>
+            <div className="flex items-center flex-1">
+              <CalendarDays className="text-gray-500 mr-3 h-5 w-5" />
+              <div className="flex flex-col text-sm flex-1">
+                {dateRange.startDate && dateRange.endDate && !isSameDay(dateRange.startDate, dateRange.endDate) ? (
+                  <div className="flex justify-between w-full">
+                    <div className="text-gray-800 font-medium">Check-in: <span className="text-[#005A9C]">{formatDisplayDate(dateRange.startDate)}</span></div>
+                    <div className="text-gray-800 font-medium">Check-out: <span className="text-[#005A9C]">{formatDisplayDate(dateRange.endDate)}</span></div>
+                  </div>
+                ) : (
+                  <span className="text-gray-400 font-medium">Add Dates</span>
+                )}
               </div>
             </div>
-            <ChevronDown className="h-4 w-4 text-gray-500" />
+            <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${showCalendar ? 'rotate-180' : ''}`} />
           </div>
-          
+
           {showCalendar && (
-            <div 
+            <div
               ref={calendarRef}
-              className="absolute left-0 mt-2 bg-white shadow-lg rounded-lg p-4 z-20 border border-gray-200 w-full md:w-[650px]"
+              className="absolute left-0 right-0 mt-2 bg-white shadow-xl rounded-xl p-6 z-20 border border-gray-100 animate-fade-in-down origin-top-left w-full md:w-[680px] mx-auto md:left-1/2 md:-translate-x-1/2"
             >
-              <div className="flex justify-between items-center mb-4">
-                 <button className="text-blue-600">
-                  {selectionPhase === 1 ? 'Select end date' : 'Select your dates'}
-                </button>
+              <div className="mb-6 text-center">
+                <h4 className="font-semibold text-xl text-gray-800 mb-1">
+                  {selectionPhase === 1 && isSameDay(dateRange.startDate, dateRange.endDate)
+                    ? 'Select your check-out date'
+                    : 'Select your travel dates'}
+                </h4>
+                <p className="text-sm text-gray-500">
+                  {dateRange.startDate && dateRange.endDate && !isSameDay(dateRange.startDate, dateRange.endDate)
+                    ? `Selected: ${formatDisplayDate(dateRange.startDate)} – ${formatDisplayDate(dateRange.endDate)}`
+                    : 'Choose your check-in and check-out dates'}
+                </p>
               </div>
-              
-              <div className="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
+
+              <div className="flex flex-col space-y-8 md:flex-row md:space-x-10 md:space-y-0">
+                {/* Current Month */}
                 <div className="flex-1">
-                  <div className="flex justify-between items-center mb-2">
-                    <button 
-                      onClick={prevMonth} 
-                      className={`text-gray-500 p-1 hover:bg-gray-100 rounded-full ${isPrevMonthDisabled() ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  <div className="flex justify-between items-center mb-4">
+                    <button
+                      onClick={prevMonth}
+                      className={`text-gray-600 p-2 hover:bg-gray-100 rounded-full transition-colors ${isPrevMonthDisabled() ? 'opacity-40 cursor-not-allowed' : ''}`}
                       disabled={isPrevMonthDisabled()}
+                      aria-label="Previous month"
                     >
-                      {'<'}
+                      <ChevronDown className="h-4 w-4 rotate-90" />
                     </button>
-                    <h3 className="font-bold text-center">{currentMonthName} {selectedYear}</h3>
-                    <div className="w-6"></div> 
+                    <h3 className="font-bold text-gray-800">{currentMonthName} {selectedYear}</h3>
+                    <div className="w-8"></div> {/* Placeholder for alignment */}
                   </div>
-                  
+
                   <div className="grid grid-cols-7 gap-1">
                     {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day, i) => (
-                      <div key={i} className="text-center text-sm py-1 text-gray-500">{day}</div>
+                      <div key={i} className="text-center text-xs py-1 text-gray-500 font-medium">{day}</div>
                     ))}
-                    
+
                     {currentDays.map((day, i) => {
                       const disabled = isDateDisabled(day, selectedMonth, selectedYear);
                       const inRange = isDateInRange(day, selectedMonth, selectedYear);
                       const isStart = isStartDate(day, selectedMonth, selectedYear);
                       const isEnd = isEndDate(day, selectedMonth, selectedYear);
                       const isSingleDaySelection = isStart && isEnd;
-                      
-                      let cellClass = `text-center py-2 rounded-full ${!day ? 'text-transparent' : 'cursor-pointer'}`;
-                      if (disabled) cellClass += ' text-gray-300 cursor-not-allowed';
-                      else if (isSingleDaySelection) cellClass += ' bg-blue-600 text-white !rounded-full';
-                      else if (isStart) cellClass += ' bg-blue-600 text-white rounded-l-full rounded-r-none';
-                      else if (isEnd) cellClass += ' bg-blue-600 text-white rounded-r-full rounded-l-none';
-                      else if (inRange) cellClass += ' bg-blue-300 text-blue-800 rounded-none';
-                      else cellClass += ' hover:bg-blue-100';
+
+                      let cellClass = `text-center py-2.5 text-sm leading-none transition-all duration-150 ease-in-out`;
+                      if (!day) {
+                        cellClass += ' text-transparent';
+                      } else if (disabled) {
+                        cellClass += ' text-gray-300 cursor-not-allowed';
+                      } else {
+                        cellClass += ' cursor-pointer rounded-full';
+                        if (isSingleDaySelection) {
+                          cellClass += ' bg-[#005A9C] text-white shadow-md';
+                        } else if (isStart) {
+                          cellClass += ' bg-[#005A9C] text-white rounded-r-none';
+                        } else if (isEnd) {
+                          cellClass += ' bg-[#005A9C] text-white rounded-l-none';
+                        } else if (inRange) {
+                          cellClass += ' bg-[#005A9C] text-[#005A9C] rounded-none';
+                        } else {
+                          cellClass += ' text-gray-800 hover:bg-[#005A9C]';
+                        }
+                      }
 
                       return (
-                        <div 
-                          key={i} 
+                        <div
+                          key={i}
                           className={cellClass}
                           onClick={() => day && !disabled && handleDateClick(day, selectedMonth, selectedYear)}
                         >
@@ -588,41 +618,56 @@ export default function StaysSearchForm() {
                     })}
                   </div>
                 </div>
-                
+
+                {/* Next Month */}
                 <div className="flex-1">
-                  <div className="flex justify-between items-center mb-2">
-                     <div className="w-6"></div>
-                    <h3 className="font-bold text-center">
-                      {nextMonthName} {selectedMonth === 11 ? selectedYear + 1 : selectedYear}
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="w-8"></div> {/* Placeholder for alignment */}
+                    <h3 className="font-bold text-gray-800">
+                      {nextMonthName} {nextYearVal}
                     </h3>
-                    <button onClick={nextMonth} className="text-gray-500 p-1 hover:bg-gray-100 rounded-full">{'>'}</button>
+                    <button onClick={nextMonth} className="text-gray-600 p-2 hover:bg-gray-100 rounded-full transition-colors" aria-label="Next month">
+                      <ChevronDown className="h-4 w-4 -rotate-90" />
+                    </button>
                   </div>
-                  
+
                   <div className="grid grid-cols-7 gap-1">
                     {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day, i) => (
-                      <div key={i} className="text-center text-sm py-1 text-gray-500">{day}</div>
+                      <div key={i} className="text-center text-xs py-1 text-gray-500 font-medium">{day}</div>
                     ))}
-                    
+
                     {nextDays.map((day, i) => {
-                      const nextActualMonth = selectedMonth === 11 ? 0 : selectedMonth + 1;
-                      const nextActualYear = selectedMonth === 11 ? selectedYear + 1 : selectedYear;
+                      const nextActualMonth = nextMonthIdx;
+                      const nextActualYear = nextYearVal;
                       const disabled = isDateDisabled(day, nextActualMonth, nextActualYear);
                       const inRange = isDateInRange(day, nextActualMonth, nextActualYear);
                       const isStart = isStartDate(day, nextActualMonth, nextActualYear);
                       const isEnd = isEndDate(day, nextActualMonth, nextActualYear);
                       const isSingleDaySelection = isStart && isEnd;
 
-                      let cellClass = `text-center py-2 rounded-full ${!day ? 'text-transparent' : 'cursor-pointer'}`;
-                      if (disabled) cellClass += ' text-gray-300 cursor-not-allowed';
-                      else if (isSingleDaySelection) cellClass += ' bg-blue-600 text-white !rounded-full';
-                      else if (isStart) cellClass += ' bg-blue-600 text-white rounded-l-full rounded-r-none';
-                      else if (isEnd) cellClass += ' bg-blue-600 text-white rounded-r-full rounded-l-none';
-                      else if (inRange) cellClass += ' bg-blue-300 text-blue-800 rounded-none';
-                      else cellClass += ' hover:bg-blue-100';
-                      
+                      let cellClass = `text-center py-2.5 text-sm leading-none transition-all duration-150 ease-in-out`;
+                      if (!day) {
+                        cellClass += ' text-transparent';
+                      } else if (disabled) {
+                        cellClass += ' text-gray-300 cursor-not-allowed';
+                      } else {
+                        cellClass += ' cursor-pointer rounded-full';
+                        if (isSingleDaySelection) {
+                          cellClass += ' bg-[#005A9C] text-white shadow-md';
+                        } else if (isStart) {
+                          cellClass += ' bg-[#005A9C] text-white rounded-r-none';
+                        } else if (isEnd) {
+                          cellClass += ' bg-[#005A9C] text-white rounded-l-none';
+                        } else if (inRange) {
+                          cellClass += ' bg-[#005A9C] text-[#005A9C] rounded-none';
+                        } else {
+                          cellClass += ' text-gray-800 hover:bg-[#005A9C]';
+                        }
+                      }
+
                       return (
-                        <div 
-                          key={i} 
+                        <div
+                          key={i}
                           className={cellClass}
                           onClick={() => day && !disabled && handleDateClick(day, nextActualMonth, nextActualYear)}
                         >
@@ -636,96 +681,110 @@ export default function StaysSearchForm() {
             </div>
           )}
         </div>
-        
+
         {/* Guests */}
-        <div className="w-full md:w-1/4 relative">
-          <div 
-            className="bg-white text-black p-4 rounded-md flex items-center justify-between border-yellow-400 border-3 cursor-pointer"
-            onClick={() => setShowGuests(!showGuests)}
+        <div className="relative">
+          <div
+            className={`guests-input bg-gray-50 rounded-lg px-4 py-3 flex items-center justify-between transition-all duration-200 cursor-pointer ${showGuests ? 'border-[#005A9C] border' : 'border border-transparent hover:border-gray-200'}`}
+            onClick={() => {
+              setShowGuests(!showGuests);
+              setShowCalendar(false);
+            }}
           >
-            <div className="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-user-round-icon lucide-user-round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
-              <div className="text-sm flex-1 ml-2">
-                <div>{adults} adults · {children} children · {rooms} room{rooms > 1 ? 's' : ''}</div>
+            <div className="flex items-center flex-1">
+              <Users className="text-gray-500 mr-3 h-5 w-5" />
+              <div className="text-sm text-gray-800 flex-1 font-medium">
+                {adults} adult{adults !== 1 ? 's' : ''} · {children} child{children !== 1 ? 'ren' : ''} · {rooms} room{rooms !== 1 ? 's' : ''}
               </div>
-              <ChevronDown className="h-4 w-4 text-gray-500" />
             </div>
+            <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${showGuests ? 'rotate-180' : ''}`} />
           </div>
-          
+
           {showGuests && (
-            <div 
+            <div
               ref={guestsRef}
-              className="absolute right-0 mt-2 bg-white shadow-lg rounded-lg p-4 z-20 border border-gray-200 w-72"
+              className="absolute right-0 md:left-0 mt-2 bg-white shadow-xl rounded-xl p-6 z-20 border border-gray-100 w-72 md:w-80 animate-fade-in-down origin-top-right"
             >
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
+              <div className="space-y-5">
+                {/* Adults */}
+                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
                   <div>
-                    <span className="font-medium">Adults</span>
-                    <p className="text-xs text-gray-500">Max 3 per room</p>
+                    <span className="font-semibold text-gray-800">Adults</span>
+                    <p className="text-xs text-gray-500 mt-0.5">Ages 18+</p>
                   </div>
-                  <div className="flex items-center space-x-4 border-2 p-1 border-gray-400 rounded">
-                    <button 
-                      className={`p-1 rounded-full ${adults > 1 ? 'text-blue-600 hover:bg-blue-100' : 'text-gray-300 cursor-not-allowed'}`}
+                  <div className="flex items-center space-x-3">
+                    <button
+                      className={`w-7 h-7 flex items-center justify-center rounded-full border ${adults > 1 ? 'border-[#005A9C] text-[#005A9C] hover:bg-[#005A9C]' : 'border-gray-200 text-gray-300 cursor-not-allowed'}`}
                       onClick={() => adjustGuests('adults', 'subtract')}
                       disabled={adults <= 1}
-                    ><Minus className="h-5 w-5" /></button>
-                    <span className="w-8 text-center">{adults}</span>
-                    <button 
-                      className="p-1 rounded-full text-blue-600 hover:bg-blue-100"
+                      aria-label="Decrease adults"
+                    ><Minus className="h-4 w-4" /></button>
+                    <span className="w-6 text-center text-gray-800 font-medium">{adults}</span>
+                    <button
+                      className="w-7 h-7 flex items-center justify-center rounded-full border border-[#005A9C] text-[#005A9C] hover:bg-[#005A9C] transition-colors"
                       onClick={() => adjustGuests('adults', 'add')}
-                    ><Plus className="h-5 w-5" /></button>
+                      aria-label="Increase adults"
+                    ><Plus className="h-4 w-4" /></button>
                   </div>
                 </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">Children</span>
-                  <div className="flex items-center space-x-4 border-2 p-1 border-gray-400 rounded">
-                    <button 
-                      className={`p-1 rounded-full ${children > 0 ? 'text-blue-600 hover:bg-blue-100' : 'text-gray-300 cursor-not-allowed'}`}
+
+                {/* Children */}
+                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                  <div>
+                    <span className="font-semibold text-gray-800">Children</span>
+                    <p className="text-xs text-gray-500 mt-0.5">Ages 0-17</p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      className={`w-7 h-7 flex items-center justify-center rounded-full border ${children > 0 ? 'border-[#005A9C] text-[#005A9C] hover:bg-[#005A9C]' : 'border-gray-200 text-gray-300 cursor-not-allowed'}`}
                       onClick={() => adjustGuests('children', 'subtract')}
                       disabled={children <= 0}
-                    ><Minus className="h-5 w-5" /></button> {/* Corrected icon */}
-                    <span className="w-8 text-center">{children}</span>
-                    <button 
-                      className="p-1 rounded-full text-blue-600 hover:bg-blue-100"
+                      aria-label="Decrease children"
+                    ><Minus className="h-4 w-4" /></button>
+                    <span className="w-6 text-center text-gray-800 font-medium">{children}</span>
+                    <button
+                      className="w-7 h-7 flex items-center justify-center rounded-full border border-[#005A9C] text-[#005A9C] hover:bg-[#005A9C] transition-colors"
                       onClick={() => adjustGuests('children', 'add')}
-                    ><Plus className="h-5 w-5" /></button> {/* Corrected icon */}
+                      aria-label="Increase children"
+                    ><Plus className="h-4 w-4" /></button>
                   </div>
                 </div>
-                
-                <div className="flex justify-between items-center">
+
+                {/* Rooms */}
+                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
                   <div>
-                    <span className="font-medium">Rooms</span>
+                    <span className="font-semibold text-gray-800">Rooms</span>
                     {Math.ceil(adults / 3) > rooms && (
-                      <p className="text-xs text-red-500">Min {Math.ceil(adults / 3)} rooms needed</p>
+                      <p className="text-xs text-red-500 mt-0.5">Min {Math.ceil(adults / 3)} rooms suggested</p>
                     )}
                   </div>
-                  <div className="flex items-center space-x-4 border-2 p-1 border-gray-400 rounded">
-                    <button 
-                      className={`p-1 rounded-full ${rooms > 1 && rooms > Math.ceil(adults / 3) ? 'text-blue-600 hover:bg-blue-100' : 'text-gray-300 cursor-not-allowed'}`}
+                  <div className="flex items-center space-x-3">
+                    <button
+                      className={`w-7 h-7 flex items-center justify-center rounded-full border ${rooms > 1 && rooms > Math.ceil(adults / 3) ? 'border-[#005A9C] text-[#005A9C] hover:bg-[#005A9C]' : 'border-gray-200 text-gray-300 cursor-not-allowed'}`}
                       onClick={() => adjustGuests('rooms', 'subtract')}
                       disabled={rooms <= 1 || rooms <= Math.ceil(adults / 3)}
-                    ><Minus className="h-5 w-5" /></button>
-                    <span className="w-8 text-center">{rooms}</span>
-                    <button 
-                      className="p-1 rounded-full text-blue-600 hover:bg-blue-100"
+                      aria-label="Decrease rooms"
+                    ><Minus className="h-4 w-4" /></button>
+                    <span className="w-6 text-center text-gray-800 font-medium">{rooms}</span>
+                    <button
+                      className="w-7 h-7 flex items-center justify-center rounded-full border border-[#005A9C] text-[#005A9C] hover:bg-[#005A9C] transition-colors"
                       onClick={() => adjustGuests('rooms', 'add')}
-                    ><Plus className="h-5 w-5" /></button>
+                      aria-label="Increase rooms"
+                    ><Plus className="h-4 w-4" /></button>
                   </div>
                 </div>
-                
-                <div className="flex justify-between items-center">
+
+                {/* Pets Toggle */}
+                <div className="flex justify-between items-center pt-2">
                   <div>
-                    <div className="font-medium">Travelling with pets?</div>
-                    <div className="text-xs ">
-                      <span>Assistance animals aren&apos;t considered pets.</span>
-                      <div><a href="#" className="text-blue-600 hover:underline">Read more...</a></div>
-                    </div>
+                    <span className="font-semibold text-gray-800">Travelling with pets?</span>
+                    <p className="text-xs text-gray-500 mt-0.5">Assistance animals aren&apos;t considered pets.</p>
                   </div>
-                  <div className="relative inline-block w-10 align-middle select-none">
-                    <input 
-                      type="checkbox" name="pets" id="pets" 
-                      className="opacity-0 absolute peer block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                  <label htmlFor="pets-toggle" className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      id="pets-toggle"
+                      className="sr-only peer"
                       checked={hasPets}
                       onChange={() => {
                         const newHasPets = !hasPets;
@@ -733,27 +792,28 @@ export default function StaysSearchForm() {
                         localStorage.setItem('pets', newHasPets.toString());
                       }}
                     />
-                    <label htmlFor="pets" className="block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer peer-checked:bg-blue-600 transition-colors duration-200 ease-in-out">
-                      <span className={`block w-6 h-6 rounded-full bg-white shadow transform peer-checked:translate-x-4 transition-transform duration-200 ease-in-out`}></span>
-                    </label>
-                  </div>
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#005A9C] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all duration-200 peer-checked:bg-[#005A9C]"></div>
+                  </label>
                 </div>
-                
-                <button 
-                  className="w-full py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700"
+
+                <button
+                  className="w-full py-3 bg-[#005A9C] text-white rounded-lg font-semibold hover:bg-[#005A9C] transition-colors duration-200 shadow-md mt-4"
                   onClick={() => setShowGuests(false)}
                 >Done</button>
               </div>
             </div>
           )}
         </div>
-        
+
         {/* Search Button */}
-        <div className="w-full md:w-1/12">
-          <button 
-            className="bg-blue-600 hover:bg-blue-700 text-white w-full text-xl py-4 rounded-md font-bold flex items-center justify-center h-full"
+        <div className="col-span-1">
+          <button
+            className="bg-[#005A9C] hover:bg-[#005A9C] text-white w-full text-lg py-3.5 rounded-lg font-semibold flex items-center justify-center transition-colors duration-200 shadow-md"
             onClick={handleSearch}
-          >Search</button>
+          >
+            <Search className="h-5 w-5 mr-2" />
+            Search
+          </button>
         </div>
       </div>
     </div>

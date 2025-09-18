@@ -121,8 +121,12 @@ export default function QuickTripPlanner() {
 
   return (
     <div className="mx-auto max-w-7xl py-8 px-4 sm:px-6"> {/* Adjusted container and padding */}
-      <h2 className="text-3xl font-bold mb-1 text-gray-800">Quick and easy trip planner</h2>
-      <p className="text-gray-500 mb-6 text-[15px]">Pick a vibe and explore the top destinations in India</p>
+      <h2 className="text-3xl font-bold mb-2 text-charcoal-text">
+  Craft Your Perfect India Itinerary
+</h2>
+<p className="text-gray-600 mb-6 text-[16px]">
+  Tell us your travel style, and we&apos;ll instantly match you with the best destinations and experiences across India.
+</p>
       
       <div className="mb-8">
         <div className="flex space-x-2 sm:space-x-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
@@ -132,7 +136,7 @@ export default function QuickTripPlanner() {
               onClick={() => handleFilterClick(filter.domain)} // Updated to use handleFilterClick
               className={`flex-shrink-0 flex items-center space-x-2 px-4 py-2 border rounded-full text-sm font-medium transition-colors duration-200
                           ${activeVibe === filter.domain
-                            ? 'border-blue-500 text-blue-600 bg-blue-50 shadow-sm'
+                            ? 'border-[#005A9C] text-[#ffffff] bg-[#005A9C] shadow-sm'
                             : 'border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400'}`}
             >
               {filter.icon}
@@ -181,7 +185,7 @@ export default function QuickTripPlanner() {
       {/* Kept "Explore All Trips" button from original code to not change logic */}
       {/* <div className="mt-12 text-center">
           <button 
-            className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition duration-300 text-base font-medium shadow-md hover:shadow-lg"
+            className="bg-[#005A9C] text-white px-8 py-3 rounded-lg hover:bg-[#005A9C] transition duration-300 text-base font-medium shadow-md hover:shadow-lg"
             onClick={(e) => {
               // e.stopPropagation(); // Original line, might not be necessary here.
               handleSearch();

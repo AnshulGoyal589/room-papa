@@ -69,7 +69,7 @@ const RazorpayPaymentButton: React.FC<RazorpayPaymentButtonProps> = ({
     disabled = false,
     buttonText = "Proceed to Pay",
     themeColor = "#3B82F6", // Default to your blue
-    className = "w-full bg-blue-600 text-white py-2.5 px-4 rounded-lg font-semibold text-md hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-blue-400 disabled:cursor-wait shadow-md",
+    className = "w-full bg-[#005A9C] text-white py-2.5 px-4 rounded-lg font-semibold text-md hover:bg-[#005A9C] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#005A9C] disabled:bg-[#005A9C] disabled:cursor-wait shadow-md",
 }) => {
     const [isProcessing, setIsProcessing] = useState(false);
 

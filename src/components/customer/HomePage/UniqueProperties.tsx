@@ -39,9 +39,12 @@ export default function UniqueProperties({ initialProperties }: UniqueProperties
  return (
     <div className="bg-white py-10 sm:py-4">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-2xl sm:text-3xl font-bold mb-1 text-gray-800">Stay at our top unique properties</h2>
-        <p className="text-sm sm:text-base text-gray-500 mb-6 sm:mb-8">From castles and villas to boats and igloos, we&apos;ve got it all</p>
-        
+<h2 className="text-3xl font-bold mb-2 text-charcoal-text">
+  Extraordinary Stays, Curated for You
+</h2>
+<p className="text-lg text-gray-600 mb-8">
+  Move beyond the standard hotel
+</p>
         <div className="relative">
           <div 
             ref={scrollContainerRef}
@@ -80,7 +83,7 @@ export default function UniqueProperties({ initialProperties }: UniqueProperties
                   
                   {property.propertyRating && (
                     <div className="flex items-center space-x-2 mb-3">
-                      <span className="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded">
+                      <span className="bg-[#005A9C] text-white text-xs font-bold px-2 py-0.5 rounded">
                         {property.propertyRating.toFixed(1)}
                       </span>
                     </div>

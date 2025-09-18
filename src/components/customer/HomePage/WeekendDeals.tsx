@@ -34,7 +34,7 @@ export default function WeekendDeals() {
   ];
 
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 py-16 px-4">
+    <div className="bg-gradient-to-r from-[#005A9C] to-indigo-50 py-16 px-4">
       <div className="container mx-auto">
         <h2 className="text-3xl font-bold mb-2 text-center">Deals for the Weekend</h2>
         <p className="text-xl text-gray-600 mb-8 text-center">Special offers to make your weekend special</p>
@@ -69,9 +69,9 @@ export default function WeekendDeals() {
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-gray-400 line-through text-sm">{deal.originalPrice}</span>
-                    <span className="text-xl font-bold text-blue-600 ml-2">{deal.discountedPrice}</span>
+                    <span className="text-xl font-bold text-[#005A9C] ml-2">{deal.discountedPrice}</span>
                   </div>
-                  <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+                  <button className="bg-[#005A9C] text-white px-4 py-2 rounded hover:bg-[#005A9C] transition">
                     Book Now
                   </button>
                 </div>
@@ -81,7 +81,7 @@ export default function WeekendDeals() {
         </div>
         
         <div className="mt-8 text-center">
-          <button className="border-2 border-blue-600 text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-600 hover:text-white transition duration-300">
+          <button className="border-2 border-[#005A9C] text-[#005A9C] px-6 py-3 rounded-lg hover:bg-[#005A9C] hover:text-white transition duration-300">
             View All Weekend Deals
           </button>
         </div>

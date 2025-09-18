@@ -30,9 +30,9 @@ const CheckboxItem: React.FC<{
       type="checkbox"
       checked={checked}
       onChange={onChange}
-      className="h-5 w-5 text-blue-600 border-gray-400 rounded focus:ring-blue-500 focus:ring-offset-0 group-hover:border-blue-500"
+      className="h-5 w-5 text-[#005A9C] border-gray-400 rounded focus:ring-[#005A9C] focus:ring-offset-0 group-hover:border-[#005A9C]"
     />
-    <span className="text-sm text-gray-700 group-hover:text-blue-600">{label}</span>
+    <span className="text-sm text-gray-700 group-hover:text-[#005A9C]">{label}</span>
   </label>
 );
 
@@ -233,9 +233,9 @@ export default function SearchFilter() {
   };
 
   // Common input field styling
-  const inputClassName = "block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5 text-sm";
+  const inputClassName = "block w-full border-gray-300 rounded-md shadow-sm focus:ring-[#005A9C] focus:border-[#005A9C] sm:text-sm p-2.5 text-sm";
   // Common select field styling
-  const selectClassName = "block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5 text-sm";
+  const selectClassName = "block w-full border-gray-300 rounded-md shadow-sm focus:ring-[#005A9C] focus:border-[#005A9C] sm:text-sm p-2.5 text-sm";
 
 
   return (
@@ -247,7 +247,7 @@ export default function SearchFilter() {
       {/* Clear All Filters Button - Placed near the top or bottom as preferred */}
        <button
             onClick={clearAllFilters}
-            className="w-full text-sm text-blue-600 hover:text-blue-700 font-medium py-2 px-3 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors duration-150 mb-4"
+            className="w-full text-sm text-[#005A9C] hover:text-[#005A9C] font-medium py-2 px-3 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors duration-150 mb-4"
           >
             Clear All Filters
       </button>

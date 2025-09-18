@@ -100,7 +100,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           />
           <label
             htmlFor={`upload-${label}`}
-            className="cursor-pointer text-blue-600 hover:text-blue-800"
+            className="cursor-pointer text-[#005A9C] hover:text-[#005A9C]"
           >
             {isUploading ? (
               <p>Uploading...</p>

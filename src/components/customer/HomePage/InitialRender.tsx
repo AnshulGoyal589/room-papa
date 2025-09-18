@@ -6,7 +6,7 @@ import QuickTripPlanner from '@/components/customer/HomePage/QuickTripPlanner';
 import UniqueProperties from '@/components/customer/HomePage/UniqueProperties';
 import PropertyTypes from '@/components/customer/HomePage/PropertyTypes';
 import ExploreIndia from '@/components/customer/HomePage/ExploreIndia';
-import BookingOffers from './BookingOffers';
+// import BookingOffers from './BookingOffers';
 import RecentSearches from './RecentSearches';
 import { Property } from '@/lib/mongodb/models/Property'; // Import your Property type
 
@@ -20,7 +20,7 @@ export default function InitialRender({ initialUniqueProperties }: InitialRender
   return (
     <div className='max-w-7xl mx-auto'>
       <RecentSearches />
-      <BookingOffers />
+      {/* <BookingOffers /> */}
       <QuickTripPlanner />
       <ExploreIndia />
       <PropertyTypes />

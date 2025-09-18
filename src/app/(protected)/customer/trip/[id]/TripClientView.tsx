@@ -233,7 +233,7 @@ export default function TripClientView({ initialTripData }: TripClientViewProps)
         <Image src={selectedImage || trip.bannerImage?.url || '/images/placeholder-trip.jpg'} alt={trip.title || "Trip Banner"} layout="fill" objectFit="cover" priority className="brightness-75" onError={() => setSelectedImage('/images/placeholder-trip.jpg')} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end">
           <div className="container mx-auto px-4 py-8 text-white">
-            <div className="inline-block px-3 py-1 bg-blue-600 text-sm rounded-full mb-2 capitalize">{trip.type}</div>
+            <div className="inline-block px-3 py-1 bg-[#005A9C] text-sm rounded-full mb-2 capitalize">{trip.type}</div>
             <h1 className="text-3xl md:text-5xl font-bold mb-2">{trip.title}</h1>
             <div className="flex items-center mb-4"><svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/></svg><span>{trip.destination.city}, {trip.destination.state}, {trip.destination.country}</span></div>
             {(trip.totalRating ?? 0) > 0 && (
@@ -257,7 +257,7 @@ export default function TripClientView({ initialTripData }: TripClientViewProps)
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                         {trip.bannerImage && (
                           <div
-                            className={`relative aspect-square cursor-pointer rounded-lg overflow-hidden ${ selectedImage === trip.bannerImage.url ? 'ring-2 ring-offset-2 ring-blue-600' : '' }`}
+                            className={`relative aspect-square cursor-pointer rounded-lg overflow-hidden ${ selectedImage === trip.bannerImage.url ? 'ring-2 ring-offset-2 ring-[#005A9C]' : '' }`}
                             onClick={() => handleImageClick(trip.bannerImage!.url)}
                           >
                             <Image src={trip.bannerImage.url} alt={trip.bannerImage.alt ?? "Trip Banner"} layout="fill" objectFit="cover" onError={(e) => e.currentTarget.src = '/images/placeholder-trip.jpg'} />
@@ -266,7 +266,7 @@ export default function TripClientView({ initialTripData }: TripClientViewProps)
                         {trip.detailImages.slice(0, trip.bannerImage ? 7 : 8).map((image, index) => (
                           <div
                             key={index}
-                            className={`relative aspect-square cursor-pointer rounded-lg overflow-hidden ${ selectedImage === image.url ? 'ring-2 ring-offset-2 ring-blue-600' : '' }`}
+                            className={`relative aspect-square cursor-pointer rounded-lg overflow-hidden ${ selectedImage === image.url ? 'ring-2 ring-offset-2 ring-[#005A9C]' : '' }`}
                             onClick={() => handleImageClick(image.url)}
                           >
                             <Image src={image.url} alt={image.alt ?? `Trip image ${index + 1}`} layout="fill" objectFit="cover" onError={(e) => e.currentTarget.src = '/images/placeholder-trip.jpg'}/>
@@ -288,7 +288,7 @@ export default function TripClientView({ initialTripData }: TripClientViewProps)
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {trip.activities.map((activity, index) => (
                           <div key={index} className="flex items-center bg-white p-4 rounded-lg shadow-sm">
-                            <div className="bg-blue-100 p-2 rounded-full mr-3 text-blue-600">
+                            <div className="bg-[#005A9C] p-2 rounded-full mr-3 text-[#005A9C]">
                               <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" /></svg>
                             </div>
                             <span>{activity}</span>
@@ -303,7 +303,7 @@ export default function TripClientView({ initialTripData }: TripClientViewProps)
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {trip.amenities.map((amenity, index) => (
                           <div key={index} className="flex items-center bg-white p-4 rounded-lg shadow-sm">
-                            <div className="bg-blue-100 p-2 rounded-full mr-3 text-blue-600"> {/* Generic checkmark or amenity icon */}
+                            <div className="bg-[#005A9C] p-2 rounded-full mr-3 text-[#005A9C]"> {/* Generic checkmark or amenity icon */}
                               <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
                             </div>
                             <span>{amenity}</span>
@@ -331,7 +331,7 @@ export default function TripClientView({ initialTripData }: TripClientViewProps)
                     <div className="mb-8">
                       <h2 className="text-2xl font-bold mb-4">Popular Features</h2>
                       <div className="flex flex-wrap gap-2">
-                        {trip.popularFilters.map((filter, index) => ( <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">{filter}</span> ))}
+                        {trip.popularFilters.map((filter, index) => ( <span key={index} className="bg-[#005A9C] text-[#005A9C] px-3 py-1 rounded-full text-sm">{filter}</span> ))}
                       </div>
                     </div>
                   )}
@@ -416,9 +416,9 @@ export default function TripClientView({ initialTripData }: TripClientViewProps)
                       {totalReviewPages > 1 && (
                         <div className="flex justify-center mt-6">
                           <nav className="inline-flex">
-                            <button onClick={() => setCurrentReviewPage((prev) => Math.max(prev - 1, 1))} disabled={currentReviewPage === 1} className={`px-3 py-1 rounded-l-md ${ currentReviewPage === 1 ? 'bg-gray-200 text-gray-500' : 'bg-blue-600 text-white hover:bg-blue-700' }`}>Prev</button>
-                            {Array.from({ length: totalReviewPages }).map((_, index) => ( <button key={index} onClick={() => setCurrentReviewPage(index + 1)} className={`px-3 py-1 ${ currentReviewPage === index + 1 ? 'bg-blue-700 text-white' : 'bg-blue-600 text-white hover:bg-blue-700' }`}>{index + 1}</button> ))}
-                            <button onClick={() => setCurrentReviewPage((prev) => Math.min(prev + 1, totalReviewPages))} disabled={currentReviewPage === totalReviewPages} className={`px-3 py-1 rounded-r-md ${ currentReviewPage === totalReviewPages ? 'bg-gray-200 text-gray-500' : 'bg-blue-600 text-white hover:bg-blue-700' }`}>Next</button>
+                            <button onClick={() => setCurrentReviewPage((prev) => Math.max(prev - 1, 1))} disabled={currentReviewPage === 1} className={`px-3 py-1 rounded-l-md ${ currentReviewPage === 1 ? 'bg-gray-200 text-gray-500' : 'bg-[#005A9C] text-white hover:bg-[#005A9C]' }`}>Prev</button>
+                            {Array.from({ length: totalReviewPages }).map((_, index) => ( <button key={index} onClick={() => setCurrentReviewPage(index + 1)} className={`px-3 py-1 ${ currentReviewPage === index + 1 ? 'bg-[#005A9C] text-white' : 'bg-[#005A9C] text-white hover:bg-[#005A9C]' }`}>{index + 1}</button> ))}
+                            <button onClick={() => setCurrentReviewPage((prev) => Math.min(prev + 1, totalReviewPages))} disabled={currentReviewPage === totalReviewPages} className={`px-3 py-1 rounded-r-md ${ currentReviewPage === totalReviewPages ? 'bg-gray-200 text-gray-500' : 'bg-[#005A9C] text-white hover:bg-[#005A9C]' }`}>Next</button>
                           </nav>
                         </div>
                       )}
@@ -440,7 +440,7 @@ export default function TripClientView({ initialTripData }: TripClientViewProps)
                         )}
                       </div>
                       <div className="flex items-baseline">
-                        <span className="text-2xl font-bold text-blue-600">
+                        <span className="text-2xl font-bold text-[#005A9C]">
                           {trip.costing.currency}{' '}
                           {trip.costing.discountedPrice.toLocaleString()}
                         </span>
@@ -463,7 +463,7 @@ export default function TripClientView({ initialTripData }: TripClientViewProps)
                             type="date"
                             value={checkInDate ? checkInDate.toISOString().split('T')[0] : ''}
                             onChange={handleCheckInChange}
-                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#005A9C] focus:border-[#005A9C] text-sm"
                             min={new Date(trip.startDate).toISOString().split('T')[0]}
                             max={new Date(trip.endDate).toISOString().split('T')[0]}
                             required
@@ -475,7 +475,7 @@ export default function TripClientView({ initialTripData }: TripClientViewProps)
                             type="date"
                             value={checkOutDate ? checkOutDate.toISOString().split('T')[0] : ''}
                             onChange={handleCheckOutChange}
-                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#005A9C] focus:border-[#005A9C] text-sm"
                             min={checkInDate ? new Date(new Date(checkInDate).setDate(new Date(checkInDate).getDate() + 1)).toISOString().split('T')[0] : new Date(trip.startDate).toISOString().split('T')[0]}
                             max={new Date(trip.endDate).toISOString().split('T')[0]}
                             required
@@ -486,13 +486,13 @@ export default function TripClientView({ initialTripData }: TripClientViewProps)
                       <div className="mb-4">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Guests</label>
                         <div className="flex items-center border border-gray-300 rounded-md">
-                          <button type="button" onClick={decrementGuests} disabled={guestCount <= 1} className="px-3 py-2 text-blue-600 disabled:text-gray-400 disabled:cursor-not-allowed">
+                          <button type="button" onClick={decrementGuests} disabled={guestCount <= 1} className="px-3 py-2 text-[#005A9C] disabled:text-gray-400 disabled:cursor-not-allowed">
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>
                           </button>
                           <div className="flex-1 text-center text-sm">
                             <span className="font-medium">{guestCount}</span><span className="text-gray-500 ml-1">{guestCount === 1 ? 'guest' : 'guests'}</span>
                           </div>
-                          <button type="button" onClick={incrementGuests} className="px-3 py-2 text-blue-600 disabled:text-gray-400"> {/* Add guest limit if applicable from trip.maxGuests */}
+                          <button type="button" onClick={incrementGuests} className="px-3 py-2 text-[#005A9C] disabled:text-gray-400"> {/* Add guest limit if applicable from trip.maxGuests */}
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
                           </button>
                         </div>
@@ -541,7 +541,7 @@ export default function TripClientView({ initialTripData }: TripClientViewProps)
                     <button
                       onClick={handleBookNowClick}
                       disabled={!checkInDate || !checkOutDate || days <= 0 || guestCount <= 0}
-                      className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      className="w-full bg-[#005A9C] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#005A9C] transition-colors focus:outline-none focus:ring-2 focus:ring-[#005A9C] focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
                     >
                       Book Now
                     </button>
@@ -564,7 +564,7 @@ export default function TripClientView({ initialTripData }: TripClientViewProps)
                         setLoginRedirectWarning(false);
                         router.push(`/sign-in?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
                       }}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      className="px-4 py-2 bg-[#005A9C] text-white rounded-lg hover:bg-[#005A9C]"
                     >Login</button>
                   </div>
                 </div>
@@ -603,7 +603,7 @@ export default function TripClientView({ initialTripData }: TripClientViewProps)
                         <div className="flex justify-between text-sm"><span>Service Fee</span><span>{trip.costing.currency} {serviceCharge.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
                         <div className="flex justify-between text-sm"><span>Taxes (approx. {TAX_RATE_TRIP_PERCENTAGE * 100}%)</span><span>{trip.costing.currency} {taxesApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
                     </div>
-                    <div className="flex justify-between font-bold text-lg p-4 bg-blue-50 rounded-lg">
+                    <div className="flex justify-between font-bold text-lg p-4 bg-[#005A9C] rounded-lg">
                        <span>Grand Total</span><span>{trip.costing.currency} {grandTotalBookingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                   </div>
@@ -611,16 +611,16 @@ export default function TripClientView({ initialTripData }: TripClientViewProps)
                   <form onSubmit={handleBookingSubmit}>
                     <h4 className="text-md font-semibold mb-3">Your Information</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                      <div><label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="firstName">First Name</label><input id="firstName" type="text" name="firstName" value={bookingData.firstName} onChange={handleInputChange} required className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"/></div>
-                      <div><label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="lastName">Last Name</label><input id="lastName" type="text" name="lastName" value={bookingData.lastName} onChange={handleInputChange} required className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"/></div>
+                      <div><label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="firstName">First Name</label><input id="firstName" type="text" name="firstName" value={bookingData.firstName} onChange={handleInputChange} required className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#005A9C] focus:border-[#005A9C]"/></div>
+                      <div><label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="lastName">Last Name</label><input id="lastName" type="text" name="lastName" value={bookingData.lastName} onChange={handleInputChange} required className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#005A9C] focus:border-[#005A9C]"/></div>
                     </div>
-                    <div className="mb-4"><label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">Email</label><input id="email" type="email" name="email" value={bookingData.email} onChange={handleInputChange} required className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"/></div>
-                    <div className="mb-4"><label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="phone">Phone Number</label><input id="phone" type="tel" name="phone" value={bookingData.phone} onChange={handleInputChange} required className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"/></div>
-                    <div className="mb-6"><label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="specialRequests">Special Requests (Optional)</label><textarea id="specialRequests" name="specialRequests" value={bookingData.specialRequests} onChange={handleInputChange} rows={3} className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., dietary needs, accessibility requirements"></textarea></div>
+                    <div className="mb-4"><label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">Email</label><input id="email" type="email" name="email" value={bookingData.email} onChange={handleInputChange} required className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#005A9C] focus:border-[#005A9C]"/></div>
+                    <div className="mb-4"><label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="phone">Phone Number</label><input id="phone" type="tel" name="phone" value={bookingData.phone} onChange={handleInputChange} required className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#005A9C] focus:border-[#005A9C]"/></div>
+                    <div className="mb-6"><label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="specialRequests">Special Requests (Optional)</label><textarea id="specialRequests" name="specialRequests" value={bookingData.specialRequests} onChange={handleInputChange} rows={3} className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#005A9C] focus:border-[#005A9C]" placeholder="e.g., dietary needs, accessibility requirements"></textarea></div>
                     
                     {bookingError && (<div className="my-4 p-3 bg-red-100 text-red-700 text-sm rounded-md">{bookingError}</div>)}
       
-                    <button type="submit" disabled={isSubmitting} className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-400 disabled:cursor-wait">
+                    <button type="submit" disabled={isSubmitting} className="w-full bg-[#005A9C] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#005A9C] transition-colors focus:outline-none focus:ring-2 focus:ring-[#005A9C] focus:ring-offset-2 disabled:bg-[#005A9C] disabled:cursor-wait">
                       {isSubmitting ? (<span className="flex items-center justify-center"><svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Processing...</span>) : ("Confirm Booking")}
                     </button>
                   </form>
@@ -634,7 +634,7 @@ export default function TripClientView({ initialTripData }: TripClientViewProps)
                   <div className="mb-4"><div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center"><svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg></div></div>
                   <h3 className="text-xl font-bold mb-2">Booking Confirmed!</h3>
                   <p className="mb-6 text-gray-600">Your booking for {trip.title} has been confirmed. A confirmation email has been sent to {bookingData.email}.</p>
-                  <button onClick={() => { setBookingConfirmed(false);}} className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700">Done</button>
+                  <button onClick={() => { setBookingConfirmed(false);}} className="w-full bg-[#005A9C] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#005A9C]">Done</button>
                 </div>
               </div>
             )}

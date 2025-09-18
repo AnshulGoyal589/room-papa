@@ -58,8 +58,8 @@ const ReviewCard = ({ review }: { review: Review }) => {
     <div className="bg-white rounded-lg shadow-md p-4 flex flex-col h-full">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center">
-          <div className="bg-blue-100 rounded-full h-8 w-8 flex items-center justify-center mr-2">
-            <span className="font-bold text-blue-600 text-sm">
+          <div className="bg-[#005A9C] rounded-full h-8 w-8 flex items-center justify-center mr-2">
+            <span className="font-bold text-[#005A9C] text-sm">
               {review.name?.charAt(0)}
             </span>
           </div>
