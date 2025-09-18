@@ -12,6 +12,7 @@ import StaysSearchForm from './SearchForms/StaysSearchForm';
 // import FlightsSearchForm from './SearchForms/FlightsSearchForm';
 // import TripsSearchForm from './SearchForms/TripsSearchForm';
 import { usePathname } from 'next/navigation';
+import { Header } from '../layout/Header';
 
 // --- NO LOGIC CHANGES IN THIS SECTION ---
 
@@ -97,9 +98,12 @@ export default function SearchHeader() {
   // --- UI & STYLING LOGIC ONLY BELOW THIS LINE ---
 
   return (
-    <div className="relative bg-[#005A9C] text-white">
+    <div className="relative bg-[url('/images/background-hero.jpg')] bg-cover bg-center bg-no-repeat text-white min-h-[400px]"> {/* Added min-h for visibility if image is tall */}
+      {/* Overlay to darken image and improve text readability */}
+      <div className="absolute inset-0 bg-black opacity-40"></div> 
+      <Header />
       {/* Blue background section with padding */}
-      <div className="container mx-auto px-4 lg:px-8 pt-6 w-full max-w-7xl">
+      <div className="relative z-10 container mx-auto px-4 lg:px-8 pt-6 w-full max-w-7xl">
         
         {/* Navigation Tabs */}
         <div className="flex border-b border-white/20 overflow-x-auto no-scrollbar">
@@ -134,7 +138,7 @@ export default function SearchHeader() {
 
       {/* Search Form Wrapper - Positioned absolutely to overlap */}
       {/* <div className=""> */}
-        <div className="container mx-auto px-4 lg:p-8 w-full max-w-7xl">
+        <div className="relative z-10 container mx-auto px-4 lg:p-8 w-full max-w-7xl">
           {renderSearchForm()}
         </div>
       {/* </div/> */}

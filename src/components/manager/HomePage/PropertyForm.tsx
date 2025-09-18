@@ -423,7 +423,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
   const MealPlanLabel: React.FC<{ mealPlan: keyof PricingByMealPlan }> = ({ mealPlan }) => {
       switch(mealPlan) {
           case 'noMeal': return <span className="text-xs font-medium text-gray-500">(Room Only)</span>;
-          case 'breakfastOnly': return <span className="text-xs font-medium text-[#005A9C]">(+ Breakfast)</span>;
+          case 'breakfastOnly': return <span className="text-xs font-medium text-[#001d2c]">(+ Breakfast)</span>;
           case 'allMeals': return <span className="text-xs font-medium text-green-600">(+ All Meals)</span>;
           default: return null;
       }
@@ -655,8 +655,8 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
                 {/* Category Facilities Display */}
                 {cat.categoryFacilities && cat.categoryFacilities.length > 0 && (
                     <div className="mt-3 pt-3 border-t">
-                        <p className="font-medium text-sm flex items-center"><Wrench className="inline h-4 w-4 mr-1 text-[#005A9C]"/>Category Facilities:</p>
-                        <ChipList items={cat.categoryFacilities} noRemove colorClass="bg-[#005A9C] text-[#005A9C]"/>
+                        <p className="font-medium text-sm flex items-center"><Wrench className="inline h-4 w-4 mr-1 text-[#001d2c]"/>Category Facilities:</p>
+                        <ChipList items={cat.categoryFacilities} noRemove colorClass="bg-[#001d2c] text-[#001d2c]"/>
                     </div>
                 )}
 

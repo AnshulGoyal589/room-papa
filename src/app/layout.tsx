@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Header } from "@/components/layout/Header";
+// import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ClerkProvider } from '@clerk/nextjs';
 import RoleProtection from "@/components/auth/RoleProtection";
@@ -255,7 +255,7 @@ export default function RootLayout({
           itemType="https://schema.org/WebPage"
         >
           <RoleProtection>
-            <Header />
+            {/* <Header /> */}
             <main className="flex-grow" role="main" itemScope itemType="https://schema.org/WebPageElement">
               {children}
             </main>

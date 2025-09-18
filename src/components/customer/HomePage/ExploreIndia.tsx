@@ -62,7 +62,7 @@ export default function TrendingDestinations() {
 
   // --- NEW, UNIQUE & PROFESSIONAL JSX STRUCTURE ---
   return (
-    <div className="bg-[#005A9C]/15 py-16 sm:py-20"> {/* Using a soft background color from your palette */}
+    <div className="bg-[#001d2c]/15 py-16 sm:py-20"> {/* Using a soft background color from your palette */}
       <div className='container mx-auto px-4'>
         
         {/* Step 1: More evocative and unique headings */}

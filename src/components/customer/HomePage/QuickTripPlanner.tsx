@@ -136,7 +136,7 @@ export default function QuickTripPlanner() {
               onClick={() => handleFilterClick(filter.domain)} // Updated to use handleFilterClick
               className={`flex-shrink-0 flex items-center space-x-2 px-4 py-2 border rounded-full text-sm font-medium transition-colors duration-200
                           ${activeVibe === filter.domain
-                            ? 'border-[#005A9C] text-[#ffffff] bg-[#005A9C] shadow-sm'
+                            ? 'border-[#001d2c] text-[#ffffff] bg-[#001d2c] shadow-sm'
                             : 'border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400'}`}
             >
               {filter.icon}
@@ -185,7 +185,7 @@ export default function QuickTripPlanner() {
       {/* Kept "Explore All Trips" button from original code to not change logic */}
       {/* <div className="mt-12 text-center">
           <button 
-            className="bg-[#005A9C] text-white px-8 py-3 rounded-lg hover:bg-[#005A9C] transition duration-300 text-base font-medium shadow-md hover:shadow-lg"
+            className="bg-[#001d2c] text-white px-8 py-3 rounded-lg hover:bg-[#001d2c] transition duration-300 text-base font-medium shadow-md hover:shadow-lg"
             onClick={(e) => {
               // e.stopPropagation(); // Original line, might not be necessary here.
               handleSearch();

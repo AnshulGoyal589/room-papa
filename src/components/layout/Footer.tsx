@@ -33,7 +33,7 @@ export function Footer() {
         <div className="container mx-auto grid md:grid-cols-4 gap-8 px-4">
           
           <div>
-            <h2 className="text-2xl font-bold text-[#005A9C] mb-4">Room Papa</h2>
+            <h2 className="text-2xl font-bold text-[#001d2c] mb-4">Room Papa</h2>
             <p className="text-gray-600">
               Your trusted partner in creating unforgettable travel experiences.
             </p>
@@ -47,7 +47,7 @@ export function Footer() {
                   <li key={link.name}>
                     <a 
                       href={link.href} 
-                      className="text-gray-600 hover:text-[#005A9C] transition"
+                      className="text-gray-600 hover:text-[#001d2c] transition"
                     >
                       {link.name}
                     </a>
@@ -63,11 +63,11 @@ export function Footer() {
               <input 
                 type="email" 
                 placeholder="Enter your email" 
-                className="px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#005A9C]"
+                className="px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#001d2c]"
               />
               <button 
                 type="submit" 
-                className="bg-[#005A9C] text-white px-4 py-2 rounded-md hover:bg-[#005A9C] transition"
+                className="bg-[#001d2c] text-white px-4 py-2 rounded-md hover:bg-[#001d2c] transition"
               >
                 Subscribe
               </button>

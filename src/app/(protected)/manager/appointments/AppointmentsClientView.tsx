@@ -71,7 +71,7 @@ export default function AppointmentsClientView({
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleFilterChange()}
                 placeholder="Search and press Enter..."
-                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#005A9C]"
+                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#001d2c]"
               />
             </div>
             
@@ -84,7 +84,7 @@ export default function AppointmentsClientView({
                   setTypeFilter(e.target.value);
                   // Optionally trigger search on change or wait for button click
                 }}
-                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#005A9C]"
+                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#001d2c]"
               >
                 <option value="all">All Types</option>
                 <option value="property">Property</option>

@@ -12,17 +12,17 @@ type TravelTypeSelectorProps = {
 export default function TravelTypeSelector({ searchType, setSearchType }: TravelTypeSelectorProps) {
   const travelTypes = [
     { 
-      icon: <Hotel className="w-6 h-6 text-[#005A9C]" />, 
+      icon: <Hotel className="w-6 h-6 text-[#001d2c]" />, 
       label: 'Stays', 
       type: 'stays' 
     },
     { 
-      icon: <Plane className="w-6 h-6 text-[#005A9C]" />, 
+      icon: <Plane className="w-6 h-6 text-[#001d2c]" />, 
       label: 'Flights', 
       type: 'flights' 
     },
     { 
-      icon: <Car className="w-6 h-6 text-[#005A9C]" />, 
+      icon: <Car className="w-6 h-6 text-[#001d2c]" />, 
       label: 'Car Rentals', 
       type: 'car-rentals' 
     }
@@ -36,8 +36,8 @@ export default function TravelTypeSelector({ searchType, setSearchType }: Travel
           onClick={() => setSearchType(type.type as 'flights' | 'stays' | 'car-rentals')}
           className={`flex items-center space-x-2 px-4 py-2 rounded-full ${
             searchType === type.type 
-              ? 'bg-white text-[#005A9C]' 
-              : 'bg-[#005A9C] text-white hover:bg-[#005A9C]'
+              ? 'bg-white text-[#001d2c]' 
+              : 'bg-[#001d2c] text-white hover:bg-[#001d2c]'
           }`}
         >
           {type.icon}

@@ -83,7 +83,7 @@ export default function UniqueProperties({ initialProperties }: UniqueProperties
                   
                   {property.propertyRating && (
                     <div className="flex items-center space-x-2 mb-3">
-                      <span className="bg-[#005A9C] text-white text-xs font-bold px-2 py-0.5 rounded">
+                      <span className="bg-[#001d2c] text-white text-xs font-bold px-2 py-0.5 rounded">
                         {property.propertyRating.toFixed(1)}
                       </span>
                     </div>

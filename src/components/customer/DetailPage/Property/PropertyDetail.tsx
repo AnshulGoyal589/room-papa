@@ -56,7 +56,7 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({ title, images, on
             <div className="bg-white rounded-lg p-6 text-center" onClick={(e) => e.stopPropagation()}>
                 <h3 className="text-xl font-semibold mb-2">{title}</h3>
                 <p>No images available for this room category.</p>
-                <button onClick={onClose} className="mt-4 px-4 py-2 bg-[#005A9C] text-white rounded">Close</button>
+                <button onClick={onClose} className="mt-4 px-4 py-2 bg-[#001d2c] text-white rounded">Close</button>
             </div>
         </div>
     );
@@ -89,7 +89,7 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({ title, images, on
             {images.map((image, index) => (
               <div
                 key={image.publicId || index}
-                className={`relative aspect-square rounded-md overflow-hidden cursor-pointer border-2 ${activeImage?.url === image.url ? 'border-[#005A9C]' : 'border-transparent hover:border-[#005A9C]'}`}
+                className={`relative aspect-square rounded-md overflow-hidden cursor-pointer border-2 ${activeImage?.url === image.url ? 'border-[#001d2c]' : 'border-transparent hover:border-[#001d2c]'}`}
                 onClick={() => setActiveImage(image)}
               >
                 <CldImage
@@ -919,11 +919,11 @@ export default function PropertyDetailPage() {
     const renderPropertyHighlights = () => {
         if (!property) return null;
         const highlights = [];
-        if (property.type) highlights.push({ icon: <Award className="text-[#005A9C]" />, title: 'Property Type', text: [property.type] });
+        if (property.type) highlights.push({ icon: <Award className="text-[#001d2c]" />, title: 'Property Type', text: [property.type] });
         const viewAmenity = property.amenities?.find(a => a.toLowerCase().includes('view') || a.toLowerCase().includes('balcony') || a.toLowerCase().includes('terrace'));
-        if (viewAmenity) highlights.push({ icon: <ImageIconLucide className="text-[#005A9C]" />, title: 'Featured Amenity', text: [formatAmenityName(viewAmenity)] });
+        if (viewAmenity) highlights.push({ icon: <ImageIconLucide className="text-[#001d2c]" />, title: 'Featured Amenity', text: [formatAmenityName(viewAmenity)] });
         else if (property.funThingsToDo?.some(ft => ft.toLowerCase().includes('view'))) {
-             highlights.push({ icon: <ImageIconLucide className="text-[#005A9C]" />, title: 'Scenic Surroundings', text: ["Beautiful views often reported"] });
+             highlights.push({ icon: <ImageIconLucide className="text-[#001d2c]" />, title: 'Scenic Surroundings', text: ["Beautiful views often reported"] });
         }
         const mealTexts: string[] = [];
         const breakfastMeal = property.meals?.find(m => m.toLowerCase().includes('breakfast'));
@@ -932,12 +932,12 @@ export default function PropertyDetailPage() {
         if (lunchMeal) mealTexts.push(formatAmenityName(lunchMeal));
         const dinnerMeal = property.meals?.find(m => m.toLowerCase().includes('dinner'));
         if (dinnerMeal) mealTexts.push(formatAmenityName(dinnerMeal));
-        if (mealTexts.length > 0) highlights.push({ icon: <CoffeeIconLucide className="text-[#005A9C]" />, title: 'Meal Options', text: [mealTexts.join(', ')] });
-        else if (property.amenities?.find(a => a.toLowerCase().includes('breakfast'))) highlights.push({ icon: <CoffeeIconLucide className="text-[#005A9C]" />, title: 'Breakfast Available', text: ['Breakfast amenity offered'] });
+        if (mealTexts.length > 0) highlights.push({ icon: <CoffeeIconLucide className="text-[#001d2c]" />, title: 'Meal Options', text: [mealTexts.join(', ')] });
+        else if (property.amenities?.find(a => a.toLowerCase().includes('breakfast'))) highlights.push({ icon: <CoffeeIconLucide className="text-[#001d2c]" />, title: 'Breakfast Available', text: ['Breakfast amenity offered'] });
         const kitchenAmenity = property.amenities?.find(a => a.toLowerCase().includes('kitchen'));
-        if (kitchenAmenity) highlights.push({ icon: <Utensils className="text-[#005A9C]" />, title: 'Kitchen Facilities', text: [formatAmenityName(kitchenAmenity)] });
+        if (kitchenAmenity) highlights.push({ icon: <Utensils className="text-[#001d2c]" />, title: 'Kitchen Facilities', text: [formatAmenityName(kitchenAmenity)] });
         const wifiAmenity = property.amenities?.find(a => a.toLowerCase().includes('wifi') || a.toLowerCase().includes('internet'));
-        if (wifiAmenity) highlights.push({ icon: <Wifi className="text-[#005A9C]" />, title: 'Wi-Fi Available', text: [formatAmenityName(wifiAmenity)] });
+        if (wifiAmenity) highlights.push({ icon: <Wifi className="text-[#001d2c]" />, title: 'Wi-Fi Available', text: [formatAmenityName(wifiAmenity)] });
         return (
             <div className="bg-white p-4 rounded-md border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">Property highlights</h3>
@@ -955,8 +955,8 @@ export default function PropertyDetailPage() {
         );
     };
 
-    if (loading) return <div className="flex justify-center items-center min-h-screen"><div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#005A9C]"></div></div>;
-    if (error || !property) return <div className="container mx-auto px-4 py-16 text-center"><h2 className="text-2xl font-bold text-red-600 mb-4">{error || 'Property details could not be loaded.'}</h2><p className="text-gray-600 mb-4">Please check the URL or try refreshing the page.</p><button onClick={() => router.push('/properties')} className="mt-4 px-6 py-2 bg-[#005A9C] text-white rounded-md hover:bg-[#005A9C] transition-colors">View Other Properties</button></div>;
+    if (loading) return <div className="flex justify-center items-center min-h-screen"><div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#001d2c]"></div></div>;
+    if (error || !property) return <div className="container mx-auto px-4 py-16 text-center"><h2 className="text-2xl font-bold text-red-600 mb-4">{error || 'Property details could not be loaded.'}</h2><p className="text-gray-600 mb-4">Please check the URL or try refreshing the page.</p><button onClick={() => router.push('/properties')} className="mt-4 px-6 py-2 bg-[#001d2c] text-white rounded-md hover:bg-[#001d2c] transition-colors">View Other Properties</button></div>;
 
     const currencySymbol = property.costing?.currency === 'INR' ? '₹' : (property.costing?.currency === 'USD' ? '$' : (property.costing?.currency === 'EUR' ? '€' : (property.costing?.currency || '$')));
 
@@ -973,13 +973,13 @@ export default function PropertyDetailPage() {
                                 <h1 className="text-xl sm:text-2xl font-bold text-gray-800 inline">{property.title || 'Property Title N/A'}</h1>
                             </div>
                             <div className="flex items-center space-x-2 mt-1 sm:mt-0">
-                                <button className="p-1.5 rounded-full hover:bg-gray-200"><Heart size={18} className="text-[#005A9C]" /></button>
-                                <button className="p-1.5 rounded-full hover:bg-gray-200"><Share2 size={18} className="text-[#005A9C]" /></button>
+                                <button className="p-1.5 rounded-full hover:bg-gray-200"><Heart size={18} className="text-[#001d2c]" /></button>
+                                <button className="p-1.5 rounded-full hover:bg-gray-200"><Share2 size={18} className="text-[#001d2c]" /></button>
                             </div>
                         </div>
                         <div className="flex items-center text-xs text-gray-600 mt-1">
                             {(property.totalRating != null && property.totalRating > 0) && (
-                                <div className="flex items-center mr-2">{renderRatingStars(property.totalRating, "w-3.5 h-3.5")}<span className="ml-1 bg-[#005A9C] text-white text-[10px] font-bold px-1 py-0.5 rounded-sm">{property.totalRating.toFixed(1)}</span></div>
+                                <div className="flex items-center mr-2">{renderRatingStars(property.totalRating, "w-3.5 h-3.5")}<span className="ml-1 bg-[#001d2c] text-white text-[10px] font-bold px-1 py-0.5 rounded-sm">{property.totalRating.toFixed(1)}</span></div>
                             )}
                             {property.propertyRating && property.propertyRating > 0 && (
                             <span className="mr-2">{renderRatingStars(property.propertyRating, "w-3 h-3")} <span className="text-[10px] align-super">({property.propertyRating}-star)</span></span>
@@ -1010,7 +1010,7 @@ export default function PropertyDetailPage() {
                             {allImages.length > 1 && (
                                 <div className="flex space-x-1.5 mt-1.5 overflow-x-auto pb-1">
                                     {allImages.map((img, idx) => (
-                                        <div key={`thumb-${idx}`} className={`relative w-20 h-14 rounded-sm overflow-hidden cursor-pointer border-2 shrink-0 ${activeImage === img.url ? 'border-[#005A9C]' : 'border-transparent hover:border-gray-400'}`} onClick={() => handleImageClick(img.url)}>
+                                        <div key={`thumb-${idx}`} className={`relative w-20 h-14 rounded-sm overflow-hidden cursor-pointer border-2 shrink-0 ${activeImage === img.url ? 'border-[#001d2c]' : 'border-transparent hover:border-gray-400'}`} onClick={() => handleImageClick(img.url)}>
                                             <Image src={img.url} alt={img.alt || `Thumbnail ${idx+1}`} layout="fill" objectFit="cover" />
                                         </div>
                                     ))}
@@ -1044,8 +1044,8 @@ export default function PropertyDetailPage() {
                                 <h3 className="text-lg font-bold text-yellow-800">Sign in, save money</h3>
                                 <p className="text-sm text-yellow-700">To see if you can save 10% or more at this property, sign in</p>
                                 <div className="mt-3">
-                                    <button onClick={() => openSignIn({ redirectUrl: typeof window !== 'undefined' ? window.location.href : undefined})} className="bg-[#005A9C] text-white text-sm px-4 py-2 rounded-md hover:bg-[#005A9C] mr-2">Sign in</button>
-                                    <button onClick={() => openSignIn({ redirectUrl: typeof window !== 'undefined' ? window.location.href : undefined })} className="text-[#005A9C] text-sm font-semibold hover:underline">Create an account</button>
+                                    <button onClick={() => openSignIn({ redirectUrl: typeof window !== 'undefined' ? window.location.href : undefined})} className="bg-[#001d2c] text-white text-sm px-4 py-2 rounded-md hover:bg-[#001d2c] mr-2">Sign in</button>
+                                    <button onClick={() => openSignIn({ redirectUrl: typeof window !== 'undefined' ? window.location.href : undefined })} className="text-[#001d2c] text-sm font-semibold hover:underline">Create an account</button>
                                 </div>
                             </div>
                             <Image src="/images/gift.jpeg" alt="Genius Loyalty Program" width={80} height={80} className="mx-auto sm:mx-0 shrink-0" />
@@ -1057,14 +1057,14 @@ export default function PropertyDetailPage() {
                         <div className="bg-gray-50 p-4 border-b border-gray-200">
                             <h2 className="text-xl font-bold text-gray-800 mb-3">Select your rooms</h2>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-                                <div> <label htmlFor="checkin-date-table" className="block text-xs font-medium text-gray-500 mb-1">Check-in</label> <input id="checkin-date-table" type="date" value={checkInDate ? checkInDate.toISOString().split('T')[0] : ''} onChange={handleCheckInChange} className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#005A9C] focus:border-[#005A9C] text-sm shadow-sm" min={property.startDate} max={property.endDate} required /> </div>
-                                <div> <label htmlFor="checkout-date-table" className="block text-xs font-medium text-gray-500 mb-1">Check-out</label> <input id="checkout-date-table" type="date" value={checkOutDate ? checkOutDate.toISOString().split('T')[0] : ''} onChange={handleCheckOutChange} className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#005A9C] focus:border-[#005A9C] text-sm shadow-sm" min={checkInDate ? new Date(checkInDate.getTime() + 86400000).toISOString().split('T')[0] : property.startDate} max={property.endDate} required disabled={!checkInDate} /> </div>
-                                <div> <label htmlFor="adult-count-selector" className="block text-xs font-medium text-gray-500 mb-1">Adults</label> <select id="adult-count-selector" value={adultCount} onChange={e => {setAdultCount(parseInt(e.target.value)); setBookingError(null);}} className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#005A9C] text-sm shadow-sm"> {[...Array(10)].map((_, i) => <option key={i+1} value={i+1}>{i+1}</option>)} </select> </div>
-                                <div> <label htmlFor="child-count-selector" className="block text-xs font-medium text-gray-500 mb-1">Children (0-17)</label> <select id="child-count-selector" value={childCount} onChange={e => {setChildCount(parseInt(e.target.value)); setBookingError(null);}} className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#005A9C] text-sm shadow-sm"> {[...Array(6)].map((_, i) => <option key={i} value={i}>{i}</option>)} </select> </div>
+                                <div> <label htmlFor="checkin-date-table" className="block text-xs font-medium text-gray-500 mb-1">Check-in</label> <input id="checkin-date-table" type="date" value={checkInDate ? checkInDate.toISOString().split('T')[0] : ''} onChange={handleCheckInChange} className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#001d2c] focus:border-[#001d2c] text-sm shadow-sm" min={property.startDate} max={property.endDate} required /> </div>
+                                <div> <label htmlFor="checkout-date-table" className="block text-xs font-medium text-gray-500 mb-1">Check-out</label> <input id="checkout-date-table" type="date" value={checkOutDate ? checkOutDate.toISOString().split('T')[0] : ''} onChange={handleCheckOutChange} className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#001d2c] focus:border-[#001d2c] text-sm shadow-sm" min={checkInDate ? new Date(checkInDate.getTime() + 86400000).toISOString().split('T')[0] : property.startDate} max={property.endDate} required disabled={!checkInDate} /> </div>
+                                <div> <label htmlFor="adult-count-selector" className="block text-xs font-medium text-gray-500 mb-1">Adults</label> <select id="adult-count-selector" value={adultCount} onChange={e => {setAdultCount(parseInt(e.target.value)); setBookingError(null);}} className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#001d2c] text-sm shadow-sm"> {[...Array(10)].map((_, i) => <option key={i+1} value={i+1}>{i+1}</option>)} </select> </div>
+                                <div> <label htmlFor="child-count-selector" className="block text-xs font-medium text-gray-500 mb-1">Children (0-17)</label> <select id="child-count-selector" value={childCount} onChange={e => {setChildCount(parseInt(e.target.value)); setBookingError(null);}} className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#001d2c] text-sm shadow-sm"> {[...Array(6)].map((_, i) => <option key={i} value={i}>{i}</option>)} </select> </div>
                             </div>
                             <div className="mt-4">
                                 <label className="block text-xs font-medium text-gray-500 mb-1.5">Preferred Meal Plan (for all rooms):</label>
-                                <div className="flex flex-wrap gap-2"> {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(plan => { const labelText = { noMeal: 'Room Only', breakfastOnly: 'Breakfast', allMeals: 'All Meals'}[plan]; return ( <label key={`meal-plan-table-${plan}`} className={`flex items-center px-2.5 py-1 border rounded-md cursor-pointer transition-colors text-xs ${selectedMealPlan === plan ? 'bg-[#005A9C] border-[#005A9C] ring-1 ring-[#005A9C]' : 'border-gray-300 hover:bg-gray-100'}`}> <input type="radio" name="mealPlanTable" value={plan} checked={selectedMealPlan === plan} onChange={handleMealPlanChange} className="h-3 w-3 text-[#005A9C] border-gray-300 focus:ring-[#005A9C] mr-1.5" /> <span className={`${selectedMealPlan === plan ? 'text-[#005A9C] font-semibold' : 'text-gray-600'}`}>{labelText}</span> </label> ); })} </div>
+                                <div className="flex flex-wrap gap-2"> {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(plan => { const labelText = { noMeal: 'Room Only', breakfastOnly: 'Breakfast', allMeals: 'All Meals'}[plan]; return ( <label key={`meal-plan-table-${plan}`} className={`flex items-center px-2.5 py-1 border rounded-md cursor-pointer transition-colors text-xs ${selectedMealPlan === plan ? 'bg-[#001d2c] border-[#001d2c] ring-1 ring-[#001d2c]' : 'border-gray-300 hover:bg-gray-100'}`}> <input type="radio" name="mealPlanTable" value={plan} checked={selectedMealPlan === plan} onChange={handleMealPlanChange} className="h-3 w-3 text-[#white] border-gray-300 focus:ring-[#001d2c] mr-1.5" /> <span className={`${selectedMealPlan === plan ? 'text-white font-semibold' : 'text-gray-600'}`}>{labelText}</span> </label> ); })} </div>
                             </div>
                             {availabilityError && <div className="mt-3 p-2 bg-yellow-100 text-yellow-800 text-xs rounded-md border border-yellow-300 flex items-start"><CalendarOff className='h-3.5 w-3.5 mr-1.5 shrink-0 text-yellow-600 mt-px'/><p>{availabilityError}</p></div>}
                             {bookingError && <div id="main-page-booking-error" className="mt-3 p-2 bg-red-100 text-red-700 text-xs rounded-md border border-red-300 flex items-start"><AlertTriangle className='h-3.5 w-3.5 mr-1.5 shrink-0 text-red-500 mt-px'/><p>{bookingError}</p></div>}
@@ -1072,13 +1072,13 @@ export default function PropertyDetailPage() {
 
                         <div className="overflow-x-auto">
                             <table className="w-full lg:min-w-[1400px] border-collapse">
-                                <thead className="hidden lg:table-header-group bg-[#005A9C] text-left text-base text-white uppercase">
+                                <thead className="hidden lg:table-header-group bg-[#001d2c] text-left text-base text-white uppercase">
                                     <tr>
-                                        <th className="px-4 py-3 font-semibold w-[25%] border-r border-[#005A9C]">Room type</th>
-                                        <th className="px-3 py-3 font-semibold text-center w-[10%] border-r border-[#005A9C]">Number of guests</th>
-                                        <th className="px-3 py-3 font-semibold w-[15%] border-r border-[#005A9C]">Today&apos;s price</th>
-                                        <th className="px-3 py-3 font-semibold w-[20%] border-r border-[#005A9C]">Your choices</th>
-                                        <th className="px-3 py-3 font-semibold text-center w-[10%] border-r border-[#005A9C]">Select rooms</th>
+                                        <th className="px-4 py-3 font-semibold w-[25%] border-r border-[#001d2c]">Room type</th>
+                                        <th className="px-3 py-3 font-semibold text-center w-[10%] border-r border-[#001d2c]">Number of guests</th>
+                                        <th className="px-3 py-3 font-semibold w-[15%] border-r border-[#001d2c]">Today&apos;s price</th>
+                                        <th className="px-3 py-3 font-semibold w-[20%] border-r border-[#001d2c]">Your choices</th>
+                                        <th className="px-3 py-3 font-semibold text-center w-[10%] border-r border-[#001d2c]">Select rooms</th>
                                         <th className="px-3 py-3 font-semibold text-center w-[20%]">Make Reservation</th>
                                     </tr>
                                 </thead>
@@ -1109,7 +1109,7 @@ export default function PropertyDetailPage() {
                                         const maxSelectableForThisOffer = Math.min(category.qty - sumOfOtherOffersInCat, MAX_COMBINED_ROOMS - (totalSelectedPhysicalRooms - currentQtySelected));
 
                                         return (
-                                            <tr key={offer.offerId} className={`block p-4 border rounded-lg mb-4 lg:p-0 lg:table-row lg:border-none lg:mb-0 lg:rounded-none lg:shadow-none ${currentQtySelected > 0 ? 'bg-[#005A9C]/50 ring-1 ring-[#005A9C] lg:bg-[#005A9C]/10' : 'bg-white'}`}>
+                                            <tr key={offer.offerId} className={`block p-4 border rounded-lg mb-4 lg:p-0 lg:table-row lg:border-none lg:mb-0 lg:rounded-none lg:shadow-none ${currentQtySelected > 0 ? 'bg-[#001d2c]/50 ring-1 ring-[#001d2c] lg:bg-[#001d2c]/10' : 'bg-white'}`}>
                                                 {offerIndexInCategory === 0 ? (
                                                     <td className="block border-b pb-4 mb-4 lg:border-b-0 lg:pb-0 lg:mb-0 lg:table-cell lg:px-4 lg:py-3 lg:align-top lg:border-r lg:border-gray-300" rowSpan={offersForThisCategory.length}>
                                                
@@ -1207,14 +1207,14 @@ export default function PropertyDetailPage() {
                                                 <td className="block py-2 border-b lg:border-b-0 lg:table-cell lg:px-3 lg:py-3 lg:align-top lg:text-center lg:border-r lg:border-gray-300">
                                                         <div className="flex items-center justify-between lg:justify-center">
                                                         <span className="text-sm font-semibold text-gray-500 lg:hidden">Select rooms:</span>
-                                                        <select value={currentQtySelected} onChange={(e) => handleOfferQuantityChange(offer.offerId, parseInt(e.target.value))} className="p-1.5 border border-gray-400 rounded text-sm focus:ring-1 focus:ring-[#005A9C] w-20" disabled={days <= 0 || maxSelectableForThisOffer < 0 || !!availabilityError} > {[...Array(Math.max(0, maxSelectableForThisOffer) + 1)].map((_, i) => ( <option key={i} value={i}>{i}</option> ))} </select>
+                                                        <select value={currentQtySelected} onChange={(e) => handleOfferQuantityChange(offer.offerId, parseInt(e.target.value))} className="p-1.5 border border-gray-400 rounded text-sm focus:ring-1 focus:ring-[#001d2c] w-20" disabled={days <= 0 || maxSelectableForThisOffer < 0 || !!availabilityError} > {[...Array(Math.max(0, maxSelectableForThisOffer) + 1)].map((_, i) => ( <option key={i} value={i}>{i}</option> ))} </select>
                                                     </div>
                                                 </td>
 
                                                 {overallOfferIndex === 0 && displayableRoomOffers.length > 0 && (
                                                     <td className="lg:block pt-4 lg:pt-2 lg:table-cell lg:px-4 lg:py-3 lg:align-top lg:text-left relative hidden " rowSpan={displayableRoomOffers.length}>
                                                         {totalSelectedPhysicalRooms > 0 && totalBookingPricing > 0 && days > 0 && ( <div className="mb-3 text-sm"> <p className="font-semibold text-md"> {totalSelectedPhysicalRooms} room{totalSelectedPhysicalRooms > 1 ? 's' : ''} for </p> <p className="text-2xl font-bold text-gray-800"> {currencySymbol} {totalBookingPricing.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} </p> <p className="text-xs text-gray-500"> for {days} night{days > 1 ? 's' : ''}, incl. taxes </p> </div> )}
-                                                        <button onClick={handleBookNowOrReserveClick} onMouseEnter={() => setShowReservePopover(true)} onMouseLeave={() => setShowReservePopover(false)} disabled={!checkInDate || !checkOutDate || days <= 0 || totalSelectedPhysicalRooms <= 0 || !!availabilityError || totalBookingPricing <=0 || !!bookingError} className="bg-[#005A9C] text-white font-semibold py-2.5 px-5 rounded-md hover:bg-[#005A9C] text-sm disabled:bg-gray-300 disabled:cursor-not-allowed w-full" > I&apos;ll reserve </button>
+                                                        <button onClick={handleBookNowOrReserveClick} onMouseEnter={() => setShowReservePopover(true)} onMouseLeave={() => setShowReservePopover(false)} disabled={!checkInDate || !checkOutDate || days <= 0 || totalSelectedPhysicalRooms <= 0 || !!availabilityError || totalBookingPricing <=0 || !!bookingError} className="bg-[#001d2c] text-white font-semibold py-2.5 px-5 rounded-md hover:bg-[#001d2c] text-sm disabled:bg-gray-300 disabled:cursor-not-allowed w-full" > I&apos;ll reserve </button>
                                                         <p className="text-xs text-gray-500 mt-1.5"><span className="inline-block mr-1">•</span>You&apos;ll be taken to the next step</p>
                                                         <p className="text-xs text-green-600 mt-1"><span className="inline-block mr-1">•</span>Confirmation is immediate</p>
                                                         {showReservePopover && checkInDate && checkOutDate && days > 0 && property && totalSelectedPhysicalRooms > 0 && ( <div className="hidden lg:block absolute top-0 right-full mr-4 w-[340px] p-4 bg-slate-800 text-white rounded-lg shadow-xl z-20" > <h3 className="text-xl font-bold mb-1">{property.title}</h3> <p className="text-sm font-normal text-gray-300 mb-3">Enhanced personal experience</p> <div className="text-sm space-y-1 mb-4"> <p><strong>Total length of stay:</strong> {days} {days === 1 ? 'night' : 'nights'}</p> <p><strong>Check-in:</strong> {checkInDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p> <p><strong>Check-out:</strong> {checkOutDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p> </div> <div className="bg-yellow-400 text-black text-sm font-semibold p-3 rounded-md text-center"> No account needed! Booking takes just 2 minutes. </div> </div> )}
@@ -1231,7 +1231,7 @@ export default function PropertyDetailPage() {
 
                     {/* Popular Facilities Section */}
                     <section className="bg-white p-4 sm:p-6 rounded-md border border-gray-200 mb-6">
-                        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center"><ListChecks className="mr-2 h-5 w-5 text-[#005A9C]" />Most Popular Facilities</h2>
+                        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center"><ListChecks className="mr-2 h-5 w-5 text-[#001d2c]" />Most Popular Facilities</h2>
                         {(property.amenities || property.facilities) && ((property.amenities && property.amenities.length > 0) || (property.facilities && property.facilities.length > 0)) ? (
                             <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2`}>
                                 {(showAllAmenities ? (property.facilities || property.amenities) : (property.facilities || property.amenities).slice(0, 8)).map((item, index) => (
@@ -1243,7 +1243,7 @@ export default function PropertyDetailPage() {
                             </div>
                         ) : <p className="text-sm text-gray-500">No specific popular facilities listed.</p>}
                         {(property.facilities || property.amenities) && (property.facilities || property.amenities).length > 8 && (
-                            <button onClick={() => setShowAllAmenities(!showAllAmenities)} className="mt-3 text-sm text-[#005A9C] hover:text-[#005A9C] font-semibold flex items-center">
+                            <button onClick={() => setShowAllAmenities(!showAllAmenities)} className="mt-3 text-sm text-[#001d2c] hover:text-[#001d2c] font-semibold flex items-center">
                                 {showAllAmenities ? 'Show less' : `Show all ${(property.facilities || property.amenities).length} facilities`}
                                 {showAllAmenities ? <ChevronUp size={16} className="ml-1" /> : <ChevronDown size={16} className="ml-1" />}
                             </button>
@@ -1256,7 +1256,7 @@ export default function PropertyDetailPage() {
                     <p className="font-semibold text-md"> {totalSelectedPhysicalRooms} room{totalSelectedPhysicalRooms > 1 ? 's' : ''} for </p>
                     <p className="text-2xl font-bold text-gray-800"> {currencySymbol} {totalBookingPricing.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} </p>
                     <p className="text-xs text-gray-500"> for {days} night{days > 1 ? 's' : ''}, incl. taxes </p> </div> )}
-                <button onClick={handleBookNowOrReserveClick} onMouseEnter={() => setShowReservePopover(true)} onMouseLeave={() => setShowReservePopover(false)} disabled={!checkInDate || !checkOutDate || days <= 0 || totalSelectedPhysicalRooms <= 0 || !!availabilityError || totalBookingPricing <=0 || !!bookingError} className="bg-[#005A9C] text-white font-semibold py-3 px-5 border-3 border-black/40 rounded-md hover:bg-[#005A9C] text-sm disabled:bg-gray-300 disabled:cursor-not-allowed w-full" > I&apos;ll reserve </button>
+                <button onClick={handleBookNowOrReserveClick} onMouseEnter={() => setShowReservePopover(true)} onMouseLeave={() => setShowReservePopover(false)} disabled={!checkInDate || !checkOutDate || days <= 0 || totalSelectedPhysicalRooms <= 0 || !!availabilityError || totalBookingPricing <=0 || !!bookingError} className="bg-[#001d2c] text-white font-semibold py-3 px-5 border-3 border-black/40 rounded-md hover:bg-[#001d2c] text-sm disabled:bg-gray-300 disabled:cursor-not-allowed w-full" > I&apos;ll reserve </button>
                 {showReservePopover && checkInDate && checkOutDate && days > 0 && property && totalSelectedPhysicalRooms > 0 && ( <div className="hidden lg:block absolute top-0 right-full mr-4 w-[340px] p-4 bg-slate-800 text-white rounded-lg shadow-xl z-20" > <h3 className="text-xl font-bold mb-1">{property.title}</h3> <p className="text-sm font-normal text-gray-300 mb-3">Enhanced personal experience</p> <div className="text-sm space-y-1 mb-4"> <p><strong>Total length of stay:</strong> {days} {days === 1 ? 'night' : 'nights'}</p> <p><strong>Check-in:</strong> {checkInDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p> <p><strong>Check-out:</strong> {checkOutDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p> </div> <div className="bg-yellow-400 text-black text-sm font-semibold p-3 rounded-md text-center"> No account needed! Booking takes just 2 minutes. </div> </div> )}
             </div>
 

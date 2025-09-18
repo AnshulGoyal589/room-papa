@@ -6,17 +6,17 @@ export default function WhyChooseUs() {
     { 
       title: 'Best Price Guarantee', 
       description: 'Find lower prices? We will match it!',
-      icon: <Plane className="w-12 h-12 text-[#005A9C]" />
+      icon: <Plane className="w-12 h-12 text-[#001d2c]" />
     },
     { 
       title: 'Free Cancellation', 
       description: 'Flexible booking with no hidden fees',
-      icon: <Calendar className="w-12 h-12 text-[#005A9C]" />
+      icon: <Calendar className="w-12 h-12 text-[#001d2c]" />
     },
     { 
       title: 'Wide Selection', 
       description: 'Thousands of destinations worldwide',
-      icon: <MapPin className="w-12 h-12 text-[#005A9C]" />
+      icon: <MapPin className="w-12 h-12 text-[#001d2c]" />
     }
   ];
 

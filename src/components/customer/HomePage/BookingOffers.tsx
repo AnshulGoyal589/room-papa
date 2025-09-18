@@ -31,10 +31,10 @@ const BookingOffers = () => {
                   <div className="mt-4 flex items-center flex-wrap gap-2">
                     <button 
                       onClick={() => openSignIn()}
-                      className="bg-[#005A9C] text-white font-bold py-2 px-4 rounded-md text-sm transition-colors">
+                      className="bg-[#001d2c] text-white font-bold py-2 px-4 rounded-md text-sm transition-colors">
                       Sign in
                     </button>
-                    <button className="border border-[#005A9C] text-[#005A9C] font-bold py-2 px-4 rounded-md text-sm hover:bg-[#005A9C] transition-colors">
+                    <button className="border border-[#001d2c] text-[#001d2c] font-bold py-2 px-4 rounded-md text-sm hover:bg-[#001d2c] transition-colors">
                       Register
                     </button>
                   </div>
@@ -58,7 +58,7 @@ const BookingOffers = () => {
                   Save up to 20% with a Getaway Deal
                 </p>
                 <div className="mt-4">
-                  <button className="bg-[#005A9C] text-white font-bold py-2 px-4 rounded-md text-sm">
+                  <button className="bg-[#001d2c] text-white font-bold py-2 px-4 rounded-md text-sm">
                     Save on stays
                   </button>
                 </div>
@@ -86,7 +86,7 @@ const BookingOffers = () => {
                   Save up to 20% with a Getaway Deal
                 </p>
                 <div className="mt-4">
-                  <button className="bg-[#005A9C] text-white font-bold py-2 px-4 rounded-md text-sm">
+                  <button className="bg-[#001d2c] text-white font-bold py-2 px-4 rounded-md text-sm">
                     Save on stays
                   </button>
                 </div>

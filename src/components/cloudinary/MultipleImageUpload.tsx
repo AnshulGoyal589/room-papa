@@ -122,7 +122,7 @@ const MultipleImageUpload: React.FC<MultipleImageUploadProps> = ({
           />
           <label
             htmlFor={`upload-${label}`}
-            className="cursor-pointer text-[#005A9C] hover:text-[#005A9C]"
+            className="cursor-pointer text-[#001d2c] hover:text-[#001d2c]"
           >
             {isUploading ? (
               <p>Uploading...</p>

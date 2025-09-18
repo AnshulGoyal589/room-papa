@@ -51,7 +51,7 @@ const ListingItem: React.FC<ListingItemProps> = ({ item, onClick }) => {
           <CalendarIcon className="w-4 h-4 mr-2" />
           {new Date(item.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
         </div>
-        <div className="text-sm font-semibold text-[#005A9C] hover:text-[#005A9C] transition-colors flex items-center group">
+        <div className="text-sm font-semibold text-[#001d2c] hover:text-[#001d2c] transition-colors flex items-center group">
           View Details
           <ArrowRightIcon className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
         </div>
