@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { User } from '@/lib/mongodb/models/User';
 import ManagerUsersClientView from './ManagerUsersClientView';
+import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Manage Managers | Room Papa Admin',
@@ -29,6 +31,13 @@ async function fetchManagerUsers(): Promise<User[]> {
 
 // --- THE MAIN PAGE COMPONENT (SERVER) ---
 export default async function ManagerUsersPage() {
+
+    const { userId } = await auth();
+    
+      // 2. If no user, redirect to sign-in page.
+      if (!userId) {
+        redirect('/sign-in');
+      }
 
   // 1. Fetch data on the server.
   const initialManagers = await fetchManagerUsers();

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { BaseItem, ItemCategory } from '@/lib/mongodb/models/Components';
 import DashboardClientView from './DashboardClientView';
+import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Admin Dashboard | Room Papa',
@@ -72,6 +74,13 @@ async function fetchAllItems(): Promise<BaseItem[]> {
 
 // --- THE MAIN PAGE COMPONENT (SERVER) ---
 export default async function DashboardPage() {
+
+  const { userId } = await auth();
+  
+    // 2. If no user, redirect to sign-in page.
+    if (!userId) {
+      redirect('/sign-in');
+    }
   // Fetch all data on the server before rendering.
   const initialItems = await fetchAllItems();
 
