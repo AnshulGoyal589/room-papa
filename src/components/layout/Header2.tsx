@@ -95,6 +95,7 @@ export function Header2() {
         if(error.error=="Role already assigned"){
             localStorage.setItem('pendingUserRole', 'admin');
             setRoleSaved(true);
+            return true;
         }
         throw new Error(error.error || 'Failed to save user role');
       }
