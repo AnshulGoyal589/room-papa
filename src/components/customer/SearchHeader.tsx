@@ -49,11 +49,11 @@ export default function SearchHeader() {
 
   const tabs = [
     { id: 'property', label: 'Hotels & Homes', icon: Building },
-    { id: 'travelling', label: 'Flights', icon: Plane },
     { id: 'flight+hotel', label: 'Vacation Packages', icon: Hotel },
     { id: 'car-rentals', label: 'Car Rentals', icon: Car },
     { id: 'attractions', label: 'Things to Do', icon: Landmark },
     { id: 'airport-taxis', label: 'Airport Transfers', icon: Car },
+    { id: 'travelling', label: 'Flights', icon: Plane },
   ];
 
   const getHeading = () => {
