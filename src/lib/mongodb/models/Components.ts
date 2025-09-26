@@ -3,13 +3,20 @@ import { Property } from "./Property";
 import { Travelling } from "./Travelling";
 import { Trip } from "./Trip";
 import { ReactNode } from "react";
-import { DisplayableRoomOffer } from "@/types/booking";
+import { DisplayableRoomOffer, HikePricingByOccupancy } from "@/types/booking";
 
 export interface Location{
     address: string;
     state: string;
     city: string;
     country: string;
+}
+
+
+export interface SeasonalCoasting {
+  startDate: string;
+  endDate: string;
+  hikePricing: HikePricingByOccupancy;
 }
 
 export interface Costing {

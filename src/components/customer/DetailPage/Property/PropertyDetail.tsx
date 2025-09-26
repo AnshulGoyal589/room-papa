@@ -23,7 +23,7 @@ import { CldImage } from 'next-cloudinary'; // Import CldImage for the modal
 import { useRouter, useParams } from 'next/navigation';
 import { useUser, useClerk, SignedOut } from '@clerk/nextjs';
 import { Property } from '@/lib/mongodb/models/Property';
-import { DisplayableRoomOffer, RoomCategoryPricing, StoredRoomCategory } from '@/types/booking';
+import { DisplayableRoomOffer, HikePricingByOccupancy, RoomCategoryPricing, StoredRoomCategory } from '@/types/booking';
 import { Image as PropertyImage } from '@/lib/mongodb/models/Components';
 
 
@@ -322,6 +322,18 @@ export default function PropertyDetailPage() {
                                 discountedChild5to12Price: { ...initialPricingState.discountedChild5to12Price, ...(cat.pricing.discountedChild5to12Price || {})},
                             }
                             : initialPricingState,
+                        seasonalHike: (cat.seasonalHike && cat.seasonalHike.startDate && cat.seasonalHike.endDate && cat.seasonalHike.hikePricing)
+                            ? {
+                                startDate: cat.seasonalHike.startDate,
+                                endDate: cat.seasonalHike.endDate,
+                                hikePricing: {
+                                    singleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0, ...cat.seasonalHike.hikePricing.singleOccupancyAdultHike },
+                                    doubleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0, ...cat.seasonalHike.hikePricing.doubleOccupancyAdultHike },
+                                    tripleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0, ...cat.seasonalHike.hikePricing.tripleOccupancyAdultHike },
+                                }
+                            }
+                            : undefined,
+
                         unavailableDates: Array.isArray(cat.unavailableDates) ? cat.unavailableDates : [],
                         availabilityStartDate: cat.availabilityStartDate || undefined,
                         availabilityEndDate: cat.availabilityEndDate || undefined,
@@ -505,12 +517,30 @@ export default function PropertyDetailPage() {
     }, [checkInDate, checkOutDate, adultCount, childCount, selectedOffers, selectedMealPlan, property, loading]);
 
     const displayableRoomOffers = useMemo((): DisplayableRoomOffer[] => {
-        if (!property?.categoryRooms || !checkInDate || !checkOutDate) return [];
-
+        if (!property?.categoryRooms || !checkInDate || !checkOutDate || days <= 0) return [];
+        
         const offers: DisplayableRoomOffer[] = [];
         const currentCheckInDateOnly = new Date(checkInDate); currentCheckInDateOnly.setHours(0,0,0,0);
         const currentCheckOutDateOnly = new Date(checkOutDate); currentCheckOutDateOnly.setHours(0,0,0,0);
 
+        const bookingDateRange = getDatesInRange(checkInDate, checkOutDate);
+        const numberOfNights = bookingDateRange.length;
+        if (numberOfNights === 0) return [];
+
+        // Helper to get the hike amount safely
+        const getHikeAmount = (
+            hikePricing: HikePricingByOccupancy,
+            occupancyType: keyof HikePricingByOccupancy,
+            mealPlan: keyof PricingByMealPlan
+        ): number => {
+            const hikeGroup = hikePricing?.[occupancyType];
+            if (hikeGroup && typeof hikeGroup === 'object' && mealPlan in hikeGroup) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const price = (hikeGroup as any)[mealPlan];
+                return typeof price === 'number' ? price : 0;
+            }
+            return 0;
+        };
 
         property.categoryRooms.forEach(cat => {
             if (cat.availabilityStartDate) {
@@ -522,19 +552,26 @@ export default function PropertyDetailPage() {
                 if (currentCheckOutDateOnly > catEndDate) return;
             }
 
+            // REFACTORED PRICE CALCULATION LOGIC
             const calculateOfferPrice = (numAdults: number): { price: number, originalPrice?: number, isDiscounted: boolean } => {
                 let basePrice = 0, discountedPrice = 0;
+                let occupancyType: keyof HikePricingByOccupancy | null = null;
+
                 if (numAdults === 1) {
                     basePrice = getPrice(cat.pricing.singleOccupancyAdultPrice, selectedMealPlan);
                     discountedPrice = getPrice(cat.pricing.discountedSingleOccupancyAdultPrice, selectedMealPlan);
+                    occupancyType = 'singleOccupancyAdultHike';
                 } else if (numAdults === 2) {
                     basePrice = getPrice(cat.pricing.doubleOccupancyAdultPrice, selectedMealPlan);
                     discountedPrice = getPrice(cat.pricing.discountedDoubleOccupancyAdultPrice, selectedMealPlan);
+                    occupancyType = 'doubleOccupancyAdultHike';
                 } else if (numAdults >= 3) {
                     basePrice = getPrice(cat.pricing.tripleOccupancyAdultPrice, selectedMealPlan);
                     discountedPrice = getPrice(cat.pricing.discountedTripleOccupancyAdultPrice, selectedMealPlan);
+                    occupancyType = 'tripleOccupancyAdultHike';
                 }
-
+                
+                // Fallback to 'noMeal' if selected meal plan has no price
                 if (basePrice === 0 && selectedMealPlan !== 'noMeal') {
                     let fbBase = 0, fbDisc = 0;
                     if (numAdults === 1) { fbBase = getPrice(cat.pricing.singleOccupancyAdultPrice, 'noMeal'); fbDisc = getPrice(cat.pricing.discountedSingleOccupancyAdultPrice, 'noMeal');}
@@ -542,11 +579,55 @@ export default function PropertyDetailPage() {
                     else if (numAdults >= 3) { fbBase = getPrice(cat.pricing.tripleOccupancyAdultPrice, 'noMeal'); fbDisc = getPrice(cat.pricing.discountedTripleOccupancyAdultPrice, 'noMeal');}
                     basePrice = fbBase; discountedPrice = fbDisc;
                 }
-
+                
                 const isDisc = discountedPrice > 0 && discountedPrice < basePrice;
+                const finalBasePrice = isDisc ? discountedPrice : basePrice;
+                const originalPriceForCalc = isDisc ? basePrice : undefined;
+
+                // --- START: SEASONAL HIKE CALCULATION ---
+                let totalStayPrice = 0;
+                let totalOriginalStayPrice = 0;
+                
+                const hike = cat.seasonalHike;
+                const hikeIsActive = hike && hike.startDate && hike.endDate && hike.hikePricing && occupancyType;
+
+                if (hikeIsActive) {
+                    const hikeStartDate = new Date(hike.startDate + 'T00:00:00');
+                    const hikeEndDate = new Date(hike.endDate + 'T23:59:59');
+                    const hikeAmount = getHikeAmount(hike.hikePricing, occupancyType as keyof HikePricingByOccupancy, selectedMealPlan);
+
+                    for (const dateStr of bookingDateRange) {
+                        const currentDate = new Date(dateStr + 'T12:00:00'); // Use midday to avoid timezone issues
+                        
+                        let dayPrice = finalBasePrice;
+                        let originalDayPrice = originalPriceForCalc;
+
+                        if (currentDate >= hikeStartDate && currentDate <= hikeEndDate) {
+                            dayPrice += hikeAmount;
+                            if(originalDayPrice !== undefined) {
+                                originalDayPrice += hikeAmount;
+                            }
+                        }
+                        totalStayPrice += dayPrice;
+                        if(originalDayPrice !== undefined) {
+                            totalOriginalStayPrice += originalDayPrice;
+                        }
+                    }
+                } else {
+                    // No active hike, calculate price normally
+                    totalStayPrice = finalBasePrice * numberOfNights;
+                    if(originalPriceForCalc !== undefined) {
+                        totalOriginalStayPrice = originalPriceForCalc * numberOfNights;
+                    }
+                }
+                
+                const averagePricePerNight = totalStayPrice / numberOfNights;
+                const averageOriginalPricePerNight = totalOriginalStayPrice > 0 ? (totalOriginalStayPrice / numberOfNights) : undefined;
+                // --- END: SEASONAL HIKE CALCULATION ---
+
                 return {
-                    price: isDisc ? discountedPrice : basePrice,
-                    originalPrice: isDisc ? basePrice : undefined,
+                    price: averagePricePerNight,
+                    originalPrice: averageOriginalPricePerNight,
                     isDiscounted: isDisc
                 };
             };
@@ -559,14 +640,15 @@ export default function PropertyDetailPage() {
 
             offerConfigs.forEach(oc => {
                 if (cat.maxOccupancy && cat.maxOccupancy >= oc.guestCapacityInOffer) {
-                     const pricingExists =
+                    const pricingExists =
                         (oc.intendedAdults === 1 && cat.pricing.singleOccupancyAdultPrice) ||
                         (oc.intendedAdults === 2 && cat.pricing.doubleOccupancyAdultPrice) ||
                         (oc.intendedAdults === 3 && cat.pricing.tripleOccupancyAdultPrice);
 
                     if (pricingExists) {
+                        // Pass the whole category object to the price calculation function
                         const priceInfo = calculateOfferPrice(oc.intendedAdults);
-                         if (priceInfo.price > 0) {
+                        if (priceInfo.price > 0) {
                             offers.push({
                                 offerId: `${cat._id || cat.id}_${oc.offerKeySuffix}`,
                                 categoryId: cat._id?.toString() || cat.id,
@@ -578,7 +660,7 @@ export default function PropertyDetailPage() {
                                 intendedAdults: oc.intendedAdults,
                                 intendedChildren: 0,
                                 guestCapacityInOffer: oc.guestCapacityInOffer,
-                                pricePerNight: priceInfo.price,
+                                pricePerNight: priceInfo.price, // This is now an AVERAGE price per night
                                 originalPricePerNight: priceInfo.originalPrice,
                                 isDiscounted: priceInfo.isDiscounted,
                                 currency: cat.currency,
@@ -594,7 +676,7 @@ export default function PropertyDetailPage() {
             });
         });
         return offers;
-    }, [property?.categoryRooms, selectedMealPlan, checkInDate, checkOutDate]);
+    }, [property?.categoryRooms, selectedMealPlan, checkInDate, checkOutDate, days]);
 
     useEffect(() => {
         if (!property?.categoryRooms || !displayableRoomOffers || !checkInDate || !checkOutDate || days <= 0) {
@@ -1109,7 +1191,7 @@ export default function PropertyDetailPage() {
                                         const maxSelectableForThisOffer = Math.min(category.qty - sumOfOtherOffersInCat, MAX_COMBINED_ROOMS - (totalSelectedPhysicalRooms - currentQtySelected));
 
                                         return (
-                                            <tr key={offer.offerId} className={`block p-4 border rounded-lg mb-4 lg:p-0 lg:table-row lg:border-none lg:mb-0 lg:rounded-none lg:shadow-none ${currentQtySelected > 0 ? 'bg-[#001d2c]/50 ring-1 ring-[#001d2c] lg:bg-[#001d2c]/10' : 'bg-white'}`}>
+                                            <tr key={offer.offerId} className={`block p-4 border rounded-lg mb-4 lg:p-0 lg:table-row lg:border-none lg:mb-0 lg:rounded-none lg:shadow-none ${currentQtySelected > 0 ? 'bg-[#001d2c]/50 lg:bg-[#001d2c]/10' : 'bg-white'}`}>
                                                 {offerIndexInCategory === 0 ? (
                                                     <td className="block border-b pb-4 mb-4 lg:border-b-0 lg:pb-0 lg:mb-0 lg:table-cell lg:px-4 lg:py-3 lg:align-top lg:border-r lg:border-gray-300" rowSpan={offersForThisCategory.length}>
                                                

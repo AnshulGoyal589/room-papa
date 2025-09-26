@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormItem, FormLabel } from '@/components/ui/form';
 import GoogleMapsSection from './GoogleMapsSection';
-import { Image as ImageType } from '@/lib/mongodb/models/Components'; 
+import { Image as ImageType, SeasonalCoasting } from '@/lib/mongodb/models/Components'; 
 
 // --- Assuming these types are defined correctly in '@/types' based on previous updates ---
 import {
@@ -17,7 +17,7 @@ import {
 } from '@/types';
 import { Label } from '@/components/ui/label'; // Label is used in the form
 import { Button } from '@/components/ui/button'; // Button is used in the form
-import { RoomCategoryPricing, StoredRoomCategory } from '@/types/booking'; // StoredRoomCategory should have the new fields
+import { HikePricingByOccupancy, RoomCategoryPricing, StoredRoomCategory } from '@/types/booking'; // StoredRoomCategory should have the new fields
 import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
 import { CldImage } from 'next-cloudinary';
 // --- End Type Assumption ---
@@ -40,6 +40,26 @@ const getPrice = (
     }
     return 0;
 };
+
+
+const initialHikePricingState: HikePricingByOccupancy = {
+    singleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    doubleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    tripleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+};
+
+// Configuration for Hike Pricing Form Section
+interface HikePricingRowConfig {
+    occupancy: number;
+    field: keyof HikePricingByOccupancy;
+    label: string;
+}
+
+const hikePricingConfig: HikePricingRowConfig[] = [
+    { occupancy: 1, field: 'singleOccupancyAdultHike', label: '1 Adult' },
+    { occupancy: 2, field: 'doubleOccupancyAdultHike', label: '2 Adults' },
+    { occupancy: 3, field: 'tripleOccupancyAdultHike', label: '3 Adults' },
+];
 
 
 // Initial state for the new category form
@@ -66,6 +86,11 @@ const initialNewCategoryFormState = {
     newCategoryFacility: '',
     currentCategoryFacilities: [] as string[],
     categoryImages: [] as ImageType[],
+    seasonalHike: {
+        startDate: '',
+        endDate: '',
+        hikePricing: initialHikePricingState,
+    }
 };
 
 
@@ -157,7 +182,8 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
             roomSize: cat.roomSize || "Unknown",
             categoryActivities: cat.categoryActivities || [],
             categoryFacilities: cat.categoryFacilities || [],
-            categoryImages: cat.categoryImages || [], // Ensure images are initialized
+            categoryImages: cat.categoryImages || [],
+            seasonalHike: cat.seasonalHike || undefined 
         })) : []
     }));
 
@@ -173,7 +199,12 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
         roomSize: string;
         newCategoryFacility: string;
         currentCategoryFacilities: string[];
-        categoryImages: ImageType[]; // <-- Add this line
+        categoryImages: ImageType[]; 
+        seasonalHike: {
+            startDate: string;
+            endDate: string;
+            hikePricing: HikePricingByOccupancy;
+        };
     }>({
         ...initialNewCategoryFormState,
         currency: item.costing?.currency || "USD",
@@ -192,7 +223,8 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                 availabilityEndDate: cat.availabilityEndDate || '',
                 categoryActivities: cat.categoryActivities || [],
                 categoryFacilities: cat.categoryFacilities || [],
-                categoryImages: cat.categoryImages || [], // Ensure images are initialized on update
+                categoryImages: cat.categoryImages || [],
+                seasonalHike: cat.seasonalHike || undefined
             })) : []
         });
         setNewCategory(prev => ({
@@ -270,6 +302,29 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
         }));
     };
 
+     const handleNewCategoryHikePricingChange = (
+        occupancyField: keyof HikePricingByOccupancy,
+        mealPlan: keyof PricingByMealPlan,
+        value: string | number
+    ) => {
+        const numericValue = Number(value);
+        const safeValue = numericValue < 0 ? 0 : numericValue;
+        setNewCategory(prev => {
+            const updatedHikePricing = JSON.parse(JSON.stringify(prev.seasonalHike.hikePricing));
+            if (!updatedHikePricing[occupancyField]) {
+                updatedHikePricing[occupancyField] = { noMeal: 0, breakfastOnly: 0, allMeals: 0 };
+            }
+            (updatedHikePricing[occupancyField] as PricingByMealPlan)[mealPlan] = safeValue;
+            return {
+                ...prev,
+                seasonalHike: {
+                    ...prev.seasonalHike,
+                    hikePricing: updatedHikePricing
+                }
+            };
+        });
+    };
+
 
     const handleAddCategory = () => {
         if (!newCategory.title.trim()) { alert("Category title is required."); return; }
@@ -306,6 +361,24 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
             }
         }
 
+         const { seasonalHike } = newCategory;
+        let seasonalHikeToAdd: SeasonalCoasting | undefined = undefined;
+
+        if (seasonalHike.startDate && seasonalHike.endDate) {
+            if (new Date(seasonalHike.endDate) < new Date(seasonalHike.startDate)) {
+                alert('Seasonal Hike End Date cannot be before Start Date.');
+                return;
+            }
+            seasonalHikeToAdd = {
+                startDate: seasonalHike.startDate,
+                endDate: seasonalHike.endDate,
+                hikePricing: JSON.parse(JSON.stringify(seasonalHike.hikePricing)),
+            };
+        } else if (seasonalHike.startDate || seasonalHike.endDate) {
+            alert('Both Start and End dates are required for a seasonal hike. To disable it, leave both fields empty.');
+            return;
+        }
+
         const categoryToAdd: StoredRoomCategory = {
             id: generateId(),
             title: newCategory.title,
@@ -318,6 +391,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
             availabilityEndDate: newCategory.availabilityEndDate || undefined,
             categoryActivities: [...newCategory.currentCategoryActivities],
             categoryFacilities: [...newCategory.currentCategoryFacilities],
+            seasonalHike: seasonalHikeToAdd,
         };
 
         setEnsurePropertyData((prev) => ({
@@ -329,6 +403,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
         // const updatedProperty = { ...ensurePropertyData, categoryRooms: [...(ensurePropertyData.categoryRooms || []), categoryToAdd] };
         // onUpdate?.(updatedProperty);
     };
+    
 
     const handleRemoveCategory = (idToRemove: string) => {
         const updatedCategories = (ensurePropertyData.categoryRooms || []).filter((cat: StoredRoomCategory) => cat.id !== idToRemove);
@@ -507,6 +582,50 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                                             <div> <p className="font-semibold text-gray-700 flex items-center mb-2"><Users className="inline h-4 w-4 mr-1.5"/>Adult Pricing (Total Room Price):</p> {[{ label: '1 Adult', base: pricing.singleOccupancyAdultPrice, disc: pricing.discountedSingleOccupancyAdultPrice }, { label: '2 Adults', base: pricing.doubleOccupancyAdultPrice, disc: pricing.discountedDoubleOccupancyAdultPrice }, { label: '3 Adults', base: pricing.tripleOccupancyAdultPrice, disc: pricing.discountedTripleOccupancyAdultPrice }, ].map(occ => ( <div key={occ.label} className="mb-2 pl-2"> <strong className="block text-gray-600">{occ.label}:</strong> <div className="pl-4 space-y-0.5"> {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => { const basePrice = getPrice(occ.base, mealPlan); const discPrice = getPrice(occ.disc, mealPlan); if (basePrice > 0) { return ( <div key={mealPlan} className="flex justify-between items-center"> <MealPlanLabel mealPlan={mealPlan} /> <span className="text-gray-800"> {currency} {basePrice.toLocaleString()} {(discPrice > 0 && discPrice < basePrice) ? <span className="text-green-600 font-medium"> (Now: {discPrice.toLocaleString()})</span> : ''} </span> </div> ); } return null; })} </div> </div> ))} </div>
                                             <div> <p className="font-semibold text-gray-700 flex items-center mb-2"><Baby className="inline h-4 w-4 mr-1.5"/>Child Pricing (Per Child, Sharing):</p> {[{ label: '5-12 yrs', base: pricing.child5to12Price, disc: pricing.discountedChild5to12Price }, ].map(child => ( <div key={child.label} className="mb-2 pl-2"> <strong className="block text-gray-600">Child ({child.label}):</strong> <div className="pl-4 space-y-0.5"> {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => { const basePrice = getPrice(child.base, mealPlan); const discPrice = getPrice(child.disc, mealPlan); if (basePrice > 0) { return ( <div key={mealPlan} className="flex justify-between items-center"> <MealPlanLabel mealPlan={mealPlan} /> <span className="text-gray-800"> {currency} {basePrice.toLocaleString()} {(discPrice > 0 && discPrice < basePrice) ? <span className="text-green-600 font-medium"> (Now: {discPrice.toLocaleString()})</span> : ''} </span> </div> ); } return null; })} </div> </div> ))} <p className="text-xs text-gray-500 mt-1 pl-2 italic">Children below 5 typically free.</p> </div>
                                         </div>
+                                        {/* Display Seasonal Hike Info */}
+
+                                        {cat.seasonalHike && (
+                                            <div className="mt-4 pt-3 border-t text-sm">
+                                                <p className="font-semibold text-gray-700 flex items-center mb-1">
+                                                    <PriceIcon className="inline h-4 w-4 mr-1.5 text-blue-500"/>Seasonal Price Hike:
+                                                </p>
+                                                <p className="pl-6 text-gray-600 font-medium">
+                                                    Period: {new Date(cat.seasonalHike.startDate).toLocaleDateString()} - {new Date(cat.seasonalHike.endDate).toLocaleDateString()}
+                                                </p>
+                                                <div className="pl-2 mt-2">
+                                                    {[{ label: '1 Adult', hike: cat.seasonalHike.hikePricing.singleOccupancyAdultHike },
+                                                    { label: '2 Adults', hike: cat.seasonalHike.hikePricing.doubleOccupancyAdultHike },
+                                                    { label: '3 Adults', hike: cat.seasonalHike.hikePricing.tripleOccupancyAdultHike },
+                                                    ].map(occ => {
+                                                        // Check if there are any non-zero hike prices for this occupancy
+                                                        const hasHikePrice = Object.values(occ.hike).some(price => price > 0);
+                                                        if (!hasHikePrice) return null;
+
+                                                        return (
+                                                            <div key={occ.label} className="mb-2">
+                                                                <strong className="block text-gray-600">{occ.label} (Additional Price):</strong>
+                                                                <div className="pl-4 space-y-0.5">
+                                                                    {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => {
+                                                                        const hikePrice = getPrice(occ.hike, mealPlan);
+                                                                        if (hikePrice > 0) {
+                                                                            return (
+                                                                                <div key={mealPlan} className="flex justify-between items-center">
+                                                                                    <MealPlanLabel mealPlan={mealPlan} />
+                                                                                    <span className="text-blue-600 font-medium">
+                                                                                        + {currency} {hikePrice.toLocaleString()}
+                                                                                    </span>
+                                                                                </div>
+                                                                            );
+                                                                        }
+                                                                        return null;
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {/* Display Category Activities */}
                                         {cat.categoryActivities && cat.categoryActivities.length > 0 && (
@@ -574,6 +693,53 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                              {/* Adult and Child Pricing forms remain the same */}
                              <div className="pt-4 border-t border-gray-300"> <FormLabel className="text-md font-semibold text-gray-700 mb-3 block flex items-center"><Users className="inline h-5 w-5 mr-2"/>Adult Pricing (Total Room Price)</FormLabel> {adultPricingConfig.map(occ => ( <div key={occ.occupancy} className="mb-6 p-3 border rounded bg-white/50"> <p className="text-sm font-semibold mb-3 text-gray-600">{occ.label}</p> <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3"> {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => ( <div key={mealPlan} className="space-y-2"> <FormLabel className="text-xs font-medium flex items-center text-gray-600"> <MealPlanLabel mealPlan={mealPlan} /> </FormLabel> <FormItem> <Label className="text-xs text-muted-foreground" htmlFor={`new-cat-${occ.baseField}-${mealPlan}`}>Base Price</Label> <Input id={`new-cat-${occ.baseField}-${mealPlan}`} type="number" value={getPrice(newCategory.pricing[occ.baseField], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(occ.baseField, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01" /> </FormItem> <FormItem> <Label className="text-xs text-muted-foreground" htmlFor={`new-cat-${occ.discField}-${mealPlan}`}>Discounted</Label> <Input id={`new-cat-${occ.discField}-${mealPlan}`} type="number" value={getPrice(newCategory.pricing[occ.discField], mealPlan) || ''} onChange={(e) => handleNewCategoryPricingChange(occ.discField, mealPlan, e.target.value)} placeholder="Optional" min="0" step="0.01" /> </FormItem> </div> ))} </div> </div> ))} </div>
                              <div className="pt-4 border-t border-gray-300"> <FormLabel className="text-md font-semibold text-gray-700 mb-3 block flex items-center"><Baby className="inline h-5 w-5 mr-2"/>Child Pricing (Per Child, sharing)</FormLabel> {childPricingConfig.map(child => ( <div key={child.age} className="mb-6 p-3 border rounded bg-white/50"> <p className="text-sm font-semibold mb-3 text-gray-600">Child ({child.age})</p> <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3"> {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => ( <div key={mealPlan} className="space-y-2"> <FormLabel className="text-xs font-medium flex items-center text-gray-600"> <MealPlanLabel mealPlan={mealPlan} /> </FormLabel> <FormItem> <Label className="text-xs text-muted-foreground" htmlFor={`new-cat-${child.baseField}-${mealPlan}`}>Base Price</Label> <Input id={`new-cat-${child.baseField}-${mealPlan}`} type="number" value={getPrice(newCategory.pricing[child.baseField], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(child.baseField, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01" /> </FormItem> <FormItem> <Label className="text-xs text-muted-foreground" htmlFor={`new-cat-${child.discField}-${mealPlan}`}>Discounted</Label> <Input id={`new-cat-${child.discField}-${mealPlan}`} type="number" value={getPrice(newCategory.pricing[child.discField], mealPlan) || ''} onChange={(e) => handleNewCategoryPricingChange(child.discField, mealPlan, e.target.value)} placeholder="Optional" min="0" step="0.01" /> </FormItem> </div> ))} </div> </div> ))} </div>
+
+                            {/* Seasonal Hike Pricing Inputs */}
+                            <div className="pt-4 border-t border-gray-300">
+                                <FormLabel className="text-md font-semibold text-gray-700 mb-2 block flex items-center"><PriceIcon className="inline h-5 w-5 mr-2"/>Seasonal Price Hike (Optional)</FormLabel>
+                                <p className="text-xs text-gray-500 mb-3">Set a period and additional prices that will be added on top of the base price for those specific dates.</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <FormItem>
+                                        <Label className="text-xs text-muted-foreground" htmlFor={`new-cat-hike-start-${ensurePropertyData._id || 'new'}`}>Hike Start Date</Label>
+                                        <Input id={`new-cat-hike-start-${ensurePropertyData._id || 'new'}`} type="date" value={newCategory.seasonalHike.startDate}
+                                            onChange={(e) => setNewCategory(prev => ({ ...prev, seasonalHike: { ...prev.seasonalHike, startDate: e.target.value } }))}
+                                        />
+                                    </FormItem>
+                                    <FormItem>
+                                        <Label className="text-xs text-muted-foreground" htmlFor={`new-cat-hike-end-${ensurePropertyData._id || 'new'}`}>Hike End Date</Label>
+                                        <Input id={`new-cat-hike-end-${ensurePropertyData._id || 'new'}`} type="date" value={newCategory.seasonalHike.endDate}
+                                            onChange={(e) => setNewCategory(prev => ({ ...prev, seasonalHike: { ...prev.seasonalHike, endDate: e.target.value } }))}
+                                        />
+                                    </FormItem>
+                                </div>
+                                
+                                {hikePricingConfig.map(occ => (
+                                    <div key={occ.field} className="mb-6 p-3 border rounded bg-white/50">
+                                        <p className="text-sm font-semibold mb-3 text-gray-600">{occ.label} (Additional Hike Price)</p>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3">
+                                            {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => (
+                                                <div key={mealPlan} className="space-y-2">
+                                                    <FormLabel className="text-xs font-medium flex items-center text-gray-600">
+                                                        <MealPlanLabel mealPlan={mealPlan} />
+                                                    </FormLabel>
+                                                    <FormItem>
+                                                        <Label className="text-xs text-muted-foreground" htmlFor={`new-cat-${occ.field}-${mealPlan}`}>Hike Amount</Label>
+                                                        <Input
+                                                            id={`new-cat-${occ.field}-${mealPlan}`}
+                                                            type="number"
+                                                            value={getPrice(newCategory.seasonalHike.hikePricing[occ.field], mealPlan) || ''}
+                                                            onChange={(e) => handleNewCategoryHikePricingChange(occ.field, mealPlan, e.target.value)}
+                                                            placeholder="0.00"
+                                                            min="0"
+                                                            step="0.01"
+                                                        />
+                                                    </FormItem>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
 
                             {/* Category Activities Input */}
                             <div className="pt-4 border-t border-gray-300">

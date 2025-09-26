@@ -11,7 +11,7 @@ import {
   SelectItem
 } from "@/components/ui/select";
 import ImageUpload from "@/components/cloudinary/ImageUpload";
-import { Image as ImageType } from "@/lib/mongodb/models/Components";
+import { Image as ImageType, SeasonalCoasting } from "@/lib/mongodb/models/Components";
 import MultipleImageUpload from "@/components/cloudinary/MultipleImageUpload";
 import { Badge as UiBadge } from "@/components/ui/badge";
 import {
@@ -38,12 +38,11 @@ import {
   Sparkles,
   Wrench,
 } from "lucide-react";
-import { RoomCategoryPricing, StoredRoomCategory } from "@/types/booking";
+import { HikePricingByOccupancy, RoomCategoryPricing, StoredRoomCategory } from "@/types/booking";
 import { CldImage } from "next-cloudinary";
-// Helper to generate unique IDs
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
-// Helper to get price safely from nested structure
+
 const getPrice = (
     priceGroup: PricingByMealPlan | DiscountedPricingByMealPlan | undefined | number,
     mealPlan?: keyof PricingByMealPlan
@@ -57,7 +56,26 @@ const getPrice = (
     return 0;
 };
 
-// Initial state for the form to add/edit a new room category
+const initialHikePricingState: HikePricingByOccupancy = {
+    singleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    doubleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    tripleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+};
+
+// Configuration for Hike Pricing Form Section
+interface HikePricingRowConfig {
+    occupancy: number;
+    field: keyof HikePricingByOccupancy;
+    label: string;
+}
+
+const hikePricingConfig: HikePricingRowConfig[] = [
+    { occupancy: 1, field: 'singleOccupancyAdultHike', label: '1 Adult' },
+    { occupancy: 2, field: 'doubleOccupancyAdultHike', label: '2 Adults' },
+    { occupancy: 3, field: 'tripleOccupancyAdultHike', label: '3 Adults' },
+];
+
+
 const initialNewCategoryState = {
   id: '',
   title: "",
@@ -79,6 +97,11 @@ const initialNewCategoryState = {
   availabilityEndDate: '',
   categoryActivities: [] as string[],
   categoryFacilities: [] as string[],
+  seasonalHike: {
+    startDate: '',
+    endDate: '',
+    hikePricing: initialHikePricingState,
+  },
   categoryImages: [] as ImageType[],
 };
 
@@ -173,6 +196,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
               availabilityEndDate: cat.availabilityEndDate || '',
               roomSize: cat.roomSize || "Unknown",
               categoryActivities: Array.isArray(cat.categoryActivities) ? cat.categoryActivities.map(String) : [],
+              seasonalHike: cat.seasonalHike || undefined,
               categoryFacilities: Array.isArray(cat.categoryFacilities) ? cat.categoryFacilities.map(String) : [],
               categoryImages: Array.isArray(cat.categoryImages) ? cat.categoryImages : [], // Corrected initialization
           }));
@@ -215,6 +239,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
                 ? cat.pricing
                 : initialNewCategoryState.pricing,
             unavailableDates: Array.isArray(cat.unavailableDates) ? cat.unavailableDates.map(String).sort() : [],
+            seasonalHike: cat.seasonalHike || undefined,
             availabilityStartDate: cat.availabilityStartDate || '',
             availabilityEndDate: cat.availabilityEndDate || '',
             categoryActivities: Array.isArray(cat.categoryActivities) ? cat.categoryActivities.map(String) : [],
@@ -324,9 +349,34 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         alert("This date is already marked as unavailable."); setCurrentUnavailableDateInput("");
     } else if (!currentUnavailableDateInput) { alert("Please select a date to add."); }
   };
+
+  const handleNewCategoryHikePricingChange = (
+      occupancyField: keyof HikePricingByOccupancy,
+      mealPlan: keyof PricingByMealPlan,
+      value: string | number
+  ) => {
+      const numericValue = Number(value);
+      const safeValue = numericValue < 0 ? 0 : numericValue;
+      setNewCategory(prev => {
+          const updatedHikePricing = JSON.parse(JSON.stringify(prev.seasonalHike.hikePricing));
+          if (!updatedHikePricing[occupancyField]) {
+              updatedHikePricing[occupancyField] = { noMeal: 0, breakfastOnly: 0, allMeals: 0 };
+          }
+          (updatedHikePricing[occupancyField] as PricingByMealPlan)[mealPlan] = safeValue;
+          return {
+              ...prev,
+              seasonalHike: {
+                  ...prev.seasonalHike,
+                  hikePricing: updatedHikePricing
+              }
+          };
+      });
+  };
+
   const handleRemoveDateFromNewCategory = (dateToRemove: string) => {
       setNewCategory(prev => ({ ...prev, unavailableDates: prev.unavailableDates.filter(date => date !== dateToRemove) }));
   };
+
   const handleRemoveExistingUnavailableDate = (categoryId: string, dateToRemove: string) => {
     setFormData((prev: Property) => ({ ...prev, categoryRooms: (prev.categoryRooms || []).map((cat: StoredRoomCategory) => cat.id === categoryId ? { ...cat, unavailableDates: (cat.unavailableDates || []).filter((d: string) => d !== dateToRemove) } : cat ) }));
   };
@@ -338,9 +388,11 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         setNewCategoryActivityInput("");
     }
   };
+
   const handleRemoveCategoryActivity = (activity: string) => {
     setNewCategory(prev => ({...prev, categoryActivities: prev.categoryActivities.filter(a => a !== activity)}));
   };
+
   const handleAddCategoryFacility = () => {
     const facility = newCategoryFacilityInput.trim();
     if (facility && !newCategory.categoryFacilities.includes(facility)) {
@@ -348,12 +400,15 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         setNewCategoryFacilityInput("");
     }
   };
+
   const handleRemoveCategoryFacility = (facility: string) => {
     setNewCategory(prev => ({...prev, categoryFacilities: prev.categoryFacilities.filter(f => f !== facility)}));
   };
+
   const handleRemoveExistingCategoryActivity = (categoryId: string, activityToRemove: string) => {
     setFormData((prev: Property) => ({ ...prev, categoryRooms: (prev.categoryRooms || []).map((cat: StoredRoomCategory) => cat.id === categoryId ? { ...cat, categoryActivities: (cat.categoryActivities || []).filter((a: string) => a !== activityToRemove) } : cat ) }));
   };
+
   const handleRemoveExistingCategoryFacility = (categoryId: string, facilityToRemove: string) => {
     setFormData((prev: Property) => ({ ...prev, categoryRooms: (prev.categoryRooms || []).map((cat: StoredRoomCategory) => cat.id === categoryId ? { ...cat, categoryFacilities: (cat.categoryFacilities || []).filter((f: string) => f !== facilityToRemove) } : cat ) }));
   };
@@ -381,6 +436,24 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         }
     }
 
+    const { seasonalHike } = newCategory;
+    let seasonalHikeToAdd: SeasonalCoasting | undefined = undefined;
+
+    if (seasonalHike.startDate && seasonalHike.endDate) {
+        if (new Date(seasonalHike.endDate) < new Date(seasonalHike.startDate)) {
+            alert('Seasonal Hike End Date cannot be before Start Date.');
+            return;
+        }
+        seasonalHikeToAdd = {
+            startDate: seasonalHike.startDate,
+            endDate: seasonalHike.endDate,
+            hikePricing: JSON.parse(JSON.stringify(seasonalHike.hikePricing)),
+        };
+    } else if (seasonalHike.startDate || seasonalHike.endDate) {
+        alert('Both Start and End dates are required for a seasonal hike. To disable it, leave both fields empty.');
+        return;
+    }
+
     const categoryData: StoredRoomCategory = {
       id: isEditMode && newCategory.id ? newCategory.id : generateId(),
       title: newCategory.title,
@@ -394,6 +467,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       categoryActivities: [...newCategory.categoryActivities],
       categoryFacilities: [...newCategory.categoryFacilities],
       categoryImages: [...newCategory.categoryImages],
+      seasonalHike: seasonalHikeToAdd
     };
 
     if (isEditMode && newCategory.id) {
@@ -426,6 +500,13 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         categoryActivities: Array.isArray(categoryToEdit.categoryActivities) ? categoryToEdit.categoryActivities.map(String) : [],
         categoryFacilities: Array.isArray(categoryToEdit.categoryFacilities) ? categoryToEdit.categoryFacilities.map(String) : [],
         categoryImages: Array.isArray(categoryToEdit.categoryImages) ? categoryToEdit.categoryImages : [],
+         seasonalHike: {
+            startDate: categoryToEdit.seasonalHike?.startDate || '',
+            endDate: categoryToEdit.seasonalHike?.endDate || '',
+            hikePricing: categoryToEdit.seasonalHike?.hikePricing
+                ? { ...initialHikePricingState, ...categoryToEdit.seasonalHike.hikePricing }
+                : initialHikePricingState,
+        },
     });
     setCurrentUnavailableDateInput("");
     setNewCategoryActivityInput("");
@@ -434,6 +515,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
   };
 
   const handleCancelEditCategory = () => { setIsEditMode(false); };
+
   const handleRemoveCategory = (idToRemove: string) => {
     if (isEditMode && newCategory.id === idToRemove) { handleCancelEditCategory(); }
     setFormData(prev => ({ ...prev, categoryRooms: (prev.categoryRooms || []).filter(cat => cat.id !== idToRemove) }));
@@ -535,6 +617,50 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
                         <div> <p className="font-semibold text-gray-700 flex items-center mb-2"><Baby className="inline h-4 w-4 mr-1.5"/>Child Pricing (Per Child, Sharing):</p> {childPricingConfig.map(child => ( <div key={child.age} className="mb-2 pl-2"> <strong className="block text-gray-600">Child ({child.age}):</strong> <div className="pl-4 space-y-0.5"> {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => { const basePrice = getPrice(pricing[child.baseField as keyof RoomCategoryPricing], mealPlan); const discPrice = getPrice(pricing[child.discField as keyof RoomCategoryPricing], mealPlan); if (basePrice > 0) { return ( <div key={mealPlan} className="flex justify-between items-center"> <MealPlanLabel mealPlan={mealPlan} className="text-gray-600"/> <span className="text-gray-800"> {currency} {basePrice.toLocaleString()} {(discPrice > 0 && discPrice < basePrice) ? <span className="text-green-600 font-medium"> (Now: {discPrice.toLocaleString()})</span> : ''} </span> </div> ); } return null; })} </div> </div> ))} </div>
                     </div>
 
+                            {cat.seasonalHike && (
+                              <div className="mt-4 pt-3 border-t text-sm">
+                                  <p className="font-semibold text-gray-700 flex items-center mb-1">
+                                      <DollarSign className="inline h-4 w-4 mr-1.5 text-blue-500"/>Seasonal Price Hike:
+                                  </p>
+                                  <p className="pl-6 text-gray-600 font-medium">
+                                      Period: {new Date(cat.seasonalHike.startDate).toLocaleDateString()} - {new Date(cat.seasonalHike.endDate).toLocaleDateString()}
+                                  </p>
+                                  <div className="pl-2 mt-2 grid grid-cols-1 md:grid-cols-2 gap-x-6">
+                                      <div>
+                                      {[{ label: '1 Adult', hike: cat.seasonalHike.hikePricing.singleOccupancyAdultHike },
+                                        { label: '2 Adults', hike: cat.seasonalHike.hikePricing.doubleOccupancyAdultHike },
+                                        { label: '3 Adults', hike: cat.seasonalHike.hikePricing.tripleOccupancyAdultHike },
+                                      ].map(occ => {
+                                          const hasHikePrice = Object.values(occ.hike).some(price => price > 0);
+                                          if (!hasHikePrice) return null;
+
+                                          return (
+                                              <div key={occ.label} className="mb-2">
+                                                  <strong className="block text-gray-600">{occ.label} (Additional Price):</strong>
+                                                  <div className="pl-4 space-y-0.5">
+                                                      {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => {
+                                                          const hikePrice = getPrice(occ.hike, mealPlan);
+                                                          if (hikePrice > 0) {
+                                                              return (
+                                                                  <div key={mealPlan} className="flex justify-between items-center">
+                                                                      <MealPlanLabel mealPlan={mealPlan} className="text-gray-600"/>
+                                                                      <span className="text-blue-600 font-medium">
+                                                                          + {currency} {hikePrice.toLocaleString()}
+                                                                      </span>
+                                                                  </div>
+                                                              );
+                                                          }
+                                                          return null;
+                                                      })}
+                                                  </div>
+                                              </div>
+                                          );
+                                      })}
+                                      </div>
+                                  </div>
+                              </div>
+                          )}
+
                     {cat.categoryActivities && cat.categoryActivities.length > 0 && (
                         <div className="mt-3 pt-2 border-t text-xs">
                             <p className="font-medium text-yellow-600 mb-1 flex items-center"><Sparkles size={14} className="mr-1" /> Category Activities:</p>
@@ -611,6 +737,51 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
 
             <div className="pt-4 border-t border-gray-300"> <label className="text-lg font-semibold text-gray-700 mb-3 block flex items-center"><Users className="inline h-5 w-5 mr-2"/>Adult Pricing (Total Room Price)</label> {adultPricingConfig.map(occ => ( <div key={occ.occupancy} className="mb-6 p-3 border rounded bg-white/50"> <p className="text-sm font-semibold mb-3 text-gray-600">{occ.label}</p> <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3"> {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => ( <div key={mealPlan} className="space-y-2"> <label className="text-xs font-medium flex items-center text-gray-600"> <MealPlanLabel mealPlan={mealPlan} className="text-gray-600"/> </label> <div> <label className="text-xs text-muted-foreground">Base Price</label> <Input type="number" value={getPrice(newCategory.pricing[occ.baseField], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(occ.baseField, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01" /> </div> <div> <label className="text-xs text-muted-foreground">Discounted</label> <Input type="number" value={getPrice(newCategory.pricing[occ.discField], mealPlan) || ''} onChange={(e) => handleNewCategoryPricingChange(occ.discField, mealPlan, e.target.value)} placeholder="Optional" min="0" step="0.01" /> </div> </div> ))} </div> </div> ))} </div>
             <div className="pt-4 border-t border-gray-300"> <label className="text-lg font-semibold text-gray-700 mb-3 block flex items-center"><Baby className="inline h-5 w-5 mr-2"/>Child Pricing (Per Child, sharing)</label> {childPricingConfig.map(child => ( <div key={child.age} className="mb-6 p-3 border rounded bg-white/50"> <p className="text-sm font-semibold mb-3 text-gray-600">Child ({child.age})</p> <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3"> {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => ( <div key={mealPlan} className="space-y-2"> <label className="text-xs font-medium flex items-center text-gray-600"> <MealPlanLabel mealPlan={mealPlan} className="text-gray-600"/> </label> <div> <label className="text-xs text-muted-foreground">Base Price</label> <Input type="number" value={getPrice(newCategory.pricing[child.baseField], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(child.baseField, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01" /> </div> <div> <label className="text-xs text-muted-foreground">Discounted</label> <Input type="number" value={getPrice(newCategory.pricing[child.discField], mealPlan) || ''} onChange={(e) => handleNewCategoryPricingChange(child.discField, mealPlan, e.target.value)} placeholder="Optional" min="0" step="0.01" /> </div> </div> ))} </div> </div> ))} </div>
+
+            <div className="pt-4 border-t border-gray-300">
+              <label className="text-lg font-semibold text-gray-700 mb-3 block flex items-center"><DollarSign className="inline h-5 w-5 mr-2"/>Seasonal Price Hike (Optional)</label>
+              <p className="text-xs text-gray-500 mb-4">Set a period and additional prices that will be added on top of the base price for those specific dates.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                      <label className="text-xs text-muted-foreground">Hike Start Date</label>
+                      <Input type="date" value={newCategory.seasonalHike.startDate}
+                          onChange={(e) => setNewCategory(prev => ({ ...prev, seasonalHike: { ...prev.seasonalHike, startDate: e.target.value } }))}
+                      />
+                  </div>
+                  <div>
+                      <label className="text-xs text-muted-foreground">Hike End Date</label>
+                      <Input type="date" value={newCategory.seasonalHike.endDate}
+                          onChange={(e) => setNewCategory(prev => ({ ...prev, seasonalHike: { ...prev.seasonalHike, endDate: e.target.value } }))}
+                      />
+                  </div>
+              </div>
+              
+              {hikePricingConfig.map(occ => (
+                  <div key={occ.field} className="mb-6 p-3 border rounded bg-white/50">
+                      <p className="text-sm font-semibold mb-3 text-gray-600">{occ.label} (Additional Hike Price)</p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3">
+                          {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => (
+                              <div key={mealPlan} className="space-y-2">
+                                  <label className="text-xs font-medium flex items-center text-gray-600">
+                                      <MealPlanLabel mealPlan={mealPlan} className="text-gray-600"/>
+                                  </label>
+                                  <div>
+                                      <label className="text-xs text-muted-foreground">Hike Amount</label>
+                                      <Input
+                                          type="number"
+                                          value={getPrice(newCategory.seasonalHike.hikePricing[occ.field], mealPlan) || ''}
+                                          onChange={(e) => handleNewCategoryHikePricingChange(occ.field, mealPlan, e.target.value)}
+                                          placeholder="0.00"
+                                          min="0"
+                                          step="0.01"
+                                      />
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+              ))}
+            </div>
 
             <div className="pt-4 border-t border-gray-300">
                 <label className="text-lg font-semibold text-gray-700 mb-3 block flex items-center"><Sparkles className="inline h-5 w-5 mr-2"/>Manage Category Activities</label>

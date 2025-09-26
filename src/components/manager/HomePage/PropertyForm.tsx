@@ -19,11 +19,30 @@ import { categoryOptions } from '../../../../public/assets/data';
 
 import { DiscountedPricingByMealPlan, PricingByMealPlan, PropertyType } from '@/types'; // Assuming these are correctly defined
 
-import { RoomCategoryPricing, StoredRoomCategory } from '@/types/booking';
+import { HikePricingByOccupancy, RoomCategoryPricing, StoredRoomCategory } from '@/types/booking';
 import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
-import { ExtendedProperty, Image, PropertyFormProps } from '@/lib/mongodb/models/Components';
+import { ExtendedProperty, Image, PropertyFormProps, SeasonalCoasting } from '@/lib/mongodb/models/Components';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
+
+const initialHikePricingState: HikePricingByOccupancy = {
+    singleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    doubleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+    tripleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
+};
+
+// Configuration for Hike Pricing Form Section
+interface HikePricingRowConfig {
+    occupancy: number;
+    field: keyof HikePricingByOccupancy;
+    label: string;
+}
+
+const hikePricingConfig: HikePricingRowConfig[] = [
+    { occupancy: 1, field: 'singleOccupancyAdultHike', label: '1 Adult' },
+    { occupancy: 2, field: 'doubleOccupancyAdultHike', label: '2 Adults' },
+    { occupancy: 3, field: 'tripleOccupancyAdultHike', label: '3 Adults' },
+];
 
 // Initial state for the form to add a new room category
 const initialNewCategoryState = {
@@ -51,6 +70,11 @@ const initialNewCategoryState = {
   newCategoryFacility: '',
   currentCategoryFacilities: [] as string[],
   categoryImages: [] as Image[],
+  seasonalHike: {
+    startDate: '',
+    endDate: '',
+    hikePricing: initialHikePricingState,
+  },
 };
 
 
@@ -176,6 +200,29 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
     }
   }, [propertyData, setPropertyData]);
 
+
+   const handleNewCategoryHikePricingChange = (
+      occupancyField: keyof HikePricingByOccupancy,
+      mealPlan: keyof PricingByMealPlan,
+      value: string | number
+  ) => {
+      const numericValue = Number(value);
+      const safeValue = numericValue < 0 ? 0 : numericValue;
+      setNewCategory(prev => {
+          const updatedHikePricing = JSON.parse(JSON.stringify(prev.seasonalHike.hikePricing));
+          if (!updatedHikePricing[occupancyField]) {
+              updatedHikePricing[occupancyField] = { noMeal: 0, breakfastOnly: 0, allMeals: 0 };
+          }
+          (updatedHikePricing[occupancyField] as PricingByMealPlan)[mealPlan] = safeValue;
+          return {
+              ...prev,
+              seasonalHike: {
+                  ...prev.seasonalHike,
+                  hikePricing: updatedHikePricing
+              }
+          };
+      });
+  };
 
  const handlePropertyChange = (field: string, value: unknown) => {
     if (field.includes('.')) {
@@ -342,6 +389,24 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
         }
     }
 
+    const { seasonalHike } = newCategory;
+    let seasonalHikeToAdd: SeasonalCoasting | undefined = undefined;
+
+    if (seasonalHike.startDate && seasonalHike.endDate) {
+        if (new Date(seasonalHike.endDate) < new Date(seasonalHike.startDate)) {
+            alert('Seasonal Hike End Date cannot be before Start Date.');
+            return;
+        }
+        seasonalHikeToAdd = {
+            startDate: seasonalHike.startDate,
+            endDate: seasonalHike.endDate,
+            hikePricing: JSON.parse(JSON.stringify(seasonalHike.hikePricing)),
+        };
+    } else if (seasonalHike.startDate || seasonalHike.endDate) {
+        alert('Both Start and End dates are required for a seasonal hike. To disable it, leave both fields empty.');
+        return;
+    }
+
     const categoryToAdd: StoredRoomCategory = {
       id: generateId(),
       roomSize: newCategory.roomSize || "Unknown",
@@ -355,6 +420,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
       availabilityEndDate: newCategory.availabilityEndDate || undefined,
       categoryActivities: [...newCategory.currentCategoryActivities],
       categoryFacilities: [...newCategory.currentCategoryFacilities],
+      seasonalHike: seasonalHikeToAdd,
     };
 
     const updatedCategories = [...(propertyData.categoryRooms || []), categoryToAdd];
@@ -645,6 +711,42 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
                   </div>
                 </div>
 
+                {/* Seasonal Hike Display */}
+                {cat.seasonalHike && (
+                    <div className="mt-3 pt-3 border-t">
+                        <p className="font-medium text-sm flex items-center"><DollarSign className="inline h-4 w-4 mr-1 text-blue-500"/>Seasonal Price Hike:</p>
+                        <p className="pl-5 text-xs text-muted-foreground font-semibold">
+                            Period: {new Date(cat.seasonalHike.startDate).toLocaleDateString()} - {new Date(cat.seasonalHike.endDate).toLocaleDateString()}
+                        </p>
+                        <div className="pl-5 mt-1 text-xs space-y-1">
+                            {[
+                                { label: '1 Adult', hike: cat.seasonalHike.hikePricing.singleOccupancyAdultHike },
+                                { label: '2 Adults', hike: cat.seasonalHike.hikePricing.doubleOccupancyAdultHike },
+                                { label: '3 Adults', hike: cat.seasonalHike.hikePricing.tripleOccupancyAdultHike },
+                            ].map(occ => {
+                                const hasHikePrice = Object.values(occ.hike).some(price => price > 0);
+                                if (!hasHikePrice) return null;
+                                return (
+                                    <div key={occ.label}>
+                                        <strong>{occ.label}:</strong>
+                                        {['noMeal', 'breakfastOnly', 'allMeals'].map(mp => {
+                                            const mealKey = mp as keyof PricingByMealPlan;
+                                            const hikePrice = getPrice(occ.hike, mealKey);
+                                            if (hikePrice > 0) {
+                                                return (
+                                                    <span key={mealKey} className="ml-2 text-blue-600 font-medium">
+                                                        <MealPlanLabel mealPlan={mealKey} /> +{cat.currency} {hikePrice}
+                                                    </span>
+                                                )
+                                            } return null;
+                                        })}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
                 {/* Category Activities Display */}
                 {cat.categoryActivities && cat.categoryActivities.length > 0 && (
                     <div className="mt-3 pt-3 border-t">
@@ -744,6 +846,51 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
                     </div>
                 </div>
              ))}
+          </div>
+
+          <div className="pt-4 border-t">
+            <FormLabel className="text-md font-medium text-foreground mb-3 block flex items-center"><DollarSign className="inline h-5 w-5 mr-2 text-primary" />Seasonal Price Hike (Optional)</FormLabel>
+            <p className="text-xs text-muted-foreground mb-4">Add a surcharge for specific high-demand dates. Leave dates blank to disable.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormItem>
+                    <FormLabel className="text-xs text-muted-foreground">Hike Start Date</FormLabel>
+                    <Input type="date" value={newCategory.seasonalHike.startDate}
+                        onChange={(e) => setNewCategory(prev => ({ ...prev, seasonalHike: { ...prev.seasonalHike, startDate: e.target.value } }))}
+                    />
+                </FormItem>
+                <FormItem>
+                    <FormLabel className="text-xs text-muted-foreground">Hike End Date</FormLabel>
+                    <Input type="date" value={newCategory.seasonalHike.endDate}
+                        onChange={(e) => setNewCategory(prev => ({ ...prev, seasonalHike: { ...prev.seasonalHike, endDate: e.target.value } }))}
+                    />
+                </FormItem>
+            </div>
+            
+            {hikePricingConfig.map(occ => (
+                <div key={occ.field} className="mt-4 p-3 border rounded bg-background/50">
+                    <p className="text-sm font-semibold mb-3">{occ.label} (Additional Hike Price)</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3">
+                        {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => (
+                            <div key={mealPlan} className="space-y-2">
+                                <FormLabel className="text-xs font-medium flex items-center">
+                                    <Utensils className="h-3 w-3 mr-1 inline"/> {mealPlan.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                </FormLabel>
+                                <FormItem>
+                                    <Label className="text-xs text-muted-foreground">Hike Amount</Label>
+                                    <Input
+                                        type="number"
+                                        value={getPrice(newCategory.seasonalHike.hikePricing[occ.field], mealPlan) || ''}
+                                        onChange={(e) => handleNewCategoryHikePricingChange(occ.field, mealPlan, e.target.value)}
+                                        placeholder="0.00"
+                                        min="0"
+                                        step="0.01"
+                                    />
+                                </FormItem>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ))}
           </div>
 
           {/* Category Activities Input */}

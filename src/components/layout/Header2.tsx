@@ -176,6 +176,7 @@ export function Header2() {
   // --- UI Logic ---
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  console.log("Role:", role);
   const navRole: keyof typeof navLinks = role === 'guest' ? 'customer' : role;
   const currentNavLinks = navLinks[navRole];
 
@@ -253,7 +254,7 @@ export function Header2() {
                 className="hidden lg:flex items-center gap-2 text-[#001d2c] px-4 py-2 rounded-full border-2 border-transparent hover:border-[#001d2c] transition-all duration-300 text-sm font-semibold"
               >
                 <PlusCircle className="h-5 w-5" />
-                <span>Become a Host</span>
+                <span>List Your Property</span>
               </button>
 
               <button 
@@ -317,7 +318,7 @@ export function Header2() {
                   Log In
                 </button>
                 <button onClick={handleManagerSignUp} className="w-full text-center text-[#001d2c]/80 px-4 py-3 rounded-md font-medium hover:bg-[#001d2c]/10 hover:text-[#001d2c] transition-colors">
-                  Become a Host
+                  List Your Property
                 </button>
               </div>
             </SignedOut>

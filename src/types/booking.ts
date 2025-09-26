@@ -1,6 +1,6 @@
 import { DiscountedPricingByMealPlan, PricingByMealPlan } from ".";
 import { Property } from "@/lib/mongodb/models/Property";
-import { Image } from "@/lib/mongodb/models/Components";
+import { Image, SeasonalCoasting } from "@/lib/mongodb/models/Components";
 
 export interface RoomCategoryPricing {
   singleOccupancyAdultPrice: PricingByMealPlan;
@@ -11,26 +11,29 @@ export interface RoomCategoryPricing {
   discountedTripleOccupancyAdultPrice?: DiscountedPricingByMealPlan;
   child5to12Price: PricingByMealPlan;
   discountedChild5to12Price?: DiscountedPricingByMealPlan;
-  // child12to18Price: PricingByMealPlan;
-  // discountedChild12to18Price?: DiscountedPricingByMealPlan;
+}
+
+export interface HikePricingByOccupancy {
+  singleOccupancyAdultHike: PricingByMealPlan;
+  doubleOccupancyAdultHike: PricingByMealPlan;
+  tripleOccupancyAdultHike: PricingByMealPlan;
 }
 
 export interface StoredRoomCategory {
     id: string;
-    _id?: string; // from your schema
+    _id?: string;
     title: string;
     qty: number;
     currency: string;
     pricing: RoomCategoryPricing;
     unavailableDates: string[];
+    seasonalHike?: SeasonalCoasting;
     roomSize: string;
-    // New fields for availability, activities, and facilities
     availabilityStartDate?: string;
     availabilityEndDate?: string;
     categoryActivities?: string[];
     categoryFacilities?: string[];
     categoryImages?: Image[];
-    // Other fields from your schema
     size?: string;
     bedConfiguration?: string;
     maxOccupancy?: number;
