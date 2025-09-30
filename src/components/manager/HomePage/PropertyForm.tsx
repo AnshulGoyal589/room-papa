@@ -551,6 +551,8 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
               <SelectItem value="Villa">Villa</SelectItem>
               <SelectItem value="Hostel">Hostel</SelectItem>
               <SelectItem value="Resort">Resort</SelectItem>
+              <SelectItem value="Cottage">Cottage</SelectItem>
+              <SelectItem value="Homestay">Homestay</SelectItem>
             </SelectContent>
           </Select>
         </FormItem>

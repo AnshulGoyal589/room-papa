@@ -63,7 +63,7 @@ export interface Property {
 
     
     // Validate property type
-    const validPropertyTypes: PropertyType[] = ['hotel', 'apartment', 'villa', 'hostel', 'resort'];
+    const validPropertyTypes: PropertyType[] = ['hotel', 'apartment', 'villa', 'hostel', 'resort' , 'cottage', 'homestay'];
     if (!validPropertyTypes.includes(propertyData.type as PropertyType)) {
       throw new Error(`Invalid property type. Must be one of: ${validPropertyTypes.join(', ')}`);
     }

@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 import { RoomCategoryPricing } from "./booking";
 
-export type PropertyType = 'hotel' | 'apartment' | 'villa' | 'hostel' | 'resort';
+export type PropertyType = 'hotel' | 'apartment' | 'villa' | 'hostel' | 'resort' | 'cottage' | 'homestay';
 export type PropertyAmenities = 'wifi' | 'pool' | 'gym' | 'spa' | 'restaurant' | 'parking' | 'airConditioning' | 'breakfast';
 export type PopularFilters = 'Free cancellation' | 'No prepayment' | 'Book without credit card' | 'Breakfast & dinner included' | 'Swimming Pool';
 export type RoomAccessibility = 'Entire unit located on ground floor' | 'Upper floors accessible by elevator' | 'Entire unit wheelchair accessible' | 'Toilet with grab rails' | 'Adapted bath' | 'Roll-in shower' | 'Walk-in shower' | 'Raised toilet' | 'Lowered sink' | 'Emergency cord in bathroom' | 'Shower chair';

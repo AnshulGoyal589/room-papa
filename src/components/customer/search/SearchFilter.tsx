@@ -93,6 +93,8 @@ export default function SearchFilter() {
     { value: 'villa', label: 'Villa' },
     { value: 'hostel', label: 'Hostel' },
     { value: 'resort', label: 'Resort' },
+    { value: 'cottage', label: 'Cottage' },
+    { value: 'homestay', label: 'Homestay' },
   ];
 
 
