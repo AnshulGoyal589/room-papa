@@ -1155,7 +1155,7 @@ export default function PropertyDetailPage() {
                         </div>
 
                         <div className="overflow-x-auto">
-                            <table className="w-full lg:min-w-[1400px] border-collapse">
+                            <table className="w-full  border-collapse">
                                 <thead className="hidden lg:table-header-group bg-[#003c95] text-left text-base text-white uppercase">
                                     <tr>
                                         <th className="px-4 py-3 font-semibold w-[25%] border-r border-[#003c95]">Room type</th>
@@ -1197,67 +1197,69 @@ export default function PropertyDetailPage() {
                                                 {offerIndexInCategory === 0 ? (
                                                     <td className="block border-b pb-4 mb-4 lg:border-b-0 lg:pb-0 lg:mb-0 lg:table-cell lg:px-4 lg:py-3 lg:align-top lg:border-r lg:border-gray-300" rowSpan={offersForThisCategory.length}>
                                                
-                                                <div
-                                                    className="relative w-full aspect-[4/3] rounded-lg overflow-hidden cursor-pointer group mb-3 shadow-sm"
-                                                    onClick={() => handleCategoryTitleClick(category)}
-                                                    role="button"
-                                                    tabIndex={0}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleCategoryTitleClick(category)}
-                                                    aria-label={`View photos for ${category.title}`}
-                                                >
-                                                    <CldImage
-                                                        src={category.categoryImages?.[0]?.publicId || category.categoryImages?.[0]?.url || '/images/placeholder-property.png'}
-                                                        alt={`Image of ${category.title}`}
-                                                        layout="fill"
-                                                        objectFit="cover"
-                                                        className="group-hover:scale-105 transition-transform duration-300"
-                                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                        onError={(e: any) => e.currentTarget.src = '/images/placeholder-property.png'}
-                                                    />
-                                                    {category.categoryImages && category.categoryImages.length > 0 && (
-                                                        <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-sm text-gray-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center space-x-1.5 transition-all group-hover:bg-white group-hover:shadow-xl">
-                                                            <span>{category.categoryImages.length} PHOTOS</span>
-                                                            <span className="font-mono text-sm leading-none">→</span>
+                                                        <div
+                                                            className="relative w-full aspect-[4/3] rounded-lg overflow-hidden cursor-pointer group mb-3 shadow-sm"
+                                                            onClick={() => handleCategoryTitleClick(category)}
+                                                            role="button"
+                                                            tabIndex={0}
+                                                            onKeyDown={(e) => e.key === 'Enter' && handleCategoryTitleClick(category)}
+                                                            aria-label={`View photos for ${category.title}`}
+                                                        >
+                                                            <CldImage
+                                                                src={category.categoryImages?.[0]?.publicId || category.categoryImages?.[0]?.url || '/images/placeholder-property.png'}
+                                                                alt={`Image of ${category.title}`}
+                                                                layout="fill"
+                                                                objectFit="cover"
+                                                                className="group-hover:scale-105 transition-transform duration-300"
+                                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                                onError={(e: any) => e.currentTarget.src = '/images/placeholder-property.png'}
+                                                            />
+                                                            {category.categoryImages && category.categoryImages.length > 0 && (
+                                                                <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-sm text-gray-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center space-x-1.5 transition-all group-hover:bg-white group-hover:shadow-xl">
+                                                                    <span>{category.categoryImages.length} PHOTOS</span>
+                                                                    <span className="font-mono text-sm leading-none">→</span>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    )}
-                                                </div>
 
-                                                {/* Room Title and Size, mimicking the screenshot */}
-                                                <h3 className="font-bold text-gray-800 text-xl">{offer.categoryTitle}</h3>
-                                                {offer.size && (
-                                                    <div className="flex items-center text-sm text-gray-600 mt-1">
-                                                        {/* Simple square icon similar to the screenshot */}
-                                                        <div className="w-4 h-4 border border-gray-500 mr-2 flex-shrink-0"></div>
-                                                        <span>{offer.size}</span>
-                                                    </div>
-                                                )}
-                                                {/* === MODIFICATION END === */}
-                                                
-                                                {/* Rest of the original content for this cell, with adjusted margin */}
-                                                <div className="mt-3 p-1.5 bg-green-50 border border-green-200 rounded-sm text-xs text-green-700 flex items-center">
-                                                    <UserCheck size={14} className="mr-1.5 shrink-0"/> Recommended for {offer.intendedAdults} adult{offer.intendedAdults > 1 ? 's' : ''}
-                                                    {offer.guestCapacityInOffer > offer.intendedAdults ? ` (up to ${offer.guestCapacityInOffer - offer.intendedAdults} child${offer.guestCapacityInOffer - offer.intendedAdults > 1 ? 'ren' : ''})` : ''}
-                                                </div>
-                                                {category.qty > 0 && category.qty <= 5 && <p className="text-xs text-red-600 mt-1.5 flex items-center"><AlertCircleIcon size={14} className="mr-1 shrink-0"/>Only {category.qty} rooms left on our site</p>}
-                                                {offer.bedConfiguration && <p className="text-xs text-gray-700 mt-1.5 flex items-center"><Bed size={14} className="mr-1.5 text-gray-500" />{offer.bedConfiguration}</p>}
-                                                {/* The original offer.size display is removed from here as it's moved to the top */}
-                                                {category.categoryActivities && category.categoryActivities.length > 0 && (
-                                                    <div className="mt-2">
-                                                        <p className="text-xs font-semibold text-yellow-700 flex items-center"><Sparkles size={13} className="mr-1" />Activities:</p>
-                                                        <div className="flex flex-wrap gap-1 mt-0.5">
-                                                            {category.categoryActivities.slice(0,3).map(act => <span key={act} className="text-[10px] bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-sm">{act}</span>)}
+                                                        <h3 className="font-bold text-gray-800 text-xl">{offer.categoryTitle}</h3>
+                                                        
+                                                        {offer.size && (
+                                                            <div className="flex items-center text-sm text-gray-600 mt-1">
+                                                                {/* Simple square icon similar to the screenshot */}
+                                                                <div className="w-4 h-4 border border-gray-500 mr-2 flex-shrink-0"></div>
+                                                                <span>{offer.size}</span>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        <div className="mt-3 p-1.5 bg-green-50 border border-green-200 rounded-sm text-xs text-green-700 flex items-center">
+                                                            <UserCheck size={14} className="mr-1.5 shrink-0"/> Recommended for {offer.intendedAdults} adult{offer.intendedAdults > 1 ? 's' : ''}
+                                                            {offer.guestCapacityInOffer > offer.intendedAdults ? ` (up to ${offer.guestCapacityInOffer - offer.intendedAdults} child${offer.guestCapacityInOffer - offer.intendedAdults > 1 ? 'ren' : ''})` : ''}
                                                         </div>
-                                                    </div>
-                                                )}
-                                                {category.categoryFacilities && category.categoryFacilities.length > 0 && (
-                                                    <div className="mt-1.5">
-                                                        <p className="text-xs font-semibold text-indigo-700 flex items-center"><Wrench size={13} className="mr-1" />Facilities:</p>
-                                                            <div className="flex flex-wrap gap-1 mt-0.5">
-                                                            {category.categoryFacilities.slice(0,3).map(fac => <span key={fac} className="text-[10px] bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded-sm">{fac}</span>)}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </td>
+
+                                                        {category.qty > 0 && category.qty <= 5 && <p className="text-xs text-red-600 mt-1.5 flex items-center"><AlertCircleIcon size={14} className="mr-1 shrink-0"/>Only {category.qty} rooms left on our site</p>}
+
+                                                        {offer.bedConfiguration && <p className="text-xs text-gray-700 mt-1.5 flex items-center"><Bed size={14} className="mr-1.5 text-gray-500" />{offer.bedConfiguration}</p>}
+                                                        
+                                                        {category.categoryActivities && category.categoryActivities.length > 0 && (
+                                                            <div className="mt-2">
+                                                                <p className="text-xs font-semibold text-yellow-700 flex items-center"><Sparkles size={13} className="mr-1" />Activities:</p>
+                                                                <div className="flex flex-wrap gap-1 mt-0.5">
+                                                                    {category.categoryActivities.slice(0,3).map(act => <span key={act} className="text-[10px] bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-sm">{act}</span>)}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {category.categoryFacilities && category.categoryFacilities.length > 0 && (
+                                                            <div className="mt-1.5">
+                                                                <p className="text-xs font-semibold text-indigo-700 flex items-center"><Wrench size={13} className="mr-1" />Facilities:</p>
+                                                                    <div className="flex flex-wrap gap-1 mt-0.5">
+                                                                    {category.categoryFacilities.slice(0,3).map(fac => <span key={fac} className="text-[10px] bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded-sm">{fac}</span>)}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        
+                                                    </td>
                                                 ) : null }
                                                 
                                                 <td className="block py-2 border-b lg:border-b-0 lg:table-cell lg:px-3 lg:py-3 lg:align-top lg:text-center lg:border-r lg:border-gray-300">
