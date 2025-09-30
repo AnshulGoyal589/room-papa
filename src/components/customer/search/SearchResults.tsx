@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -14,18 +14,16 @@ import {
     Plane, 
     Train, 
     Car as CarIcon, 
-    Star as StarIcon, // Explicitly import StarIcon
-    ThumbsUp,        // For "Very good" rating indicator
-    Check,           // For reservation policies
-    ChevronRight     // For "See availability" button
+    Star as StarIcon, 
+    ThumbsUp, 
+    Check,
+    ChevronRight
 } from 'lucide-react';
 import { Property } from '@/lib/mongodb/models/Property'; 
 import { Trip } from '@/lib/mongodb/models/Trip';
 import { Travelling } from '@/lib/mongodb/models/Travelling'; 
 import { Review } from '@/lib/mongodb/models/Components';
-// import { StoredRoomCategory } from '@/types/booking'; // Assuming this type is available
 
-// Define TransportationType as an enum
 export enum TransportationType {
   flight = 'flight',
   train = 'train', 
@@ -35,7 +33,6 @@ export enum TransportationType {
   other = 'other',
 }
 
-// Helper to get rating description
 const getRatingDescription = (rating?: number): { text: string; className: string } => {
   if (rating === undefined || rating === null) return { text: "No rating", className: "text-gray-600" };
   if (rating >= 9.5) return { text: "Exceptional", className: "text-green-700" };
@@ -47,21 +44,18 @@ const getRatingDescription = (rating?: number): { text: string; className: strin
   return { text: "Review score", className: "text-gray-700" };
 };
 
-// Helper to format review count
 const formatReviewCount = (reviews?: Array<Review>): string => {
   const count = reviews?.length || 0;
   if (count === 0) return "No reviews yet";
   return `${count} review${count === 1 ? '' : 's'}`;
 };
 
-// Define Sort Tabs Configuration
 const sortTabsConfig: Array<{ key: string; label: string; sortByValue: string; sortOrderValue: string; forCategories?: string[] }> = [
   { key: 'recommended_desc', label: 'Our Top Picks', sortByValue: 'recommended', sortOrderValue: 'desc' },
   { key: 'price_asc', label: 'Price (lowest first)', sortByValue: 'price', sortOrderValue: 'asc' },
   { key: 'rating_desc', label: 'Rating (highest first)', sortByValue: 'rating', sortOrderValue: 'desc', forCategories: ['property', 'trip'] },
 ];
 
-// Helper to calculate nights
 const calculateNights = (checkInStr?: string | null, checkOutStr?: string | null): number => {
   if (!checkInStr || !checkOutStr) return 1; 
   try {
@@ -85,12 +79,23 @@ export default function SearchResults() {
   const currentSearchParams = useSearchParams();
   const [results, setResults] = useState<Array<Property | Trip | Travelling>>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [category, setCategory] = useState<string>('property');
-  // const [filterChips, setFilterChips] = useState<Array<{key: string, value: string}>>([]);
   const [activeSortKey, setActiveSortKey] = useState<string>('recommended_desc');
+
+  const observer = useRef<IntersectionObserver | null>(null);
+  const lastResultElementRef = useCallback((node: HTMLDivElement | null) => {
+    if (isLoading) return;
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        setPage(prevPage => prevPage + 1);
+      }
+    }, { threshold: 0.5 }); // Trigger when 50% of the element is visible
+    if (node) observer.current.observe(node);
+  }, [isLoading, hasMore]);
 
   useEffect(() => {
     const params: { [key: string]: string } = {};
@@ -98,16 +103,9 @@ export default function SearchResults() {
       params[key] = value;
     });
 
-    setCurrentPage(parseInt(params.page || '1'));
     const currentCategory = params.category || 'property';
     setCategory(currentCategory);
     
-    const chips: Array<{key: string, value: string}> = [];
-    Object.entries(params).forEach(([key, value]) => {
-      if (key !== 'page' && key !== 'sortBy' && key !== 'sortOrder' && key !== 'category' && value) {
-        chips.push({ key, value });
-      }
-    });
     const currentSortBy = params.sortBy;
     const currentSortOrder = params.sortOrder;
     if (currentSortBy) {
@@ -117,25 +115,28 @@ export default function SearchResults() {
       setActiveSortKey(defaultSortTab ? defaultSortTab.key : 'recommended_desc');
     }
 
+    // Reset results and page when search parameters change
+    setResults([]);
+    setPage(1);
+    setHasMore(true);
   }, [currentSearchParams]);
 
   useEffect(() => {
     const loadData = async () => {
+      if (!hasMore && page > 1) { // Prevent fetching if no more data and not the initial load
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       const params = new URLSearchParams(currentSearchParams?.toString() || '');
-      if (!params.has('category')) {
-        params.set('category', category); 
-      }
-      if (!params.has('page')) {
-        params.set('page', currentPage.toString()); 
-      }
+      params.set('category', category); 
+      params.set('page', page.toString());
       
       const activeSortOption = sortTabsConfig.find(tab => tab.key === activeSortKey);
       if (activeSortOption) {
-        if(!params.has('sortBy') && activeSortOption.sortByValue !== 'recommended') { 
-            params.set('sortBy', activeSortOption.sortByValue);
-            params.set('sortOrder', activeSortOption.sortOrderValue);
-        } 
+        params.set('sortBy', activeSortOption.sortByValue);
+        params.set('sortOrder', activeSortOption.sortOrderValue);
       }
       
       try {
@@ -144,67 +145,31 @@ export default function SearchResults() {
           throw new Error(`API Error: ${response.status}`);
         }
         const data = await response.json();
-        // console.log('Search results:', data);
-        // storingFrames(data.results.googleMaps);
-        setResults(data.results || []); 
+        
+        setResults(prevResults => {
+          const newResults = data.results || [];
+          // Filter out duplicates if new results contain items already in prevResults
+          const uniqueNewResults = newResults.filter((newItem: Property | Trip | Travelling) => 
+            !prevResults.some(prevItem => prevItem._id?.toString() === newItem._id?.toString())
+          );
+          return [...prevResults, ...uniqueNewResults];
+        });
         setTotalResults(data.total || 0);
-        setTotalPages(Math.ceil((data.total || 0) / (data.limit || 10)));
+        setHasMore(data.results && data.results.length > 0 && (results.length + data.results.length < data.total));
+
       } catch (error) {
         console.error('Error fetching search results:', error);
         setResults([]);
         setTotalResults(0);
-        setTotalPages(0);
+        setHasMore(false);
       } finally {
         setIsLoading(false);
       }
     };
     loadData();
-  }, [currentSearchParams, category, currentPage, activeSortKey]); 
+  }, [currentSearchParams, category, page, activeSortKey, hasMore, results.length]); 
 
-  const handlePageChange = (page: number) => {
-    if (page < 1 || page > totalPages || page === currentPage) return;
-    
-    const params = new URLSearchParams(currentSearchParams?.toString() || '');
-    params.set('page', page.toString());
-    router.push(`/search?${params.toString()}`, { scroll: false });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // const handleRemoveFilter = (chipKey: string) => {
-  //   const params = new URLSearchParams(currentSearchParams?.toString() || '');
-  //   params.delete(chipKey);
-  //   params.set('page', '1'); 
-  //   router.push(`/search?${params.toString()}`, { scroll: false });
-  // };
-
-  // const formatChipLabel = (key: string, value: string): string => {
-  //   switch (key) {
-  //       case 'minPrice': return `Min Price: ${Number(value).toLocaleString()}`;
-  //       case 'maxPrice': 
-  //           return Number(value) > 200000 ? `Max Price: ${Number(200000).toLocaleString()}+` : `Max Price: ${Number(value).toLocaleString()}`;
-  //       case 'rooms': return `${value} Room${parseInt(value) > 1 ? 's' : ''}`;
-  //       case 'city': return `City: ${value}`;
-  //       case 'country': return `Country: ${value}`;
-  //       case 'checkIn': return `Check-in: ${new Date(value).toLocaleDateString()}`;
-  //       case 'checkOut': return `Check-out: ${new Date(value).toLocaleDateString()}`;
-  //       case 'adults': return `${value} Adult${parseInt(value) > 1 ? 's' : ''}`;
-  //       case 'children': return `${value} Child${parseInt(value) > 1 ? 'ren' : ''}`;
-  //       case 'pets': return value === 'true' ? 'Pets Allowed' : 'No Pets';
-  //       case 'title': return `Keyword: ${value}`;
-  //       case 'propertyType': return `Type: ${value}`;
-  //       case 'propertyRating': return `Rating: ${value}+ Stars`;
-  //       default:
-  //         const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-  //         if (value.includes(',')) {
-  //           const values = value.split(',');
-  //           if (values.length > 2) return `${formattedKey}: ${values.slice(0, 2).join(', ')} +${values.length - 2} more`;
-  //           return `${formattedKey}: ${values.join(', ')}`;
-  //         }
-  //         return `${formattedKey}: ${value}`;
-  //     }
-  // };
-
-  const renderPropertyCard = (property: Property) => {
+  const renderPropertyCard = (property: Property, index: number) => {
     const ratingDesc = getRatingDescription(property.totalRating || property.propertyRating); // Use totalRating if available
     const reviewText = formatReviewCount(Array.isArray(property.review) ? property.review : property.review ? [property.review] : []);
     
@@ -219,26 +184,21 @@ export default function SearchResults() {
     if (adultsQuery) guestSummary += `, ${adultsQuery} adult${parseInt(adultsQuery) === 1 ? '' : 's'}`;
     if (childrenQuery && parseInt(childrenQuery) > 0) guestSummary += `, ${childrenQuery} child${parseInt(childrenQuery) === 1 ? '' : 'ren'}`;
 
-    // Attempt to get a representative room type
     const representativeRoom = property.categoryRooms && property.categoryRooms.length > 0 ? property.categoryRooms[0] : null;
     const roomTypeTitle = representativeRoom?.title || "Standard Room"; // Fallback
-    const bedConfiguration = representativeRoom?.bedConfiguration || "Comfortable bedding"; // Fallback
-    // console.log(property.reservationPolicy);
+    const bedConfiguration = representativeRoom?.bedConfiguration || "Comfortable bedding";
+    
     const hasFreeCancellation = property.reservationPolicy?.includes("Free Cancellation");
     const hasNoPrepayment = property.reservationPolicy?.includes("No prepayment needed") || property.reservationPolicy?.includes("Pay at Property");
 
-    // For "Recommended for your group" badge - simple logic for demonstration
-    // const isRecommendedForGroup = parseInt(adultsQuery) > 1 || (property.amenities?.includes("Family rooms"));
-
     const currencySymbol = property.costing?.currency === 'INR' ? '₹' : (property.costing?.currency || '$');
     
-    // Taxes: This is a placeholder. Ideally, this comes pre-calculated from backend.
-    // For demonstration, if property.costing.price and discountedPrice are per night for the group already:
-    const taxesAndCharges = property.costing ? (property.costing.price * 0.1) : 0; // Example 10% of base price
+    const taxesAndCharges = property.costing ? (property.costing.price * 0.1) : 0;
 
     return (
     <div 
       key={property._id?.toString()} 
+      ref={index === results.length - 1 && hasMore ? lastResultElementRef : null}
       className="flex flex-col sm:flex-row border border-gray-300 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 bg-white group"
     >
       {/* Image Column */}
@@ -294,14 +254,11 @@ export default function SearchResults() {
             <span className="text-[#003c95] hover:underline">{property.location?.city}</span>
             <span className="mx-1 text-gray-400">•</span>
             <span className="text-[#003c95] hover:underline">Show on map</span>
-            {/* Add distance from centre if available: e.g. <span className="mx-1 text-gray-400">•</span>12.8 km from centre */}
         </div>
 
-        {/* {isRecommendedForGroup && ( */}
-            <div className="inline-block bg-gray-100 border border-gray-300 text-gray-700 text-xs font-medium px-2 py-1 rounded-sm mb-3 self-start">
-                Recommended for you
-            </div>
-        {/* )} */}
+        <div className="inline-block bg-gray-100 border border-gray-300 text-gray-700 text-xs font-medium px-2 py-1 rounded-sm mb-3 self-start">
+            Recommended for you
+        </div>
         
         <div className="text-sm text-gray-800 mb-1">
             <span className="font-semibold">{roomTypeTitle}</span>
@@ -322,13 +279,11 @@ export default function SearchResults() {
                 <span>No prepayment needed <span className="text-gray-500">– pay at the property</span></span>
             </div>
         )}
-        
-        {/* Spacer to push button to bottom if policies are few */}
+
         <div className="flex-grow"></div> 
 
       </div>
 
-      {/* Right Price/Button Column */}
       <div className='w-full sm:w-auto sm:min-w-[200px] md:min-w-[220px] lg:min-w-[240px] p-4 flex flex-col justify-between items-center sm:items-end border-t sm:border-t-0 sm:border-l border-gray-200/80 bg-gray-50/30 sm:bg-transparent'>
         <div className="w-full text-center sm:text-right mb-3 sm:mb-0">
           {(property.totalRating || property.propertyRating) && (
@@ -349,7 +304,6 @@ export default function SearchResults() {
           {property.categoryRooms && property.categoryRooms.length > 0 && property.categoryRooms[0]?.pricing?.discountedDoubleOccupancyAdultPrice?.noMeal !== undefined && (
             <>
               <span className="text-2xl font-bold text-gray-800">
-                {/* {currencySymbol}{(property.costing.discountedPrice* numNights).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})} */}
                 {currencySymbol}
                 {(property.categoryRooms[0].pricing.discountedDoubleOccupancyAdultPrice.noMeal ).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})}
               </span>
@@ -373,7 +327,7 @@ export default function SearchResults() {
     );
   };
   
-  const renderTripCard = (trip: Trip) => {
+  const renderTripCard = (trip: Trip, index: number) => {
     const ratingDesc = getRatingDescription(trip.rating);
     const reviewText = formatReviewCount(Array.isArray(trip.review) ? trip.review : trip.review ? [trip.review] : []);
     const placeholderImage = '/placeholder-trip.jpg';
@@ -381,6 +335,7 @@ export default function SearchResults() {
     return (
       <div 
         key={trip._id?.toString()} 
+        ref={index === results.length - 1 && hasMore ? lastResultElementRef : null}
         className="flex flex-col sm:flex-row border border-gray-300 rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 bg-white group"
       >
         <div className="w-full sm:w-1/3 md:w-[250px] lg:w-[280px] h-48 sm:h-auto relative cursor-pointer" onClick={() => router.push(`/customer/trip/${trip._id}`)}>
@@ -462,7 +417,7 @@ export default function SearchResults() {
     );
   };
   
-  const renderTravellingCard = (itinerary: Travelling) => {
+  const renderTravellingCard = (itinerary: Travelling, index: number) => {
     const placeholderImage = '/placeholder-itinerary.jpg';
     const getTransportationIcon = (type?: TransportationType | string) => { 
       const iconSize = 14; 
@@ -479,6 +434,7 @@ export default function SearchResults() {
     return (
       <div 
         key={itinerary._id?.toString()}
+        ref={index === results.length - 1 && hasMore ? lastResultElementRef : null}
         className="flex flex-col sm:flex-row border border-gray-300 rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 bg-white group"
       >
         <div className="w-full sm:w-1/3 md:w-[250px] lg:w-[280px] h-48 sm:h-auto relative cursor-pointer" onClick={() => router.push(`/customer/travelling/${itinerary._id}`)}>
@@ -550,17 +506,17 @@ export default function SearchResults() {
   };
 
   return (
-    <div className="bg-[#003c95]/20 min-h-screen py-6 sm:py-8 px-2 sm:px-4 md:px-6 lg:px-8"> {/* Added light blue background to outer container */}
-      <div className="max-w-6xl mx-auto"> {/* Content wrapper */}
+    <div className="bg-[#003c95]/20 min-h-screen py-6 sm:py-8 px-2 sm:px-4 md:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
 
         <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-3 sm:mb-4"> 
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2 sm:mb-0">
-            {isLoading ? 'Searching...' : `${totalResults} match${totalResults !== 1 ? 'es' : ''} found`}
+            {isLoading && results.length === 0 ? 'Searching...' : `${totalResults} match${totalResults !== 1 ? 'es' : ''} found`}
           </h2>
         </div>
 
         
-        {isLoading ? (
+        {results.length === 0 && isLoading ? (
           <div className="grid grid-cols-1 gap-4 sm:gap-6">
             {[...Array(3)].map((_, index) => ( 
               <div key={index} className="flex flex-col sm:flex-row border border-gray-200 rounded-lg overflow-hidden bg-white h-[260px] sm:h-[220px] md:h-[200px]">
@@ -583,78 +539,57 @@ export default function SearchResults() {
           </div>
         ) : results.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:gap-5 mb-8 sm:mb-12"> 
-            {results.map((item) => {
-              // console.log("Rendering item:", item);
+            {results.map((item, index) => {
+              
               if (!item || typeof item._id === 'undefined') {
                   console.warn("Search result item is missing _id or is null:", item);
-                  return null; 
+                  return null;
               }
               switch (category) {
                 case 'trip':
-                  return renderTripCard(item as Trip);
+                  return renderTripCard(item as Trip, index);
                 case 'travelling':
-                  return renderTravellingCard(item as Travelling);
-                default: 
-                  return renderPropertyCard(item as Property);
-              }
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-10 sm:py-16 bg-white rounded-lg shadow">
-            <MapPin size={40} className="mx-auto text-gray-400 mb-3 sm:mb-4 sm:w-12 sm:h-12" />
-            <h3 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-1 sm:mb-2">No results found</h3>
-            <p className="text-sm sm:text-base text-gray-500">Try adjusting your search filters or check back later.</p>
-          </div>
-        )}
-        
-        {totalPages > 1 && !isLoading && (
-          <div className="flex justify-center mt-8 sm:mt-10">
-            <nav className="flex items-center space-x-1 sm:space-x-2">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md border bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm font-medium shadow-sm"
-              >
-                Previous
-              </button>
-              
-              {[...Array(totalPages)].map((_, index) => {
-                const pageNumber = index + 1;
-                const showPage = pageNumber === 1 || pageNumber === totalPages || (pageNumber >= currentPage - 2 && pageNumber <= currentPage + 2); 
-                const showEllipsisStart = pageNumber === currentPage - 3 && currentPage > 4 && totalPages > 7; 
-                const showEllipsisEnd = pageNumber === currentPage + 3 && currentPage < totalPages - 3 && totalPages > 7; 
-
-                if (showPage) {
-                  return (
-                    <button
-                      key={pageNumber}
-                      onClick={() => handlePageChange(pageNumber)}
-                      className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors shadow-sm ${
-                        pageNumber === currentPage
-                          ? 'bg-[#003c95] text-white border border-[#003c95]'
-                          : 'border bg-white text-gray-600 hover:bg-gray-100 hover:border-gray-400'
-                      }`}
-                    >
-                      {pageNumber}
-                    </button>
-                  );
-                } else if (showEllipsisStart || showEllipsisEnd) {
-                  return <span key={`ellipsis-${pageNumber}`} className="px-1 sm:px-2 py-1.5 sm:py-2 text-gray-500 text-xs sm:text-sm">...</span>;
+                  return renderTravellingCard(item as Travelling, index);
+                default:
+                  return renderPropertyCard(item as Property, index);
                 }
-                return null;
               })}
-              
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages || totalPages === 0}
-                className="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md border bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm font-medium shadow-sm"
-              >
-                Next
-              </button>
-            </nav>
-          </div>
-        )}
-      </div> {/* End of max-w-6xl mx-auto */}
-    </div>
-  );
-}
+              {isLoading && hasMore && (
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 mt-4">
+                {[...Array(2)].map((_, index) => ( // Show a couple of loading skeletons
+                <div key={`loading-${index}`} className="flex flex-col sm:flex-row border border-gray-200 rounded-lg overflow-hidden bg-white h-[260px] sm:h-[220px] md:h-[200px]">
+                <div className="w-full sm:w-[240px] md:w-[260px] lg:w-[280px] bg-gray-200 animate-pulse h-1/2 sm:h-full"></div>
+                <div className="flex-grow p-3 sm:p-4 flex flex-col">
+                <div className="h-5 sm:h-6 bg-gray-200 rounded w-3/4 mb-2 animate-pulse"></div>
+                <div className="h-3 sm:h-4 bg-gray-200 rounded w-1/2 mb-3 sm:mb-4 animate-pulse"></div>
+                <div className="h-3 sm:h-4 bg-gray-200 rounded w-full mb-1 animate-pulse"></div>
+                <div className="h-3 sm:h-4 bg-gray-200 rounded w-5/6 mb-auto animate-pulse"></div>
+                <div className="h-8 sm:h-10 bg-gray-200 rounded w-1/2 sm:w-1/3 ml-auto animate-pulse mt-2"></div>
+                </div>
+                <div className="w-full sm:w-auto sm:min-w-[200px] md:min-w-[220px] lg:min-w-[240px] p-4 bg-gray-100/50 sm:bg-transparent border-t sm:border-t-0 sm:border-l animate-pulse flex flex-col justify-end items-end">
+                <div className="h-4 bg-gray-200 rounded w-20 mb-2 self-end"></div>
+                <div className="h-6 bg-gray-200 rounded w-24 mb-1 self-end"></div>
+                <div className="h-4 bg-gray-200 rounded w-28 mb-2 self-end"></div>
+                <div className="h-10 bg-gray-200 rounded w-full"></div>
+                </div>
+                </div>
+                ))}
+                </div>
+                )}
+                {!hasMore && results.length > 0 && (
+                <div className="text-center py-6 text-gray-500">
+                You&apos;ve reached the end of the results.
+                </div>
+                )}
+                </div>
+                ) : (
+                <div className="text-center py-10 sm:py-16 bg-white rounded-lg shadow">
+                <MapPin size={40} className="mx-auto text-gray-400 mb-3 sm:mb-4 sm:w-12 sm:h-12" />
+                <h3 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-1 sm:mb-2">No results found</h3>
+                <p className="text-sm sm:text-base text-gray-500">Try adjusting your search filters or check back later.</p>
+                </div>
+                )}
+                </div>
+                </div>
+                );
+                }
