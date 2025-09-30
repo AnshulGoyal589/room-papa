@@ -79,6 +79,26 @@ const RazorpayPaymentButton: React.FC<RazorpayPaymentButtonProps> = ({
         // loadRazorpayScript("https://checkout.razorpay.com/v1/checkout.js");
     }, []);
 
+    const sendMail = async ( bookingPayload: any) => {
+        try {
+            const response = await fetch('/api/bookings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bookingPayload)
+            });
+            // console.log("Email API response:", response);
+            // console.log("data:", bookingPayload);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to send email');
+            }
+        } catch (error) {
+            console.error('Error sending booking confirmation email:', error);
+        }
+    };
+
+    // --- Main payment handler ---
+
     const handlePayment = async () => {
         if (!razorpayKeyId) {
             onPaymentError("Payment gateway key is not configured.");
@@ -149,6 +169,9 @@ const RazorpayPaymentButton: React.FC<RazorpayPaymentButtonProps> = ({
                         }
 
                         const confirmationData = await verificationResponse.json();
+                        await sendMail( bookingPayload);
+                        // 4. Call success callback with confirmation data
+
                         onPaymentSuccess(confirmationData);
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     } catch (verificationError: any) {
@@ -185,7 +208,7 @@ const RazorpayPaymentButton: React.FC<RazorpayPaymentButtonProps> = ({
             });
             rzp.open();
 
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error("Payment initiation error:", error);
             onPaymentError(error.message || "An unexpected error occurred while initiating payment.");

@@ -10,6 +10,7 @@ import {
 import RazorpayPaymentButton from '@/components/payment/RazorpayPaymentButton';
 import { DisplayableRoomOffer } from '@/types/booking';
 import { ReservationData } from '@/lib/mongodb/models/Components';
+import { send } from 'process';
 
 const RESERVATION_DATA_KEY = 'reservationData_v1';
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "";
@@ -48,8 +49,7 @@ const Stepper = () => (
 export default function ReservationForm({ propertyId }: { propertyId: string }) {
     const router = useRouter();
     const { user, isLoaded, isSignedIn } = useUser();
-
-    // --- State Management (Original + New states for Booking.com fields) ---
+    // console.log("PropertyId in ReservationForm:", propertyId);
     const [reservationDetails, setReservationDetails] = useState<ReservationData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -75,6 +75,7 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
     const [bookingConfirmed, setBookingConfirmed] = useState(false);
     // const [paymentError, setPaymentError] = useState<string | null>(null);
 
+   
     // --- Logic Hooks (Unchanged) ---
     useEffect(() => {
         const storedData = localStorage.getItem(RESERVATION_DATA_KEY);
@@ -110,6 +111,7 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
         if (!reservationDetails) return [];
         const instances: { key: string; offer: DisplayableRoomOffer }[] = [];
         Object.entries(reservationDetails.selectedOffers).forEach(([offerId, qty]) => {
+            // console.log("offerId, qty: ", offerId, qty);
             const offer = reservationDetails.displayableRoomOffers.find(o => o.offerId === offerId);
             if (offer) {
                 for (let i = 0; i < qty; i++) {
@@ -204,7 +206,7 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
 
                         {/* Right Column - User Details & Forms */}
                         <div className="lg:col-span-2 space-y-6">
-                            {isSignedIn && user && <div className="bg-[#001d2c] border border-[#001d2c] rounded-md p-4 flex items-center space-x-4"><Image src={user.imageUrl} alt="user avatar" width={40} height={40} className="rounded-full" /><p>You are signed in as <span className="font-bold">{user.emailAddresses[0].emailAddress}</span></p></div>}
+                            {isSignedIn && user && <div className="bg-[#001d2c] border border-[#001d2c] rounded-md p-4 flex items-center space-x-4"><Image src={user.imageUrl} alt="user avatar" width={40} height={40} className="rounded-full" /><p className='text-white' >You are signed in as <span className="font-bold">{user.emailAddresses[0].emailAddress}</span></p></div>}
                             
                             <div className="bg-white p-6 rounded-lg border border-gray-200">
                                 <h2 className="text-2xl font-bold text-gray-800">Enter your details</h2>
@@ -309,7 +311,19 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                             id: propertyId, title: propertyTitle, ownerId: reservationDetails.ownerId, locationFrom: "NA", locationTo: `${propertyLocation.address}, ${propertyLocation.city}`, type: reservationDetails.propertyType, reservationPolicy: reservationDetails.reservationPolicy,
                                         },
                                         bookingDetails: { 
-                                            checkIn: checkIn.toISOString(), checkOut: checkOut.toISOString(), adults: reservationDetails.adultCount, children: reservationDetails.childCount, totalGuests: globalGuestCount, totalRoomsSelected: reservationDetails.totalSelectedPhysicalRooms, selectedMealPlan: reservationDetails.selectedMealPlan, roomsDetail: Object.entries(reservationDetails.selectedOffers).filter(([, qty]) => qty > 0).map(([offerId, qty]) => { const offer = reservationDetails.displayableRoomOffers.find(o => o.offerId === offerId); return { categoryId: offer?.categoryId || 'unknown', offerKey: offerId.split('_').slice(1).join('_'), title: offer?.categoryTitle || 'Unknown', qty, estimatedPricePerRoomNight: offer?.pricePerNight || 0, currency: offer?.currency || pricingDetails.currency }; 
+                                            checkIn: checkIn.toISOString(),
+                                            checkOut: checkOut.toISOString(),
+                                            adults: reservationDetails.adultCount,
+                                            children: reservationDetails.childCount,
+                                            totalGuests: globalGuestCount,
+                                            totalRoomsSelected: reservationDetails.totalSelectedPhysicalRooms,
+                                            selectedMealPlan: reservationDetails.selectedMealPlan,
+                                            roomsDetail: Object.entries(reservationDetails.selectedOffers).filter(([, qty]) => qty > 0).map(([offerId, qty]) => { const offer = reservationDetails.displayableRoomOffers.find(o => o.offerId === offerId); return { categoryId: propertyId || 'unknown',
+                                            // roomsDetail: Object.entries(reservationDetails.selectedOffers).filter(([, qty]) => qty > 0).map(([offerId, qty]) => { const offer = reservationDetails.displayableRoomOffers.find(o => o.offerId === offerId); return { categoryId: offer?.categoryId || 'unknown',
+                                            offerKey: offerId.split('_').slice(1).join('_'),
+                                            title: offer?.categoryTitle || 'Unknown', qty,
+                                            estimatedPricePerRoomNight: offer?.pricePerNight || 0,
+                                            currency: offer?.currency || pricingDetails.currency }; 
                                         }),
                                         calculatedPricePerNight: pricingDetails.totalBookingPricePerNight, 
                                         currency: pricingDetails.currency,

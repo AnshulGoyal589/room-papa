@@ -1,5 +1,3 @@
-// FILE: components/booking/BookingsList.tsx
-
 'use client';
 
 import React, { useState } from 'react';
@@ -9,7 +7,6 @@ import {
 } from 'lucide-react';
 import { Booking } from '@/lib/mongodb/models/Booking';
 
-// --- Helper Functions ---
 
 const getStatusClasses = (status: string) => {
     switch (status) {
@@ -33,8 +30,8 @@ const getBookingIcon = (type: Booking['type']) => {
     }
 };
 
-// --- Booking Card Component ---
 const BookingCard = ({ booking, onSelect }: { booking: Booking; onSelect: (booking: Booking) => void }) => {
+    console.log('Rendering BookingCard for booking:', booking);
     return (
         <motion.div
             layout
@@ -46,14 +43,14 @@ const BookingCard = ({ booking, onSelect }: { booking: Booking; onSelect: (booki
         >
             <div className="p-4 flex-grow">
                 <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-lg text-gray-900 pr-4">{booking.tripDetails.title}</h3>
+                    <h3 className="font-bold text-lg text-gray-900 pr-4">{booking?.tripDetails?.title || 'Untitled Trip'}</h3>
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ring-1 ring-inset ${getStatusClasses(booking.status)}`}>
                         {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                     </span>
                 </div>
                 <div className="flex items-center text-sm text-gray-500 mb-4">
                     <MapPin size={14} className="mr-1.5" />
-                    <span>{booking.tripDetails.locationTo}</span>
+                    <span>{booking?.tripDetails?.locationTo}</span>
                 </div>
                 <div className="space-y-3 text-sm border-t pt-3">
                     <div className="flex items-center text-gray-700">
@@ -63,7 +60,6 @@ const BookingCard = ({ booking, onSelect }: { booking: Booking; onSelect: (booki
                     </div>
                     <div className="flex items-center text-gray-700">
                         <Hash size={14} className="mr-2.5 text-gray-500" />
-                        {/* The _id from MongoDB is an object on the server, but a string after JSON serialization */}
                         <span>ID: {(booking._id as unknown as string).slice(-8)}</span>
                     </div>
                 </div>
@@ -114,8 +110,6 @@ const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Bo
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
     const isCheckInFuture = new Date(booking.bookingDetails.checkIn) > new Date();
-    // In a real app, you would check a `cancellationPolicy` field from the booking data.
-    // For this example, we'll assume any confirmed future booking is cancellable.
     const isCancellable = booking.status === 'confirmed' && isCheckInFuture;
 
     const handleConfirmCancel = async () => {
@@ -124,11 +118,10 @@ const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Bo
             const response = await fetch(`/api/bookings/${booking._id}/cancel`, { method: 'POST' });
             if (!response.ok) throw new Error('Failed to cancel booking.');
             const updatedBooking = await response.json();
-            onBookingUpdate(updatedBooking); // Update the state in the parent component
-            setShowCancelConfirm(false); // Close the confirmation modal
+            onBookingUpdate(updatedBooking);
+            setShowCancelConfirm(false);
         } catch (error) {
             console.error(error);
-            // Here you would show a toast message to the user
         } finally {
             setIsCancelling(false);
         }
@@ -157,8 +150,8 @@ const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Bo
                     {/* Header */}
                     <div className="p-5 sticky top-0 bg-white/80 backdrop-blur-lg border-b z-10 flex justify-between items-center">
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900">{booking.tripDetails.title}</h2>
-                            <p className="text-sm text-gray-500">{booking.tripDetails.locationTo}</p>
+                            <h2 className="text-2xl font-bold text-gray-900">{booking?.tripDetails?.title}</h2>
+                            <p className="text-sm text-gray-500">{booking?.tripDetails?.locationTo}</p>
                         </div>
                         <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
                     </div>
@@ -240,17 +233,15 @@ const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Bo
 
 // --- Main List Component ---
 export default function BookingsList({ initialBookings }: { initialBookings: Booking[] }) {
-    // Take the server-provided bookings and put them into client state so they can be updated.
+    
     const [bookings, setBookings] = useState<Booking[]>(initialBookings);
     const [filter, setFilter] = useState<'all' | 'upcoming' | 'past'>('all');
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
-    // This function allows the modal to update the list's state after a cancellation.
     const handleBookingUpdate = (updatedBooking: Booking) => {
         setBookings(currentBookings =>
             currentBookings.map(b => (b._id as unknown as string) === (updatedBooking._id as unknown as string) ? updatedBooking : b)
         );
-        // If the updated booking is the one currently selected, update it in the modal too
         if (selectedBooking?._id === updatedBooking._id) {
             setSelectedBooking(updatedBooking);
         }
@@ -268,7 +259,6 @@ export default function BookingsList({ initialBookings }: { initialBookings: Boo
 
     return (
         <div>
-            {/* Filter Controls */}
             <div className="flex items-center space-x-2 mb-6 bg-white p-2 rounded-lg shadow-sm border w-fit">
                 {(['all', 'upcoming', 'past'] as const).map(f => (
                     <button
@@ -281,22 +271,22 @@ export default function BookingsList({ initialBookings }: { initialBookings: Boo
                 ))}
             </div>
 
-            {/* Bookings Grid */}
             <AnimatePresence>
                 {filteredBookings.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {filteredBookings.map(booking => <BookingCard key={(booking._id as unknown as string)} booking={booking} onSelect={setSelectedBooking} />)}
+                        {filteredBookings.map(booking => (
+                            <BookingCard key={(booking._id as unknown as string)} booking={booking} onSelect={setSelectedBooking} />
+                        ))}
                     </div>
                 ) : (
                     <div className="text-center py-16 px-6 bg-white rounded-lg shadow-sm border">
-                         <FileText size={48} className="mx-auto text-gray-300" />
+                        <FileText size={48} className="mx-auto text-gray-300" />
                         <h3 className="mt-4 text-xl font-semibold text-gray-800">No Bookings Found</h3>
                         <p className="mt-1 text-gray-500">You have no {filter !== 'all' ? filter : ''} bookings.</p>
                     </div>
                 )}
             </AnimatePresence>
 
-            {/* Detail Modal */}
             <AnimatePresence>
                 {selectedBooking && <BookingDetailModal booking={selectedBooking} onClose={() => setSelectedBooking(null)} onBookingUpdate={handleBookingUpdate}/>}
             </AnimatePresence>

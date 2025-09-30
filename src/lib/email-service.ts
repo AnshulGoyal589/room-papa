@@ -8,7 +8,7 @@ const transporter = nodemailer.createTransport({
   port: parseInt(process.env.EMAIL_PORT || '587'),
   secure: process.env.EMAIL_SECURE === 'true',
   auth: {
-    user: process.env.EMAIL_USER,
+    user: process.env.EMAIL_ADMIN,
     pass: process.env.EMAIL_PASSWORD,
   },
 });
@@ -33,11 +33,11 @@ export async function sendRoleConfirmationEmail(email: string) {
   try {
     await transporter.sendMail({
       from: email,
-      to: process.env.admin_mail || 'roompapa7@gmail.com' ,
+      to: process.env.ADMIN_EMAIL || 'roompapa7@gmail.com',
       subject: subject,
       html: emailHtml,
     });
-    console.log(`Role approval email sent successfully from ${email}`);
+    // console.log(`Role approval email sent successfully from ${email}`);
   } catch (error) {
     console.error(`Error sending role confirmation email to ${email}:`, error);
     // Re-throw the error so the API route can catch it and send a 500 response
@@ -131,7 +131,7 @@ export async function sendBookingConfirmationEmail(booking: BookingDetails) {
   // Send email to all recipients
   try {
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || 'bookings@example.com',
+      from: process.env.EMAIL_ADMIN || 'roompapa7@gmail.com',
       to: recipients.join(', '),
       subject: `${booking.type.charAt(0).toUpperCase() + booking.type.slice(1)} Booking Confirmation - ${details.title}`,
       html: emailHtml,

@@ -120,7 +120,7 @@ export default function QuickTripPlanner() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl py-24 px-4 sm:px-6"> {/* Adjusted container and padding */}
+    <div className="mx-auto max-w-7xl py-20 px-4 sm:px-6"> {/* Adjusted container and padding */}
       <h2 className="text-3xl font-bold mb-2 text-charcoal-text">
         Craft Your Perfect India Itinerary
       </h2>

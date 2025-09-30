@@ -910,6 +910,7 @@ export default function PropertyDetailPage() {
         setBookingError(null);
         setAvailabilityError(null);
     };
+    
     const handleBookNowOrReserveClick = () => {
         if (!isLoaded || !property) return;
         let localError: string | null = null;
@@ -954,6 +955,7 @@ export default function PropertyDetailPage() {
             router.push(`/customer/book/${property._id}`);
         }
     };
+
     const renderRatingStars = (rating: number, starSize: string = "w-4 h-4") => (
         <div className="flex items-center">
             {[1, 2, 3, 4, 5].map(star => (

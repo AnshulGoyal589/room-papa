@@ -65,7 +65,7 @@ export async function POST(request: Request) {
         // At this point, the payment is confirmed to be authentic.
         
         // Map the payload from the frontend to the structure your repository's createBooking method expects.
-        // console.log("hurrah: ", bookingPayload);
+        
         const bookingInput: BookingInputData = {
             type: bookingPayload.type, // 'property', 'travelling', etc.
             details: {
@@ -93,14 +93,15 @@ export async function POST(request: Request) {
                 userId: bookingPayload.userId, 
             },
             recipients: bookingPayload.recipients,
-            userId: bookingPayload.userId, // Top-level userId for easy querying
+            userId: bookingPayload.userId,
         };
+
+        // console.log("Booking input constructed for creation:", bookingInput);
 
         const bookingRepository = await getBookingRepository();
 
-        // console.log("Creating booking with input:", bookingPayload);
+        // console.log("Creating booking with input:", bookingPayload.bookingDetails.roomsDetail);
         
-        // The repository handles the creation logic.
         const { id: newBookingId } = await bookingRepository.createBooking(bookingInput);
 
         // --- 3. Update Property Availability to Prevent Double Booking ---
@@ -115,6 +116,8 @@ export async function POST(request: Request) {
             const validRoomsToUpdate = bookingPayload.bookingDetails.roomsDetail.filter(
                 (room: { categoryId: string }) => room.categoryId && ObjectId.isValid(room.categoryId)
             );
+
+            // console.log("Blocking dates:", datesToBlock, "for rooms:", validRoomsToUpdate);
 
             // If there are no valid rooms to update, we can skip this step.
             if (validRoomsToUpdate.length > 0) {

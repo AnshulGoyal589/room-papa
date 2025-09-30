@@ -144,7 +144,7 @@ export default function SearchResults() {
           throw new Error(`API Error: ${response.status}`);
         }
         const data = await response.json();
-        console.log('Search results:', data);
+        // console.log('Search results:', data);
         // storingFrames(data.results.googleMaps);
         setResults(data.results || []); 
         setTotalResults(data.total || 0);
@@ -584,7 +584,7 @@ export default function SearchResults() {
         ) : results.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:gap-5 mb-8 sm:mb-12"> 
             {results.map((item) => {
-              console.log("Rendering item:", item);
+              // console.log("Rendering item:", item);
               if (!item || typeof item._id === 'undefined') {
                   console.warn("Search result item is missing _id or is null:", item);
                   return null; 

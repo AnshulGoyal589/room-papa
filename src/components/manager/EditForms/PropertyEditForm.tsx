@@ -572,7 +572,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
             <h3 className="text-xl font-medium text-gray-700">Current Room Categories:</h3>
             {(formData.categoryRooms || []).map((cat: StoredRoomCategory) => {
                 const pricing = cat.pricing || initialNewCategoryState.pricing;
-                console.log( "Testing Pricing" , pricing);
+                // console.log( "Testing Pricing" , pricing);
                 const currency = cat.currency || "USD";
                 return (
                 <div key={cat.id} className="p-4 bg-white border border-gray-200 rounded-lg shadow">

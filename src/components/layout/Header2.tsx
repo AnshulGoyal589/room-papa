@@ -176,7 +176,7 @@ export function Header2() {
   // --- UI Logic ---
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
-  console.log("Role:", role);
+  // console.log("Role:", role);
   const navRole: keyof typeof navLinks = role === 'guest' ? 'customer' : role;
   const currentNavLinks = navLinks[navRole];
 
