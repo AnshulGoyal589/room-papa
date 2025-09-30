@@ -1027,7 +1027,7 @@ export default function PropertyDetailPage() {
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">Property highlights</h3>
                 {highlights.length > 0 ? (
                     <div className="space-y-3">
-                        {highlights.slice(0, 4).map((item, index) => (
+                        {highlights.slice(0).map((item, index) => (
                             <div key={index} className="flex items-start">
                                 <span className="mr-2 mt-0.5 shrink-0">{React.cloneElement(item.icon, { size: 20 })}</span>
                                 <div><p className="text-sm font-semibold text-gray-700">{item.title}</p><p className="text-xs text-gray-500">{item.text.join(', ')}</p></div>
@@ -1245,7 +1245,7 @@ export default function PropertyDetailPage() {
                                                             <div className="mt-2">
                                                                 <p className="text-xs font-semibold text-yellow-700 flex items-center"><Sparkles size={13} className="mr-1" />Activities:</p>
                                                                 <div className="flex flex-wrap gap-1 mt-0.5">
-                                                                    {category.categoryActivities.slice(0,3).map(act => <span key={act} className="text-[10px] bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-sm">{act}</span>)}
+                                                                    {category.categoryActivities.slice(0).map(act => <span key={act} className="text-[10px] bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-sm">{act}</span>)}
                                                                 </div>
                                                             </div>
                                                         )}
@@ -1254,7 +1254,7 @@ export default function PropertyDetailPage() {
                                                             <div className="mt-1.5">
                                                                 <p className="text-xs font-semibold text-indigo-700 flex items-center"><Wrench size={13} className="mr-1" />Facilities:</p>
                                                                     <div className="flex flex-wrap gap-1 mt-0.5">
-                                                                    {category.categoryFacilities.slice(0,3).map(fac => <span key={fac} className="text-[10px] bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded-sm">{fac}</span>)}
+                                                                    {category.categoryFacilities.slice(0).map(fac => <span key={fac} className="text-[10px] bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded-sm">{fac}</span>)}
                                                                 </div>
                                                             </div>
                                                         )}
@@ -1320,7 +1320,7 @@ export default function PropertyDetailPage() {
                         <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center"><ListChecks className="mr-2 h-5 w-5 text-[#003c95]" />Most Popular Facilities</h2>
                         {(property.amenities || property.facilities) && ((property.amenities && property.amenities.length > 0) || (property.facilities && property.facilities.length > 0)) ? (
                             <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2`}>
-                                {(showAllAmenities ? (property.facilities || property.amenities) : (property.facilities || property.amenities).slice(0, 8)).map((item, index) => (
+                                {(showAllAmenities ? (property.facilities || property.amenities) : (property.facilities || property.amenities).slice(0)).map((item, index) => (
                                     <div key={`pop-facil-${index}`} className="flex items-center py-1">
                                         {getAmenityIcon(item)}
                                         <span className="ml-2 text-sm text-gray-700">{formatAmenityName(item)}</span>

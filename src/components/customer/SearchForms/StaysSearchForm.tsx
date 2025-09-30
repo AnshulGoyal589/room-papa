@@ -309,7 +309,7 @@ export default function StaysSearchForm() {
       });
       localStorage.setItem('checkIn', formatDateForURL(finalStartDate));
       localStorage.setItem('checkOut', formatDateForURL(finalEndDate));
-      
+      setShowGuests(true);
       setSelectionPhase(0); 
       setTimeout(() => setShowCalendar(false), 300);
     }

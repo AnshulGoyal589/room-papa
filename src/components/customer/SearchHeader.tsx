@@ -91,7 +91,7 @@ export default function SearchHeader() {
   };
 
   return (
-      <div className="relative bg-[#003c95] text-white max-h-[450px] md:max-h-[500px] lg:max-h-[450px] flex flex-col justify-between ">
+      <div className="relative bg-[#003c95] text-white max-h-[450px] md:max-h-[500px] z-50 lg:max-h-[450px] flex flex-col justify-between ">
 
         <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:max-w-7xl pb-8 pt-4 flex flex-col flex-grow">
           
