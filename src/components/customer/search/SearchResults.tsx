@@ -85,7 +85,7 @@ export default function SearchResults() {
   const currentSearchParams = useSearchParams();
   const [results, setResults] = useState<Array<Property | Trip | Travelling>>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
+  // const [currentPage, setCurrentPage] = useState(1);
   // const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [category, setCategory] = useState<string>('property');
@@ -98,7 +98,7 @@ export default function SearchResults() {
       params[key] = value;
     });
 
-    setCurrentPage(parseInt(params.page || '1'));
+    // setCurrentPage(parseInt(params.page || '1'));
     const currentCategory = params.category || 'property';
     setCategory(currentCategory);
     
@@ -126,9 +126,9 @@ export default function SearchResults() {
       if (!params.has('category')) {
         params.set('category', category); 
       }
-      if (!params.has('page')) {
-        params.set('page', currentPage.toString()); 
-      }
+      // if (!params.has('page')) {
+      //   params.set('page', currentPage.toString()); 
+      // }
       
       const activeSortOption = sortTabsConfig.find(tab => tab.key === activeSortKey);
       if (activeSortOption) {
@@ -147,7 +147,7 @@ export default function SearchResults() {
         // console.log('Search results:', data);
         // storingFrames(data.results.googleMaps);
         setResults(data.results || []); 
-        setTotalResults(data.results.size() || 0);
+        setTotalResults(data.total || 0);
         // setTotalPages(Math.ceil((data.total || 0) / (data.limit || 10)));
       } catch (error) {
         console.error('Error fetching search results:', error);
@@ -159,7 +159,7 @@ export default function SearchResults() {
       }
     };
     loadData();
-  }, [currentSearchParams, category, currentPage, activeSortKey]); 
+  }, [currentSearchParams, category, activeSortKey]);
 
   // const handlePageChange = (page: number) => {
   //   if (page < 1 || page > totalPages || page === currentPage) return;

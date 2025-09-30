@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
 
     const query = buildSearchQuery(searchParams);
     const sort = buildSortQuery(searchParams);
-    const pageSize = parseInt(searchParams.get('pageSize') || '10');
-    const page = parseInt(searchParams.get('page') || '1');
+    // const pageSize = parseInt(searchParams.get('pageSize') || '10');
+    // const page = parseInt(searchParams.get('page') || '1');
 
     const collectionName = getCategoryCollection(category);
     if (!collectionName) {
@@ -36,8 +36,6 @@ export async function GET(request: NextRequest) {
     const results = await db.collection(collectionName)
       .find(query)
       .sort(sort)
-      .skip((page - 1) * pageSize)
-      .limit(pageSize)
       .toArray();
 
       
@@ -47,9 +45,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ 
       results: plainResults, 
       total,
-      page,
-      pageSize,
-      totalPages: Math.ceil(total / pageSize)
+      totalPages: plainResults.length
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error 

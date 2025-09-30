@@ -12,6 +12,7 @@ export async function GET(
     const { searchParams } = request.nextUrl;
 
     const {category} = await params;
+    // console.log("category: ", category);
     // const category = params.category;
 
     const query = buildCategoryQuery(searchParams, category);
@@ -41,6 +42,8 @@ export async function GET(
       .find(query)
       .sort(sort)
       .toArray();
+
+    // console.log("results: ", results);
 
     return NextResponse.json({ results, total });
   } catch (error: unknown) {
