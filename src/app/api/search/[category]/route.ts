@@ -17,8 +17,8 @@ export async function GET(
     const query = buildCategoryQuery(searchParams, category);
     const sort = buildSortQuery(searchParams);
 
-    const pageSize = 10;
-    const page = parseInt(searchParams.get('page') || '1');
+    // const pageSize = 10;
+    // const page = parseInt(searchParams.get('page') || '1');
 
     let collection: string;
     switch (category) {
@@ -40,8 +40,6 @@ export async function GET(
     const results = await db.collection(collection)
       .find(query)
       .sort(sort)
-      .skip((page - 1) * pageSize)
-      .limit(pageSize)
       .toArray();
 
     return NextResponse.json({ results, total });
