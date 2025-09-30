@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import StaysSearchForm from './SearchForms/StaysSearchForm';
 import { usePathname } from 'next/navigation';
-// import { Header } from '../layout/Header';
 
 export type TabId = 'property' | 'travelling' | 'flight+hotel' | 'car-rentals' | 'attractions' | 'airport-taxis';
 const VALID_TABS: TabId[] = ['property', 'travelling', 'flight+hotel', 'car-rentals', 'attractions', 'airport-taxis'];
@@ -93,10 +92,6 @@ export default function SearchHeader() {
 
   return (
       <div className="relative bg-[#003c95] text-white max-h-[450px] md:max-h-[500px] lg:max-h-[450px] flex flex-col justify-between ">
-
-        {/* <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/40"></div> */}
-
-        {/* <Header /> */}
 
         <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:max-w-7xl pb-8 pt-4 flex flex-col flex-grow">
           

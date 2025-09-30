@@ -157,7 +157,7 @@ export default function StaysSearchForm() {
         effectiveEndDate.setDate(effectiveStartDate.getDate() + 7);
       }
       
-      if (effectiveEndDate.getTime() < effectiveStartDate.getTime()) {
+      if (effectiveEndDate.getTime() <= effectiveStartDate.getTime()) {
           effectiveEndDate = new Date(effectiveStartDate);
           effectiveEndDate.setDate(effectiveStartDate.getDate() + 7);
       }
@@ -295,11 +295,14 @@ export default function StaysSearchForm() {
       let finalStartDate = currentStartDate;
       let finalEndDate = newDate;
       
-      if (newDate.getTime() < currentStartDate.getTime()) { 
+      if (newDate.getTime() < currentStartDate.getTime()) {
         finalStartDate = newDate;
         finalEndDate = currentStartDate;
+      } else if (newDate.getTime() === currentStartDate.getTime()) {
+        // If selected same date for start and end, make end date 1 day after start date
+        finalEndDate = new Date(currentStartDate);
+       finalEndDate.setDate(currentStartDate.getDate() + 1);
       }
-      
       setDateRange({ 
         startDate: finalStartDate,
         endDate: finalEndDate
@@ -419,6 +422,7 @@ export default function StaysSearchForm() {
           localStorage.setItem('checkIn', formatDateForURL(sDate));
           localStorage.setItem('checkOut', formatDateForURL(eDate));
           setSelectionPhase(0);
+          setShowGuests(true); // Open guests selector after date selection
         }
       }
       if (guestsRef.current && !guestsRef.current.contains(event.target as Node)) {
@@ -509,7 +513,7 @@ export default function StaysSearchForm() {
                 const currentStartDate = dateRange.startDate;
                 setSelectedMonth(currentStartDate.getMonth());
                 setSelectedYear(currentStartDate.getFullYear());
-                if(selectionPhase === 1 && dateRange.startDate.getTime() === dateRange.endDate.getTime()){
+                if(selectionPhase === 1){
                   // If only start date was selected, keep phase 1
                 } else {
                    setSelectionPhase(0); 
@@ -534,7 +538,7 @@ export default function StaysSearchForm() {
           {showCalendar && (
             <div 
               ref={calendarRef}
-              className="absolute left-0 mt-2 bg-white shadow-lg rounded-lg p-4 z-20 border border-gray-200 w-full md:w-[650px]"
+              className="absolute left-0 lg:-top-20 -top-100  mt-2 bg-white shadow-lg rounded-lg p-4 z-20 border border-gray-200 w-full md:w-[650px]"
             >
               <div className="flex justify-between items-center mb-4">
                  <button className="text-[#003c95]">
@@ -655,7 +659,7 @@ export default function StaysSearchForm() {
           {showGuests && (
             <div 
               ref={guestsRef}
-              className="absolute right-0 mt-2 bg-white shadow-lg rounded-lg p-4 z-20 border border-gray-200 w-72"
+              className="absolute lg:right-0 left-5 -top-70 lg:-top-20 mt-2 bg-white shadow-lg rounded-lg p-4 z-20 border border-gray-200 w-72"
             >
               <div className="space-y-4">
                 <div className="flex justify-between items-center">

@@ -233,8 +233,8 @@ export function Header() {
           <Image
             src="/assets/logo.jpg"
             alt="Logo"
-            width={90}
-            height={90}
+            width={80}
+            height={80}
             className="mr-2"
             priority
           />
