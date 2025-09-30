@@ -23,7 +23,7 @@ const formatDate = (dateString: string) => new Date(dateString).toLocaleDateStri
 
 const getBookingIcon = (type: Booking['type']) => {
     switch (type) {
-        case 'property': return <Hotel size={16} className="mr-2 text-[#001d2c]" />;
+        case 'property': return <Hotel size={16} className="mr-2 text-[#003c95]" />;
         case 'trip': return <Briefcase size={16} className="mr-2 text-purple-600" />;
         case 'travelling': return <Plane size={16} className="mr-2 text-teal-600" />;
         default: return <Briefcase size={16} className="mr-2 text-gray-600" />;
@@ -39,7 +39,7 @@ const BookingCard = ({ booking, onSelect }: { booking: Booking; onSelect: (booki
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 flex flex-col hover:border-[#001d2c] hover:shadow-xl transition-all"
+            className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 flex flex-col hover:border-[#003c95] hover:shadow-xl transition-all"
         >
             <div className="p-4 flex-grow">
                 <div className="flex justify-between items-start mb-2">
@@ -67,7 +67,7 @@ const BookingCard = ({ booking, onSelect }: { booking: Booking; onSelect: (booki
             <div className="bg-gray-50 px-4 py-3 border-t flex justify-end">
                 <button 
                     onClick={() => onSelect(booking)}
-                    className="bg-[#001d2c] text-white px-4 py-1.5 rounded-md text-sm font-semibold hover:bg-[#001d2c] transition-colors"
+                    className="bg-[#003c95] text-white px-4 py-1.5 rounded-md text-sm font-semibold hover:bg-[#003c95] transition-colors"
                 >
                     View Details
                 </button>
@@ -160,7 +160,7 @@ const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Bo
                     <div className="p-6 space-y-8 flex-grow">
                         {/* Type-Specific Details using Discriminated Union */}
                         {booking.type === 'property' && (
-                            <Section title="Your Stay" icon={<Hotel size={20} className="mr-3 text-[#001d2c]"/>}>
+                            <Section title="Your Stay" icon={<Hotel size={20} className="mr-3 text-[#003c95]"/>}>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
                                     <div className="flex items-start"><Calendar size={16} className="mr-3 mt-1"/><div><p className="font-semibold">Check-in</p><p>{formatDate(booking.bookingDetails.checkIn)}</p></div></div>
                                     <div className="flex items-start"><Calendar size={16} className="mr-3 mt-1"/><div><p className="font-semibold">Check-out</p><p>{formatDate(booking.bookingDetails.checkOut)}</p></div></div>
@@ -189,7 +189,7 @@ const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Bo
                            </Section>
                         )}
 
-                        <Section title="Guest Details" icon={<User size={20} className="mr-3 text-[#001d2c]"/>}>
+                        <Section title="Guest Details" icon={<User size={20} className="mr-3 text-[#003c95]"/>}>
                             <div className="text-sm space-y-2">
                                 <p><span className="font-semibold w-28 inline-block">Main Contact:</span> {booking.guestDetails.firstName} {booking.guestDetails.lastName}</p>
                                 <p><span className="font-semibold w-28 inline-block">Email:</span> {booking.guestDetails.email}</p>
@@ -197,7 +197,7 @@ const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Bo
                             </div>
                         </Section>
                         
-                        <Section title="Payment Details" icon={<FileText size={20} className="mr-3 text-[#001d2c]"/>}>
+                        <Section title="Payment Details" icon={<FileText size={20} className="mr-3 text-[#003c95]"/>}>
                              <div className="text-sm space-y-2 p-4 bg-white rounded-lg border">
                                 {booking.type === 'property' && (
                                     <>
@@ -219,7 +219,7 @@ const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Bo
                             )}
                             {booking.status === 'cancelled' && <p className="text-sm font-semibold text-red-500">This booking has been cancelled.</p>}
                          </div>
-                        <button onClick={onClose} className="bg-[#001d2c] text-white px-5 py-2 rounded-lg font-semibold hover:bg-[#001d2c]">Close</button>
+                        <button onClick={onClose} className="bg-[#003c95] text-white px-5 py-2 rounded-lg font-semibold hover:bg-[#003c95]">Close</button>
                     </div>
                 </motion.div>
             </motion.div>
@@ -264,7 +264,7 @@ export default function BookingsList({ initialBookings }: { initialBookings: Boo
                     <button
                         key={f}
                         onClick={() => setFilter(f)}
-                        className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${filter === f ? 'bg-[#001d2c] text-white shadow' : 'text-gray-600 hover:bg-gray-200'}`}
+                        className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${filter === f ? 'bg-[#003c95] text-white shadow' : 'text-gray-600 hover:bg-gray-200'}`}
                     >
                         {f.charAt(0).toUpperCase() + f.slice(1)}
                     </button>

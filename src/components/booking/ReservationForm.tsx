@@ -10,7 +10,7 @@ import {
 import RazorpayPaymentButton from '@/components/payment/RazorpayPaymentButton';
 import { DisplayableRoomOffer } from '@/types/booking';
 import { ReservationData } from '@/lib/mongodb/models/Components';
-import { send } from 'process';
+// import { send } from 'process';
 
 const RESERVATION_DATA_KEY = 'reservationData_v1';
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "";
@@ -27,13 +27,13 @@ const renderRatingStars = (rating: number) => (
 
 const Stepper = () => (
     <div className="flex items-center justify-between max-w-lg mx-auto mb-6">
-        <div className="flex items-center text-[#001d2c]">
+        <div className="flex items-center text-[#003c95]">
             <CheckCircle className="w-6 h-6 mr-2" />
             <span className="font-semibold">Your Selection</span>
         </div>
         <div className="flex-1 border-t-2 border-gray-300 mx-4"></div>
-        <div className="flex items-center text-[#001d2c] font-bold">
-            <span className="flex items-center justify-center w-6 h-6 mr-2 border-2 border-[#001d2c] rounded-full text-sm">2</span>
+        <div className="flex items-center text-[#003c95] font-bold">
+            <span className="flex items-center justify-center w-6 h-6 mr-2 border-2 border-[#003c95] rounded-full text-sm">2</span>
             <span>Your Details</span>
         </div>
         <div className="flex-1 border-t-2 border-gray-300 mx-4"></div>
@@ -141,8 +141,8 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
     };
 
     // --- Loading and Error States (Unchanged) ---
-    if (loading) { return <div className="flex justify-center items-center min-h-screen bg-gray-100"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#001d2c] mx-auto"></div></div>; }
-    if (error || !reservationDetails) { return <div className="container mx-auto px-4 py-16 text-center"><h2 className="text-2xl font-bold text-red-600 mb-4">{error || 'Could not load reservation.'}</h2><button onClick={() => router.push('/properties')} className="mt-4 px-6 py-2 bg-[#001d2c] text-white rounded-md hover:bg-[#001d2c]">Find Properties</button></div>; }
+    if (loading) { return <div className="flex justify-center items-center min-h-screen bg-gray-100"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#003c95] mx-auto"></div></div>; }
+    if (error || !reservationDetails) { return <div className="container mx-auto px-4 py-16 text-center"><h2 className="text-2xl font-bold text-red-600 mb-4">{error || 'Could not load reservation.'}</h2><button onClick={() => router.push('/properties')} className="mt-4 px-6 py-2 bg-[#003c95] text-white rounded-md hover:bg-[#003c95]">Find Properties</button></div>; }
     
     const { propertyTitle, propertyImage, propertyLocation, propertyRating, checkInDate, checkOutDate, days, globalGuestCount, pricingDetails } = reservationDetails;
     const checkIn = new Date(checkInDate);
@@ -168,7 +168,7 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                         <p className="text-xs text-gray-600 mt-1">{propertyLocation.address}</p>
                                     </div>
                                 </div>
-                                {propertyRating && <div className="flex items-center gap-2"><div className="bg-[#001d2c] text-white font-bold text-sm px-2 py-1 rounded-md">{propertyRating.toFixed(1)}</div><span className="font-semibold">Good</span><span className="text-xs text-gray-500">1,012 reviews</span></div>}
+                                {propertyRating && <div className="flex items-center gap-2"><div className="bg-[#003c95] text-white font-bold text-sm px-2 py-1 rounded-md">{propertyRating.toFixed(1)}</div><span className="font-semibold">Good</span><span className="text-xs text-gray-500">1,012 reviews</span></div>}
                                 <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
                                     <span className="flex items-center"><Wifi size={14} className="mr-1.5"/>Free Wifi</span>
                                     <span className="flex items-center"><ParkingSquare size={14} className="mr-1.5"/>Parking</span>
@@ -184,7 +184,7 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                 </div>
                                 <div><p className="font-semibold text-sm">Total length of stay:</p><p className="text-gray-600 text-sm">{days} {days === 1 ? 'night' : 'nights'}</p></div>
                                 <hr/>
-                                <div><p className="font-semibold">You selected</p><p className="text-[#001d2c] font-bold text-sm">{roomInstances.length} room{roomInstances.length > 1 && 's'} for {globalGuestCount} guests</p><button onClick={() => router.back()} className="text-[#001d2c] text-sm font-semibold hover:underline">Change your selection</button></div>
+                                <div><p className="font-semibold">You selected</p><p className="text-[#003c95] font-bold text-sm">{roomInstances.length} room{roomInstances.length > 1 && 's'} for {globalGuestCount} guests</p><button onClick={() => router.back()} className="text-[#003c95] text-sm font-semibold hover:underline">Change your selection</button></div>
                             </div>
                             <div className="border border-gray-300 rounded-md p-4">
                                 <h3 className="font-bold text-lg">Your price summary</h3>
@@ -195,7 +195,7 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                         <p className="text-xs text-gray-500 text-right">+ {pricingDetails.currency} {pricingDetails.taxesApplied.toLocaleString(undefined, { minimumFractionDigits: 2 })} taxes and fees</p>
                                     </div>
                                 </div>
-                                <button onClick={() => setShowPriceDetails(!showPriceDetails)} className="text-[#001d2c] text-sm font-semibold hover:underline flex items-center mt-2">Price information {showPriceDetails ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</button>
+                                <button onClick={() => setShowPriceDetails(!showPriceDetails)} className="text-[#003c95] text-sm font-semibold hover:underline flex items-center mt-2">Price information {showPriceDetails ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</button>
                                 {showPriceDetails && <div className="text-xs mt-2 space-y-1 bg-gray-50 p-2 rounded">
                                     <div className="flex justify-between"><span className="text-gray-600">Subtotal</span><span>{pricingDetails.currency} {pricingDetails.subtotalNights.toFixed(2)}</span></div>
                                     <div className="flex justify-between"><span className="text-gray-600">Service charge</span><span>{pricingDetails.currency} {pricingDetails.serviceCharge.toFixed(2)}</span></div>
@@ -206,7 +206,7 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
 
                         {/* Right Column - User Details & Forms */}
                         <div className="lg:col-span-2 space-y-6">
-                            {isSignedIn && user && <div className="bg-[#001d2c] border border-[#001d2c] rounded-md p-4 flex items-center space-x-4"><Image src={user.imageUrl} alt="user avatar" width={40} height={40} className="rounded-full" /><p className='text-white' >You are signed in as <span className="font-bold">{user.emailAddresses[0].emailAddress}</span></p></div>}
+                            {isSignedIn && user && <div className="bg-[#003c95] border border-[#003c95] rounded-md p-4 flex items-center space-x-4"><Image src={user.imageUrl} alt="user avatar" width={40} height={40} className="rounded-full" /><p className='text-white' >You are signed in as <span className="font-bold">{user.emailAddresses[0].emailAddress}</span></p></div>}
                             
                             <div className="bg-white p-6 rounded-lg border border-gray-200">
                                 <h2 className="text-2xl font-bold text-gray-800">Enter your details</h2>
@@ -222,8 +222,8 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                     <div>
                                         <p className="block text-sm font-medium text-gray-700 mb-2">Who are you booking for? <span className="font-normal text-gray-500">(optional)</span></p>
                                         <div className="flex items-center space-x-6">
-                                            <label className="flex items-center cursor-pointer"><input type="radio" name="bookingFor" value="self" checked={bookingFor === 'self'} onChange={() => setBookingFor('self')} className="h-4 w-4 text-[#001d2c] focus:ring-[#001d2c] border-gray-300" /> <span className="ml-2">I&apos;m the main guest</span></label>
-                                            <label className="flex items-center cursor-pointer"><input type="radio" name="bookingFor" value="someone_else" checked={bookingFor === 'someone_else'} onChange={() => setBookingFor('someone_else')} className="h-4 w-4 text-[#001d2c] focus:ring-[#001d2c] border-gray-300" /> <span className="ml-2">I&apos;m booking for someone else</span></label>
+                                            <label className="flex items-center cursor-pointer"><input type="radio" name="bookingFor" value="self" checked={bookingFor === 'self'} onChange={() => setBookingFor('self')} className="h-4 w-4 text-[#003c95] focus:ring-[#003c95] border-gray-300" /> <span className="ml-2">I&apos;m the main guest</span></label>
+                                            <label className="flex items-center cursor-pointer"><input type="radio" name="bookingFor" value="someone_else" checked={bookingFor === 'someone_else'} onChange={() => setBookingFor('someone_else')} className="h-4 w-4 text-[#003c95] focus:ring-[#003c95] border-gray-300" /> <span className="ml-2">I&apos;m booking for someone else</span></label>
                                         </div>
                                     </div>
 
@@ -235,8 +235,8 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                     <div>
                                         <p className="block text-sm font-medium text-gray-700 mb-2">Are you traveling for work? <span className="font-normal text-gray-500">(optional)</span></p>
                                         <div className="flex items-center space-x-6">
-                                            <label className="flex items-center cursor-pointer"><input type="radio" name="travelingFor" value="work" checked={travelingFor === 'work'} onChange={() => setTravelingFor('work')} className="h-4 w-4 text-[#001d2c] focus:ring-[#001d2c] border-gray-300" /> <span className="ml-2">Yes</span></label>
-                                            <label className="flex items-center cursor-pointer"><input type="radio" name="travelingFor" value="leisure" checked={travelingFor === 'leisure'} onChange={() => setTravelingFor('leisure')} className="h-4 w-4 text-[#001d2c] focus:ring-[#001d2c] border-gray-300" /> <span className="ml-2">No</span></label>
+                                            <label className="flex items-center cursor-pointer"><input type="radio" name="travelingFor" value="work" checked={travelingFor === 'work'} onChange={() => setTravelingFor('work')} className="h-4 w-4 text-[#003c95] focus:ring-[#003c95] border-gray-300" /> <span className="ml-2">Yes</span></label>
+                                            <label className="flex items-center cursor-pointer"><input type="radio" name="travelingFor" value="leisure" checked={travelingFor === 'leisure'} onChange={() => setTravelingFor('leisure')} className="h-4 w-4 text-[#003c95] focus:ring-[#003c95] border-gray-300" /> <span className="ml-2">No</span></label>
                                         </div>
                                     </div>
 
@@ -283,15 +283,15 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                 <div>
                                     <h3 className="text-xl font-bold">Add to your stay</h3>
                                     <div className="mt-4 border border-gray-200 rounded-md divide-y divide-gray-200">
-                                        <label className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"><div className="flex items-center"><Bus size={24} className="mr-4 text-[#001d2c]"/><p className="font-semibold">I&apos;m interested in an airport shuttle</p></div><input type="checkbox" checked={wantsAirportShuttle} onChange={() => setWantsAirportShuttle(!wantsAirportShuttle)} className="h-5 w-5 rounded border-gray-300 text-[#001d2c] focus:ring-[#001d2c]"/></label>
-                                        <label className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"><div className="flex items-center"><Car size={24} className="mr-4 text-[#001d2c]"/><p className="font-semibold">I&apos;m interested in renting a car</p></div><input type="checkbox" checked={wantsCarRental} onChange={() => setWantsCarRental(!wantsCarRental)} className="h-5 w-5 rounded border-gray-300 text-[#001d2c] focus:ring-[#001d2c]"/></label>
+                                        <label className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"><div className="flex items-center"><Bus size={24} className="mr-4 text-[#003c95]"/><p className="font-semibold">I&apos;m interested in an airport shuttle</p></div><input type="checkbox" checked={wantsAirportShuttle} onChange={() => setWantsAirportShuttle(!wantsAirportShuttle)} className="h-5 w-5 rounded border-gray-300 text-[#003c95] focus:ring-[#003c95]"/></label>
+                                        <label className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"><div className="flex items-center"><Car size={24} className="mr-4 text-[#003c95]"/><p className="font-semibold">I&apos;m interested in renting a car</p></div><input type="checkbox" checked={wantsCarRental} onChange={() => setWantsCarRental(!wantsCarRental)} className="h-5 w-5 rounded border-gray-300 text-[#003c95] focus:ring-[#003c95]"/></label>
                                     </div>
                                 </div>
                                 <div>
                                     <h3 className="text-xl font-bold">Special requests</h3>
                                     <p className="text-sm text-gray-500 mt-1">Special requests can&apos;t be guaranteed, but the property will do its best to meet your needs.</p>
                                     <textarea value={specialRequests} onChange={(e) => setSpecialRequests(e.target.value)} rows={3} className="w-full p-2 border border-gray-300 rounded-md mt-2" placeholder="Please write your requests here (optional)"></textarea>
-                                    <label className="flex items-center mt-2 cursor-pointer"><input type="checkbox" checked={wantsRoomsTogether} onChange={() => setWantsRoomsTogether(!wantsRoomsTogether)} className="h-4 w-4 rounded border-gray-300 text-[#001d2c] mr-2"/>I want rooms close to each other (if available)</label>
+                                    <label className="flex items-center mt-2 cursor-pointer"><input type="checkbox" checked={wantsRoomsTogether} onChange={() => setWantsRoomsTogether(!wantsRoomsTogether)} className="h-4 w-4 rounded border-gray-300 text-[#003c95] mr-2"/>I want rooms close to each other (if available)</label>
                                 </div>
                                 <div>
                                     <h3 className="text-xl font-bold">Your arrival time</h3>
@@ -303,7 +303,7 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                             
                             <div className="text-right">
                                 <RazorpayPaymentButton
-                                    className="bg-[#001d2c] text-white font-bold py-3 px-6 rounded-md hover:bg-[#001d2c] transition-colors text-lg"
+                                    className="bg-[#003c95] text-white font-bold py-3 px-6 rounded-md hover:bg-[#003c95] transition-colors text-lg"
                                     amountInSubunits={Math.round(pricingDetails.totalBookingPricing * 100)} currency={pricingDetails.currency} receiptId={`booking_${propertyId}_${Date.now()}`}
                                     bookingPayload={{ 
                                         type: "property", 
@@ -357,7 +357,7 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                         <div className="mb-4"><div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center border-2 border-green-200"><CheckCircle className="w-10 h-10 text-green-500" /></div></div>
                         <h3 className="text-xl font-bold text-gray-800 mb-2">Booking Confirmed!</h3>
                         <p className="mb-5 text-sm text-gray-600">Your booking for <span className="font-semibold">{propertyTitle}</span> is confirmed. A confirmation email has been sent to <span className="font-semibold">{formData.email}</span>.</p>
-                        <button onClick={() => router.push('/customer/bookings')} className="w-full bg-[#001d2c] text-white py-2.5 px-4 rounded-lg font-semibold hover:bg-[#001d2c]">View My Bookings</button>
+                        <button onClick={() => router.push('/customer/bookings')} className="w-full bg-[#003c95] text-white py-2.5 px-4 rounded-lg font-semibold hover:bg-[#003c95]">View My Bookings</button>
                     </div>
                 </div>
             )}

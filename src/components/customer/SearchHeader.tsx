@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import StaysSearchForm from './SearchForms/StaysSearchForm';
 import { usePathname } from 'next/navigation';
-import { Header } from '../layout/Header';
+// import { Header } from '../layout/Header';
 
 export type TabId = 'property' | 'travelling' | 'flight+hotel' | 'car-rentals' | 'attractions' | 'airport-taxis';
 const VALID_TABS: TabId[] = ['property', 'travelling', 'flight+hotel', 'car-rentals', 'attractions', 'airport-taxis'];
@@ -92,11 +92,11 @@ export default function SearchHeader() {
   };
 
   return (
-      <div className="relative bg-[url('/images/background-hero.jpg')] bg-cover bg-center bg-no-repeat text-white max-h-[450px] md:max-h-[500px] lg:max-h-[450px] flex flex-col justify-between ">
+      <div className="relative bg-[#003c95] text-white max-h-[450px] md:max-h-[500px] lg:max-h-[450px] flex flex-col justify-between ">
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/40"></div>
+        {/* <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/40"></div> */}
 
-        <Header />
+        {/* <Header /> */}
 
         <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:max-w-7xl pb-8 pt-4 flex flex-col flex-grow">
           
@@ -110,8 +110,8 @@ export default function SearchHeader() {
                   onClick={() => handleTabChange(tab.id as TabId)}
                   className={`flex items-center px-4 py-2.5 mx-1 first:ml-4 sm:first:ml-1 last:mr-4 sm:last:mr-1 rounded-full whitespace-nowrap transition-all duration-300 ease-in-out
                     ${isActive
-                      ? 'bg-[#2D3748] text-white font-semibold shadow-lg scale-105'
-                      : 'bg-white/10 hover:bg-white/20 text-white font-medium hover:scale-105'
+                      ? 'bg-white/10 text-white font-semibold shadow-lg scale-105'
+                      : 'bg-[#003c95] hover:bg-white/10 text-white font-medium hover:scale-105'
                     }`
                   }
                 >

@@ -15,9 +15,7 @@ import {
   X,
   Ticket,
   LogIn,
-  UserPlus,
-  PlusCircle,
-  MessageSquareText
+  UserPlus
 } from 'lucide-react';
 import {
   Tooltip,
@@ -32,6 +30,7 @@ import {
   useUser,
   useClerk
 } from '@clerk/nextjs';
+import { QuestionMarkCircledIcon } from '@radix-ui/react-icons';
 
 // Type definition for user role
 type UserRole = 'customer' | 'manager' | 'admin' | 'guest';
@@ -199,7 +198,7 @@ export function Header() {
 
   if (loading) {
     return (
-      <header className="flex justify-center items-center h-20 bg-[#001d2c]">
+      <header className="flex justify-center items-center h-20 bg-[#003c95]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
       </header>
     );
@@ -224,7 +223,7 @@ export function Header() {
   
   return (
     // --- MODIFIED: Added dynamic classes for background color and transition ---
-    <header className={`text-white sticky top-0 z-50 transition-colors duration-300 ${isScrolled ? 'bg-[#001d2c] shadow-md' : 'bg-transparent'}`}>
+    <header className={`text-white sticky top-0 z-50 transition-colors duration-300 ${isScrolled ? 'bg-[#003c95] shadow-md' : 'bg-[#003c95]'}`}> 
       <div className="container mx-auto flex justify-between items-center h-20 px-4 sm:px-6 lg:px-8">
         
         <Link 
@@ -246,7 +245,8 @@ export function Header() {
           {currentNavLinks.map((link) => (
             link.signedInOnly ? (
               <SignedIn key={link.href}><NavLink {...link} /></SignedIn>
-            ) : (
+            )
+            : (
               <NavLink key={link.href} {...link} />
             )
           ))}
@@ -258,7 +258,7 @@ export function Header() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link href="/customer-care" className="p-2 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-300">
-                  <MessageSquareText className='h-6 w-6' />
+                  <QuestionMarkCircledIcon className='h-6 w-6' />
                 </Link>
               </TooltipTrigger>
               <TooltipContent><p>Help & Support</p></TooltipContent>
@@ -269,15 +269,15 @@ export function Header() {
             <div className="flex items-center gap-2 sm:gap-3">
               <button 
                 onClick={handleManagerSignUp}
-                className="hidden lg:flex items-center gap-2 text-white px-4 py-2 rounded-full border-2 border-transparent hover:border-white transition-all duration-300 text-sm font-semibold"
+                className="hidden lg:flex items-center gap-2 text-white px-4 py-2 rounded-full border-2 border-transparent hover:border-white transition-all duration-300 text-sm font-bold"
               >
-                <PlusCircle className="h-5 w-5" />
+                {/* <PlusCircle className="h-5 w-5" /> */}
                 <span>List Your Property</span>
               </button>
 
               <button 
                 onClick={() => openSignIn()}
-                className="group flex items-center gap-2 border border-white/80 text-white px-4 py-2 rounded-full hover:bg-white hover:text-[#001d2c] transition-all duration-300 text-sm font-semibold active:scale-95"
+                className="group flex items-center gap-2 border border-white/80 text-white px-4 py-2 rounded-full hover:bg-white hover:text-[#003c95] transition-all duration-300 text-sm font-semibold active:scale-95"
               >
                 <LogIn className="h-5 w-5" />
                 <span>Log In</span>
@@ -285,7 +285,7 @@ export function Header() {
               
               <button 
                 onClick={handleCustomerSignUp}
-                className="group flex items-center gap-2 bg-white text-[#001d2c] px-4 py-2 rounded-full hover:bg-gray-100 transition-all duration-300 text-sm font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-px active:scale-95"
+                className="group flex items-center gap-2 bg-white text-[#003c95] px-4 py-2 rounded-full hover:bg-gray-100 transition-all duration-300 text-sm font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-px active:scale-95"
               >
                 <UserPlus className="h-5 w-5 transition-transform duration-300 group-hover:rotate-12" />
                 <span>Sign Up</span>
@@ -296,7 +296,7 @@ export function Header() {
           <SignedIn>
             <div className="flex items-center gap-4">
               {role && role !== 'guest' && (
-                <span className="hidden lg:inline-block px-3 py-1 bg-white text-[#001d2c] rounded-full text-xs font-semibold uppercase tracking-wider">
+                <span className="hidden lg:inline-block px-3 py-1 bg-white text-[#003c95] rounded-full text-xs font-semibold uppercase tracking-wider">
                   {role}
                 </span>
               )}
@@ -315,7 +315,7 @@ export function Header() {
 
       {/* --- Mobile Menu Panel --- */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-[#001d2c] border-t border-white/20 absolute w-full left-0 shadow-xl">
+        <div className="md:hidden bg-[#003c95] border-t border-white/20 absolute w-full left-0 shadow-xl">
           <nav className="flex flex-col gap-1 p-4">
             {currentNavLinks.map((link) => (
               link.signedInOnly ? (
@@ -329,10 +329,10 @@ export function Header() {
           <div className="p-4 border-t border-white/20">
             <SignedOut>
               <div className="flex flex-col gap-3">
-                <button onClick={handleCustomerSignUp} className="w-full text-center bg-white text-[#001d2c] px-4 py-3 rounded-md font-semibold hover:bg-gray-100 transition-colors active:scale-95">
+                <button onClick={handleCustomerSignUp} className="w-full text-center bg-white text-[#003c95] px-4 py-3 rounded-md font-semibold hover:bg-gray-100 transition-colors active:scale-95">
                   Sign Up
                 </button>
-                <button onClick={() => openSignIn()} className="w-full text-center border border-white/80 text-white px-4 py-3 rounded-md font-semibold hover:bg-white hover:text-[#001d2c] transition-colors active:scale-95">
+                <button onClick={() => openSignIn()} className="w-full text-center border border-white/80 text-white px-4 py-3 rounded-md font-semibold hover:bg-white hover:text-[#003c95] transition-colors active:scale-95">
                   Log In
                 </button>
                 <button onClick={handleManagerSignUp} className="w-full text-center text-white/80 px-4 py-3 rounded-md font-medium hover:bg-white/10 hover:text-white transition-colors">
@@ -342,7 +342,7 @@ export function Header() {
             </SignedOut>
             <SignedIn>
                 <div className="flex items-center justify-between">
-                     <span className="px-3 py-1 bg-white text-[#001d2c] rounded-full text-xs font-semibold uppercase tracking-wider">
+                     <span className="px-3 py-1 bg-white text-[#003c95] rounded-full text-xs font-semibold uppercase tracking-wider">
                         {role}
                      </span>
                     <UserButton afterSignOutUrl="/" />

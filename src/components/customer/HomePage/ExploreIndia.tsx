@@ -62,12 +62,12 @@ export default function TrendingDestinations() {
 
   // --- NEW, UNIQUE & PROFESSIONAL JSX STRUCTURE ---
   return (
-    <div className="bg-[#001d2c]/15 py-16 sm:py-20"> {/* Using a soft background color from your palette */}
+    <div className="bg-[#003c95]/15 py-16 sm:py-20"> {/* Using a soft background color from your palette */}
       <div className='container mx-auto px-4'>
         
         {/* Step 1: More evocative and unique headings */}
         <div className="mb-10 text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold text-[#2D3748] mb-2">
+          <h2 className="text-3xl lg:text-4xl font-bold text-[#003c95] mb-2">
             Find Your Next Getaway
           </h2>
           <p className="text-md text-gray-600">
@@ -95,13 +95,13 @@ export default function TrendingDestinations() {
                 />
                 {/* A subtle arrow appears on hover for better affordance */}
                 <div className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <ArrowRight className="h-5 w-5 text-[#2D3748]" />
+                  <ArrowRight className="h-5 w-5 text-[#003c95]" />
                 </div>
               </div>
 
               {/* Content Container */}
               <div className="p-5">
-                <h3 className="text-xl font-bold text-[#2D3748]">
+                <h3 className="text-xl font-bold text-[#003c95]">
                   {destination.name}
                 </h3>
                 <p className="text-gray-500 mt-1 mb-3">

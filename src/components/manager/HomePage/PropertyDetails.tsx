@@ -570,7 +570,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                                         {/* Display Availability Period */}
                                         {(cat.availabilityStartDate || cat.availabilityEndDate) && (
                                             <div className="text-sm mb-3">
-                                                <p className="font-semibold text-gray-700 flex items-center"><CalendarDays className="inline h-4 w-4 mr-1.5 text-[#001d2c]"/>Availability:</p>
+                                                <p className="font-semibold text-gray-700 flex items-center"><CalendarDays className="inline h-4 w-4 mr-1.5 text-[#003c95]"/>Availability:</p>
                                                 <p className="pl-6 text-gray-600">
                                                     {cat.availabilityStartDate ? new Date(cat.availabilityStartDate).toLocaleDateString() : 'Open Start'} - {cat.availabilityEndDate ? new Date(cat.availabilityEndDate).toLocaleDateString() : 'Open End'}
                                                 </p>
@@ -777,7 +777,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                                 <ChipListDisplay items={newCategory.currentCategoryFacilities} onRemove={handleRemoveCategoryFacilityFromForm} baseColorClass="bg-indigo-100 text-indigo-700 border-indigo-300" />
                             </div>
 
-                            <button type="button" onClick={handleAddCategory} className="flex items-center justify-center w-full py-2.5 bg-[#001d2c] text-white rounded-md hover:bg-[#001d2c] transition-colors focus:outline-none focus:ring-2 focus:ring-[#001d2c] focus:ring-offset-2"> <Plus size={18} className="mr-2" /> Add This Category </button>
+                            <button type="button" onClick={handleAddCategory} className="flex items-center justify-center w-full py-2.5 bg-[#003c95] text-white rounded-md hover:bg-[#003c95] transition-colors focus:outline-none focus:ring-2 focus:ring-[#003c95] focus:ring-offset-2"> <Plus size={18} className="mr-2" /> Add This Category </button>
                         </div>
                     )}
                 </div>

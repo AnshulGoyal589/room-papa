@@ -314,7 +314,7 @@ export default function FlightsSearchForm() {
         </div>
         {/* <div className="w-full md:w-1/5 p-1">
           <div className="relative">
-            <div className="bg-white text-black p-4 rounded-md flex items-center border-2 border-[#001d2c] hover:border-[#001d2c]">
+            <div className="bg-white text-black p-4 rounded-md flex items-center border-2 border-[#003c95] hover:border-[#003c95]">
               <svg className="w-5 h-5 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12.5 3.247a1 1 0 0 0-1 0L4 7.577V20h4.5v-6a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v6H20V7.577l-7.5-4.33zm-2-1.732a3 3 0 0 1 3 0l7.5 4.33a2 2 0 0 1 1 1.732V21a1 1 0 0 1-1 1h-6.5a1 1 0 0 1-1-1v-6h-3v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7.577a2 2 0 0 1 1-1.732l7.5-4.33z"/>
               </svg>
@@ -363,7 +363,7 @@ export default function FlightsSearchForm() {
               style={{ width: '650px' }}
             >
               <div className="flex justify-between items-center mb-4">
-                <button className="text-[#001d2c]" onClick={() => {setShowCalendar(false); setSelectionPhase(0);}}>
+                <button className="text-[#003c95]" onClick={() => {setShowCalendar(false); setSelectionPhase(0);}}>
                   {selectionPhase === 1 ? 'Select end date' : 'Calendar'}
                 </button>
                 {/* <button className="text-gray-400">I&apos;m flexible</button> */}
@@ -390,8 +390,8 @@ export default function FlightsSearchForm() {
                         key={i} 
                         className={`text-center py-2 ${!day ? '' : 'cursor-pointer'} ${
                           isDateInRange(day, selectedMonth, selectedYear) 
-                            ? 'bg-[#001d2c] text-white' 
-                            : 'hover:bg-[#001d2c]'
+                            ? 'bg-[#003c95] text-white' 
+                            : 'hover:bg-[#003c95]'
                         } ${
                           isStartDate(day, selectedMonth, selectedYear) 
                             ? 'rounded-l-full' 
@@ -431,8 +431,8 @@ export default function FlightsSearchForm() {
                           key={i} 
                           className={`text-center py-2 ${!day ? '' : 'cursor-pointer'} ${
                             isDateInRange(day, nextMonth, nextYear) 
-                              ? 'bg-[#001d2c] text-white' 
-                              : 'hover:bg-[#001d2c]'
+                              ? 'bg-[#003c95] text-white' 
+                              : 'hover:bg-[#003c95]'
                           } ${
                             isStartDate(day, nextMonth, nextYear) 
                               ? 'rounded-l-full' 
@@ -454,7 +454,7 @@ export default function FlightsSearchForm() {
               
               {/* <div className="flex justify-between mt-4">
                 <div className="flex space-x-2">
-                  <button className="px-4 py-2 border border-[#001d2c] text-[#001d2c] rounded-full">Exact dates</button>
+                  <button className="px-4 py-2 border border-[#003c95] text-[#003c95] rounded-full">Exact dates</button>
                   <button className="px-4 py-2 border border-gray-300 rounded-full">1 day</button>
                   <button className="px-4 py-2 border border-gray-300 rounded-full">2 days</button>
                   <button className="px-4 py-2 border border-gray-300 rounded-full">3 days</button>
@@ -497,14 +497,14 @@ export default function FlightsSearchForm() {
                   </div>
                   <div className="flex items-center space-x-4 border-2 p-1 border-gray-400">
                     <button 
-                      className={`p-1 rounded-full ${adults > 1 ? 'text-[#001d2c]' : 'text-gray-300'}`}
+                      className={`p-1 rounded-full ${adults > 1 ? 'text-[#003c95]' : 'text-gray-300'}`}
                       onClick={() => adjustGuests('adults', 'subtract')}
                     >
                       <Minus className="h-5 w-5" />
                     </button>
                     <span className="w-8 text-center">{adults}</span>
                     <button 
-                      className="p-1 rounded-full text-[#001d2c]"
+                      className="p-1 rounded-full text-[#003c95]"
                       onClick={() => adjustGuests('adults', 'add')}
                     >
                       <Plus className="h-5 w-5" />
@@ -517,14 +517,14 @@ export default function FlightsSearchForm() {
                   <span className="font-medium">Children</span>
                   <div className="flex items-center space-x-4 border-2 p-1 border-gray-400">
                     <button 
-                      className={`p-1 rounded-full ${children > 0 ? 'text-[#001d2c]' : 'text-gray-300'}`}
+                      className={`p-1 rounded-full ${children > 0 ? 'text-[#003c95]' : 'text-gray-300'}`}
                       onClick={() => adjustGuests('children', 'subtract')}
                     >
                       <Minus className="h-5 w-5" />
                     </button>
                     <span className="w-8 text-center">{children}</span>
                     <button 
-                      className="p-1 rounded-full text-[#001d2c]"
+                      className="p-1 rounded-full text-[#003c95]"
                       onClick={() => adjustGuests('children', 'add')}
                     >
                       <Plus className="h-5 w-5" />
@@ -542,14 +542,14 @@ export default function FlightsSearchForm() {
                   </div>
                   <div className="flex items-center space-x-4 border-2 p-1 border-gray-400">
                     <button 
-                      className={`p-1 rounded-full ${rooms > 1 && rooms > Math.ceil(adults / 3) ? 'text-[#001d2c]' : 'text-gray-300'}`}
+                      className={`p-1 rounded-full ${rooms > 1 && rooms > Math.ceil(adults / 3) ? 'text-[#003c95]' : 'text-gray-300'}`}
                       onClick={() => adjustGuests('rooms', 'subtract')}
                     >
                       <Minus className="h-5 w-5" />
                     </button>
                     <span className="w-8 text-center">{rooms}</span>
                     <button 
-                      className="p-1 rounded-full text-[#001d2c]"
+                      className="p-1 rounded-full text-[#003c95]"
                       onClick={() => adjustGuests('rooms', 'add')}
                     >
                       <Plus className="h-5 w-5" />
@@ -564,7 +564,7 @@ export default function FlightsSearchForm() {
                     <div className="text-xs ">
                       <span>Assistance animals aren&apos;t considered pets.</span>
                       <div>
-                        <a href="#" className="text-[#001d2c]">Read more about travelling with assistance animals</a>
+                        <a href="#" className="text-[#003c95]">Read more about travelling with assistance animals</a>
                       </div>
                     </div>
                   </div>
@@ -579,7 +579,7 @@ export default function FlightsSearchForm() {
                     />
                     <label 
                       htmlFor="pets" 
-                      className={`block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer ${hasPets ? 'bg-[#001d2c]' : ''}`}
+                      className={`block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer ${hasPets ? 'bg-[#003c95]' : ''}`}
                     >
                       <span className={`block w-6 h-6 rounded-full bg-white shadow transform ${hasPets ? 'translate-x-4' : 'translate-x-0'} transition-transform duration-200 ease-in-out`}></span>
                     </label>
@@ -587,7 +587,7 @@ export default function FlightsSearchForm() {
                 </div>
                 
                 <button 
-                  className="w-full py-3 bg-[#001d2c] text-white rounded-md font-medium"
+                  className="w-full py-3 bg-[#003c95] text-white rounded-md font-medium"
                   onClick={() => setShowGuests(false)}
                 >
                   Done
@@ -600,7 +600,7 @@ export default function FlightsSearchForm() {
         {/* Search Button */}
         <div className="w-full md:w-1/12 pl-1">
         <button 
-            className="bg-[#001d2c] hover:bg-[#001d2c] text-white w-full text-xl py-4 rounded-md font-bold flex items-center justify-center h-full"
+            className="bg-[#003c95] hover:bg-[#003c95] text-white w-full text-xl py-4 rounded-md font-bold flex items-center justify-center h-full"
             onClick={handleSearch}
           >
             Search

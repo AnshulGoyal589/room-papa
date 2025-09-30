@@ -5,7 +5,7 @@ import Head from 'next/head';
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { ChevronDown, ChevronUp, Search, MessageSquare, Phone, HelpCircle } from 'lucide-react';
 import { FAQItem } from '@/lib/mongodb/models/Components';
-import { Header } from '@/components/layout/Header';
+// import { Header } from '@/components/layout/Header';
 
 
 
@@ -94,7 +94,7 @@ const CustomerCarePage: NextPage = () => {
 
   return (
     <>
-      <Header />
+      {/* <Header /> */}
       <Head>
         <title>Customer Service | Booking.com Style</title>
         <meta name="description" content="Get help with your bookings and account." />
@@ -102,7 +102,7 @@ const CustomerCarePage: NextPage = () => {
 
       <div className="min-h-screen bg-gray-100">
         {/* Header Section - Booking.com Blue */}
-        <header className="bg-[#001d2c] text-white p-6 shadow-md">
+        <header className="bg-[#003c95] text-white p-6 shadow-md">
           <div className="container mx-auto max-w-6xl">
             <h1 className="text-3xl font-bold">Customer Service Help</h1>
             <p className="mt-1 text-white">Find answers to your questions and get support.</p>
@@ -145,7 +145,7 @@ const CustomerCarePage: NextPage = () => {
                         onClick={() => setActiveCategory(category)}
                         className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
                           activeCategory === category
-                            ? 'bg-[#e6f2ff] text-[#001d2c] font-semibold'
+                            ? 'bg-[#e6f2ff] text-[#003c95] font-semibold'
                             : 'text-gray-700 hover:bg-gray-100'
                         }`}
                       >

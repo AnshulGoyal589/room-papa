@@ -9,7 +9,7 @@ import { seoMetadata } from '@/seo-metadata';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import BookingsListSkeleton from '@/components/booking/BookingsListSkeleton';
-import { Header2 } from '@/components/layout/Header2';
+// import { Header2 } from '@/components/layout/Header2';
 
 export const metadata: Metadata = seoMetadata.bookings;
 
@@ -40,7 +40,7 @@ export default async function MyBookingsPage() {
 
     return (
         <>
-            <Header2 />
+            {/* <Header2 /> */}
             <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
                     <div className="mb-8">

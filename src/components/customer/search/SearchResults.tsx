@@ -40,8 +40,8 @@ const getRatingDescription = (rating?: number): { text: string; className: strin
   if (rating === undefined || rating === null) return { text: "No rating", className: "text-gray-600" };
   if (rating >= 9.5) return { text: "Exceptional", className: "text-green-700" };
   if (rating >= 9.0) return { text: "Superb", className: "text-green-600" };
-  if (rating >= 8.5) return { text: "Fabulous", className: "text-[#001d2c]" };
-  if (rating >= 8.0) return { text: "Very Good", className: "text-[#001d2c]" };
+  if (rating >= 8.5) return { text: "Fabulous", className: "text-[#003c95]" };
+  if (rating >= 8.0) return { text: "Very Good", className: "text-[#003c95]" };
   if (rating >= 7.0) return { text: "Good", className: "text-teal-600" };
   if (rating >= 6.0) return { text: "Pleasant", className: "text-orange-600" };
   return { text: "Review score", className: "text-gray-700" };
@@ -270,13 +270,13 @@ export default function SearchResults() {
       <div className="flex-grow p-4 flex flex-col">
         <div className="flex justify-between items-start">
             <Link href={`/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}`} className="block mb-1">
-                <h3 className="text-xl md:text-2xl font-bold text-[#001d2c] hover:text-[#001d2c] transition-colors line-clamp-2">{property.title || "Untitled Property"}</h3>
+                <h3 className="text-xl md:text-2xl font-bold text-[#003c95] hover:text-[#003c95] transition-colors line-clamp-2">{property.title || "Untitled Property"}</h3>
             </Link>
             {/* Rating for very small screens, hidden on sm+ */}
             {(property.totalRating || property.propertyRating) && (
               <div className="sm:hidden flex flex-col items-end ml-2">
                 <div className={`text-xs font-semibold ${ratingDesc.className}`}>{ratingDesc.text}</div>
-                <div className="bg-[#001d2c] text-white text-sm font-bold px-2 py-0.5 rounded">
+                <div className="bg-[#003c95] text-white text-sm font-bold px-2 py-0.5 rounded">
                     {(property.totalRating || property.propertyRating)?.toFixed(1)}
                 </div>
               </div>
@@ -291,9 +291,9 @@ export default function SearchResults() {
         </div>
 
         <div className="text-xs text-gray-600 mb-2">
-            <span className="text-[#001d2c] hover:underline">{property.location?.city}</span>
+            <span className="text-[#003c95] hover:underline">{property.location?.city}</span>
             <span className="mx-1 text-gray-400">•</span>
-            <span className="text-[#001d2c] hover:underline">Show on map</span>
+            <span className="text-[#003c95] hover:underline">Show on map</span>
             {/* Add distance from centre if available: e.g. <span className="mx-1 text-gray-400">•</span>12.8 km from centre */}
         </div>
 
@@ -337,7 +337,7 @@ export default function SearchResults() {
                 <p className={`text-sm font-semibold ${ratingDesc.className}`}>{ratingDesc.text}</p>
                 <p className="text-xs text-gray-500">{reviewText}</p>
               </div>
-              <div className="bg-[#001d2c] text-white text-base font-bold px-2 py-1 rounded h-fit">
+              <div className="bg-[#003c95] text-white text-base font-bold px-2 py-1 rounded h-fit">
                 {(property.totalRating || property.propertyRating)?.toFixed(1)}
               </div>
             </div>
@@ -362,7 +362,7 @@ export default function SearchResults() {
           )}
            <Link 
             href={`/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}`} 
-            className="mt-2.5 block bg-[#001d2c] hover:bg-[#001d2c] text-white font-semibold py-2.5 px-4 rounded-md text-sm transition-colors w-full flex items-center justify-center"
+            className="mt-2.5 block bg-[#003c95] hover:bg-[#003c95] text-white font-semibold py-2.5 px-4 rounded-md text-sm transition-colors w-full flex items-center justify-center"
           >
             See availability
             <ChevronRight size={18} className="ml-1" />
@@ -400,7 +400,7 @@ export default function SearchResults() {
         <div className="w-full sm:w-2/3 md:flex-grow p-3 sm:p-4 flex flex-col">
             <div className="flex flex-col sm:flex-row justify-between sm:items-start mb-1">
                 <Link href={`/customer/trip/${trip._id}`} className="block">
-                  <h3 className="text-lg sm:text-xl font-bold text-[#001d2c] hover:text-[#001d2c] transition-colors line-clamp-2">{trip.title || "Adventure Awaits"}</h3>
+                  <h3 className="text-lg sm:text-xl font-bold text-[#003c95] hover:text-[#003c95] transition-colors line-clamp-2">{trip.title || "Adventure Awaits"}</h3>
                 </Link>
                 {trip.rating !== undefined && trip.rating !== null && (
                   <div className="flex items-center gap-2 mt-1 sm:mt-0 sm:ml-4 flex-shrink-0">
@@ -408,14 +408,14 @@ export default function SearchResults() {
                       <p className={`text-xs sm:text-sm font-semibold ${ratingDesc.className}`}>{ratingDesc.text}</p>
                       <p className="text-xs text-gray-500">{reviewText}</p>
                     </div>
-                    <div className="bg-[#001d2c] text-white text-sm sm:text-base font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md h-fit">
+                    <div className="bg-[#003c95] text-white text-sm sm:text-base font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md h-fit">
                       {trip.rating.toFixed(1)}
                     </div>
                   </div>
                 )}
             </div>
 
-          <div className="flex items-center text-xs text-[#001d2c] hover:underline mb-1 sm:mb-2 cursor-pointer" onClick={() => router.push(`/customer/trip/${trip._id}`)}>
+          <div className="flex items-center text-xs text-[#003c95] hover:underline mb-1 sm:mb-2 cursor-pointer" onClick={() => router.push(`/customer/trip/${trip._id}`)}>
             <MapPin size={12} className="mr-1 sm:mr-1.5" />
             <span>{trip.destination?.city}, {trip.destination?.country}</span>
           </div>
@@ -452,7 +452,7 @@ export default function SearchResults() {
             )}
             <Link 
               href={`/customer/trip/${trip._id}`} 
-              className="mt-2 inline-block bg-[#001d2c] hover:bg-[#001d2c] text-white font-semibold py-2 px-3 sm:px-5 rounded-md text-xs sm:text-sm transition-colors w-full sm:w-auto"
+              className="mt-2 inline-block bg-[#003c95] hover:bg-[#003c95] text-white font-semibold py-2 px-3 sm:px-5 rounded-md text-xs sm:text-sm transition-colors w-full sm:w-auto"
             >
               View Details
             </Link>
@@ -468,7 +468,7 @@ export default function SearchResults() {
       const iconSize = 14; 
       const iconClasses = "mr-1 sm:mr-1.5";
       switch (type) {
-        case TransportationType.flight: return <Plane size={iconSize} className={`${iconClasses} text-[#001d2c]`} />;
+        case TransportationType.flight: return <Plane size={iconSize} className={`${iconClasses} text-[#003c95]`} />;
         case TransportationType.train: return <Train size={iconSize} className={`${iconClasses} text-green-500`} />;
         case TransportationType.bus: return <CarIcon size={iconSize} className={`${iconClasses} text-orange-500`} />; 
         case TransportationType.car: return <CarIcon size={iconSize} className={`${iconClasses} text-red-500`} />;
@@ -497,7 +497,7 @@ export default function SearchResults() {
 
         <div className="w-full sm:w-2/3 md:flex-grow p-3 sm:p-4 flex flex-col">
           <Link href={`/customer/travelling/${itinerary._id}`} className="block mb-1">
-            <h3 className="text-lg sm:text-xl font-bold text-[#001d2c] hover:text-[#001d2c] transition-colors line-clamp-2">{itinerary.title || "Custom Itinerary"}</h3>
+            <h3 className="text-lg sm:text-xl font-bold text-[#003c95] hover:text-[#003c95] transition-colors line-clamp-2">{itinerary.title || "Custom Itinerary"}</h3>
           </Link>
           
           {itinerary.transportation && (
@@ -539,7 +539,7 @@ export default function SearchResults() {
             )}
             <Link 
               href={`/customer/travelling/${itinerary._id}`} 
-              className="mt-2 inline-block bg-[#001d2c] hover:bg-[#001d2c] text-white font-semibold py-2 px-3 sm:px-5 rounded-md text-xs sm:text-sm transition-colors w-full sm:w-auto"
+              className="mt-2 inline-block bg-[#003c95] hover:bg-[#003c95] text-white font-semibold py-2 px-3 sm:px-5 rounded-md text-xs sm:text-sm transition-colors w-full sm:w-auto"
             >
               View Itinerary
             </Link>
@@ -550,7 +550,7 @@ export default function SearchResults() {
   };
 
   return (
-    <div className="bg-[#001d2c]/30 min-h-screen py-6 sm:py-8 px-2 sm:px-4 md:px-6 lg:px-8"> {/* Added light blue background to outer container */}
+    <div className="bg-[#003c95]/20 min-h-screen py-6 sm:py-8 px-2 sm:px-4 md:px-6 lg:px-8"> {/* Added light blue background to outer container */}
       <div className="max-w-6xl mx-auto"> {/* Content wrapper */}
 
         <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-3 sm:mb-4"> 
@@ -631,7 +631,7 @@ export default function SearchResults() {
                       onClick={() => handlePageChange(pageNumber)}
                       className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors shadow-sm ${
                         pageNumber === currentPage
-                          ? 'bg-[#001d2c] text-white border border-[#001d2c]'
+                          ? 'bg-[#003c95] text-white border border-[#003c95]'
                           : 'border bg-white text-gray-600 hover:bg-gray-100 hover:border-gray-400'
                       }`}
                     >

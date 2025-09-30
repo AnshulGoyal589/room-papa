@@ -182,8 +182,8 @@ export function Header2() {
 
   if (loading) {
     return (
-      <header className="flex justify-center items-center h-20 bg-[#001d2c]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#001d2c]"></div>
+      <header className="flex justify-center items-center h-20 bg-[#003c95]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#003c95]"></div>
       </header>
     );
   }
@@ -196,8 +196,8 @@ export function Header2() {
         href={href}
         onClick={() => isMobile && setIsMobileMenuOpen(false)}
         className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 relative
-          ${isActive ? 'text-[#001d2c] bg-[#001d2c]/10' : 'text-[#001d2c] hover:text-[#001d2c] hover:bg-[#001d2c]/5'}
-          ${isMobile ? 'text-base w-full' : "after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-0 after:bg-[#001d2c] after:transition-all after:duration-300 hover:after:w-full"}`}
+          ${isActive ? 'text-[#003c95] bg-[#003c95]/10' : 'text-[#003c95] hover:text-[#003c95] hover:bg-[#003c95]/5'}
+          ${isMobile ? 'text-base w-full' : "after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-0 after:bg-[#003c95] after:transition-all after:duration-300 hover:after:w-full"}`}
       >
         <Icon className="w-5 h-5" />
         <span>{label}</span>
@@ -239,7 +239,7 @@ export function Header2() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Link href="/customer-care" className="p-2 rounded-full text-[#001d2c] hover:text-[#001d2c] hover:bg-[#001d2c]/10 transition-all duration-300">
+                <Link href="/customer-care" className="p-2 rounded-full text-[#003c95] hover:text-[#003c95] hover:bg-[#003c95]/10 transition-all duration-300">
                   <MessageSquareText className='h-6 w-6' />
                 </Link>
               </TooltipTrigger>
@@ -251,7 +251,7 @@ export function Header2() {
             <div className="flex items-center gap-2 sm:gap-3">
               <button 
                 onClick={handleManagerSignUp}
-                className="hidden lg:flex items-center gap-2 text-[#001d2c] px-4 py-2 rounded-full border-2 border-transparent hover:border-[#001d2c] transition-all duration-300 text-sm font-semibold"
+                className="hidden lg:flex items-center gap-2 text-[#003c95] px-4 py-2 rounded-full border-2 border-transparent hover:border-[#003c95] transition-all duration-300 text-sm font-semibold"
               >
                 <PlusCircle className="h-5 w-5" />
                 <span>List Your Property</span>
@@ -259,7 +259,7 @@ export function Header2() {
 
               <button 
                 onClick={() => openSignIn()}
-                className="group flex items-center gap-2 border border-[#001d2c]/80 text-[#001d2c] px-4 py-2 rounded-full hover:bg-[#001d2c] hover:text-[#001d2c] transition-all duration-300 text-sm font-semibold active:scale-95"
+                className="group flex items-center gap-2 border border-[#003c95]/80 text-[#003c95] px-4 py-2 rounded-full hover:bg-[#003c95] hover:text-[#003c95] transition-all duration-300 text-sm font-semibold active:scale-95"
               >
                 <LogIn className="h-5 w-5" />
                 <span>Log In</span>
@@ -267,7 +267,7 @@ export function Header2() {
               
               <button 
                 onClick={handleCustomerSignUp}
-                className="group flex items-center gap-2 bg-[#001d2c] text-[#ffffff] px-4 py-2 rounded-full hover:bg-[#001d2c] transition-all duration-300 text-sm font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-px active:scale-95"
+                className="group flex items-center gap-2 bg-[#003c95] text-[#ffffff] px-4 py-2 rounded-full hover:bg-[#003c95] transition-all duration-300 text-sm font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-px active:scale-95"
               >
                 <UserPlus className="h-5 w-5 transition-transform duration-300 group-hover:rotate-12" />
                 <span>Sign Up</span>
@@ -278,7 +278,7 @@ export function Header2() {
           <SignedIn>
             <div className="flex items-center gap-4">
               {role && role !== 'guest' && (
-                <span className="hidden lg:inline-block px-3 py-1 bg-[#001d2c] text-[#ffffff] rounded-full text-xs font-semibold uppercase tracking-wider">
+                <span className="hidden lg:inline-block px-3 py-1 bg-[#003c95] text-[#ffffff] rounded-full text-xs font-semibold uppercase tracking-wider">
                   {role}
                 </span>
               )}
@@ -289,7 +289,7 @@ export function Header2() {
 
         {/* --- Mobile Menu Button --- */}
         <div className="md:hidden">
-          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-md hover:bg-[#001d2c]/10 transition-colors">
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-md hover:bg-[#003c95]/10 transition-colors">
               {isMobileMenuOpen ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
           </button>
         </div>
@@ -297,7 +297,7 @@ export function Header2() {
 
       {/* --- Mobile Menu Panel --- */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-[#001d2c] border-t border-[#001d2c]/20 absolute w-full left-0 shadow-xl">
+        <div className="md:hidden bg-[#003c95] border-t border-[#003c95]/20 absolute w-full left-0 shadow-xl">
           <nav className="flex flex-col gap-1 p-4">
             {currentNavLinks.map((link) => (
               link.signedInOnly ? (
@@ -308,23 +308,23 @@ export function Header2() {
             ))}
           </nav>
 
-          <div className="p-4 border-t border-[#001d2c]/20">
+          <div className="p-4 border-t border-[#003c95]/20">
             <SignedOut>
               <div className="flex flex-col gap-3">
-                <button onClick={handleCustomerSignUp} className="w-full text-center bg-[#001d2c] text-[#001d2c] px-4 py-3 rounded-md font-semibold hover:bg-[#001d2c] transition-colors active:scale-95">
+                <button onClick={handleCustomerSignUp} className="w-full text-center bg-[#003c95] text-[#003c95] px-4 py-3 rounded-md font-semibold hover:bg-[#003c95] transition-colors active:scale-95">
                   Sign Up
                 </button>
-                <button onClick={() => openSignIn()} className="w-full text-center border border-[#001d2c]/80 text-[#001d2c] px-4 py-3 rounded-md font-semibold hover:bg-[#001d2c] hover:text-[#001d2c] transition-colors active:scale-95">
+                <button onClick={() => openSignIn()} className="w-full text-center border border-[#003c95]/80 text-[#003c95] px-4 py-3 rounded-md font-semibold hover:bg-[#003c95] hover:text-[#003c95] transition-colors active:scale-95">
                   Log In
                 </button>
-                <button onClick={handleManagerSignUp} className="w-full text-center text-[#001d2c]/80 px-4 py-3 rounded-md font-medium hover:bg-[#001d2c]/10 hover:text-[#001d2c] transition-colors">
+                <button onClick={handleManagerSignUp} className="w-full text-center text-[#003c95]/80 px-4 py-3 rounded-md font-medium hover:bg-[#003c95]/10 hover:text-[#003c95] transition-colors">
                   List Your Property
                 </button>
               </div>
             </SignedOut>
             <SignedIn>
                 <div className="flex items-center justify-between">
-                     <span className="px-3 py-1 bg-[#001d2c] text-[#001d2c] rounded-full text-xs font-semibold uppercase tracking-wider">
+                     <span className="px-3 py-1 bg-[#003c95] text-[#003c95] rounded-full text-xs font-semibold uppercase tracking-wider">
                         {role}
                      </span>
                     <UserButton afterSignOutUrl="/" />

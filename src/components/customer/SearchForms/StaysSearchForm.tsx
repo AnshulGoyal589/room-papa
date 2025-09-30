@@ -537,7 +537,7 @@ export default function StaysSearchForm() {
               className="absolute left-0 mt-2 bg-white shadow-lg rounded-lg p-4 z-20 border border-gray-200 w-full md:w-[650px]"
             >
               <div className="flex justify-between items-center mb-4">
-                 <button className="text-[#2D3748]">
+                 <button className="text-[#003c95]">
                   {selectionPhase === 1 ? 'Select end date' : 'Select your dates'}
                 </button>
               </div>
@@ -570,11 +570,11 @@ export default function StaysSearchForm() {
                       
                       let cellClass = `text-center py-2 rounded-full ${!day ? 'text-transparent' : 'cursor-pointer'}`;
                       if (disabled) cellClass += ' text-gray-300 cursor-not-allowed';
-                      else if (isSingleDaySelection) cellClass += ' bg-[#2D3748] text-white !rounded-full';
-                      else if (isStart) cellClass += ' bg-[#2D3748] text-white rounded-l-full rounded-r-none';
-                      else if (isEnd) cellClass += ' bg-[#2D3748] text-white rounded-r-full rounded-l-none';
-                      else if (inRange) cellClass += ' bg-[#2D3748] text-[#2D3748] rounded-none';
-                      else cellClass += ' hover:bg-[#2D3748]';
+                      else if (isSingleDaySelection) cellClass += ' bg-[#003c95] text-white !rounded-full';
+                      else if (isStart) cellClass += ' bg-[#003c95] text-white rounded-l-full rounded-r-none';
+                      else if (isEnd) cellClass += ' bg-[#003c95] text-white rounded-r-full rounded-l-none';
+                      else if (inRange) cellClass += ' bg-[#003c95] text-[#003c95] rounded-none';
+                      else cellClass += ' hover:bg-[#003c95]';
 
                       return (
                         <div 
@@ -614,11 +614,11 @@ export default function StaysSearchForm() {
 
                       let cellClass = `text-center py-2 rounded-full ${!day ? 'text-transparent' : 'cursor-pointer'}`;
                       if (disabled) cellClass += ' text-gray-300 cursor-not-allowed';
-                      else if (isSingleDaySelection) cellClass += ' bg-[#2D3748] text-white !rounded-full';
-                      else if (isStart) cellClass += ' bg-[#2D3748] text-white rounded-l-full rounded-r-none';
-                      else if (isEnd) cellClass += ' bg-[#2D3748] text-white rounded-r-full rounded-l-none';
-                      else if (inRange) cellClass += ' bg-[#2D3748] text-[#2D3748] rounded-none';
-                      else cellClass += ' hover:bg-[#2D3748]';
+                      else if (isSingleDaySelection) cellClass += ' bg-[#003c95] text-white !rounded-full';
+                      else if (isStart) cellClass += ' bg-[#003c95] text-white rounded-l-full rounded-r-none';
+                      else if (isEnd) cellClass += ' bg-[#003c95] text-white rounded-r-full rounded-l-none';
+                      else if (inRange) cellClass += ' bg-[#003c95] text-[#003c95] rounded-none';
+                      else cellClass += ' hover:bg-[#003c95]';
                       
                       return (
                         <div 
@@ -665,13 +665,13 @@ export default function StaysSearchForm() {
                   </div>
                   <div className="flex items-center space-x-4 border-2 p-1 border-gray-400 rounded">
                     <button 
-                      className={`p-1 rounded-full ${adults > 1 ? 'text-[#2D3748] hover:bg-[#2D3748]' : 'text-gray-300 cursor-not-allowed'}`}
+                      className={`p-1 rounded-full ${adults > 1 ? 'text-[#003c95] hover:bg-[#003c95]' : 'text-gray-300 cursor-not-allowed'}`}
                       onClick={() => adjustGuests('adults', 'subtract')}
                       disabled={adults <= 1}
                     ><Minus className="h-5 w-5" /></button>
                     <span className="w-8 text-center">{adults}</span>
                     <button 
-                      className="p-1 rounded-full text-[#2D3748] hover:bg-[#2D3748]"
+                      className="p-1 rounded-full text-[#003c95] hover:bg-[#003c95]"
                       onClick={() => adjustGuests('adults', 'add')}
                     ><Plus className="h-5 w-5" /></button>
                   </div>
@@ -681,13 +681,13 @@ export default function StaysSearchForm() {
                   <span className="font-medium">Children</span>
                   <div className="flex items-center space-x-4 border-2 p-1 border-gray-400 rounded">
                     <button 
-                      className={`p-1 rounded-full ${children > 0 ? 'text-[#2D3748] hover:bg-[#2D3748]' : 'text-gray-300 cursor-not-allowed'}`}
+                      className={`p-1 rounded-full ${children > 0 ? 'text-[#003c95] hover:bg-[#003c95]' : 'text-gray-300 cursor-not-allowed'}`}
                       onClick={() => adjustGuests('children', 'subtract')}
                       disabled={children <= 0}
                     ><Minus className="h-5 w-5" /></button> {/* Corrected icon */}
                     <span className="w-8 text-center">{children}</span>
                     <button 
-                      className="p-1 rounded-full text-[#2D3748] hover:bg-[#2D3748]"
+                      className="p-1 rounded-full text-[#003c95] hover:bg-[#003c95]"
                       onClick={() => adjustGuests('children', 'add')}
                     ><Plus className="h-5 w-5" /></button> {/* Corrected icon */}
                   </div>
@@ -702,13 +702,13 @@ export default function StaysSearchForm() {
                   </div>
                   <div className="flex items-center space-x-4 border-2 p-1 border-gray-400 rounded">
                     <button 
-                      className={`p-1 rounded-full ${rooms > 1 && rooms > Math.ceil(adults / 3) ? 'text-[#2D3748] hover:bg-[#2D3748]' : 'text-gray-300 cursor-not-allowed'}`}
+                      className={`p-1 rounded-full ${rooms > 1 && rooms > Math.ceil(adults / 3) ? 'text-[#003c95] hover:bg-[#003c95]' : 'text-gray-300 cursor-not-allowed'}`}
                       onClick={() => adjustGuests('rooms', 'subtract')}
                       disabled={rooms <= 1 || rooms <= Math.ceil(adults / 3)}
                     ><Minus className="h-5 w-5" /></button>
                     <span className="w-8 text-center">{rooms}</span>
                     <button 
-                      className="p-1 rounded-full text-[#2D3748] hover:bg-[#2D3748]"
+                      className="p-1 rounded-full text-[#003c95] hover:bg-[#003c95]"
                       onClick={() => adjustGuests('rooms', 'add')}
                     ><Plus className="h-5 w-5" /></button>
                   </div>
@@ -719,7 +719,7 @@ export default function StaysSearchForm() {
                     <div className="font-medium">Travelling with pets?</div>
                     <div className="text-xs ">
                       <span>Assistance animals aren&apos;t considered pets.</span>
-                      <div><a href="#" className="text-[#2D3748] hover:underline">Read more...</a></div>
+                      <div><a href="#" className="text-[#003c95] hover:underline">Read more...</a></div>
                     </div>
                   </div>
                   <div className="relative inline-block w-10 align-middle select-none">
@@ -733,14 +733,14 @@ export default function StaysSearchForm() {
                         localStorage.setItem('pets', newHasPets.toString());
                       }}
                     />
-                    <label htmlFor="pets" className="block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer peer-checked:bg-[#2D3748] transition-colors duration-200 ease-in-out">
+                    <label htmlFor="pets" className="block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer peer-checked:bg-[#003c95] transition-colors duration-200 ease-in-out">
                       <span className={`block w-6 h-6 rounded-full bg-white shadow transform peer-checked:translate-x-4 transition-transform duration-200 ease-in-out`}></span>
                     </label>
                   </div>
                 </div>
                 
                 <button 
-                  className="w-full py-3 bg-[#2D3748] text-white rounded-md font-medium hover:bg-[#2D3748]"
+                  className="w-full py-3 bg-[#003c95] text-white rounded-md font-medium hover:bg-[#003c95]"
                   onClick={() => setShowGuests(false)}
                 >Done</button>
               </div>
@@ -751,7 +751,7 @@ export default function StaysSearchForm() {
         {/* Search Button */}
         <div className="w-full md:w-1/12">
           <button 
-            className="bg-[#2D3748] hover:bg-[#2D3748] text-white w-full text-xl py-4 rounded-md font-bold flex items-center justify-center h-full"
+            className="bg-[#003c95] hover:bg-[#003c95] text-white w-full text-xl py-4 rounded-md font-bold flex items-center justify-center h-full"
             onClick={handleSearch}
           >Search</button>
         </div>

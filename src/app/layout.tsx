@@ -5,6 +5,7 @@ import "./globals.css";
 import { Footer } from "@/components/layout/Footer";
 import { ClerkProvider } from '@clerk/nextjs';
 import RoleProtection from "@/components/auth/RoleProtection";
+import { Header } from "@/components/layout/Header";
 
 // Force dynamic rendering to prevent build-time issues with Clerk
 export const dynamic = 'force-dynamic';
@@ -255,7 +256,7 @@ export default function RootLayout({
           itemType="https://schema.org/WebPage"
         >
           <RoleProtection>
-            {/* <Header /> */}
+            <Header />
             <main className="flex-grow" role="main" itemScope itemType="https://schema.org/WebPageElement">
               {children}
             </main>

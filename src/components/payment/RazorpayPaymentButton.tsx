@@ -69,7 +69,7 @@ const RazorpayPaymentButton: React.FC<RazorpayPaymentButtonProps> = ({
     disabled = false,
     buttonText = "Proceed to Pay",
     themeColor = "#3B82F6", // Default to your blue
-    className = "w-full bg-[#001d2c] text-white py-2.5 px-4 rounded-lg font-semibold text-md hover:bg-[#001d2c] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#001d2c] disabled:bg-[#001d2c] disabled:cursor-wait shadow-md",
+    className = "w-full bg-[#003c95] text-white py-2.5 px-4 rounded-lg font-semibold text-md hover:bg-[#003c95] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#003c95] disabled:bg-[#003c95] disabled:cursor-wait shadow-md",
 }) => {
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -78,7 +78,7 @@ const RazorpayPaymentButton: React.FC<RazorpayPaymentButtonProps> = ({
         // Optionally pre-load script, or load on demand in handlePayment
         // loadRazorpayScript("https://checkout.razorpay.com/v1/checkout.js");
     }, []);
-
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sendMail = async ( bookingPayload: any) => {
         try {
             const response = await fetch('/api/bookings', {

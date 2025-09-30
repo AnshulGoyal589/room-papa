@@ -1,5 +1,5 @@
 
-import { Header2 } from "@/components/layout/Header2";
+// import { Header2 } from "@/components/layout/Header2";
 import React from "react";
 
 interface AdminDashboardLayoutProps {
@@ -9,7 +9,7 @@ interface AdminDashboardLayoutProps {
 const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps> = ({ children }) => {
     return (
         <div>
-            <Header2 />
+            {/* <Header2 /> */}
             <main>{children}</main>
         </div>
     );
