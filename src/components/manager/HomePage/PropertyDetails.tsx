@@ -459,54 +459,54 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
         );
       };
 
-    let displayPrice = ensurePropertyData.costing?.price || 0;
-    let displayDiscountedPrice = ensurePropertyData.costing?.discountedPrice || 0;
-    let displayCurrency = ensurePropertyData.costing?.currency || 'USD';
+    const displayPrice = ensurePropertyData.costing?.price || 0;
+    const displayDiscountedPrice = ensurePropertyData.costing?.discountedPrice || 0;
+    const displayCurrency = ensurePropertyData.costing?.currency || 'USD';
     let displayTotalRooms = ensurePropertyData.rooms || 0;
 
     const currentCategories = ensurePropertyData.categoryRooms || [];
 
     if (Array.isArray(currentCategories) && currentCategories.length > 0) {
-        let minOverallPrice = Infinity;
-        let minOverallDiscountedPrice = Infinity;
-        let leadCurrency = currentCategories[0].currency || "INR";
-        const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
+        // let minOverallPrice = Infinity;
+        // let minOverallDiscountedPrice = Infinity;
+        // let leadCurrency = currentCategories[0].currency || "INR";
+        // const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
 
-        currentCategories.forEach((cat: StoredRoomCategory) => {
-            const pricing = cat.pricing || initialNewCategoryFormState.pricing;
-            // This calculation doesn't filter by category availability dates for the *overall* property price
-            mealPlans.forEach(mealPlan => {
-                // ... (price calculation logic remains the same)
-                const singleBase = getPrice(pricing.singleOccupancyAdultPrice, mealPlan);
-                const singleDisc = getPrice(pricing.discountedSingleOccupancyAdultPrice, mealPlan);
-                const doubleBase = getPrice(pricing.doubleOccupancyAdultPrice, mealPlan);
-                const doubleDisc = getPrice(pricing.discountedDoubleOccupancyAdultPrice, mealPlan);
-                const tripleBase = getPrice(pricing.tripleOccupancyAdultPrice, mealPlan);
-                const tripleDisc = getPrice(pricing.discountedTripleOccupancyAdultPrice, mealPlan);
+        // currentCategories.forEach((cat: StoredRoomCategory) => {
+        //     const pricing = cat.pricing || initialNewCategoryFormState.pricing;
+        //     // This calculation doesn't filter by category availability dates for the *overall* property price
+        //     mealPlans.forEach(mealPlan => {
+        //         // ... (price calculation logic remains the same)
+        //         const singleBase = getPrice(pricing.singleOccupancyAdultPrice, mealPlan);
+        //         const singleDisc = getPrice(pricing.discountedSingleOccupancyAdultPrice, mealPlan);
+        //         const doubleBase = getPrice(pricing.doubleOccupancyAdultPrice, mealPlan);
+        //         const doubleDisc = getPrice(pricing.discountedDoubleOccupancyAdultPrice, mealPlan);
+        //         const tripleBase = getPrice(pricing.tripleOccupancyAdultPrice, mealPlan);
+        //         const tripleDisc = getPrice(pricing.discountedTripleOccupancyAdultPrice, mealPlan);
 
-                const pricesPerAdult: number[] = [];
-                const discountedPricesPerAdult: number[] = [];
+        //         const pricesPerAdult: number[] = [];
+        //         const discountedPricesPerAdult: number[] = [];
 
-                if (singleBase > 0) pricesPerAdult.push(singleBase);
-                if (singleDisc > 0) discountedPricesPerAdult.push(singleDisc); else if (singleBase > 0) discountedPricesPerAdult.push(singleBase);
-                if (doubleBase > 0) pricesPerAdult.push(doubleBase / 2);
-                if (doubleDisc > 0) discountedPricesPerAdult.push(doubleDisc / 2); else if (doubleBase > 0) discountedPricesPerAdult.push(doubleBase / 2);
-                if (tripleBase > 0) pricesPerAdult.push(tripleBase / 3);
-                if (tripleDisc > 0) discountedPricesPerAdult.push(tripleDisc / 3); else if (tripleBase > 0) discountedPricesPerAdult.push(tripleBase / 3);
+        //         if (singleBase > 0) pricesPerAdult.push(singleBase);
+        //         if (singleDisc > 0) discountedPricesPerAdult.push(singleDisc); else if (singleBase > 0) discountedPricesPerAdult.push(singleBase);
+        //         if (doubleBase > 0) pricesPerAdult.push(doubleBase / 2);
+        //         if (doubleDisc > 0) discountedPricesPerAdult.push(doubleDisc / 2); else if (doubleBase > 0) discountedPricesPerAdult.push(doubleBase / 2);
+        //         if (tripleBase > 0) pricesPerAdult.push(tripleBase / 3);
+        //         if (tripleDisc > 0) discountedPricesPerAdult.push(tripleDisc / 3); else if (tripleBase > 0) discountedPricesPerAdult.push(tripleBase / 3);
 
-                const currentMinForPlan = Math.min(...pricesPerAdult.filter(p => p > 0 && isFinite(p)), Infinity);
-                const currentMinDiscountedForPlan = Math.min(...discountedPricesPerAdult.filter(p => p > 0 && isFinite(p)), Infinity);
+        //         const currentMinForPlan = Math.min(...pricesPerAdult.filter(p => p > 0 && isFinite(p)), Infinity);
+        //         const currentMinDiscountedForPlan = Math.min(...discountedPricesPerAdult.filter(p => p > 0 && isFinite(p)), Infinity);
 
-                 if (currentMinForPlan < minOverallPrice) { minOverallPrice = currentMinForPlan; leadCurrency = cat.currency; }
-                 if (currentMinDiscountedForPlan < minOverallDiscountedPrice) { minOverallDiscountedPrice = currentMinDiscountedForPlan; }
-            });
-        });
+        //          if (currentMinForPlan < minOverallPrice) { minOverallPrice = currentMinForPlan; leadCurrency = cat.currency; }
+        //          if (currentMinDiscountedForPlan < minOverallDiscountedPrice) { minOverallDiscountedPrice = currentMinDiscountedForPlan; }
+        //     });
+        // });
 
         displayTotalRooms = currentCategories.reduce((sum: number, category: StoredRoomCategory) => sum + (category.qty || 0), 0);
-        displayPrice = minOverallPrice === Infinity ? (ensurePropertyData.costing?.price || 0) : parseFloat(minOverallPrice.toFixed(2));
-        displayDiscountedPrice = minOverallDiscountedPrice !== Infinity ? parseFloat(minOverallDiscountedPrice.toFixed(2)) : (minOverallPrice !== Infinity ? parseFloat(minOverallPrice.toFixed(2)) : (ensurePropertyData.costing?.discountedPrice || 0));
-        if (displayDiscountedPrice >= displayPrice && displayPrice > 0) displayDiscountedPrice = displayPrice; else if (displayDiscountedPrice === 0 && displayPrice > 0) displayDiscountedPrice = displayPrice;
-        displayCurrency = leadCurrency;
+        // displayPrice = minOverallPrice === Infinity ? (ensurePropertyData.costing?.price || 0) : parseFloat(minOverallPrice.toFixed(2));
+        // displayDiscountedPrice = minOverallDiscountedPrice !== Infinity ? parseFloat(minOverallDiscountedPrice.toFixed(2)) : (minOverallPrice !== Infinity ? parseFloat(minOverallPrice.toFixed(2)) : (ensurePropertyData.costing?.discountedPrice || 0));
+        // if (displayDiscountedPrice >= displayPrice && displayPrice > 0) displayDiscountedPrice = displayPrice; else if (displayDiscountedPrice === 0 && displayPrice > 0) displayDiscountedPrice = displayPrice;
+        // displayCurrency = leadCurrency;
     }
 
     return (

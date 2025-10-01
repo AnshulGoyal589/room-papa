@@ -62,7 +62,6 @@ const initialHikePricingState: HikePricingByOccupancy = {
     tripleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
 };
 
-// Configuration for Hike Pricing Form Section
 interface HikePricingRowConfig {
     occupancy: number;
     field: keyof HikePricingByOccupancy;
@@ -111,7 +110,6 @@ interface PropertyEditFormProps {
   onSave: (updatedProperty: Property) => void;
 }
 
-// Helper Component for Meal Plan labels
 const MealPlanLabel: React.FC<{ mealPlan: keyof PricingByMealPlan, showIcon?: boolean, className?: string }> = ({ mealPlan, showIcon = true, className="" }) => {
     let text = '';
     switch(mealPlan) {
@@ -128,7 +126,6 @@ const MealPlanLabel: React.FC<{ mealPlan: keyof PricingByMealPlan, showIcon?: bo
     );
 }
 
-// Configuration for Adult Pricing Form Section
 interface AdultPricingRowConfig {
     occupancy: number;
     baseField: keyof RoomCategoryPricing;
@@ -142,7 +139,6 @@ const adultPricingConfig: AdultPricingRowConfig[] = [
     { occupancy: 3, baseField: 'tripleOccupancyAdultPrice', discField: 'discountedTripleOccupancyAdultPrice', label: '3 Adults' },
 ];
 
-// Configuration for Child Pricing Form Section
 interface ChildPricingRowConfig {
     age: string;
     baseField: keyof RoomCategoryPricing;
@@ -153,7 +149,6 @@ const childPricingConfig: ChildPricingRowConfig[] = [
     { age: '5-12 yrs', baseField: 'child5to12Price', discField: 'discountedChild5to12Price' },
 ];
 
-// Chip List component
 const ChipList: React.FC<{ items: string[]; onRemove?: (item: string) => void; noRemove?: boolean, baseColorClass?: string, icon?: React.ElementType }> = ({ items, onRemove, noRemove, baseColorClass = "bg-gray-100 text-gray-700 border-gray-300", icon: Icon }) => {
     if (!items || items.length === 0) return null;
     return (
@@ -180,7 +175,6 @@ const ChipList: React.FC<{ items: string[]; onRemove?: (item: string) => void; n
     );
 };
 
-
 const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => {
   const [formData, setFormData] = useState<Property>(() => {
       const clonedItem = JSON.parse(JSON.stringify(item));
@@ -198,7 +192,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
               categoryActivities: Array.isArray(cat.categoryActivities) ? cat.categoryActivities.map(String) : [],
               seasonalHike: cat.seasonalHike || undefined,
               categoryFacilities: Array.isArray(cat.categoryFacilities) ? cat.categoryFacilities.map(String) : [],
-              categoryImages: Array.isArray(cat.categoryImages) ? cat.categoryImages : [], // Corrected initialization
+              categoryImages: Array.isArray(cat.categoryImages) ? cat.categoryImages : [],
           }));
       } else {
           clonedItem.categoryRooms = [];
@@ -265,40 +259,120 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
   }, [isEditMode, item, formData.costing?.currency]);
 
 
+//   useEffect(() => {
+//     const currentCategories = formData.categoryRooms || [];
+//     if (currentCategories && currentCategories.length > 0) {
+//       let minOverallPrice = Infinity;
+//       let minOverallDiscountedPrice = Infinity;
+//       let leadCurrency = currentCategories[0].currency || "USD";
+//       const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
+
+//       currentCategories.forEach((cat: StoredRoomCategory) => {
+//         const pricing = cat.pricing || initialNewCategoryState.pricing;
+//         mealPlans.forEach(mealPlan => {
+//             const singleBase = getPrice(pricing.singleOccupancyAdultPrice, mealPlan);
+//             const singleDisc = getPrice(pricing.discountedSingleOccupancyAdultPrice, mealPlan);
+//             const doubleBase = getPrice(pricing.doubleOccupancyAdultPrice, mealPlan);
+//             const doubleDisc = getPrice(pricing.discountedDoubleOccupancyAdultPrice, mealPlan);
+//             const tripleBase = getPrice(pricing.tripleOccupancyAdultPrice, mealPlan);
+//             const tripleDisc = getPrice(pricing.discountedTripleOccupancyAdultPrice, mealPlan);
+//             const pricesPerAdult: number[] = []; const discountedPricesPerAdult: number[] = [];
+//             if (singleBase > 0) pricesPerAdult.push(singleBase); if (singleDisc > 0) discountedPricesPerAdult.push(singleDisc); else if (singleBase > 0) discountedPricesPerAdult.push(singleBase);
+//             if (doubleBase > 0) pricesPerAdult.push(doubleBase / 2); if (doubleDisc > 0) discountedPricesPerAdult.push(doubleDisc / 2); else if (doubleBase > 0) discountedPricesPerAdult.push(doubleBase / 2);
+//             if (tripleBase > 0) pricesPerAdult.push(tripleBase / 3); if (tripleDisc > 0) discountedPricesPerAdult.push(tripleDisc / 3); else if (tripleBase > 0) discountedPricesPerAdult.push(tripleBase / 3);
+//             const currentMinForPlan = Math.min(...pricesPerAdult.filter(p => p > 0 && isFinite(p)), Infinity); const currentMinDiscountedForPlan = Math.min(...discountedPricesPerAdult.filter(p => p > 0 && isFinite(p)), Infinity);
+//              if (currentMinForPlan < minOverallPrice) { minOverallPrice = currentMinForPlan; leadCurrency = cat.currency; }
+//              if (currentMinDiscountedForPlan < minOverallDiscountedPrice) { minOverallDiscountedPrice = currentMinDiscountedForPlan; }
+//         });
+//       });
+//       const totalRooms = currentCategories.reduce((sum: number, category: StoredRoomCategory) => sum + (category.qty || 0), 0);
+//       let finalDiscountedPrice = minOverallDiscountedPrice === Infinity ? (minOverallPrice === Infinity ? 0 : minOverallPrice) : minOverallDiscountedPrice;
+//       if (finalDiscountedPrice >= (minOverallPrice === Infinity ? 0 : minOverallPrice) && minOverallPrice !== Infinity) { finalDiscountedPrice = minOverallPrice; }
+//       setFormData(prev => ({ ...prev, costing: { price: minOverallPrice === Infinity ? 0 : parseFloat(minOverallPrice.toFixed(2)), discountedPrice: parseFloat(finalDiscountedPrice.toFixed(2)), currency: leadCurrency }, rooms: totalRooms }));
+//     } else {
+//       setFormData(prev => ({ ...prev, costing: { price: 0, discountedPrice: 0, currency: prev.costing?.currency || 'USD' }, rooms: 0 }));
+//     }
+//   }, [formData.categoryRooms]);
+
   useEffect(() => {
     const currentCategories = formData.categoryRooms || [];
+    // Only proceed if there are categories
     if (currentCategories && currentCategories.length > 0) {
       let minOverallPrice = Infinity;
       let minOverallDiscountedPrice = Infinity;
-      let leadCurrency = currentCategories[0].currency || "USD";
-      const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
+      let leadCurrency = currentCategories[0].currency || "USD"; // Default to first category's currency or USD
+
+      const mealPlanPriorities: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
 
       currentCategories.forEach((cat: StoredRoomCategory) => {
         const pricing = cat.pricing || initialNewCategoryState.pricing;
-        mealPlans.forEach(mealPlan => {
-            const singleBase = getPrice(pricing.singleOccupancyAdultPrice, mealPlan);
-            const singleDisc = getPrice(pricing.discountedSingleOccupancyAdultPrice, mealPlan);
-            const doubleBase = getPrice(pricing.doubleOccupancyAdultPrice, mealPlan);
-            const doubleDisc = getPrice(pricing.discountedDoubleOccupancyAdultPrice, mealPlan);
-            const tripleBase = getPrice(pricing.tripleOccupancyAdultPrice, mealPlan);
-            const tripleDisc = getPrice(pricing.discountedTripleOccupancyAdultPrice, mealPlan);
-            const pricesPerAdult: number[] = []; const discountedPricesPerAdult: number[] = [];
-            if (singleBase > 0) pricesPerAdult.push(singleBase); if (singleDisc > 0) discountedPricesPerAdult.push(singleDisc); else if (singleBase > 0) discountedPricesPerAdult.push(singleBase);
-            if (doubleBase > 0) pricesPerAdult.push(doubleBase / 2); if (doubleDisc > 0) discountedPricesPerAdult.push(doubleDisc / 2); else if (doubleBase > 0) discountedPricesPerAdult.push(doubleBase / 2);
-            if (tripleBase > 0) pricesPerAdult.push(tripleBase / 3); if (tripleDisc > 0) discountedPricesPerAdult.push(tripleDisc / 3); else if (tripleBase > 0) discountedPricesPerAdult.push(tripleBase / 3);
-            const currentMinForPlan = Math.min(...pricesPerAdult.filter(p => p > 0 && isFinite(p)), Infinity); const currentMinDiscountedForPlan = Math.min(...discountedPricesPerAdult.filter(p => p > 0 && isFinite(p)), Infinity);
-             if (currentMinForPlan < minOverallPrice) { minOverallPrice = currentMinForPlan; leadCurrency = cat.currency; }
-             if (currentMinDiscountedForPlan < minOverallDiscountedPrice) { minOverallDiscountedPrice = currentMinDiscountedForPlan; }
-        });
+
+        let categorySinglePrice = 0;
+        let categorySingleDiscountedPrice = 0;
+
+        // Find the single occupancy price based on meal plan priority
+        for (const mealPlan of mealPlanPriorities) {
+          const singleBase = getPrice(pricing.singleOccupancyAdultPrice, mealPlan);
+          const singleDisc = getPrice(pricing.discountedSingleOccupancyAdultPrice, mealPlan);
+
+          if (singleBase > 0) {
+            categorySinglePrice = singleBase;
+            // If discounted price is available and valid, use it, otherwise use base price
+            categorySingleDiscountedPrice = (singleDisc > 0 && singleDisc < singleBase) ? singleDisc : singleBase;
+            break; // Found a valid price with priority, stop searching meal plans for this category
+          }
+        }
+        
+        // Only consider this category's single occupancy price if a valid one was found
+        if (categorySinglePrice > 0) {
+          if (categorySinglePrice < minOverallPrice) {
+            minOverallPrice = categorySinglePrice;
+            leadCurrency = cat.currency; // Update currency when a new minimum price is found
+          }
+          if (categorySingleDiscountedPrice < minOverallDiscountedPrice) {
+            minOverallDiscountedPrice = categorySingleDiscountedPrice;
+          }
+        }
       });
+
       const totalRooms = currentCategories.reduce((sum: number, category: StoredRoomCategory) => sum + (category.qty || 0), 0);
-      let finalDiscountedPrice = minOverallDiscountedPrice === Infinity ? (minOverallPrice === Infinity ? 0 : minOverallPrice) : minOverallDiscountedPrice;
-      if (finalDiscountedPrice >= (minOverallPrice === Infinity ? 0 : minOverallPrice) && minOverallPrice !== Infinity) { finalDiscountedPrice = minOverallPrice; }
-      setFormData(prev => ({ ...prev, costing: { price: minOverallPrice === Infinity ? 0 : parseFloat(minOverallPrice.toFixed(2)), discountedPrice: parseFloat(finalDiscountedPrice.toFixed(2)), currency: leadCurrency }, rooms: totalRooms }));
+      
+      const newCalculatedPrice = minOverallPrice === Infinity ? 0 : parseFloat(minOverallPrice.toFixed(2));
+      const newCalculatedDiscountedPrice = minOverallDiscountedPrice === Infinity ? 0 : parseFloat(minOverallDiscountedPrice.toFixed(2));
+
+      // Ensure discounted price is never higher than the base price
+      const finalDiscountedPrice = (newCalculatedDiscountedPrice > 0 && newCalculatedDiscountedPrice < newCalculatedPrice) 
+                                   ? newCalculatedDiscountedPrice 
+                                   : newCalculatedPrice; // If no valid discounted price, or it's higher, use the base price
+
+      // Only update if there's a significant change to avoid unnecessary re-renders
+      if (
+        totalRooms !== formData.rooms ||
+        newCalculatedPrice !== formData.costing?.price ||
+        finalDiscountedPrice !== formData.costing?.discountedPrice ||
+        leadCurrency !== formData.costing?.currency
+      ) {
+        setFormData(prev => ({ 
+          ...prev, 
+          costing: { 
+            price: newCalculatedPrice, 
+            discountedPrice: finalDiscountedPrice, 
+            currency: leadCurrency 
+          }, 
+          rooms: totalRooms 
+        }));
+      }
     } else {
-      setFormData(prev => ({ ...prev, costing: { price: 0, discountedPrice: 0, currency: prev.costing?.currency || 'USD' }, rooms: 0 }));
+      // If no categories, reset costing and rooms
+      if (formData.costing?.price !== 0 || formData.costing?.discountedPrice !== 0 || formData.rooms !== 0) {
+        setFormData(prev => ({ 
+          ...prev, 
+          costing: { price: 0, discountedPrice: 0, currency: prev.costing?.currency || 'USD' }, // Keep existing currency if possible
+          rooms: 0 
+        }));
+      }
     }
-  }, [formData.categoryRooms]);
+  }, [formData.categoryRooms, formData.costing, formData.rooms, setFormData]); // Added formData.costing and formData.rooms to dependencies
 
   const handleChange = (field: string, value: unknown) => {
     setFormData((prev) => {
@@ -413,7 +487,6 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     setFormData((prev: Property) => ({ ...prev, categoryRooms: (prev.categoryRooms || []).map((cat: StoredRoomCategory) => cat.id === categoryId ? { ...cat, categoryFacilities: (cat.categoryFacilities || []).filter((f: string) => f !== facilityToRemove) } : cat ) }));
   };
 
-
   const handleAddOrUpdateCategory = () => {
     if (!newCategory.title.trim()) { alert('Category title is required.'); return; }
     if (newCategory.qty <= 0) { alert('Quantity must be greater than 0.'); return; }
@@ -500,7 +573,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         categoryActivities: Array.isArray(categoryToEdit.categoryActivities) ? categoryToEdit.categoryActivities.map(String) : [],
         categoryFacilities: Array.isArray(categoryToEdit.categoryFacilities) ? categoryToEdit.categoryFacilities.map(String) : [],
         categoryImages: Array.isArray(categoryToEdit.categoryImages) ? categoryToEdit.categoryImages : [],
-         seasonalHike: {
+        seasonalHike: {
             startDate: categoryToEdit.seasonalHike?.startDate || '',
             endDate: categoryToEdit.seasonalHike?.endDate || '',
             hikePricing: categoryToEdit.seasonalHike?.hikePricing
@@ -555,7 +628,28 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
 
       <div className="space-y-4 pt-6 border-t">
         <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><DollarSign className="mr-3 h-6 w-6 text-primary"/>Property Overview (Calculated)</h2>
-         <div className="bg-[#003c95] p-4 rounded-lg border border-[#003c95]"> <div className="flex items-start gap-2 mb-3"> <AlertCircle size={20} className="text-[#003c95] mt-0.5 shrink-0" /> <p className="text-sm text-[#003c95]"> The following values are automatically calculated from your room categories. Ensure each category has valid pricing for all meal plans. </p> </div> <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"> <div> <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Starting Price (per adult/night)</label> <Input value={`${formData.costing?.currency || 'N/A'} ${formData.costing?.price.toLocaleString(undefined, {minimumFractionDigits: 2}) || '0.00'}`} disabled className="bg-gray-100 font-bold text-gray-800 mt-1" /> </div> {(formData.costing?.discountedPrice ?? 0) > 0 && formData.costing.discountedPrice < formData.costing.price && ( <div> <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Discounted Start Price</label> <Input value={`${formData.costing.currency} ${formData.costing.discountedPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}`} disabled className="bg-gray-100 font-bold text-green-600 mt-1" /> </div> )} <div> <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Rooms</label> <Input value={formData.rooms || 0} type="number" disabled className="bg-gray-100 font-bold text-gray-800 mt-1" /> </div> </div> </div>
+        <div className="bg-[#003c95]/70 text-white p-4 rounded-lg border border-[#003c95]">
+            <div className="flex items-start gap-2 mb-3">
+                <AlertCircle size={25} className="text-white mt-0.5 shrink-0" />
+                <p className="text-base font-bold text-white"> The following values are automatically calculated from your room categories. Ensure each category has valid pricing for all meal plans. </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                    <label className="text-xs font-bold text-white uppercase tracking-wider">Starting Price (per adult/night)</label> 
+                    <Input value={`${formData.costing?.currency || 'N/A'} ${formData.costing?.price.toLocaleString(undefined, {minimumFractionDigits: 2}) || '0.00'}`} disabled className="bg-white font-bold text-[#003c95] mt-1" /> 
+                </div>
+                {(formData.costing?.discountedPrice ?? 0) > 0 && formData.costing.discountedPrice < formData.costing.price && ( 
+                    <div> 
+                        <label className="text-xs font-bold text-white uppercase tracking-wider">Discounted Start Price</label>
+                        <Input value={`${formData.costing.currency} ${formData.costing.discountedPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}`} disabled className="bg-white font-bold text-[#003c95] mt-1" />
+                    </div> 
+                )}
+                <div>
+                    <label className="text-xs font-bold white uppercase tracking-wider">Total Rooms</label>
+                    <Input value={formData.rooms || 0} type="number" disabled className="bg-white font-bold text-[#003c95] mt-1" />
+                </div> 
+            </div>
+        </div>
       </div>
 
       <div className="space-y-4 pt-6 border-t">

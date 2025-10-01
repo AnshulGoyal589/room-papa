@@ -139,6 +139,7 @@ export default function SearchResults() {
       }
       
       try {
+        console.log(" Fetching with params: ", params.toString());
         const response = await fetch(`/api/search?${params.toString()}`);
         if (!response.ok) {
           throw new Error(`API Error: ${response.status}`);
@@ -161,49 +162,6 @@ export default function SearchResults() {
     loadData();
   }, [currentSearchParams, category, activeSortKey]);
 
-  // const handlePageChange = (page: number) => {
-  //   if (page < 1 || page > totalPages || page === currentPage) return;
-    
-  //   const params = new URLSearchParams(currentSearchParams?.toString() || '');
-  //   params.set('page', page.toString());
-  //   router.push(`/search?${params.toString()}`, { scroll: false });
-  //   window.scrollTo({ top: 0, behavior: 'smooth' });
-  // };
-
-  // const handleRemoveFilter = (chipKey: string) => {
-  //   const params = new URLSearchParams(currentSearchParams?.toString() || '');
-  //   params.delete(chipKey);
-  //   params.set('page', '1'); 
-  //   router.push(`/search?${params.toString()}`, { scroll: false });
-  // };
-
-  // const formatChipLabel = (key: string, value: string): string => {
-  //   switch (key) {
-  //       case 'minPrice': return `Min Price: ${Number(value).toLocaleString()}`;
-  //       case 'maxPrice': 
-  //           return Number(value) > 200000 ? `Max Price: ${Number(200000).toLocaleString()}+` : `Max Price: ${Number(value).toLocaleString()}`;
-  //       case 'rooms': return `${value} Room${parseInt(value) > 1 ? 's' : ''}`;
-  //       case 'city': return `City: ${value}`;
-  //       case 'country': return `Country: ${value}`;
-  //       case 'checkIn': return `Check-in: ${new Date(value).toLocaleDateString()}`;
-  //       case 'checkOut': return `Check-out: ${new Date(value).toLocaleDateString()}`;
-  //       case 'adults': return `${value} Adult${parseInt(value) > 1 ? 's' : ''}`;
-  //       case 'children': return `${value} Child${parseInt(value) > 1 ? 'ren' : ''}`;
-  //       case 'pets': return value === 'true' ? 'Pets Allowed' : 'No Pets';
-  //       case 'title': return `Keyword: ${value}`;
-  //       case 'propertyType': return `Type: ${value}`;
-  //       case 'propertyRating': return `Rating: ${value}+ Stars`;
-  //       default:
-  //         const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-  //         if (value.includes(',')) {
-  //           const values = value.split(',');
-  //           if (values.length > 2) return `${formattedKey}: ${values.slice(0, 2).join(', ')} +${values.length - 2} more`;
-  //           return `${formattedKey}: ${values.join(', ')}`;
-  //         }
-  //         return `${formattedKey}: ${value}`;
-  //     }
-  // };
-
   const renderPropertyCard = (property: Property) => {
     const ratingDesc = getRatingDescription(property.totalRating || property.propertyRating); // Use totalRating if available
     const reviewText = formatReviewCount(Array.isArray(property.review) ? property.review : property.review ? [property.review] : []);
@@ -219,21 +177,13 @@ export default function SearchResults() {
     if (adultsQuery) guestSummary += `, ${adultsQuery} adult${parseInt(adultsQuery) === 1 ? '' : 's'}`;
     if (childrenQuery && parseInt(childrenQuery) > 0) guestSummary += `, ${childrenQuery} child${parseInt(childrenQuery) === 1 ? '' : 'ren'}`;
 
-    // Attempt to get a representative room type
     const representativeRoom = property.categoryRooms && property.categoryRooms.length > 0 ? property.categoryRooms[0] : null;
     const roomTypeTitle = representativeRoom?.title || "Standard Room"; // Fallback
     const bedConfiguration = representativeRoom?.bedConfiguration || "Comfortable bedding"; // Fallback
-    // console.log(property.reservationPolicy);
     const hasFreeCancellation = property.reservationPolicy?.includes("Free Cancellation");
     const hasNoPrepayment = property.reservationPolicy?.includes("No prepayment needed") || property.reservationPolicy?.includes("Pay at Property");
 
-    // For "Recommended for your group" badge - simple logic for demonstration
-    // const isRecommendedForGroup = parseInt(adultsQuery) > 1 || (property.amenities?.includes("Family rooms"));
-
     const currencySymbol = property.costing?.currency === 'INR' ? '₹' : (property.costing?.currency || '$');
-    
-    // Taxes: This is a placeholder. Ideally, this comes pre-calculated from backend.
-    // For demonstration, if property.costing.price and discountedPrice are per night for the group already:
     const taxesAndCharges = property.costing ? (property.costing.price * 0.1) : 0; // Example 10% of base price
 
     return (
@@ -260,19 +210,16 @@ export default function SearchResults() {
         </Link>
         <button 
             className="absolute top-3 right-3 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors"
-            // onClick={(e) => {e.stopPropagation(); alert("Add to wishlist clicked!");}} // Placeholder action
         >
           <Heart size={20} className="text-red-500" />
         </button>
       </div>
       
-      {/* Middle Content Column */}
       <div className="flex-grow p-4 flex flex-col">
         <div className="flex justify-between items-start">
             <Link href={`/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}`} className="block mb-1">
                 <h3 className="text-xl md:text-2xl font-bold text-[#003c95] hover:text-[#003c95] transition-colors line-clamp-2">{property.title || "Untitled Property"}</h3>
             </Link>
-            {/* Rating for very small screens, hidden on sm+ */}
             {(property.totalRating || property.propertyRating) && (
               <div className="sm:hidden flex flex-col items-end ml-2">
                 <div className={`text-xs font-semibold ${ratingDesc.className}`}>{ratingDesc.text}</div>
@@ -294,14 +241,11 @@ export default function SearchResults() {
             <span className="text-[#003c95] hover:underline">{property.location?.city}</span>
             <span className="mx-1 text-gray-400">•</span>
             <span className="text-[#003c95] hover:underline">Show on map</span>
-            {/* Add distance from centre if available: e.g. <span className="mx-1 text-gray-400">•</span>12.8 km from centre */}
         </div>
 
-        {/* {isRecommendedForGroup && ( */}
-            <div className="inline-block bg-gray-100 border border-gray-300 text-gray-700 text-xs font-medium px-2 py-1 rounded-sm mb-3 self-start">
-                Recommended for you
-            </div>
-        {/* )} */}
+        <div className="inline-block bg-gray-100 border border-gray-300 text-gray-700 text-xs font-medium px-2 py-1 rounded-sm mb-3 self-start">
+            Recommended for you
+        </div>
         
         <div className="text-sm text-gray-800 mb-1">
             <span className="font-semibold">{roomTypeTitle}</span>
@@ -323,12 +267,10 @@ export default function SearchResults() {
             </div>
         )}
         
-        {/* Spacer to push button to bottom if policies are few */}
         <div className="flex-grow"></div> 
 
       </div>
 
-      {/* Right Price/Button Column */}
       <div className='w-full sm:w-auto sm:min-w-[200px] md:min-w-[220px] lg:min-w-[240px] p-4 flex flex-col justify-between items-center sm:items-end border-t sm:border-t-0 sm:border-l border-gray-200/80 bg-gray-50/30 sm:bg-transparent'>
         <div className="w-full text-center sm:text-right mb-3 sm:mb-0">
           {(property.totalRating || property.propertyRating) && (
@@ -346,12 +288,11 @@ export default function SearchResults() {
         
         <div className="w-full text-center sm:text-right">
           <p className="text-xs text-gray-500 mb-0.5">{guestSummary}</p>
-          {property.categoryRooms && property.categoryRooms.length > 0 && property.categoryRooms[0]?.pricing?.discountedDoubleOccupancyAdultPrice?.noMeal !== undefined && (
+          {property.categoryRooms && property.categoryRooms.length > 0 && property.costing.discountedPrice !== undefined && (
             <>
               <span className="text-2xl font-bold text-gray-800">
-                {/* {currencySymbol}{(property.costing.discountedPrice* numNights).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})} */}
                 {currencySymbol}
-                {(property.categoryRooms[0].pricing.discountedDoubleOccupancyAdultPrice.noMeal ).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})}
+                {(property.costing.discountedPrice ).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})}
               </span>
               { taxesAndCharges > 0 && (
                 <p className="text-xs text-gray-500">

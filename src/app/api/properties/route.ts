@@ -22,13 +22,6 @@ export async function POST(req: NextRequest) {
     const db = client.db('travel-app');
     
     const propertyData = await req.json();
-
-    // propertyData.startDate = new Date(propertyData.startDate);
-    // propertyData.endDate = new Date(propertyData.endDate);
-
-    // console.log(new Date(propertyData.startDate));
-    // console.log(typeof(new Date(propertyData.startDate)));
-
     
     const property: Property = {
       ...propertyData,

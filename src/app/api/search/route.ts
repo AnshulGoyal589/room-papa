@@ -18,11 +18,12 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
-
+    // console.log("Search Params: ", searchParams);
     const query = buildSearchQuery(searchParams);
     const sort = buildSortQuery(searchParams);
-    // const pageSize = parseInt(searchParams.get('pageSize') || '10');
-    // const page = parseInt(searchParams.get('page') || '1');
+    
+    console.log("Final Query: ", JSON.stringify(query));
+    // console.log("Sort: ", JSON.stringify(sort));
 
     const collectionName = getCategoryCollection(category);
     if (!collectionName) {
@@ -152,6 +153,8 @@ function addPriceRangeFilter(query: Record<string, any>, searchParams: URLSearch
 
   const minPrice = searchParams.get('minPrice');
   const maxPrice = searchParams.get('maxPrice');
+
+  // console.log("Min Price: ", minPrice, " Max Price: ", maxPrice);
 
   if (minPrice || maxPrice) {
     query['costing.discountedPrice'] = {};

@@ -120,7 +120,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
 }) => {
   const [newCategory, setNewCategory] = useState<typeof initialNewCategoryState>(initialNewCategoryState);
 
-  useEffect(() => {
+useEffect(() => {
     const { costing, rooms, categoryRooms } = propertyData;
     const currentPrice = costing?.price ?? 0;
     const currentDiscountedPrice = costing?.discountedPrice ?? 0;
@@ -130,42 +130,35 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
     if (categoryRooms && categoryRooms.length > 0) {
       let minOverallPrice = Infinity;
       let minOverallDiscountedPrice = Infinity;
-      let leadCurrency = categoryRooms[0].currency || 'USD';
+      let leadCurrency = 'USD'; // Default currency
 
       categoryRooms.forEach(cat => {
-        const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
-        const categoryPricesPerAdult: number[] = [];
-        const categoryDiscountedPricesPerAdult: number[] = [];
+        const mealPlanPriorities: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
 
-        mealPlans.forEach(mealPlan => {
-            const singleBase = getPrice(cat.pricing.singleOccupancyAdultPrice, mealPlan);
-            const singleDisc = getPrice(cat.pricing.discountedSingleOccupancyAdultPrice, mealPlan);
-            if (singleBase > 0) categoryPricesPerAdult.push(singleBase);
-            if (singleDisc > 0) categoryDiscountedPricesPerAdult.push(singleDisc);
-            else if (singleBase > 0) categoryDiscountedPricesPerAdult.push(singleBase);
+        let categorySinglePrice = 0;
+        let categorySingleDiscountedPrice = 0;
 
-            const doubleBase = getPrice(cat.pricing.doubleOccupancyAdultPrice, mealPlan);
-            const doubleDisc = getPrice(cat.pricing.discountedDoubleOccupancyAdultPrice, mealPlan);
-            if (doubleBase > 0) categoryPricesPerAdult.push(doubleBase / 2);
-            if (doubleDisc > 0) categoryDiscountedPricesPerAdult.push(doubleDisc / 2);
-            else if (doubleBase > 0) categoryDiscountedPricesPerAdult.push(doubleBase / 2);
+        // Find the single occupancy price based on meal plan priority
+        for (const mealPlan of mealPlanPriorities) {
+          const singleBase = getPrice(cat.pricing.singleOccupancyAdultPrice, mealPlan);
+          const singleDisc = getPrice(cat.pricing.discountedSingleOccupancyAdultPrice, mealPlan);
 
-            const tripleBase = getPrice(cat.pricing.tripleOccupancyAdultPrice, mealPlan);
-            const tripleDisc = getPrice(cat.pricing.discountedTripleOccupancyAdultPrice, mealPlan);
-            if (tripleBase > 0) categoryPricesPerAdult.push(tripleBase / 3);
-            if (tripleDisc > 0) categoryDiscountedPricesPerAdult.push(tripleDisc / 3);
-            else if (tripleBase > 0) categoryDiscountedPricesPerAdult.push(tripleBase / 3);
-        });
-        
-        const currentCatMinPrice = Math.min(...categoryPricesPerAdult.filter(p => p > 0 && isFinite(p)), Infinity);
-        const currentCatMinDiscountedPrice = Math.min(...categoryDiscountedPricesPerAdult.filter(p => p > 0 && isFinite(p)), Infinity);
-
-        if (currentCatMinPrice < minOverallPrice) {
-          minOverallPrice = currentCatMinPrice;
-          leadCurrency = cat.currency;
+          if (singleBase > 0) {
+            categorySinglePrice = singleBase;
+            categorySingleDiscountedPrice = singleDisc > 0 ? singleDisc : singleBase;
+            break; // Found a valid price, stop searching for this category
+          }
         }
-        if (currentCatMinDiscountedPrice < minOverallDiscountedPrice) {
-          minOverallDiscountedPrice = currentCatMinDiscountedPrice;
+        
+        // Only consider if a valid single occupancy price was found for this category
+        if (categorySinglePrice > 0) {
+          if (categorySinglePrice < minOverallPrice) {
+            minOverallPrice = categorySinglePrice;
+            leadCurrency = cat.currency; // Update currency only when a new min price is found
+          }
+          if (categorySingleDiscountedPrice < minOverallDiscountedPrice) {
+            minOverallDiscountedPrice = categorySingleDiscountedPrice;
+          }
         }
       });
 
@@ -190,6 +183,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
         }));
       }
     } else {
+      // Reset if no categoryRooms are present
       if (currentPrice !== 0 || currentDiscountedPrice !== 0 || currentRooms !== 0) {
         setPropertyData(prev => ({
           ...prev,
