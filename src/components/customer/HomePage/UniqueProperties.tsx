@@ -92,7 +92,7 @@ export default function UniqueProperties({ initialProperties }: UniqueProperties
                   <div className="text-right flex items-center justify-end gap-2 ">
                     <p className="text-base text-gray-500">Starting from</p>
                     <p className="text-xl font-bold text-gray-800">
-                      {property.costing?.currency} { property.costing.discountedPrice }
+                      {property.costing?.currency} { property?.costing?.discountedPrice }
                     </p>
                   </div>
                 </div>
