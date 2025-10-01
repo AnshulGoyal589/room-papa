@@ -35,6 +35,8 @@ export default function UniqueProperties({ initialProperties }: UniqueProperties
     }
   };
 
+  console.log("Rendering UniqueProperties with properties:", initialProperties);
+
 
  return (
     <div className="bg-white py-10 sm:py-4">

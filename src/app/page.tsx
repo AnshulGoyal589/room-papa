@@ -15,7 +15,7 @@ async function getUniquePropertiesData(): Promise<Property[]> {
       // Use caching to improve performance. This will serve a static version
       // and re-fetch the data in the background every hour (3600 seconds).
       // This is Incremental Static Regeneration (ISR) and is great for SEO.
-      next: { revalidate: 3600 },
+      // next: { revalidate: 3600 },
     });
 
     if (!response.ok) {
