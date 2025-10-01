@@ -58,10 +58,10 @@ export interface PropertyRoomDetail {
 // Property Booking Specific Structure
 export interface PropertyBooking {
   _id?: ObjectId;
-  type: 'property'; // Discriminator field
+  type: 'property';
+  propertyId?: ObjectId;
+  isReviewed?: boolean;
   tripDetails: BaseDetails & {
-      // Property specific details added here if needed in the future
-      // ownerId of the property itself is better placed here
       ownerId: string;
   };
   bookingDetails: BaseBookingCoreDetails & { // Extends the core timing/total price info
@@ -93,6 +93,8 @@ export interface PropertyBooking {
 export interface TravellingBooking {
   _id?: ObjectId;
   type: 'travelling';
+  propertyId?: ObjectId;
+  isReviewed?: boolean;
   tripDetails: BaseDetails & {
     transportType: 'flight' | 'train' | 'bus';
     ownerId: string; // ID of the transport listing owner/provider
@@ -118,6 +120,8 @@ export interface TravellingBooking {
 export interface TripBooking {
   _id?: ObjectId;
   type: 'trip';
+  propertyId?: ObjectId;
+  isReviewed?: boolean;
   tripDetails: BaseDetails & {
     itinerary: string[];
     ownerId: string; // ID of the trip package owner/provider
@@ -154,7 +158,6 @@ interface BookingInputRoomDetail {
     currency: string;
 }
 
-// Define the input structure specifically for creating a Property Booking
 export interface PropertyBookingInputData {
     type: 'property';
     details: {                 // Matches frontend 'details' object

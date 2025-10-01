@@ -211,7 +211,7 @@ export function Header() {
   
   return (
     <header className={`text-white sticky top-0 z-60 transition-colors duration-300 ${isScrolled ? 'bg-[#003c95] shadow-md' : 'bg-[#003c95]'}`}> 
-      <div className="container mx-auto flex justify-between items-center h-20 px-4 sm:px-6 lg:px-8">
+      <div className="container max-w-7xl mx-auto flex justify-between items-center h-20 px-4 sm:px-6">
         
         <Link 
           href={role === 'customer' ? "/" : role === 'manager' ? "/manager/dashboard" : role === 'admin' ? "/admin/dashboard" : "/"} 

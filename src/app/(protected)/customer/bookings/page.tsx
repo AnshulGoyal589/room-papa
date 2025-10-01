@@ -40,7 +40,6 @@ export default async function MyBookingsPage() {
 
     return (
         <>
-            {/* <Header2 /> */}
             <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
                     <div className="mb-8">
@@ -49,8 +48,6 @@ export default async function MyBookingsPage() {
                         Here you can find all your upcoming and past trips.
                     </p>
                 </div>
-
-                {/* --- IMPROVEMENT: Handle the Empty State --- */}
                 {serializedBookings.length === 0 ? (
                     <div className="text-center bg-white dark:bg-gray-800 rounded-lg p-12 shadow-md">
                         <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">No Bookings Found</h2>
@@ -62,7 +59,6 @@ export default async function MyBookingsPage() {
                         </Button>
                     </div>
                 ) : (
-                    /* --- IMPROVEMENT: Use a Skeleton Loader in Suspense --- */
                     <Suspense fallback={<BookingsListSkeleton />}>
                        <BookingsList initialBookings={serializedBookings} />
                     </Suspense>

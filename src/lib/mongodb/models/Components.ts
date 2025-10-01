@@ -12,7 +12,6 @@ export interface Location{
     country: string;
 }
 
-
 export interface SeasonalCoasting {
   startDate: string;
   endDate: string;
