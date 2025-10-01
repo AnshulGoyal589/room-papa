@@ -58,6 +58,7 @@ const navLinks: {
   manager: [
     { href: "/manager/dashboard", label: "Dashboard", icon: Home },
     { href: "/manager/appointments", label: "Bookings", icon: BookAIcon },
+    { href: "/manager/profile", label: "Profile Activity", icon: Briefcase },
   ],
   admin: [
     { href: "/admin/dashboard", label: "Dashboard", icon: Home },
@@ -74,10 +75,8 @@ export function Header() {
   const [loading, setLoading] = useState(true);
   const [roleSaved, setRoleSaved] = useState(false);
   
-  // --- New state for scroll detection ---
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // --- All your original logic for role management remains unchanged ---
   useEffect(() => {
     if (!isSignedIn) {
       setRole('guest');
@@ -160,25 +159,19 @@ export function Header() {
     fetchUserRole();
   }, [isLoaded, isSignedIn, user]);
   
-  // --- New useEffect to handle scroll event ---
   useEffect(() => {
     const handleScroll = () => {
-      // Set isScrolled to true if user has scrolled more than 10px, false otherwise
       if (window.scrollY > 10) {
         setIsScrolled(true);
       } else {
         setIsScrolled(false);
       }
     };
-
-    // Add the event listener when the component mounts
     window.addEventListener('scroll', handleScroll);
-
-    // Clean up the event listener when the component unmounts
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, []); // Empty dependency array ensures this effect runs only once on mount
+  }, []);
 
   const handleCustomerSignUp = () => {
     localStorage.setItem('pendingUserRole', 'customer');
@@ -190,7 +183,6 @@ export function Header() {
     openSignUp({ afterSignUpUrl: window.location.href });
   };
   
-  // --- UI Logic ---
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const navRole: keyof typeof navLinks = role === 'guest' ? 'customer' : role;
@@ -204,7 +196,6 @@ export function Header() {
     );
   }
 
-  // Helper component for navigation links
   const NavLink: React.FC<NavLinkType & { isMobile?: boolean }> = ({ href, label, icon: Icon, isMobile = false }) => {
     const isActive = pathname === href;
     return (
@@ -222,8 +213,7 @@ export function Header() {
   };
   
   return (
-    // --- MODIFIED: Added dynamic classes for background color and transition ---
-    <header className={`text-white sticky top-0 z-50 transition-colors duration-300 ${isScrolled ? 'bg-[#003c95] shadow-md' : 'bg-[#003c95]'}`}> 
+    <header className={`text-white sticky top-0 z-60 transition-colors duration-300 ${isScrolled ? 'bg-[#003c95] shadow-md' : 'bg-[#003c95]'}`}> 
       <div className="container mx-auto flex justify-between items-center h-20 px-4 sm:px-6 lg:px-8">
         
         <Link 
@@ -240,7 +230,6 @@ export function Header() {
           />
         </Link>
 
-        {/* --- Desktop Navigation --- */}
         <nav className="hidden md:flex flex-1 justify-center items-center gap-2 lg:gap-4">
           {currentNavLinks.map((link) => (
             link.signedInOnly ? (
@@ -252,7 +241,6 @@ export function Header() {
           ))}
         </nav>
 
-        {/* --- Desktop Authentication & Actions --- */}
         <div className="hidden md:flex items-center gap-2">
           <TooltipProvider>
             <Tooltip>
@@ -271,7 +259,6 @@ export function Header() {
                 onClick={handleManagerSignUp}
                 className="hidden lg:flex items-center gap-2 text-white px-4 py-2 rounded-full border-2 border-transparent hover:border-white transition-all duration-300 text-sm font-bold"
               >
-                {/* <PlusCircle className="h-5 w-5" /> */}
                 <span>List Your Property</span>
               </button>
 
@@ -292,7 +279,7 @@ export function Header() {
               </button>
             </div>
           </SignedOut>
-           
+          
           <SignedIn>
             <div className="flex items-center gap-4">
               {role && role !== 'guest' && (
@@ -305,7 +292,6 @@ export function Header() {
           </SignedIn>
         </div>
 
-        {/* --- Mobile Menu Button --- */}
         <div className="md:hidden">
           <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-md hover:bg-white/10 transition-colors">
               {isMobileMenuOpen ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
@@ -326,16 +312,35 @@ export function Header() {
             ))}
           </nav>
 
+          {/* --- MODIFIED: Ensured the SignedOut and SignedIn components are correctly placed for mobile view --- */}
           <div className="p-4 border-t border-white/20">
             <SignedOut>
               <div className="flex flex-col gap-3">
-                <button onClick={handleCustomerSignUp} className="w-full text-center bg-white text-[#003c95] px-4 py-3 rounded-md font-semibold hover:bg-gray-100 transition-colors active:scale-95">
+                <button 
+                  onClick={() => {
+                    handleCustomerSignUp();
+                    setIsMobileMenuOpen(false);
+                  }} 
+                  className="w-full text-center bg-white text-[#003c95] px-4 py-3 rounded-md font-semibold hover:bg-gray-100 transition-colors active:scale-95"
+                >
                   Sign Up
                 </button>
-                <button onClick={() => openSignIn()} className="w-full text-center border border-white/80 text-white px-4 py-3 rounded-md font-semibold hover:bg-white hover:text-[#003c95] transition-colors active:scale-95">
+                <button 
+                  onClick={() => {
+                    openSignIn();
+                    setIsMobileMenuOpen(false);
+                  }} 
+                  className="w-full text-center border border-white/80 text-white px-4 py-3 rounded-md font-semibold hover:bg-white hover:text-[#003c95] transition-colors active:scale-95"
+                >
                   Log In
                 </button>
-                <button onClick={handleManagerSignUp} className="w-full text-center text-white/80 px-4 py-3 rounded-md font-medium hover:bg-white/10 hover:text-white transition-colors">
+                <button 
+                  onClick={() => {
+                    handleManagerSignUp();
+                    setIsMobileMenuOpen(false);
+                  }} 
+                  className="w-full text-center text-white/80 px-4 py-3 rounded-md font-medium hover:bg-white/10 hover:text-white transition-colors"
+                >
                   List Your Property
                 </button>
               </div>
