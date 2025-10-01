@@ -4,10 +4,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Building,
   Plane,
-  Hotel,
+  // Hotel,
   Car,
   Landmark,
   ShieldCheck,
+  PlaneIcon,
 } from 'lucide-react';
 import StaysSearchForm from './SearchForms/StaysSearchForm';
 import { usePathname } from 'next/navigation';
@@ -33,21 +34,28 @@ export default function SearchHeader() {
 
   const showHeading = pathname === '/';
 
-  const getCategory = useMemo(() => (tabId: TabId): CategoryType => {
+  const getCategory = (tabId: TabId): CategoryType => {
     switch (tabId) {
-      case 'property': return 'property';
-      case 'flight+hotel': case 'attractions': return 'trip';
-      case 'travelling': case 'car-rentals': case 'airport-taxis': return 'travelling';
-      default: return 'property';
+      case 'property':
+        return 'property';
+      case 'flight+hotel':
+      case 'attractions':
+        return 'trip';
+      case 'travelling':
+      case 'car-rentals':
+      case 'airport-taxis':
+        return 'travelling';
+      default:
+        return 'property';
     }
-  }, []);
+  };
 
   const tabs = useMemo(() => [
-    { id: 'property', label: 'Hotels & Homes', icon: Building, description: 'Find exclusive deals on millions of rooms worldwide.' },
-    { id: 'flight+hotel', label: 'Vacation Packages', icon: Hotel, description: 'Bundle your trip and unlock exclusive savings.' },
+    { id: 'property',  label: 'Stays', icon: Building, description: 'Find exclusive deals on millions of rooms worldwide.' },
+    { id: 'flight+hotel', label: 'Flight + Hotel', icon: PlaneIcon, description: 'Bundle your trip and unlock exclusive savings.' },
     { id: 'car-rentals', label: 'Car Rentals', icon: Car, description: 'Compare cheap car hire deals from top providers.' },
-    { id: 'attractions', label: 'Things to Do', icon: Landmark, description: 'Discover unforgettable experiences with free cancellation.' },
-    { id: 'airport-taxis', label: 'Airport Transfers', icon: ShieldCheck, description: 'Pre-book a hassle-free ride to or from the airport.' },
+    { id: 'attractions', label: 'Attractions', icon: Landmark, description: 'Discover unforgettable experiences with free cancellation.' },
+    { id: 'airport-taxis', label: 'Airport Taxis', icon: ShieldCheck, description: 'Pre-book a hassle-free ride to or from the airport.' },
     { id: 'travelling', label: 'Flights', icon: Plane, description: 'Book the best deals on airline tickets worldwide.' },
   ], []);
 

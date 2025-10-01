@@ -6,9 +6,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   Home, 
-  Plane, 
-  Hotel, 
-  ShoppingBag, 
+  // Plane, 
+  // Hotel, 
+  // ShoppingBag, 
   Briefcase,
   BookAIcon,
   Menu,
@@ -49,11 +49,8 @@ const navLinks: {
   admin: NavLinkType[];
 } = {
   customer: [
-    { href: "/", label: "Home", icon: Home },
-    { href: "/customer/bookings", label: "My Bookings", icon: Ticket, signedInOnly: true },
-    { href: "/search?category=trip", label: "Trips", icon: Plane },
-    { href: "/search?category=property", label: "Properties", icon: Hotel },
-    { href: "/search?category=travelling", label: "Travelling", icon: ShoppingBag },
+    // { href: "/", label: "Home", icon: Home },
+    { href: "/customer/bookings", label: "My Bookings", icon: Ticket, signedInOnly: true }
   ],
   manager: [
     { href: "/manager/dashboard", label: "Dashboard", icon: Home },
@@ -232,10 +229,12 @@ export function Header() {
 
         <nav className="hidden md:flex flex-1 justify-center items-center gap-2 lg:gap-4">
           {currentNavLinks.map((link) => (
-            link.signedInOnly ? (
+            link.signedInOnly ?
+            (
               <SignedIn key={link.href}><NavLink {...link} /></SignedIn>
             )
-            : (
+            :
+            (
               <NavLink key={link.href} {...link} />
             )
           ))}
