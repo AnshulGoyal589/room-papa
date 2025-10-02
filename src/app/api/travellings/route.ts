@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAllTravellings, Travelling } from '@/lib/mongodb/models/Travelling';
 import getClient from '@/lib/mongodb/client';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    // const { searchParams } = new URL(request.url);
+    // const userId = searchParams.get('userId');
     
-    const travellings = await getAllTravellings(userId || undefined);
+    const travellings = await getAllTravellings();
     return NextResponse.json(travellings);
   } catch (error: unknown) {
     return NextResponse.json(

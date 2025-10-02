@@ -299,20 +299,20 @@ const ReviewModal = ({ booking, onClose, onReviewSubmitted }: { booking: Booking
         setIsSubmitting(true);
 
         try {
-            // const response = await fetch(`/api/properties/${booking.propertyId}/reviews`, {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify({
-            //         bookingId: booking._id,
-            //         rating,
-            //         comment,
-            //     }),
-            // });
+            const response = await fetch(`/api/properties/${booking.propertyId}/reviews`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    bookingId: booking._id,
+                    rating,
+                    comment,
+                }),
+            });
 
-            // if (!response.ok) {
-            //     const errorData = await response.json();
-            //     throw new Error(errorData.message || 'Failed to submit review.');
-            // }
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to submit review.');
+            }
             
             onReviewSubmitted(booking._id as unknown as string);
             onClose();

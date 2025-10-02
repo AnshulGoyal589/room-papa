@@ -9,6 +9,7 @@ import ListingItem from '@/components/manager/HomePage/ListingItem';
 import AddItemModal from '@/components/manager/HomePage/AddItemModal';
 import { BaseItem } from '@/lib/mongodb/models/Components';
 
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function DashboardClientView({ initialItems }: any) {
   const router = useRouter();
   

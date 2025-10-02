@@ -6,8 +6,7 @@ import { getBookingRepository } from '@/lib/booking-db';
 import { ObjectId } from 'mongodb';
 
 export async function POST(
-    request: NextRequest,
-    { params }: { params: Promise<{ propertyId: string }> }
+    request: NextRequest
 ) {
     try {
         const { userId } = await auth();
@@ -15,11 +14,10 @@ export async function POST(
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
         }
 
-        const propertyId = (await params).propertyId;
+        const propertyId = (await request.json()).propertyId;
         const body = await request.json();
         const { bookingId, rating, comment } = body;
 
-        // --- Validation ---
         if (!ObjectId.isValid(propertyId) || !ObjectId.isValid(bookingId)) {
             return NextResponse.json({ message: 'Invalid property or booking ID.' }, { status: 400 });
         }
