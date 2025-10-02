@@ -32,8 +32,8 @@ const getBookingIcon = (type: Booking['type']) => {
 };
 
 const BookingCard = ({ booking, onSelect, onReview }: { booking: Booking; onSelect: (booking: Booking) => void; onReview: (booking: Booking) => void; }) => {
-    // const isPastBooking = new Date(booking.bookingDetails.checkOut) < new Date();
-    const isPastBooking = true;
+    const isPastBooking = new Date(booking.bookingDetails.checkOut) < new Date();
+    // const isPastBooking = true;
     
     const canReview = isPastBooking && booking.type === 'property' && !booking.isReviewed;
 
@@ -159,7 +159,7 @@ const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Bo
        <>
             <motion.div
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 backdrop-blur-sm"
+                className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-60 backdrop-blur-sm"
                 onClick={onClose}
             >
                 <motion.div

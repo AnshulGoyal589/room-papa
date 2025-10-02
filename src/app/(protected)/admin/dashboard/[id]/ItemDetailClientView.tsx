@@ -14,24 +14,20 @@ import { Property } from '@/lib/mongodb/models/Property';
 import { Trip } from '@/lib/mongodb/models/Trip';
 import { Travelling } from '@/lib/mongodb/models/Travelling';
 
-type ItemCategory = 'Property' | 'Trip' | 'Travelling';
 type ItemData = Property | Trip | Travelling;
 
 interface ItemDetailClientViewProps {
   initialItemData: ItemData;
-  initialCategory: ItemCategory;
+  initialCategory: string;
 }
 
 export default function ItemDetailClientView({ initialItemData, initialCategory }: ItemDetailClientViewProps) {
   const router = useRouter();
   const { toast } = useToast();
 
-  // The component is initialized with data from the server.
-  // No need for isLoading or useEffect for the initial fetch.
   const [item] = useState(initialItemData);
   const [category] = useState(initialCategory);
 
-  // You can still have a loading state for actions like deleting.
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -41,7 +37,7 @@ export default function ItemDetailClientView({ initialItemData, initialCategory 
     try {
       let endpoint = '';
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const itemId = (item as any)._id; // Assuming all items have a `_id` field
+      const itemId = (item as any)._id; 
       
       switch (category) {
         case 'Property': endpoint = `/api/properties/${itemId}`; break;
@@ -128,7 +124,6 @@ export default function ItemDetailClientView({ initialItemData, initialCategory 
 
           <Separator className="my-6" />
 
-          {/* Render specific details based on category */}
           {category === 'Property' && <PropertyDetails item={item as Property} />}
           {category === 'Trip' && <TripDetails item={item as Trip} />}
           {category === 'Travelling' && <TravellingDetails item={item as Travelling} />}

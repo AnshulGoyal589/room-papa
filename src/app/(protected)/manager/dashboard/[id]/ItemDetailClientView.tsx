@@ -17,13 +17,12 @@ import { Property } from '@/lib/mongodb/models/Property';
 import { Trip } from '@/lib/mongodb/models/Trip';
 import { Travelling } from '@/lib/mongodb/models/Travelling';
 
-type ItemCategory = 'Property' | 'Trip' | 'Travelling';
 type ItemData = Property | Trip | Travelling;
 
 // Define the props this component will receive from the server page
 interface ItemDetailClientViewProps {
   initialItemData: ItemData;
-  initialCategory: ItemCategory;
+  initialCategory: string;
 }
 
 export default function ItemDetailClientView({ initialItemData, initialCategory }: ItemDetailClientViewProps) {

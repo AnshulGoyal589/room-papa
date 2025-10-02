@@ -1,47 +1,39 @@
 import type { Metadata } from 'next';
-import { User } from '@/lib/mongodb/models/User';
+import { getAllUsersByRole, User } from '@/lib/mongodb/models/User';
 import ManagerUsersClientView from './ManagerUsersClientView';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
+import { userRole } from '@/lib/data/auth';
 
 export const metadata: Metadata = {
   title: 'Manage Managers | Room Papa Admin',
   description: 'Approve, reject, and view all manager users.',
 };
 
-// --- SERVER-SIDE DATA FETCHING FUNCTION ---
 async function fetchManagerUsers(): Promise<User[]> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/manager`, {
-      // Use 'no-store' to ensure the admin always sees the freshest data.
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch manager users on server');
+    const managers = await getAllUsersByRole('manager');
+    if (!managers) {
+      return [];
     }
-    return response.json();
+    return managers;
+
   } catch (error) {
     console.error('Error fetching manager users:', error);
-    // Return an empty array to prevent the page from crashing.
-    // The client component can display a "no users found" message.
     return [];
   }
 }
 
-// --- THE MAIN PAGE COMPONENT (SERVER) ---
 export default async function ManagerUsersPage() {
 
-    const { userId } = await auth();
-    
-      // 2. If no user, redirect to sign-in page.
-      if (!userId) {
-        redirect('/sign-in');
-      }
+  const { userId } = await auth();
+  const role = await userRole(userId ?? undefined);
+  if (role !== 'admin') {
+    redirect('/');
+  }
 
-  // 1. Fetch data on the server.
   const initialManagers = await fetchManagerUsers();
+  const plainManagers = JSON.parse(JSON.stringify(initialManagers));
 
-  // 2. Pass the pre-fetched data as a prop to the Client Component.
-  return <ManagerUsersClientView initialManagers={initialManagers} />;
+  return <ManagerUsersClientView initialManagers={plainManagers} />;
 }

@@ -1,6 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
-import { getBookingRepository } from '@/lib/booking-db';
 import BookingsList from '@/components/booking/BookingsList';
 import { Suspense } from 'react';
 
@@ -9,31 +8,22 @@ import { seoMetadata } from '@/seo-metadata';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import BookingsListSkeleton from '@/components/booking/BookingsListSkeleton';
-// import { Header2 } from '@/components/layout/Header2';
+import { fetchUserBookings } from '@/lib/data/booking';
+import { userRole } from '@/lib/data/auth';
 
 export const metadata: Metadata = seoMetadata.bookings;
 
 
-async function fetchUserBookings(userId: string) {
-    try {
-        const bookingRepository = await getBookingRepository();
-        const userBookings = await bookingRepository.queryBookings({
-            userId: userId,
-            sortBy: 'bookingDetails.checkIn',
-            sortOrder: 'desc',
-        });
-        return JSON.parse(JSON.stringify(userBookings));
-    } catch (error) {
-        console.error("Failed to fetch user bookings:", error);
-        return [];
-    }
-}
 
 export default async function MyBookingsPage() {
     const { userId } = await auth();
-
     if (!userId) {
-        redirect('/');
+      redirect('/');
+    }
+    const role = await userRole(userId ?? undefined);
+    
+    if (role !== 'customer') {
+      redirect('/');
     }
 
     const serializedBookings = await fetchUserBookings(userId);

@@ -7,11 +7,9 @@ export const metadata: Metadata = {
   description: 'Enter your details and confirm your payment to complete the reservation.',
 };
 
-// Add the 'async' keyword here
 export default async function BookPropertyPage({ params }: { params: Promise<{ id: string }> }) {
-    const param = await params; // Ensure params are awaited if they are async
+    const param = await params;
     return (
-        // Suspense boundary is good practice for pages with data fetching
         <Suspense fallback={
             <div className="flex justify-center items-center min-h-screen bg-gray-100">
                 <div className="text-center">
@@ -20,7 +18,6 @@ export default async function BookPropertyPage({ params }: { params: Promise<{ i
                 </div>
             </div>
         }>
-            {/* This line now works correctly inside an async component */}
             <ReservationForm propertyId={param.id} />
         </Suspense>
     );

@@ -91,21 +91,20 @@ export interface Property {
 
   export async function getPropertiesCollection(): Promise<Collection<Property>> {
     const db = await getDb();
-    // console.log(db);
     return db.collection<Property>('properties');
   }
   
-  export async function getAllProperties(userId?: string): Promise<Property[]> {
+  export async function getAllProperties(): Promise<Property[]> {
     const properties = await getPropertiesCollection();
-    
-    const query = userId ? { userId } : {};
-    // console.log("query: ",query);
-    return properties.find(query).toArray();
+    return properties.find({}).toArray();
+  }
+  export async function getAllUploaderProperties(userId: string): Promise<Property[]> {
+    const properties = await getPropertiesCollection();
+    return properties.find({ userId }).toArray();
   }
   
   export async function getPropertyById(id: string): Promise<Property | null> {
     const properties = await getPropertiesCollection();
-    // console.log("hurrrr: ",properties);
     return properties.findOne({ _id: new ObjectId(id) });
   }
   

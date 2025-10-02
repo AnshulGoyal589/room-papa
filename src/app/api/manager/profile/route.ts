@@ -12,7 +12,7 @@ export async function GET() {
     await getDb();
     
     const { userId: clerkId } = await auth();
-    console.log(clerkId);
+    console.log( "in api/manager/profile/routes: ", clerkId);
     if (!clerkId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }

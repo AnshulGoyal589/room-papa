@@ -4,12 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BookingDetails } from '@/lib/mongodb/models/Booking';
 import { Button } from '@/components/ui/button';
+import BookingDetailModal from './BookingDetailModal';
 
-// Define the props this component receives from the server page.
 interface AppointmentsClientViewProps {
   initialBookings: BookingDetails[];
-  totalPages: number;
-  currentPage: number;
   currentFilters: {
     type: string;
     search: string;
@@ -17,39 +15,20 @@ interface AppointmentsClientViewProps {
 }
 
 export default function AppointmentsClientView({ 
-  initialBookings, 
-  totalPages, 
-  currentPage, 
+  initialBookings,
   currentFilters 
 }: AppointmentsClientViewProps) {
   const router = useRouter();
-  
-  // Initialize state for the filter inputs with the values from the server (read from the URL).
   const [typeFilter, setTypeFilter] = useState(currentFilters.type);
   const [searchTerm, setSearchTerm] = useState(currentFilters.search);
+  const [selectedBooking, setSelectedBooking] = useState<BookingDetails | null>(null);
   
-  // The bookings list is now a prop, not state. It's updated by the server on re-render.
   const bookings = initialBookings;
-
-  // This function is the core of the client-side interaction.
-  // It builds the new URL and tells the router to navigate to it.
-  // This triggers a re-render of the parent Server Component, which fetches the new data.
+  
   const handleFilterChange = () => {
     const params = new URLSearchParams();
     if (typeFilter !== 'all') params.set('type', typeFilter);
     if (searchTerm) params.set('search', searchTerm);
-    
-    // Reset to page 1 when filters change
-    // params.set('page', '1'); // Optional: you might want to reset to page 1 on filter change
-    
-    router.push(`/manager/appointments?${params.toString()}`);
-  };
-  
-  const handlePageChange = (newPage: number) => {
-    const params = new URLSearchParams();
-    if (typeFilter !== 'all') params.set('type', typeFilter);
-    if (searchTerm) params.set('search', searchTerm);
-    if (newPage > 1) params.set('page', String(newPage));
     router.push(`/manager/appointments?${params.toString()}`);
   };
 
@@ -82,7 +61,6 @@ export default function AppointmentsClientView({
                 value={typeFilter}
                 onChange={(e) => {
                   setTypeFilter(e.target.value);
-                  // Optionally trigger search on change or wait for button click
                 }}
                 className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#003c95]"
               >
@@ -129,13 +107,17 @@ export default function AppointmentsClientView({
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {bookings.map((booking) => (
-                  <tr key={booking.details.id?.toString()} className="hover:bg-gray-50">
+                  <tr 
+                    key={booking.tripDetails.id?.toString()} 
+                    className="hover:bg-gray-100 cursor-pointer" // Added hover and cursor
+                    onClick={() => setSelectedBooking(booking)} // Set the selected booking on click
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {booking.details.title}
+                        {booking.tripDetails.title}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {booking.details.locationFrom} → {booking.details.locationTo}
+                        {booking.tripDetails.locationTo}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -156,24 +138,18 @@ export default function AppointmentsClientView({
                         {booking.guestDetails.email}
                       </div>
                     </td>
-               
- 
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-          
-          {totalPages > 1 && (
-            <div className="flex justify-center mt-6">
-              <nav className="flex items-center space-x-2">
-                <Button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage <= 1}>Previous</Button>
-                <span className="text-sm text-gray-600">Page {currentPage} of {totalPages}</span>
-                <Button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages}>Next</Button>
-              </nav>
-            </div>
-          )}
+          </div>    
         </>
+      )}
+      {selectedBooking && (
+        <BookingDetailModal 
+          booking={selectedBooking} 
+          onClose={() => setSelectedBooking(null)} // Pass a function to close the modal
+        />
       )}
     </div>
   );

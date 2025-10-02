@@ -141,13 +141,13 @@ export async function getTravellingsCollection(): Promise<Collection<Travelling>
     return db.collection<Travelling>('travellings');
   }
   
-  export async function getAllTravellings(userId?: string): Promise<Travelling[]> {
+  export async function getAllTravellings(): Promise<Travelling[]> {
+    const travellings = await getTravellingsCollection();    
+    return travellings.find({}).toArray();
+  }
+  export async function getAllUploaderTravellings(userId: string): Promise<Travelling[]> {
     const travellings = await getTravellingsCollection();
-    
-    const query: Partial<Travelling> = {};
-    if (userId) query.userId = userId;
-    
-    return travellings.find(query).toArray();
+    return travellings.find({ userId }).toArray();
   }
   
   export async function getTravellingById(id: string): Promise<Travelling | null> {

@@ -10,25 +10,18 @@ import AddItemModal from '@/components/manager/HomePage/AddItemModal';
 import { useToast } from '@/components/ui/use-toast';
 import { BaseItem, ItemCategory } from '@/lib/mongodb/models/Components';
 
-// Define the props this component will receive from the server page.
-interface DashboardClientViewProps {
-  initialItems: BaseItem[];
-}
-
-export default function DashboardClientView({ initialItems }: DashboardClientViewProps) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default function DashboardClientView({ initialItems }: any) {
   const router = useRouter();
   const { toast } = useToast();
 
-  // Initialize state with the data passed from the server.
   const [items, setItems] = useState<BaseItem[]>(initialItems);
   
-  // This loading state is now only for RE-FETCHING data, not the initial load.
   const [isLoading, setIsLoading] = useState(false);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
 
-  // This function is kept for RE-FETCHING data after an item is added.
   const fetchItems = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -58,7 +51,7 @@ export default function DashboardClientView({ initialItems }: DashboardClientVie
   
 
   const handleAddItem = async () => {
-      fetchItems(); // Re-fetch the list to show the new item
+      fetchItems();
       setIsModalOpen(false);
   };
 
@@ -88,7 +81,6 @@ export default function DashboardClientView({ initialItems }: DashboardClientVie
         </TabsList>
 
         <TabsContent value={activeTab}>
-          {/* This `isLoading` check now only applies when re-fetching. The initial render is never loading. */}
           {isLoading ? (
             <div className="text-center py-8">Refreshing items...</div>
           ) : filteredItems.length === 0 ? (

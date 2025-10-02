@@ -240,8 +240,8 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onAdd }) => {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="Property">Property</SelectItem>
-                        <SelectItem value="Trip">Trip</SelectItem>
-                        <SelectItem value="Travelling">Travelling</SelectItem>
+                        {/* <SelectItem value="Trip">Trip</SelectItem>
+                        <SelectItem value="Travelling">Travelling</SelectItem> */}
                       </SelectContent>
                     </Select>
                     <FormMessage />

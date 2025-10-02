@@ -10,13 +10,10 @@ import {
 import RazorpayPaymentButton from '@/components/payment/RazorpayPaymentButton';
 import { DisplayableRoomOffer } from '@/types/booking';
 import { ReservationData } from '@/lib/mongodb/models/Components';
-// import { send } from 'process';
 
 const RESERVATION_DATA_KEY = 'reservationData_v1';
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "";
 
-
-// --- Helper Components ---
 const renderRatingStars = (rating: number) => (
     <div className="flex items-center">
         {[...Array(5)].map((_, i) => (
@@ -45,27 +42,21 @@ const Stepper = () => (
 );
 
 
-// --- Main Component ---
 export default function ReservationForm({ propertyId }: { propertyId: string }) {
     const router = useRouter();
     const { user, isLoaded, isSignedIn } = useUser();
-    // console.log("PropertyId in ReservationForm:", propertyId);
     const [reservationDetails, setReservationDetails] = useState<ReservationData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     
-    // Form data
     const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', phone: '', guestFullName: '' });
     const [country, setCountry] = useState('India');
-    // const [countryCode, setCountryCode] = useState('+91');
     const [guestDetailsPerRoom, setGuestDetailsPerRoom] = useState<Record<string, { guestName: string }>>({});
 
-    // --- NEW STATE ---
     const [bookingFor, setBookingFor] = useState<'self' | 'someone_else'>('self');
     const [travelingFor, setTravelingFor] = useState<'leisure' | 'work'>('leisure');
     const [gstDetails, setGstDetails] = useState({ number: '', businessName: '' });
     
-    // UI/Options state
     const [wantsRoomsTogether, setWantsRoomsTogether] = useState(false);
     const [wantsAirportShuttle, setWantsAirportShuttle] = useState(false);
     const [wantsCarRental, setWantsCarRental] = useState(false);
@@ -73,10 +64,7 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
     const [arrivalTime, setArrivalTime] = useState('');
     const [showPriceDetails, setShowPriceDetails] = useState(false);
     const [bookingConfirmed, setBookingConfirmed] = useState(false);
-    // const [paymentError, setPaymentError] = useState<string | null>(null);
-
-   
-    // --- Logic Hooks (Unchanged) ---
+    
     useEffect(() => {
         const storedData = localStorage.getItem(RESERVATION_DATA_KEY);
         if (!storedData) {
@@ -90,7 +78,6 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                 localStorage.removeItem(RESERVATION_DATA_KEY);
                 router.push(`/properties/${propertyId}`); return;
             }
-            // console.log("testing: ", parsedData);
             setReservationDetails(parsedData);
         } catch (error) {
             console.error("Error parsing reservation data:", error);
@@ -106,7 +93,6 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
         }
     }, [isLoaded, isSignedIn, user]);
 
-    // --- Dynamic Room Instances for Form ---
     const roomInstances = useMemo(() => {
         if (!reservationDetails) return [];
         const instances: { key: string; offer: DisplayableRoomOffer }[] = [];
@@ -122,7 +108,6 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
         return instances;
     }, [reservationDetails]);
     
-    // --- Handlers ---
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -140,15 +125,13 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
         }));
     };
 
-    // --- Loading and Error States (Unchanged) ---
     if (loading) { return <div className="flex justify-center items-center min-h-screen bg-gray-100"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#003c95] mx-auto"></div></div>; }
     if (error || !reservationDetails) { return <div className="container mx-auto px-4 py-16 text-center"><h2 className="text-2xl font-bold text-red-600 mb-4">{error || 'Could not load reservation.'}</h2><button onClick={() => router.push('/properties')} className="mt-4 px-6 py-2 bg-[#003c95] text-white rounded-md hover:bg-[#003c95]">Find Properties</button></div>; }
     
     const { propertyTitle, propertyImage, propertyLocation, propertyRating, checkInDate, checkOutDate, days, globalGuestCount, pricingDetails } = reservationDetails;
     const checkIn = new Date(checkInDate);
     const checkOut = new Date(checkOutDate);
-
-    // --- Final Booking.com Styled JSX ---
+    
     return (
         <>
             <div className="bg-white min-h-screen">
@@ -156,7 +139,6 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                     <Stepper />
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         
-                        {/* Left Column - Booking Summary */}
                         <div className="lg:col-span-1 space-y-4 lg:sticky top-5 self-start">
                             <div className="border border-gray-300 rounded-md p-4 space-y-4">
                                 <div className="flex space-x-4">
@@ -204,7 +186,6 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                             </div>
                         </div>
 
-                        {/* Right Column - User Details & Forms */}
                         <div className="lg:col-span-2 space-y-6">
                             {isSignedIn && user && <div className="bg-[#003c95] border border-[#003c95] rounded-md p-4 flex items-center space-x-4"><Image src={user.imageUrl} alt="user avatar" width={40} height={40} className="rounded-full" /><p className='text-white' >You are signed in as <span className="font-bold">{user.emailAddresses[0].emailAddress}</span></p></div>}
                             
@@ -218,7 +199,6 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                     </div>
                                     <div><label className="block text-sm font-medium text-gray-700 mb-1">Email address <span className="text-red-500">*</span></label><input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded-md"/><p className="text-xs text-gray-500 mt-1">Confirmation email sent to this address</p></div>
                                     
-                                    {/* --- NEW SECTION: "Who are you booking for?" --- */}
                                     <div>
                                         <p className="block text-sm font-medium text-gray-700 mb-2">Who are you booking for? <span className="font-normal text-gray-500">(optional)</span></p>
                                         <div className="flex items-center space-x-6">
@@ -231,7 +211,6 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                         <div><label className="block text-sm font-medium text-gray-700 mb-1">Guest&apos;s Full Name <span className="text-red-500">*</span></label><input name="guestFullName" value={formData.guestFullName} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded-md" placeholder="Enter the name of the guest"/></div>
                                     )}
 
-                                    {/* --- NEW SECTION: "Are you traveling for work?" --- */}
                                     <div>
                                         <p className="block text-sm font-medium text-gray-700 mb-2">Are you traveling for work? <span className="font-normal text-gray-500">(optional)</span></p>
                                         <div className="flex items-center space-x-6">
@@ -265,7 +244,6 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                 </div>
                             </div>
                             
-                            {/* ... (Rest of the form is unchanged) ... */}
                             {roomInstances.map(({ key, offer }) => (
                                 <div key={key} className="bg-white p-6 rounded-lg border border-gray-200">
                                     <h3 className="font-bold text-lg">{offer.categoryTitle}</h3>
@@ -319,7 +297,6 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                             totalRoomsSelected: reservationDetails.totalSelectedPhysicalRooms,
                                             selectedMealPlan: reservationDetails.selectedMealPlan,
                                             roomsDetail: Object.entries(reservationDetails.selectedOffers).filter(([, qty]) => qty > 0).map(([offerId, qty]) => { const offer = reservationDetails.displayableRoomOffers.find(o => o.offerId === offerId); return { categoryId: propertyId || 'unknown',
-                                            // roomsDetail: Object.entries(reservationDetails.selectedOffers).filter(([, qty]) => qty > 0).map(([offerId, qty]) => { const offer = reservationDetails.displayableRoomOffers.find(o => o.offerId === offerId); return { categoryId: offer?.categoryId || 'unknown',
                                             offerKey: offerId.split('_').slice(1).join('_'),
                                             title: offer?.categoryTitle || 'Unknown', qty,
                                             estimatedPricePerRoomNight: offer?.pricePerNight || 0,
@@ -350,7 +327,6 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                 </div>
             </div>
 
-            {/* Confirmation Modal (Unchanged) */}
             {bookingConfirmed && (
                 <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[110] backdrop-blur-sm">
                     <div className="bg-white rounded-lg max-w-md w-full p-7 text-center shadow-xl">

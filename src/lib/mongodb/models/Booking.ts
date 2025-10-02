@@ -210,7 +210,7 @@ export type BookingInputData = PropertyBookingInputData | TravellingBookingInput
 
 export interface BookingDetails {
   type: 'property' | 'travelling' | 'trip';
-  details: {
+  tripDetails: {
     id: string;
     title: string;
     locationFrom?: string; // Optional for property bookings
