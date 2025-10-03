@@ -100,6 +100,9 @@ export interface Property {
   }
   export async function getAllUploaderProperties(userId: string): Promise<Property[]> {
     const properties = await getPropertiesCollection();
+    if(!userId){
+      return properties.find({}).toArray();
+    }
     return properties.find({ userId }).toArray();
   }
   

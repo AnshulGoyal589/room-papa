@@ -1,57 +1,58 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ListingItem from '@/components/manager/HomePage/ListingItem';
 import AddItemModal from '@/components/manager/HomePage/AddItemModal';
-import { useToast } from '@/components/ui/use-toast';
-import { BaseItem, ItemCategory } from '@/lib/mongodb/models/Components';
+// import { useToast } from '@/components/ui/use-toast';
+import { BaseItem } from '@/lib/mongodb/models/Components';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function DashboardClientView({ initialItems }: any) {
   const router = useRouter();
-  const { toast } = useToast();
+  // const { toast } = useToast();
 
-  const [items, setItems] = useState<BaseItem[]>(initialItems);
+  // const [items, setItems] = useState<BaseItem[]>(initialItems);
   
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
 
-  const fetchItems = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const propertiesRes = await fetch('/api/properties');
-      const properties = await propertiesRes.json();
-      const formattedProperties = properties.map((prop: BaseItem) => ({...prop, category: 'Property' as ItemCategory, createdAt: new Date(prop.createdAt) }));
+  // const fetchItems = useCallback(async () => {
+  //   setIsLoading(true);
+  //   try {
+  //     const propertiesRes = await fetch('/api/properties');
+  //     const properties = await propertiesRes.json();
+  //     const formattedProperties = properties.map((prop: BaseItem) => ({...prop, category: 'Property' as ItemCategory, createdAt: new Date(prop.createdAt) }));
 
-      const tripsRes = await fetch('/api/trips');
-      const trips = await tripsRes.json();
-      const formattedTrips = trips.map((trip: BaseItem) => ({...trip, category: 'Trip' as ItemCategory, createdAt: new Date(trip.createdAt) }));
+  //     const tripsRes = await fetch('/api/trips');
+  //     const trips = await tripsRes.json();
+  //     const formattedTrips = trips.map((trip: BaseItem) => ({...trip, category: 'Trip' as ItemCategory, createdAt: new Date(trip.createdAt) }));
       
-      const travellingsRes = await fetch('/api/travellings');
-      const travellings = await travellingsRes.json();
-      const formattedTravellings = travellings.map((travelling: BaseItem) => ({ ...travelling, category: 'Travelling' as ItemCategory, createdAt: new Date(travelling.createdAt) }));
+  //     const travellingsRes = await fetch('/api/travellings');
+  //     const travellings = await travellingsRes.json();
+  //     const formattedTravellings = travellings.map((travelling: BaseItem) => ({ ...travelling, category: 'Travelling' as ItemCategory, createdAt: new Date(travelling.createdAt) }));
       
-      const allItems = [...formattedProperties, ...formattedTrips, ...formattedTravellings]
-        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  //     const allItems = [...formattedProperties, ...formattedTrips, ...formattedTravellings]
+  //       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-      setItems(allItems);
-    } catch (error) {
-      console.error('Error re-fetching items:', error);
-      toast({ title: 'Error', description: 'Failed to refresh items.', variant: 'destructive' });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
+  //     setItems(allItems);
+  //   } catch (error) {
+  //     console.error('Error re-fetching items:', error);
+  //     toast({ title: 'Error', description: 'Failed to refresh items.', variant: 'destructive' });
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // }, [toast]);
   
 
   const handleAddItem = async () => {
-      fetchItems();
+      // fetchItems();
+      router.refresh();
       setIsModalOpen(false);
   };
 
@@ -60,8 +61,8 @@ export default function DashboardClientView({ initialItems }: any) {
   };
 
   const filteredItems = activeTab === 'all' 
-    ? items 
-    : items.filter(item => item.category.toLowerCase() === activeTab.toLowerCase());
+    ? initialItems 
+    : initialItems.filter((item: BaseItem) => item.category.toLowerCase() === activeTab.toLowerCase());
 
   return (
     <div className="container mx-auto py-8 px-4 sm:px-8 md:px-16">
@@ -81,9 +82,7 @@ export default function DashboardClientView({ initialItems }: any) {
         </TabsList>
 
         <TabsContent value={activeTab}>
-          {isLoading ? (
-            <div className="text-center py-8">Refreshing items...</div>
-          ) : filteredItems.length === 0 ? (
+          {filteredItems.length === 0 ? (
             <Card>
               <CardContent className="py-8">
                 <p className="text-center text-gray-500">
@@ -93,7 +92,7 @@ export default function DashboardClientView({ initialItems }: any) {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredItems.map((item) => (
+              {filteredItems.map((item: BaseItem) => (
                 <ListingItem 
                   key={item._id} 
                   item={item} 

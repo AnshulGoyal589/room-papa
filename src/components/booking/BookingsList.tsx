@@ -34,7 +34,8 @@ const getBookingIcon = (type: Booking['type']) => {
 const BookingCard = ({ booking, onSelect, onReview }: { booking: Booking; onSelect: (booking: Booking) => void; onReview: (booking: Booking) => void; }) => {
     const isPastBooking = new Date(booking.bookingDetails.checkIn) < new Date();
     // console.log("Booking card: ",booking);
-    const canReview = isPastBooking && booking.status == 'Not Reviewed' && !booking.isReviewed;
+    // const canReview = isPastBooking && booking.status == 'Not Reviewed' && !booking.isReviewed;
+    const canReview =  true;
 
     return (
         <motion.div

@@ -61,9 +61,12 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
   
   const { itemData, category } = fetchedItem;
 
+  const plainItemData = JSON.parse(JSON.stringify(itemData));
+
+
   return (
     <ItemDetailClientView
-      initialItemData={itemData} 
+      initialItemData={plainItemData} 
       initialCategory={category} 
     />
   );

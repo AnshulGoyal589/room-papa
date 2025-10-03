@@ -58,9 +58,11 @@ export default async function ItemEditPage({ params }: { params: Promise<{ id: s
   
   const { itemData, category } = fetchedItem;
 
+  const plainItemData = JSON.parse(JSON.stringify(itemData));
+
   return (
     <ItemEditClientView
-      initialItemData={itemData}
+      initialItemData={plainItemData}
       initialCategory={category}
     />
   );

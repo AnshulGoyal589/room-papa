@@ -2,6 +2,7 @@ import { Collection ,ObjectId} from 'mongodb';
 import { getDb } from '..';
 import { TripType } from '@/types';
 import { Costing, Image, Review } from './Components';
+// import { getPropertiesCollection } from './Property';
 
 export interface Trip {
   _id?: ObjectId;
@@ -105,6 +106,14 @@ export async function getTripsCollection(): Promise<Collection<Trip>> {
     const query = userId ? { userId } : {};
     return trips.find(query).toArray();
   }
+
+    export async function getAllUploaderTrips(userId: string): Promise<Trip[]> {
+      const trips = await getTripsCollection();
+      if(!userId){
+        return trips.find({}).toArray();
+      }
+      return trips.find({ userId }).toArray();
+    }
   
   export async function getTripById(id: string): Promise<Trip | null> {
     const trips = await getTripsCollection();

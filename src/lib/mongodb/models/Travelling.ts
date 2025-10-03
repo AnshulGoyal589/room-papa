@@ -147,6 +147,9 @@ export async function getTravellingsCollection(): Promise<Collection<Travelling>
   }
   export async function getAllUploaderTravellings(userId: string): Promise<Travelling[]> {
     const travellings = await getTravellingsCollection();
+    if(!userId){
+      return travellings.find({}).toArray();
+    }
     return travellings.find({ userId }).toArray();
   }
   

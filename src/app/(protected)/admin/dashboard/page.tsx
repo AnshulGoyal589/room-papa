@@ -3,7 +3,7 @@ import DashboardClientView from './DashboardClientView';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { getAllUploaderProperties } from '@/lib/mongodb/models/Property';
-import { getAllTrips } from '@/lib/mongodb/models/Trip';
+import { getAllUploaderTrips } from '@/lib/mongodb/models/Trip';
 import { getAllUploaderTravellings } from '@/lib/mongodb/models/Travelling';
 import { userRole } from '@/lib/data/auth';
 
@@ -18,9 +18,9 @@ async function fetchAllItems() {
     if (!userId) {
       return [];
     }
-    const properties = await getAllUploaderProperties(userId);
-    const trips = await getAllTrips(userId);
-    const travellings = await getAllUploaderTravellings(userId);
+    const properties = await getAllUploaderProperties(null as unknown as string);
+    const trips = await getAllUploaderTrips(null as unknown as string);
+    const travellings = await getAllUploaderTravellings(null as unknown as string);
 
     const allItems = [
       ...properties,

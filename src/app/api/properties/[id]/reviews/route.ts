@@ -45,11 +45,13 @@ export async function POST(
              return NextResponse.json({ message: 'A review has already been submitted for this booking.' }, { status: 409 }); // 409 Conflict
         }
         
-        const response  = await addPropertyReview(propertyId, {
+        await addPropertyReview(propertyId, {
             rating,
             comment,
             name: "testing",
-            date: new Date()
+            date: new Date(),
+            country: "India",
+            userId: userId
         });
 
         return NextResponse.json({ message: 'Review submitted successfully.' }, { status: 201 });

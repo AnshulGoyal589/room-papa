@@ -34,7 +34,7 @@ const ReviewCard: React.FC<{ review: Review }> = ({ review }) => {
                     </p>
                 </div>
             </header>
-            <p className="text-gray-700">"{comment}"</p>
+            <p className="text-gray-700">&apos;{comment}&apos;</p>
             <a href="#" className="text-blue-600 font-medium hover:underline">
                 Read more
             </a>
