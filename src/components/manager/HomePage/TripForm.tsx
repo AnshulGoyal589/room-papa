@@ -16,11 +16,12 @@ import { Label } from '@/components/ui/label'; // Import Label
 import { X, Globe, MapPin, DollarSign, Star, ListChecks, Activity, Settings2 } from 'lucide-react'; // Added more icons
 import { Trip } from '@/lib/mongodb/models/Trip';
 import { TripFormProps } from '@/lib/mongodb/models/Components';
+import { propertyAmenitiesArray } from '@/types/property';
 
 // Define options for each multi-select category (shared or imported if used elsewhere)
 const categoryOptions = {
   activities: ['Sightseeing', 'Adventure', 'Relaxation', 'Food Tours', 'Cultural Experience', 'Shopping', 'Hiking', 'Beach Activities', 'Wildlife Safari', 'Historical Tours'],
-  amenities: ['WiFi Included', 'Guided Tours', 'Transportation', 'Meals Included', 'Travel Insurance', 'Language Support', '24/7 Support', 'Flexible Itinerary'], // Added some trip-specific amenities
+  amenities: propertyAmenitiesArray, // Added some trip-specific amenities
   accessibility: ['Wheelchair Accessible Pickup', 'Accessible Accommodations', 'Sign Language Guides', 'Service Animal Friendly'], // Trip-specific accessibility
   roomAccessibility: ['Accessible Vehicle', 'Ground Floor Access', 'Support for Medical Devices'], // Trip-specific room/transport accessibility
   popularFilters: ['Family Friendly', 'Adventure Focused', 'Luxury', 'Budget-Friendly', 'Eco-tourism', 'Solo Traveler', 'Group Tours', 'All-Inclusive'],

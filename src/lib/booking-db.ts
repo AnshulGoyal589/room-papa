@@ -32,7 +32,7 @@ export class BookingRepository {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { details, ...restOfInput } = bookingData as any; // Use 'as any' for generic access, then type specifics
     // console.log("rest of input: ",restOfInput);
-    // console.log("details: ",details);
+    // console.log("details: ",bookingData);
     // console.log("bookingData: ",bookingData);
     const tripDetailsPayload: BaseDetails & { ownerId?: string } = {
       id: details.id,

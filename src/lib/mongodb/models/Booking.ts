@@ -1,6 +1,6 @@
 // models/booking.ts
+import { PropertyType } from '@/types/property';
 import { ObjectId } from 'mongodb';
-import { PropertyType } from '@/types'; // Assuming PropertyType is defined in your types
 
 // --- Common Base Interfaces ---
 

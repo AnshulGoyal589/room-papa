@@ -6,28 +6,37 @@ import {
     DiscountedPricingByMealPlan
 } from '@/types';
 import {
-    Wifi, Car, Droplet, Wind, Dumbbell, Coffee as CoffeeIconLucide, CheckCircle, Star as StarIcon, MapPin, Users as UsersIcon, Image as ImageIconLucide, CalendarOff,
-    ChevronDown, ChevronUp, Heart, Share2, AlertTriangle, Award, Bed, ListChecks,
+    Coffee as CoffeeIconLucide, CheckCircle, Users as UsersIcon, CalendarOff,
+    AlertTriangle, Bed,
     Utensils,
-    Tv,
-    HelpCircle,
-    XCircle,
-    AlertCircle as AlertCircleIcon, // Renamed to avoid conflict with component
     UserCheck,
     Sparkles,
     Wrench,
-    X, // Added for the modal close button
+    X,
+    AlertCircleIcon,
+    XCircle,
+    HelpCircle,
 } from 'lucide-react';
 import Image from 'next/image';
-import { CldImage } from 'next-cloudinary'; // Import CldImage for the modal
+import { CldImage } from 'next-cloudinary'; 
 import { useRouter, useParams } from 'next/navigation';
 import { useUser, useClerk, SignedOut } from '@clerk/nextjs';
 import { Property } from '@/lib/mongodb/models/Property';
-import { DisplayableRoomOffer, HikePricingByOccupancy, RoomCategoryPricing, StoredRoomCategory } from '@/types/booking';
+import { DisplayableRoomOffer, HikePricingByOccupancy, StoredRoomCategory } from '@/types/booking';
 import { Image as PropertyImage } from '@/lib/mongodb/models/Components';
+import { GuestReviews } from './Reviews';
+import { HotelFacilities } from './HotelFacilities';
+import PropertyHeader from './PropertyHeader';
+import ImageGalleryAndMap from './ImageGalleryAndMap';
+import AboutProperty from './AboutProperty';
 
+const LOCAL_STORAGE_KEY = 'propertyBookingPreferences_v3';
+const RESERVATION_DATA_KEY = 'reservationData_v1';
+const MAX_COMBINED_ROOMS = 5;
+const MAX_OCCUPANTS_PER_ROOM = 3;
+const SERVICE_FEE_FIXED = 10;
+const TAX_RATE_PERCENTAGE = 0.05;
 
-// --- START: New Image Gallery Modal Component ---
 interface ImageGalleryModalProps {
   title: string;
   images: PropertyImage[];
@@ -38,7 +47,6 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({ title, images, on
   const [activeImage, setActiveImage] = useState<PropertyImage | null>(images?.[0] || null);
 
   useEffect(() => {
-    // Close modal on 'Escape' key press
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         onClose();
@@ -108,10 +116,7 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({ title, images, on
     </div>
   );
 };
-// --- END: New Image Gallery Modal Component ---
 
-
-// Helper function to calculate days between two dates
 const calculateDays = (start: Date | null, end: Date | null): number => {
     if (!start || !end || end <= start) {
         return 0;
@@ -123,7 +128,6 @@ const calculateDays = (start: Date | null, end: Date | null): number => {
     return diffDays;
 };
 
-// Helper to get all dates in a range (inclusive of start, exclusive of end)
 const getDatesInRange = (startDate: Date, endDate: Date): string[] => {
     const dates: string[] = [];
     const currentDate = new Date(startDate);
@@ -134,7 +138,6 @@ const getDatesInRange = (startDate: Date, endDate: Date): string[] => {
     return dates;
 };
 
-// Helper to get price safely from nested structure
 const getPrice = (
     priceGroup: PricingByMealPlan | DiscountedPricingByMealPlan | undefined,
     mealPlan: keyof PricingByMealPlan
@@ -148,40 +151,11 @@ const getPrice = (
 };
 
 
-// Helper to generate unique IDs if needed
-const generateId = () => Math.random().toString(36).substr(2, 9);
-
-// Initial state for fallback pricing
-const initialPricingState: RoomCategoryPricing = {
-    singleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
-    discountedSingleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
-    doubleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
-    discountedDoubleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
-    tripleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
-    discountedTripleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
-    child5to12Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
-    discountedChild5to12Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
-};
-
-
-export default function PropertyDetailPage() {
-    const LOCAL_STORAGE_KEY = 'propertyBookingPreferences_v3';
-    const RESERVATION_DATA_KEY = 'reservationData_v1';
-    const MAX_COMBINED_ROOMS = 5;
-    const MAX_OCCUPANTS_PER_ROOM = 3;
-    const SERVICE_FEE_FIXED = 10;
-    const TAX_RATE_PERCENTAGE = 0.05;
-
+export default function PropertyDetailPage( { property }: { property: Property | null } ) {
     const { openSignIn } = useClerk();
     const router = useRouter();
     const params = useParams();
     const { isSignedIn, isLoaded } = useUser();
-
-    const [property, setProperty] = useState<Property | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    const [activeImage, setActiveImage] = useState<string | null>(null);
 
     const [checkInDate, setCheckInDate] = useState<Date | null>(null);
     const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
@@ -201,17 +175,14 @@ export default function PropertyDetailPage() {
     const [availabilityError, setAvailabilityError] = useState<string | null>(null);
     const [bookingError, setBookingError] = useState<string | null>(null);
 
-    const [showAllAmenities, setShowAllAmenities] = useState(false);
     const [showReservePopover, setShowReservePopover] = useState(false);
 
-    // New state for the modal
     const [modalData, setModalData] = useState<{ title: string; images: PropertyImage[] } | null>(null);
 
 
     const globalGuestCount = useMemo(() => adultCount + childCount, [adultCount, childCount]);
     const days = useMemo(() => calculateDays(checkInDate, checkOutDate), [checkInDate, checkOutDate]);
 
-    // New handlers for the modal
     const handleCategoryTitleClick = (category: StoredRoomCategory) => {
         setModalData({
             title: category.title,
@@ -221,8 +192,6 @@ export default function PropertyDetailPage() {
     const handleCloseModal = () => {
         setModalData(null);
     };
-
-    
 
     const validateDate = (selectedDateStr: string, propertyStartDateStr?: string, propertyEndDateStr?: string): Date => {
         const date = new Date(selectedDateStr); date.setHours(12, 0, 0, 0);
@@ -251,22 +220,21 @@ export default function PropertyDetailPage() {
         const involvedCategoryIds = new Set<string>();
         Object.keys(currentSelectedOffers).forEach(offerId => {
             if (currentSelectedOffers[offerId] > 0) {
-                involvedCategoryIds.add(offerId.split('_')[0]); // Category ID is the first part of offerId
+                involvedCategoryIds.add(offerId.split('_')[0]);
             }
         });
 
         for (const catId of Array.from(involvedCategoryIds)) {
             const category = allCategories.find(c => c.id === catId || c._id === catId);
             if (category) {
-                // Check category's own availability period
+                
                 if (category.availabilityStartDate && new Date(startDate) < new Date(category.availabilityStartDate)) {
                      return { available: false, message: `Room type "${category.title}" is not available before ${new Date(category.availabilityStartDate).toLocaleDateString()}.` };
                 }
                 if (category.availabilityEndDate && new Date(endDate) > new Date(new Date(category.availabilityEndDate).getTime() + 86400000)) { // Add one day to include the end date itself
                      return { available: false, message: `Room type "${category.title}" is not available after ${new Date(category.availabilityEndDate).toLocaleDateString()}.` };
                 }
-
-                // Check specific unavailable dates within the category
+                
                 if (category.unavailableDates && category.unavailableDates.length > 0) {
                     for (const dateStr of dateRange) {
                         if (category.unavailableDates.includes(dateStr)) {
@@ -281,87 +249,6 @@ export default function PropertyDetailPage() {
         }
         return { available: true, message: null };
     }, []);
-
-    useEffect(() => {
-        const fetchPropertyDetails = async () => {
-            if (!params?.id) return;
-            try {
-                setLoading(true); setError(null); setAvailabilityError(null);
-                const response = await fetch(`/api/properties/${params.id}`);
-                if (!response.ok) throw new Error(`Failed to fetch property: ${response.statusText} (${response.status})`);
-                const data: Property = await response.json();
-                if (!data || typeof data !== 'object' || !data._id) throw new Error('Invalid property data received');
-
-                const propertyStartDate = data.startDate ? new Date(data.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-                const propertyEndDate = data.endDate ? new Date(data.endDate).toISOString().split('T')[0] : new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0];
-
-                const parsedProperty: Property = {
-                    ...data,
-                    _id: data._id,
-                    startDate: propertyStartDate,
-                    endDate: propertyEndDate,
-                    createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
-                    updatedAt: data.updatedAt ? new Date(data.updatedAt) : new Date(),
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    categoryRooms: Array.isArray(data.categoryRooms) ? data.categoryRooms.map((cat: any): StoredRoomCategory => ({
-                        id: cat.id || cat._id?.toString() || generateId(),
-                        _id: cat._id?.toString(),
-                        title: cat.title || "Unnamed Room",
-                        qty: typeof cat.qty === 'number' ? cat.qty : 0,
-                        currency: cat.currency || data.costing?.currency || "USD",
-                        roomSize: cat.roomSize || "Unknown",
-                        pricing: (cat.pricing && typeof cat.pricing === 'object' && 'singleOccupancyAdultPrice' in cat.pricing)
-                            ? {
-                                singleOccupancyAdultPrice: { ...initialPricingState.singleOccupancyAdultPrice, ...(cat.pricing.singleOccupancyAdultPrice || {})},
-                                discountedSingleOccupancyAdultPrice: { ...initialPricingState.discountedSingleOccupancyAdultPrice, ...(cat.pricing.discountedSingleOccupancyAdultPrice || {})},
-                                doubleOccupancyAdultPrice: { ...initialPricingState.doubleOccupancyAdultPrice, ...(cat.pricing.doubleOccupancyAdultPrice || {})},
-                                discountedDoubleOccupancyAdultPrice: { ...initialPricingState.discountedDoubleOccupancyAdultPrice, ...(cat.pricing.discountedDoubleOccupancyAdultPrice || {})},
-                                tripleOccupancyAdultPrice: { ...initialPricingState.tripleOccupancyAdultPrice, ...(cat.pricing.tripleOccupancyAdultPrice || {})},
-                                discountedTripleOccupancyAdultPrice: { ...initialPricingState.discountedTripleOccupancyAdultPrice, ...(cat.pricing.discountedTripleOccupancyAdultPrice || {})},
-                                child5to12Price: { ...initialPricingState.child5to12Price, ...(cat.pricing.child5to12Price || {})},
-                                discountedChild5to12Price: { ...initialPricingState.discountedChild5to12Price, ...(cat.pricing.discountedChild5to12Price || {})},
-                            }
-                            : initialPricingState,
-                        seasonalHike: (cat.seasonalHike && cat.seasonalHike.startDate && cat.seasonalHike.endDate && cat.seasonalHike.hikePricing)
-                            ? {
-                                startDate: cat.seasonalHike.startDate,
-                                endDate: cat.seasonalHike.endDate,
-                                hikePricing: {
-                                    singleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0, ...cat.seasonalHike.hikePricing.singleOccupancyAdultHike },
-                                    doubleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0, ...cat.seasonalHike.hikePricing.doubleOccupancyAdultHike },
-                                    tripleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0, ...cat.seasonalHike.hikePricing.tripleOccupancyAdultHike },
-                                }
-                            }
-                            : undefined,
-
-                        unavailableDates: Array.isArray(cat.unavailableDates) ? cat.unavailableDates : [],
-                        availabilityStartDate: cat.availabilityStartDate || undefined,
-                        availabilityEndDate: cat.availabilityEndDate || undefined,
-                        categoryActivities: Array.isArray(cat.categoryActivities) ? cat.categoryActivities : [],
-                        categoryFacilities: Array.isArray(cat.categoryFacilities) ? cat.categoryFacilities : [],
-                        categoryImages: Array.isArray(cat.categoryImages) ? cat.categoryImages : [], // Ensure images are parsed
-                        size: cat.size,
-                        bedConfiguration: cat.bedConfiguration,
-                        maxOccupancy: typeof cat.maxOccupancy === 'number' && cat.maxOccupancy > 0 ? cat.maxOccupancy : MAX_OCCUPANTS_PER_ROOM,
-                        roomSpecificAmenities: Array.isArray(cat.roomSpecificAmenities) ? cat.roomSpecificAmenities : [],
-                    })) : [],
-                    review: Array.isArray(data.review) ? data.review : [],
-                    costing: data.costing || { price: 0, discountedPrice: 0, currency: 'USD' },
-                    rooms: data.rooms || 0,
-                    amenities: data.amenities || [],
-                };
-                setProperty(parsedProperty);
-                if (parsedProperty.bannerImage?.url) setActiveImage(parsedProperty.bannerImage.url);
-                else if (parsedProperty.detailImages?.[0]?.url) setActiveImage(parsedProperty.detailImages[0].url);
-                else setActiveImage('/images/placeholder-property.png');
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } catch (err: any) {
-                setError(`Error fetching details: ${err.message}.`);
-                console.error("Fetch error:", err);
-            } finally { setLoading(false); }
-        };
-        fetchPropertyDetails();
-    }, [params?.id]);
 
     const getCheckInDateFromLocalStorage = () => {
         if (typeof window === 'undefined') return null;
@@ -398,7 +285,7 @@ export default function PropertyDetailPage() {
     };
 
     useEffect(() => {
-        if (property && typeof window !== 'undefined' && !loading) {
+        if (property && typeof window !== 'undefined') {
             const storedPreferences = localStorage.getItem(LOCAL_STORAGE_KEY);
             const localCheckIn = getCheckInDateFromLocalStorage();
             const localCheckOut = getCheckOutDateFromLocalStorage();
@@ -502,7 +389,7 @@ export default function PropertyDetailPage() {
     };
 
     useEffect(() => {
-        if (property && typeof window !== 'undefined' && !loading) {
+        if (property && typeof window !== 'undefined') {
             const preferencesToSave = {
                 propertyId: property._id?.toString(),
                 checkInDate: checkInDate ? checkInDate.toISOString() : null,
@@ -514,7 +401,7 @@ export default function PropertyDetailPage() {
             };
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(preferencesToSave));
         }
-    }, [checkInDate, checkOutDate, adultCount, childCount, selectedOffers, selectedMealPlan, property, loading]);
+    }, [checkInDate, checkOutDate, adultCount, childCount, selectedOffers, selectedMealPlan, property]);
 
     const displayableRoomOffers = useMemo((): DisplayableRoomOffer[] => {
         if (!property?.categoryRooms || !checkInDate || !checkOutDate || days <= 0) return [];
@@ -639,7 +526,7 @@ export default function PropertyDetailPage() {
             ];
 
             offerConfigs.forEach(oc => {
-                if (cat.maxOccupancy && cat.maxOccupancy >= oc.guestCapacityInOffer) {
+                if (MAX_OCCUPANTS_PER_ROOM >= oc.guestCapacityInOffer) {
                     const pricingExists =
                         (oc.intendedAdults === 1 && cat.pricing.singleOccupancyAdultPrice) ||
                         (oc.intendedAdults === 2 && cat.pricing.doubleOccupancyAdultPrice) ||
@@ -858,8 +745,6 @@ export default function PropertyDetailPage() {
          setBookingError(null);
     };
 
-    const handleImageClick = (imageUrl: string) => { setActiveImage(imageUrl); };
-
     const handleOfferQuantityChange = (offerId: string, quantity: number) => {
         if (!property?.categoryRooms) return;
 
@@ -942,7 +827,7 @@ export default function PropertyDetailPage() {
         setBookingError(null);
 
         const reservationData = {
-            propertyId: property._id, propertyTitle: property.title, propertyImage: activeImage || property.bannerImage?.url,
+            propertyId: property._id, propertyTitle: property.title, propertyImage: property.bannerImage?.url,
             propertyLocation: { address: property.location.address, city: property.location.city, country: property.location.country },
             propertyRating: property.totalRating, checkInDate: checkInDate?.toISOString(), checkOutDate: checkOutDate?.toISOString(),
             days, adultCount, childCount, globalGuestCount, totalSelectedPhysicalRooms, selectedOffers, selectedMealPlan, displayableRoomOffers,
@@ -956,172 +841,37 @@ export default function PropertyDetailPage() {
         }
     };
 
-    const renderRatingStars = (rating: number, starSize: string = "w-4 h-4") => (
-        <div className="flex items-center">
-            {[1, 2, 3, 4, 5].map(star => (
-                <StarIcon key={star} className={`${starSize} ${star <= Math.round(rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
-            ))}
-        </div>
-    );
-    const getAmenityIcon = (amenity: string, size = 16, color = "text-green-600"): React.ReactNode => {
-        const lowerAmenity = amenity.toLowerCase();
-        if (lowerAmenity.includes('wifi') || lowerAmenity.includes('internet')) return <Wifi size={size} className={color} />;
-        if (lowerAmenity.includes('parking')) return <Car size={size} className={color} />;
-        if (lowerAmenity.includes('pool')) return <Droplet size={size} className={color} />;
-        if (lowerAmenity.includes('air conditioning') || lowerAmenity.includes('ac')) return <Wind size={size} className={color} />;
-        if (lowerAmenity.includes('gym') || lowerAmenity.includes('fitness')) return <Dumbbell size={size} className={color} />;
-        if (lowerAmenity.includes('restaurant')) return <Utensils size={size} className={color} />;
-        if (lowerAmenity.includes('tv') || lowerAmenity.includes('television')) return <Tv size={size} className={color} />;
-        if (lowerAmenity.includes('coffee') || lowerAmenity.includes('tea maker') || lowerAmenity.includes('breakfast')) return <CoffeeIconLucide size={size} className={color} />;
-        if (lowerAmenity.includes('balcony') || lowerAmenity.includes('view')) return <ImageIconLucide size={size} className="text-gray-500" />;
-        if (lowerAmenity.includes('kitchen') || lowerAmenity.includes('kitchenette')) return <Utensils size={size} className={color} />;
-        if (lowerAmenity.includes('air purifier')) return <Wind size={size} className={color} />;
-        if (lowerAmenity.includes('hand sanitiser')) return <Droplet size={size} className={color} />;
-        return <CheckCircle size={size} className={color} />;
-    };
-    const formatAmenityName = (amenity: string): string => {
-        let name = amenity.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-        if (name.toLowerCase() === 'wifi') return 'Wi-Fi';
-        if (name.startsWith("Is ")) name = name.substring(3);
-        if (name.startsWith("Has ")) name = name.substring(4);
-        return name;
-    };
-
-    const allImages = useMemo(() => {
-        if (!property) return [];
-        const images: PropertyImage[] = [];
-        if (property.bannerImage?.url) images.push({ ...property.bannerImage, publicId: property.bannerImage.publicId || 'banner', url: property.bannerImage.url });
-        property.detailImages?.forEach(img => {
-            if (img.url && img.url !== property.bannerImage?.url) images.push({ ...img, publicId: img.publicId || img.url, url: img.url });
-        });
-        return images.filter(img => img.url).map(img => ({...img, alt: img.alt || property.title || 'Property image'}));
-    }, [property]);
-
-    const mainGalleryImage = allImages[0];
-    const sideGalleryImages = allImages.slice(1, 3);
-
-    const renderPropertyHighlights = () => {
-        if (!property) return null;
-        const highlights = [];
-        if (property.type) highlights.push({ icon: <Award className="text-[#003c95]" />, title: 'Property Type', text: [property.type] });
-        const viewAmenity = property.amenities?.find(a => a.toLowerCase().includes('view') || a.toLowerCase().includes('balcony') || a.toLowerCase().includes('terrace'));
-        if (viewAmenity) highlights.push({ icon: <ImageIconLucide className="text-[#003c95]" />, title: 'Featured Amenity', text: [formatAmenityName(viewAmenity)] });
-        else if (property.funThingsToDo?.some(ft => ft.toLowerCase().includes('view'))) {
-             highlights.push({ icon: <ImageIconLucide className="text-[#003c95]" />, title: 'Scenic Surroundings', text: ["Beautiful views often reported"] });
-        }
-        const mealTexts: string[] = [];
-        const breakfastMeal = property.meals?.find(m => m.toLowerCase().includes('breakfast'));
-        if (breakfastMeal) mealTexts.push(formatAmenityName(breakfastMeal));
-        const lunchMeal = property.meals?.find(m => m.toLowerCase().includes('lunch'));
-        if (lunchMeal) mealTexts.push(formatAmenityName(lunchMeal));
-        const dinnerMeal = property.meals?.find(m => m.toLowerCase().includes('dinner'));
-        if (dinnerMeal) mealTexts.push(formatAmenityName(dinnerMeal));
-        if (mealTexts.length > 0) highlights.push({ icon: <CoffeeIconLucide className="text-[#003c95]" />, title: 'Meal Options', text: [mealTexts.join(', ')] });
-        else if (property.amenities?.find(a => a.toLowerCase().includes('breakfast'))) highlights.push({ icon: <CoffeeIconLucide className="text-[#003c95]" />, title: 'Breakfast Available', text: ['Breakfast amenity offered'] });
-        const kitchenAmenity = property.amenities?.find(a => a.toLowerCase().includes('kitchen'));
-        if (kitchenAmenity) highlights.push({ icon: <Utensils className="text-[#003c95]" />, title: 'Kitchen Facilities', text: [formatAmenityName(kitchenAmenity)] });
-        const wifiAmenity = property.amenities?.find(a => a.toLowerCase().includes('wifi') || a.toLowerCase().includes('internet'));
-        if (wifiAmenity) highlights.push({ icon: <Wifi className="text-[#003c95]" />, title: 'Wi-Fi Available', text: [formatAmenityName(wifiAmenity)] });
-        return (
-            <div className="bg-white p-4 rounded-md border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">Property highlights</h3>
-                {highlights.length > 0 ? (
-                    <div className="space-y-3">
-                        {highlights.slice(0).map((item, index) => (
-                            <div key={index} className="flex items-start">
-                                <span className="mr-2 mt-0.5 shrink-0">{React.cloneElement(item.icon, { size: 20 })}</span>
-                                <div><p className="text-sm font-semibold text-gray-700">{item.title}</p><p className="text-xs text-gray-500">{item.text.join(', ')}</p></div>
-                            </div>
-                        ))}
-                    </div>
-                ) : <p className="text-sm text-gray-500">No specific highlights available.</p>}
-            </div>
-        );
-    };
-
-    if (loading) return <div className="flex justify-center items-center min-h-screen"><div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#003c95]"></div></div>;
-    if (error || !property) return <div className="container mx-auto px-4 py-16 text-center"><h2 className="text-2xl font-bold text-red-600 mb-4">{error || 'Property details could not be loaded.'}</h2><p className="text-gray-600 mb-4">Please check the URL or try refreshing the page.</p><button onClick={() => router.push('/properties')} className="mt-4 px-6 py-2 bg-[#003c95] text-white rounded-md hover:bg-[#003c95] transition-colors">View Other Properties</button></div>;
+    if (!property) return <div className="container mx-auto px-4 py-16 text-center"><h2 className="text-2xl font-bold text-red-600 mb-4">{'Property details could not be loaded.'}</h2><p className="text-gray-600 mb-4">Please check the URL or try refreshing the page.</p><button onClick={() => router.push('/properties')} className="mt-4 px-6 py-2 bg-[#003c95] text-white rounded-md hover:bg-[#003c95] transition-colors">View Other Properties</button></div>;
 
     const currencySymbol = property.costing?.currency === 'INR' ? '₹' : (property.costing?.currency === 'USD' ? '$' : (property.costing?.currency === 'EUR' ? '€' : (property.costing?.currency || '$')));
-
 
     return (
         <>
             <div className="bg-gray-100">
-                <div className="container mx-auto px-2 sm:px-4 lg:px-16 py-16">
-                    {/* Header Section */}
-                    <div className="mb-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                {property.type && <span className="text-xs bg-yellow-400 text-yellow-900 font-semibold px-2 py-0.5 rounded-sm mr-2 uppercase">{property.type}</span>}
-                                <h1 className="text-xl sm:text-2xl font-bold text-gray-800 inline">{property.title || 'Property Title N/A'}</h1>
-                            </div>
-                            <div className="flex items-center space-x-2 mt-1 sm:mt-0">
-                                <button className="p-1.5 rounded-full hover:bg-gray-200"><Heart size={18} className="text-[#003c95]" /></button>
-                                <button className="p-1.5 rounded-full hover:bg-gray-200"><Share2 size={18} className="text-[#003c95]" /></button>
-                            </div>
-                        </div>
-                        <div className="flex items-center text-xs text-gray-600 mt-1">
-                            {(property.totalRating != null && property.totalRating > 0) && (
-                                <div className="flex items-center mr-2">{renderRatingStars(property.totalRating, "w-3.5 h-3.5")}<span className="ml-1 bg-[#003c95] text-white text-[10px] font-bold px-1 py-0.5 rounded-sm">{property.totalRating.toFixed(1)}</span></div>
-                            )}
-                            {property.propertyRating && property.propertyRating > 0 && (
-                            <span className="mr-2">{renderRatingStars(property.propertyRating, "w-3 h-3")} <span className="text-[10px] align-super">({property.propertyRating}-star)</span></span>
-                            )}
-                            <MapPin size={12} className="mr-1 text-gray-500" />
-                            <span>{property.location.address}, {property.location.city}</span>
-                        </div>
-                    </div>
+                <div className="container mx-auto px-2 sm:px-4 lg:max-w-7xl py-16">
+                    
+                    <PropertyHeader
+                        title={property.title ?? ''}
+                        type={property.type}
+                        totalRating={property.totalRating}
+                        propertyRating={property.propertyRating}
+                        address={property.location.address ?? ''}
+                        city={property.location.city ?? ''}
+                    />
+                    
+                    <ImageGalleryAndMap 
+                        bannerImage={property.bannerImage}
+                        detailImages={property.detailImages}
+                        googleMaps={property.googleMaps}
+                        title={property.title}
+                        type={property.type}
+                        amenities={property.amenities}
+                        funThingsToDo={property.funThingsToDo}
+                        meals={property.meals}
+                    />
 
-                    {/* Image Gallery and Map Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-5">
-                        <div className="md:col-span-8">
-                            <div className="grid grid-cols-3 grid-rows-3 gap-1.5 h-[300px] md:h-[420px] rounded-lg overflow-hidden">
-                                {mainGalleryImage && (
-                                    <div className="col-span-2 row-span-3 relative cursor-pointer group" onClick={() => handleImageClick(mainGalleryImage.url)}>
-                                        <Image src={activeImage || mainGalleryImage.url} alt={mainGalleryImage.alt || property.title || 'Main property view'} layout="fill" objectFit="cover" priority className="transition-opacity hover:opacity-90" onError={(e) => e.currentTarget.src = '/images/placeholder-property.png'} />
-                                    </div>
-                                )}
-                                {!mainGalleryImage && <div className="col-span-2 row-span-3 bg-gray-200 flex items-center justify-center text-gray-500">No Image</div>}
-                                {sideGalleryImages.map((image, index) => (
-                                    <div key={`side-img-${index}`} className={`col-span-1 ${index === 0 ? 'row-span-2' : 'row-span-1'} relative cursor-pointer group`} onClick={() => handleImageClick(image.url)}>
-                                        <Image src={image.url} alt={image.alt || `Property view ${index + 2}`} layout="fill" objectFit="cover" sizes="25vw" className="transition-opacity hover:opacity-90" onError={(e) => e.currentTarget.src = '/images/placeholder-property.png'} />
-                                    </div>
-                                ))}
-                                {mainGalleryImage && sideGalleryImages.length < 1 && <div className="col-span-1 row-span-2 bg-gray-200"></div>}
-                                {mainGalleryImage && sideGalleryImages.length < 2 && <div className="col-span-1 row-span-1 bg-gray-200"></div>}
-                            </div>
-                            {allImages.length > 1 && (
-                                <div className="flex space-x-1.5 mt-1.5 overflow-x-auto pb-1">
-                                    {allImages.map((img, idx) => (
-                                        <div key={`thumb-${idx}`} className={`relative w-20 h-14 rounded-sm overflow-hidden cursor-pointer border-2 shrink-0 ${activeImage === img.url ? 'border-[#003c95]' : 'border-transparent hover:border-gray-400'}`} onClick={() => handleImageClick(img.url)}>
-                                            <Image src={img.url} alt={img.alt || `Thumbnail ${idx+1}`} layout="fill" objectFit="cover" />
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        <div className="md:col-span-4 space-y-4">
-                            {property?.googleMaps && (
-                                <div id="map-section" className="bg-white rounded-md h-48 md:h-56 overflow-hidden border border-gray-200 shadow-sm">
-                                    {property?.googleMaps?.startsWith('<iframe') ? (
-                                        <div className="w-full h-full" dangerouslySetInnerHTML={{ __html: property.googleMaps.replace(/width=".*?"/, 'width="100%"').replace(/height=".*?"/, 'height="100%"')}} />
-                                    ) : (
-                                        <iframe title={`${property.title} location map`} src={property.googleMaps} width="100%" height="100%" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade"></iframe>
-                                    )}
-                                </div>
-                            )}
-                            {renderPropertyHighlights()}
-                        </div>
-                    </div>
+                    <AboutProperty description={property.description} />
 
-                    {/* About Property Section */}
-                    <div className="bg-white p-4 rounded-md border border-gray-200 mb-5">
-                        <h2 className="text-xl font-bold text-gray-800 mb-3">About this property</h2>
-                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{property.description || "No detailed description available."}</p>
-                    </div >
-
-                    {/* SignedOut Section */}
                     <SignedOut>
                         <div className="bg-yellow-50 border border-yellow-300 p-4 rounded-md mb-6 flex flex-col sm:flex-row items-center sm:items-center justify-between text-center sm:text-left gap-4 sm:gap-2">
                             <div className="flex-grow">
@@ -1136,7 +886,6 @@ export default function PropertyDetailPage() {
                         </div>
                     </SignedOut>
 
-                    {/* ROOM SELECTION TABLE SECTION */}
                     <div className="bg-white rounded-md border border-gray-300 mb-6">
                         <div className="bg-gray-50 p-4 border-b border-gray-200">
                             <h2 className="text-xl font-bold text-gray-800 mb-3">Select your rooms</h2>
@@ -1226,7 +975,6 @@ export default function PropertyDetailPage() {
                                                         
                                                         {offer.size && (
                                                             <div className="flex items-center text-sm text-gray-600 mt-1">
-                                                                {/* Simple square icon similar to the screenshot */}
                                                                 <div className="w-4 h-4 border border-gray-500 mr-2 flex-shrink-0"></div>
                                                                 <span>{offer.size}</span>
                                                             </div>
@@ -1311,42 +1059,29 @@ export default function PropertyDetailPage() {
                                     })}
                                 </tbody>
                             </table>
-                            
                         </div>
                     </div>
 
-                    {/* Popular Facilities Section */}
-                    <section className="bg-white p-4 sm:p-6 rounded-md border border-gray-200 mb-6">
-                        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center"><ListChecks className="mr-2 h-5 w-5 text-[#003c95]" />Most Popular Facilities</h2>
-                        {(property.amenities || property.facilities) && ((property.amenities && property.amenities.length > 0) || (property.facilities && property.facilities.length > 0)) ? (
-                            <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2`}>
-                                {(showAllAmenities ? (property.facilities || property.amenities) : (property.facilities || property.amenities).slice(0)).map((item, index) => (
-                                    <div key={`pop-facil-${index}`} className="flex items-center py-1">
-                                        {getAmenityIcon(item)}
-                                        <span className="ml-2 text-sm text-gray-700">{formatAmenityName(item)}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : <p className="text-sm text-gray-500">No specific popular facilities listed.</p>}
-                        {(property.facilities || property.amenities) && (property.facilities || property.amenities).length > 8 && (
-                            <button onClick={() => setShowAllAmenities(!showAllAmenities)} className="mt-3 text-sm text-[#003c95] hover:text-[#003c95] font-semibold flex items-center">
-                                {showAllAmenities ? 'Show less' : `Show all ${(property.facilities || property.amenities).length} facilities`}
-                                {showAllAmenities ? <ChevronUp size={16} className="ml-1" /> : <ChevronDown size={16} className="ml-1" />}
-                            </button>
-                        )}
-                    </section>
+                    <GuestReviews reviews={property?.review ?? []} />
+
+                    <HotelFacilities
+                        hotelName={property.title ?? ''}
+                        facilities={property.facilities ?? []}
+                        amenities={property.amenities ?? []}
+                    />
+
+
                 </div>
             </div>
             <div className="w-[96vw] m-2 fixed bottom-0 block lg:hidden">
                 {totalSelectedPhysicalRooms > 0 && totalBookingPricing > 0 && days > 0 && ( <div className="mb-1 w-full bg-gray-200 p-2 text-sm">
-                    <p className="font-semibold text-md"> {totalSelectedPhysicalRooms} room{totalSelectedPhysicalRooms > 1 ? 's' : ''} for </p>
-                    <p className="text-2xl font-bold text-gray-800"> {currencySymbol} {totalBookingPricing.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} </p>
-                    <p className="text-xs text-gray-500"> for {days} night{days > 1 ? 's' : ''}, incl. taxes </p> </div> )}
+                <p className="font-semibold text-md"> {totalSelectedPhysicalRooms} room{totalSelectedPhysicalRooms > 1 ? 's' : ''} for </p>
+                <p className="text-2xl font-bold text-gray-800"> {currencySymbol} {totalBookingPricing.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} </p>
+                <p className="text-xs text-gray-500"> for {days} night{days > 1 ? 's' : ''}, incl. taxes </p> </div> )}
                 <button onClick={handleBookNowOrReserveClick} onMouseEnter={() => setShowReservePopover(true)} onMouseLeave={() => setShowReservePopover(false)} disabled={!checkInDate || !checkOutDate || days <= 0 || totalSelectedPhysicalRooms <= 0 || !!availabilityError || totalBookingPricing <=0 || !!bookingError} className="bg-[#003c95] text-white font-semibold py-3 px-5 border-3 border-black/40 rounded-md hover:bg-[#003c95] text-sm disabled:bg-gray-300 disabled:cursor-not-allowed w-full" > I&apos;ll reserve </button>
                 {showReservePopover && checkInDate && checkOutDate && days > 0 && property && totalSelectedPhysicalRooms > 0 && ( <div className="hidden lg:block absolute top-0 right-full mr-4 w-[340px] p-4 bg-slate-800 text-white rounded-lg shadow-xl z-20" > <h3 className="text-xl font-bold mb-1">{property.title}</h3> <p className="text-sm font-normal text-gray-300 mb-3">Enhanced personal experience</p> <div className="text-sm space-y-1 mb-4"> <p><strong>Total length of stay:</strong> {days} {days === 1 ? 'night' : 'nights'}</p> <p><strong>Check-in:</strong> {checkInDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p> <p><strong>Check-out:</strong> {checkOutDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p> </div> <div className="bg-yellow-400 text-black text-sm font-semibold p-3 rounded-md text-center"> No account needed! Booking takes just 2 minutes. </div> </div> )}
             </div>
-
-            {/* Render Modal conditionally */}
+                    
             {modalData && (
                 <ImageGalleryModal
                     title={modalData.title}

@@ -15,6 +15,8 @@ export const metadata: Metadata = seoMetadata.bookings;
 
 
 
+
+
 export default async function MyBookingsPage() {
     const { userId } = await auth();
     if (!userId) {
@@ -27,6 +29,7 @@ export default async function MyBookingsPage() {
     }
 
     const serializedBookings = await fetchUserBookings(userId);
+    // console.log(serializedBookings);
 
     return (
         <>

@@ -32,10 +32,9 @@ const getBookingIcon = (type: Booking['type']) => {
 };
 
 const BookingCard = ({ booking, onSelect, onReview }: { booking: Booking; onSelect: (booking: Booking) => void; onReview: (booking: Booking) => void; }) => {
-    const isPastBooking = new Date(booking.bookingDetails.checkOut) < new Date();
-    // const isPastBooking = true;
-    
-    const canReview = isPastBooking && booking.type === 'property' && !booking.isReviewed;
+    const isPastBooking = new Date(booking.bookingDetails.checkIn) < new Date();
+    // console.log("Booking card: ",booking);
+    const canReview = isPastBooking && booking.status == 'Not Reviewed' && !booking.isReviewed;
 
     return (
         <motion.div
@@ -69,7 +68,7 @@ const BookingCard = ({ booking, onSelect, onReview }: { booking: Booking; onSele
                     </div>
                 </div>
             </div>
-            <div className="bg-gray-50 px-4 py-3 border-t flex justify-end">
+            <div className="bg-gray-50 px-4 py-3 border-t flex justify-between">
                 {canReview ? (
                     <button
                         onClick={() => onReview(booking)}
@@ -77,21 +76,24 @@ const BookingCard = ({ booking, onSelect, onReview }: { booking: Booking; onSele
                     >
                         <Star size={14} className="mr-2"/> Give Review
                     </button>
-                ) : isPastBooking && booking.type === 'property' ? (
+                ) : isPastBooking ? (
                      <button
                         disabled
                         className="bg-gray-200 text-gray-500 px-4 py-1.5 rounded-md text-sm font-semibold cursor-not-allowed"
                     >
                         Reviewed
                     </button>
-                ) : (
+                )
+                : null
+                }
+
                     <button
                         onClick={() => onSelect(booking)}
                         className="bg-[#003c95] text-white px-4 py-1.5 rounded-md text-sm font-semibold hover:bg-[#003c95] transition-colors"
                     >
                         View Details
                     </button>
-                )}
+                
             </div>
         </motion.div>
     );
@@ -297,9 +299,8 @@ const ReviewModal = ({ booking, onClose, onReviewSubmitted }: { booking: Booking
         }
         setError(null);
         setIsSubmitting(true);
-
         try {
-            const response = await fetch(`/api/properties/${booking.propertyId}/reviews`, {
+            const response = await fetch(`/api/properties/${booking.tripDetails.id}/reviews`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

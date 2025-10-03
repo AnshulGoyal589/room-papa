@@ -15,7 +15,6 @@ import { Image as ImageType, SeasonalCoasting } from "@/lib/mongodb/models/Compo
 import MultipleImageUpload from "@/components/cloudinary/MultipleImageUpload";
 import { Badge as UiBadge } from "@/components/ui/badge";
 import {
-  PropertyType,
   PricingByMealPlan,
   DiscountedPricingByMealPlan
 } from "@/types";
@@ -40,6 +39,7 @@ import {
 } from "lucide-react";
 import { HikePricingByOccupancy, RoomCategoryPricing, StoredRoomCategory } from "@/types/booking";
 import { CldImage } from "next-cloudinary";
+import { propertyAmenitiesArray, PropertyType } from "@/types/property";
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 
@@ -217,7 +217,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
   const popularFiltersOptions = ['Pet Friendly', 'Free Cancellation', 'Free Breakfast', 'Pool', 'Hot Tub', 'Ocean View', 'Family Friendly', 'Business Facilities'];
   const funThingsToDoOptions = ['Beach', 'Hiking', 'Shopping', 'Nightlife', 'Local Tours', 'Museums', 'Theme Parks', 'Water Sports'];
   const mealsOptionsList = ['Breakfast', 'Lunch', 'Dinner', 'All-Inclusive', 'Buffet', 'À la carte', 'Room Service', 'Special Diets'];
-  const facilitiesOptionsList = ['Parking', 'WiFi', 'Swimming Pool', 'Fitness Center', 'Restaurant', 'Bar', 'Spa', 'Conference Room'];
+  const facilitiesOptionsList = Array.from(propertyAmenitiesArray);
   const bedPreferenceOptionsList = ['King', 'Queen', 'Twin', 'Double', 'Single', 'Sofa Bed', 'Bunk Bed'];
   const reservationPolicyOptionsList =  ['Free Cancellation', 'Flexible', 'Moderate', 'Strict', 'Non-Refundable', 'Pay at Property', 'Pay Now'];
   const brandsOptionsList =  ['Hilton', 'Marriott', 'Hyatt', 'Best Western', 'Accor', 'IHG', 'Wyndham', 'Choice Hotels'];

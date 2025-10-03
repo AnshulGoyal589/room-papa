@@ -1,9 +1,10 @@
-import { PropertyType, UserRole } from "@/types";
+import { UserRole } from "@/types";
 import { Property } from "./Property";
 import { Travelling } from "./Travelling";
 import { Trip } from "./Trip";
 import { ReactNode } from "react";
 import { DisplayableRoomOffer, HikePricingByOccupancy } from "@/types/booking";
+import { PropertyType } from "@/types/property";
 
 export interface Location{
     address: string;
@@ -30,11 +31,16 @@ export interface Image {
   alt?: string;
 }
 
+export type ReviewCategory = 'Service' | 'Value' | 'Location' | 'Cleanliness' | 'Comfort' | 'Facilities';
+
 export interface Review{
     comment: string;
     rating: number;
+    category?: ReviewCategory[];
     name?: string;
+    userId : string;
     date?: Date;
+    country?: string;
 };
 
 

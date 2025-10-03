@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { PropertyType, TransportationType } from '@/types'; // Assuming these types are defined
+import { TransportationType } from '@/types'; // Assuming these types are defined
 import { categoryOptions } from '../../../../public/assets/data'; // Assuming this path is correct
 import { Slider } from '@/components/ui/slider'; // Assuming this component exists
+import { propertyAmenitiesArray, PropertyType } from '@/types/property';
 
 // Helper component for filter sections for better structure and styling consistency
 const FilterSection: React.FC<{ title: string; children: React.ReactNode; show?: boolean }> = ({ title, children, show = true }) => {
@@ -518,10 +519,7 @@ export default function SearchFilter() {
       {/* Common category filters */}
       <FilterSection title="Amenities">
          <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
-          {[
-            'WiFi', 'Parking', 'Pool', 'Gym', 'Air conditioning', 'Pet friendly', 'Restaurant', 
-            'Room service', 'Disabled facilities', 'TV', 'Laundry', 'Kitchen'
-          ].map((item) => (
+          {propertyAmenitiesArray.map((item) => (
              <CheckboxItem
               key={item}
               id={`amenity-${item}`}

@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import ImageUpload from "@/components/cloudinary/ImageUpload";
 import MultipleImageUpload from "@/components/cloudinary/MultipleImageUpload";
-import { PropertyAmenities } from "@/types";
+// import { PropertyAmenities } from "@/types";
+import { PropertyAmenities, propertyAmenitiesArray } from "@/types/property";
 
 
 // Define TransportationType
@@ -22,7 +23,7 @@ const TravellingEditForm: React.FC<TravellingEditFormProps> = ({ item, onSave })
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   // Define options for various travelling features
-  const amenities: PropertyAmenities[] = ["wifi", "pool", "gym", "spa", "restaurant", "parking", "airConditioning", "breakfast"];
+  const amenities: PropertyAmenities[] = Array.from(propertyAmenitiesArray);
   const travellingAccessibilityOptions = ['Wheelchair Accessible', 'Elevator', 'Accessible Parking', 'Braille Signage', 'Accessible Bathroom', 'Roll-in Shower'];
   const popularFiltersOptions =  ['Pet Friendly', 'Free Cancellation', 'Free Breakfast', 'Pool', 'Hot Tub', 'Ocean View', 'Family Friendly', 'Business Facilities'];
   const funThingsToDoOptions = ['Beach', 'Hiking', 'Shopping', 'Nightlife', 'Local Tours', 'Museums', 'Theme Parks', 'Water Sports'];

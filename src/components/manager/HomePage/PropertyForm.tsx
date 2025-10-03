@@ -17,11 +17,12 @@ import { Label } from '@/components/ui/label';
 import { Plus, X, Home, MapPin, DollarSign, BedDouble, ListChecks, ShieldCheck, Users, Baby, Utensils, CalendarOff, Sparkles, Wrench, CalendarDays } from 'lucide-react';
 import { categoryOptions } from '../../../../public/assets/data';
 
-import { DiscountedPricingByMealPlan, PricingByMealPlan, PropertyType } from '@/types'; // Assuming these are correctly defined
+import { DiscountedPricingByMealPlan, PricingByMealPlan } from '@/types'; // Assuming these are correctly defined
 
 import { HikePricingByOccupancy, RoomCategoryPricing, StoredRoomCategory } from '@/types/booking';
 import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
 import { ExtendedProperty, Image, PropertyFormProps, SeasonalCoasting } from '@/lib/mongodb/models/Components';
+import { propertyAmenitiesArray, PropertyType } from '@/types/property';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -942,7 +943,7 @@ useEffect(() => {
       <div className="space-y-4 pt-6 border-t">
         <SectionHeader title="Property Amenities" icon={ListChecks} />
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-3">
-          {['wifi', 'pool', 'gym', 'spa', 'restaurant', 'parking', 'airConditioning', 'breakfastIncluded', 'petFriendly', 'roomService', 'barLounge', 'laundryService'].map((amenity) => (
+          {propertyAmenitiesArray.map((amenity) => (
             <div key={amenity} className="flex items-center space-x-2">
               <Checkbox id={`amenity-${amenity}`} checked={(ensurePropertyData.amenities || []).includes(amenity)}
                 onCheckedChange={(checked) => {

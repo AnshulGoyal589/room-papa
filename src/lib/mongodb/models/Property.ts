@@ -2,9 +2,9 @@
 
 import { Collection, ObjectId } from 'mongodb';
 import { getDb } from '..';
-import {  PropertyAmenities, PropertyType } from '@/types';
 import { StoredRoomCategory } from '@/types/booking';
 import { Costing, Image, Location, Review } from './Components';
+import { PropertyAmenities, propertyAmenitiesArray, PropertyType } from '@/types/property';
 
 
 export interface Property {
@@ -12,7 +12,7 @@ export interface Property {
   userId?: string;
   title?: string;
   description?: string;
-  type: PropertyType;
+  type?: PropertyType;
   location: Location;
   startDate: string;
   endDate: string;
@@ -69,7 +69,7 @@ export interface Property {
     }
     
     // Validate amenities
-    const validAmenities: PropertyAmenities[] = ['wifi', 'pool', 'gym', 'spa', 'restaurant', 'parking', 'airConditioning', 'breakfast'];
+    const validAmenities: PropertyAmenities[] = Array.from(propertyAmenitiesArray);
     for (const amenity of propertyData.amenities) {
       if (!validAmenities.includes(amenity as PropertyAmenities)) {
         throw new Error(`Invalid amenity: ${amenity}. Valid amenities are: ${validAmenities.join(', ')}`);
@@ -107,6 +107,18 @@ export interface Property {
     const properties = await getPropertiesCollection();
     return properties.findOne({ _id: new ObjectId(id) });
   }
+
+  export async function addPropertyReview(propertyId: string, review: Review): Promise<void> {
+    const properties = await getPropertiesCollection();
+    await properties.updateOne(
+      { _id: new ObjectId(propertyId) },
+      {
+        $push: { review: review },
+        $inc: { totalRating: review.rating }
+      }
+    );
+  }
+
   
   export async function createProperty(propertyData: Omit<Property, '_id' | 'createdAt' | 'updatedAt'>): Promise<Property> {
     try {
@@ -187,4 +199,10 @@ export async function updateProperty(id: string, propertyData: Partial<Property>
     const properties = await getPropertiesCollection();
     const result = await properties.deleteOne({ _id: new ObjectId(id) });
     return result.deletedCount === 1;
+  }
+
+  export async function checkReviewStatus(PropertyId: string, userId: string): Promise<boolean> {
+    const properties = await getPropertiesCollection();
+    const property = await properties.findOne({ _id: new ObjectId(PropertyId), 'review.userId': userId });
+    return !!property;
   }
