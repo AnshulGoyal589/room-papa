@@ -15,49 +15,49 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// POST handler for creating a booking
-export async function POST(request: NextRequest) {
-  try {
+// // POST handler for creating a booking
+// export async function POST(request: NextRequest) {
+//   try {
 
-    const db = await getDb();
+//     const db = await getDb();
     
-    const bookingData = await request.json() as BookingDetails;
+//     const bookingData = await request.json() as BookingDetails;
     
-    if (!bookingData.bookingDetails || !bookingData.guestDetails) {
-      return NextResponse.json(
-        { message: 'Invalid booking data' },
-        { status: 400 }
-      );
-    }
+//     if (!bookingData.bookingDetails || !bookingData.guestDetails) {
+//       return NextResponse.json(
+//         { message: 'Invalid booking data' },
+//         { status: 400 }
+//       );
+//     }
 
     
-    const bookingsCollection = db.collection('bookings');
-    const result = await bookingsCollection.insertOne({
-      ...bookingData,
-      status: 'confirmed',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+//     const bookingsCollection = db.collection('bookings');
+//     const result = await bookingsCollection.insertOne({
+//       ...bookingData,
+//       status: 'confirmed',
+//       createdAt: new Date(),
+//       updatedAt: new Date(),
+//     });
     
-    if (bookingData.recipients && bookingData.recipients.length > 0) {
-      await sendBookingConfirmationEmail(bookingData);
-    }
+//     if (bookingData.recipients && bookingData.recipients.length > 0) {
+//       await sendBookingConfirmationEmail(bookingData);
+//     }
     
-    return NextResponse.json(
-      { 
-        message: 'Booking created successfully', 
-        bookingId: result.insertedId 
-      },
-      { status: 201 }
-    );
-  } catch (error) {
-    console.error('Error creating booking:', error);
-    return NextResponse.json(
-      { message: 'Failed to create booking' },
-      { status: 500 }
-    );
-  }
-}
+//     return NextResponse.json(
+//       { 
+//         message: 'Booking created successfully', 
+//         bookingId: result.insertedId 
+//       },
+//       { status: 201 }
+//     );
+//   } catch (error) {
+//     console.error('Error creating booking:', error);
+//     return NextResponse.json(
+//       { message: 'Failed to create booking' },
+//       { status: 500 }
+//     );
+//   }
+// }
 
 // GET handler for fetching bookings
 export async function GET(request: NextRequest) {
@@ -103,8 +103,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function sendBookingConfirmationEmail(bookingData: BookingDetails) { 
-  const { tripDetails, bookingDetails, guestDetails, recipients } = bookingData;
+export async function sendBookingConfirmationEmail(bookingData: BookingDetails) { 
+  const { infoDetails, bookingDetails, guestDetails, recipients } = bookingData;
 
   const checkInDate = new Date(bookingDetails.checkIn).toLocaleDateString('en-US', {
     weekday: 'long',
@@ -326,7 +326,7 @@ const emailHtml = `
                         <td style="padding: 30px 40px; color: #444444; font-size: 16px; line-height: 1.7;">
                             <h2 style="font-family: Georgia, serif; color: #0056b3; margin: 0 0 15px 0;">Your Booking is Confirmed</h2>
                             <p>Dear ${guestDetails.firstName} ${guestDetails.lastName},</p>
-                            <p>We are pleased to confirm your ${bookingData.type} reservation for <strong>${tripDetails.title}</strong>. Your itinerary is detailed below.</p>
+                            <p>We are pleased to confirm your ${bookingData.type} reservation for <strong>${infoDetails.title}</strong>. Your itinerary is detailed below.</p>
                             
                             <div style="border-top: 2px solid #0056b3; margin: 30px 0;"></div>
 
@@ -340,7 +340,7 @@ const emailHtml = `
                                 </tr>
                                 <tr>
                                     <td style="padding: 10px 0; border-bottom: 1px solid #eeeeee;"><strong>Destination:</strong></td>
-                                    <td style="padding: 10px 0; border-bottom: 1px solid #eeeeee; text-align: right;">${tripDetails.locationTo}</td>
+                                    <td style="padding: 10px 0; border-bottom: 1px solid #eeeeee; text-align: right;">${infoDetails.locationTo}</td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 10px 0; border-bottom: 1px solid #eeeeee;"><strong>Check-in Date:</strong></td>
@@ -387,7 +387,7 @@ const emailHtml = `
     await transporter.sendMail({
       from: process.env.EMAIL_FROM || 'roompapa7@gmail.com',
       to: recipients.join(', '),
-      subject: `${bookingData.type.charAt(0).toUpperCase() + bookingData.type.slice(1)} Booking Confirmation - ${tripDetails.title}`,
+      subject: `${bookingData.type.charAt(0).toUpperCase() + bookingData.type.slice(1)} Booking Confirmation - ${infoDetails.title}`,
       html: emailHtml,
     });
     

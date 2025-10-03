@@ -3,20 +3,11 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import { CalendarIcon, ArrowRightIcon } from 'lucide-react';
 import Image from 'next/image';
+import { BaseItem } from '@/lib/mongodb/models/Components';
 
-type Item = {
-  _id?: string;
-  title: string;
-  description: string;
-  category: 'Property' | 'Trip' | 'Travelling';
-  createdAt: Date;
-  bannerImage?: {
-    url: string;
-  }
-};
 
 type ListingItemProps = {
-  item: Item;
+  item: BaseItem;
   onClick: () => void;
 };
 

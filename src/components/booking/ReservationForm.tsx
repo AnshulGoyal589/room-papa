@@ -4,9 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import Image from 'next/image';
-import {
-    Star as StarIcon, CheckCircle, Users, Wifi, ParkingSquare, Wind, Utensils, Info, AlertTriangle, Car, Bus, ChevronDown, ChevronUp
-} from 'lucide-react';
+import { Star as StarIcon, CheckCircle, Users, Wifi, ParkingSquare, Wind, Utensils, Info, AlertTriangle, Car, Bus, ChevronDown, ChevronUp } from 'lucide-react';
 import RazorpayPaymentButton from '@/components/payment/RazorpayPaymentButton';
 import { DisplayableRoomOffer } from '@/types/booking';
 import { ReservationData } from '@/lib/mongodb/models/Components';
@@ -97,7 +95,6 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
         if (!reservationDetails) return [];
         const instances: { key: string; offer: DisplayableRoomOffer }[] = [];
         Object.entries(reservationDetails.selectedOffers).forEach(([offerId, qty]) => {
-            // console.log("offerId, qty: ", offerId, qty);
             const offer = reservationDetails.displayableRoomOffers.find(o => o.offerId === offerId);
             if (offer) {
                 for (let i = 0; i < qty; i++) {
@@ -285,7 +282,7 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                     amountInSubunits={Math.round(pricingDetails.totalBookingPricing * 100)} currency={pricingDetails.currency} receiptId={`booking_${propertyId}_${Date.now()}`}
                                     bookingPayload={{ 
                                         type: "property", 
-                                        details: { 
+                                        infoDetails: { 
                                             id: propertyId, title: propertyTitle, ownerId: reservationDetails.ownerId, locationFrom: "NA", locationTo: `${propertyLocation.address}, ${propertyLocation.city}`, type: reservationDetails.propertyType, reservationPolicy: reservationDetails.reservationPolicy,
                                         },
                                         bookingDetails: { 

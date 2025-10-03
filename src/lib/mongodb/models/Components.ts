@@ -52,7 +52,7 @@ export interface FAQItem {
   keywords?: string[];
 }
 
-export type ItemCategory = 'Property' | 'Trip' | 'Travelling';
+export type ItemCategory = 'property' | 'trip' | 'travelling';
 
 export interface BaseItem {
   _id?: string;

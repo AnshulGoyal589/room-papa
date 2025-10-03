@@ -108,16 +108,16 @@ export default function AppointmentsClientView({
               <tbody className="bg-white divide-y divide-gray-200">
                 {bookings.map((booking) => (
                   <tr 
-                    key={booking.tripDetails.id?.toString()} 
+                    key={booking.infoDetails.id?.toString()} 
                     className="hover:bg-gray-100 cursor-pointer" // Added hover and cursor
                     onClick={() => setSelectedBooking(booking)} // Set the selected booking on click
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {booking.tripDetails.title}
+                        {booking.infoDetails.title}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {booking.tripDetails.locationTo}
+                        {booking.infoDetails.locationTo}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

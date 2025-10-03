@@ -47,7 +47,7 @@ export async function sendRoleConfirmationEmail(email: string) {
 
 // Helper function to send booking confirmation email
 export async function sendBookingConfirmationEmail(booking: BookingDetails) {
-  const { tripDetails, bookingDetails, guestDetails, recipients } = booking;
+  const { infoDetails, bookingDetails, guestDetails, recipients } = booking;
   
   // Format dates for email
   const checkInDate = new Date(bookingDetails.checkIn).toLocaleDateString('en-US', {
@@ -70,22 +70,22 @@ export async function sendBookingConfirmationEmail(booking: BookingDetails) {
   if (booking.type === 'property') {
     const propertyBooking = booking;
     bookingTypeSpecificDetails = `
-      <p><strong>Property Type:</strong> ${propertyBooking.tripDetails.type}</p>
+      <p><strong>Property Type:</strong> ${propertyBooking.infoDetails.type}</p>
       <p><strong>Guests:</strong> ${propertyBooking.bookingDetails.totalGuests}</p>
       <p><strong>Rooms:</strong> ${propertyBooking.bookingDetails.rooms}</p>
     `;
   } else if (booking.type === 'travelling') {
     const travellingBooking = booking;
     bookingTypeSpecificDetails = `
-      <p><strong>Transport Type:</strong> ${travellingBooking.tripDetails.type}</p>
+      <p><strong>Transport Type:</strong> ${travellingBooking.infoDetails.type}</p>
     `;
   } else if (booking.type === 'trip') {
     const tripBooking = booking;
     bookingTypeSpecificDetails = `
       <h4>Destination:</h4>
 
-        ${tripBooking.tripDetails.locationFrom ? `<li>From: ${tripBooking.tripDetails.locationFrom}</li>` : ''}
-        <li>To: ${tripBooking.tripDetails.locationTo}</li>
+        ${tripBooking.infoDetails.locationFrom ? `<li>From: ${tripBooking.infoDetails.locationFrom}</li>` : ''}
+        <li>To: ${tripBooking.infoDetails.locationTo}</li>
     `;
   }
   
@@ -96,12 +96,12 @@ export async function sendBookingConfirmationEmail(booking: BookingDetails) {
       
       <p>Dear ${guestDetails.firstName} ${guestDetails.lastName},</p>
       
-      <p>Your ${booking.type} booking for <strong>${tripDetails.title}</strong> has been confirmed!</p>
+      <p>Your ${booking.type} booking for <strong>${infoDetails.title}</strong> has been confirmed!</p>
       
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
         <h3 style="margin-top: 0;">Booking Details:</h3>
         <p><strong>Booking Type:</strong> ${booking.type.charAt(0).toUpperCase() + booking.type.slice(1)}</p>
-        <p><strong>Destination:</strong> ${tripDetails.locationTo}</p>
+        <p><strong>Destination:</strong> ${infoDetails.locationTo}</p>
         <p><strong>Check-in:</strong> ${checkInDate}</p>
         <p><strong>Check-out:</strong> ${checkOutDate}</p>
         <p><strong>Guests:</strong> ${guestDetails.firstName} ${guestDetails.lastName}</p>
@@ -132,7 +132,7 @@ export async function sendBookingConfirmationEmail(booking: BookingDetails) {
     await transporter.sendMail({
       from: process.env.EMAIL_ADMIN || 'roompapa7@gmail.com',
       to: recipients.join(', '),
-      subject: `${booking.type.charAt(0).toUpperCase() + booking.type.slice(1)} Booking Confirmation - ${tripDetails.title}`,
+      subject: `${booking.type.charAt(0).toUpperCase() + booking.type.slice(1)} Booking Confirmation - ${infoDetails.title}`,
       html: emailHtml,
     });
     

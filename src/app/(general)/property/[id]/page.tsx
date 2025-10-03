@@ -21,7 +21,7 @@ async function fetchPropertyData(id: string){
 export default async function PropertyPage( { params }: { params: Promise<{ id: string }> } ) {
   const property = await fetchPropertyData((await params).id);
   const plainProperty = property ? JSON.parse(JSON.stringify(property)) : null;
-  console.log("Property Data:", plainProperty);
+  // console.log("Property Data:", plainProperty);
   return (
     <div className="min-h-screen bg-gray-50">   
       <SearchHeader/>

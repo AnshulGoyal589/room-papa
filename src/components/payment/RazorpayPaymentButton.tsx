@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
-// --- Helper to load Razorpay script (can be in a shared utils file) ---
 const loadRazorpayScript = (src: string): Promise<boolean> => {
     return new Promise((resolve) => {
         if (document.querySelector(`script[src="${src}"]`)) {
@@ -21,21 +20,19 @@ const loadRazorpayScript = (src: string): Promise<boolean> => {
     });
 };
 
-// --- Extend Window interface for Razorpay ---
 declare global {
     interface Window {
-
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        Razorpay: any; // You can define a more specific type if you have Razorpay types
+        Razorpay: any;
     }
 }
 
 export interface RazorpayPaymentButtonProps {
-    amountInSubunits: number; // e.g., for INR 100.00, pass 10000 (paise)
-    currency: string; // e.g., "INR", "USD"
-    receiptId: string; // A unique ID for the order/receipt
+    amountInSubunits: number;
+    currency: string;
+    receiptId: string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    bookingPayload: any; // The complete booking data to be sent to backend AFTER successful payment verification
+    bookingPayload: any;
     prefill: {
         name?: string;
         email?: string;
@@ -43,15 +40,15 @@ export interface RazorpayPaymentButtonProps {
     };
     notes?: Record<string, string | number | boolean>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onPaymentSuccess: (confirmationData: any) => void; // Callback with data from your backend
-    onPaymentError: (errorMessage: string) => void; // Callback for errors to display in parent
+    onPaymentSuccess: (confirmationData: any) => void;
+    onPaymentError: (errorMessage: string) => void;
     razorpayKeyId: string;
     companyName: string;
     companyLogoUrl?: string;
     disabled?: boolean;
     buttonText?: string;
-    themeColor?: string; // e.g., "#3B82F6"
-    className?: string; // For custom styling of the button
+    themeColor?: string;
+    className?: string;
 }
 
 const RazorpayPaymentButton: React.FC<RazorpayPaymentButtonProps> = ({
@@ -68,36 +65,27 @@ const RazorpayPaymentButton: React.FC<RazorpayPaymentButtonProps> = ({
     companyLogoUrl,
     disabled = false,
     buttonText = "Proceed to Pay",
-    themeColor = "#3B82F6", // Default to your blue
+    themeColor = "#3B82F6",
     className = "w-full bg-[#003c95] text-white py-2.5 px-4 rounded-lg font-semibold text-md hover:bg-[#003c95] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#003c95] disabled:bg-[#003c95] disabled:cursor-wait shadow-md",
 }) => {
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // console.log("bookingPayload: ",bookingPayload);
-    useEffect(() => {
-        // Optionally pre-load script, or load on demand in handlePayment
-        // loadRazorpayScript("https://checkout.razorpay.com/v1/checkout.js");
-    }, []);
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sendMail = async ( bookingPayload: any) => {
-        try {
-            const response = await fetch('/api/bookings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(bookingPayload)
-            });
-            // console.log("Email API response:", response);
-            // console.log("data:", bookingPayload);
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to send email');
-            }
-        } catch (error) {
-            console.error('Error sending booking confirmation email:', error);
-        }
-    };
-
-    // --- Main payment handler ---
+    // const sendMail = async ( bookingPayload: any) => {
+    //     try {
+    //         const response = await fetch('/api/bookings', {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify(bookingPayload)
+    //         });
+    //         if (!response.ok) {
+    //             const errorData = await response.json();
+    //             throw new Error(errorData.message || 'Failed to send email');
+    //         }
+    //     } catch (error) {
+    //         console.error('Error sending booking confirmation email:', error);
+    //     }
+    // };
 
     const handlePayment = async () => {
         if (!razorpayKeyId) {
@@ -110,7 +98,7 @@ const RazorpayPaymentButton: React.FC<RazorpayPaymentButtonProps> = ({
         }
 
         setIsProcessing(true);
-        onPaymentError(""); // Clear previous errors
+        onPaymentError("");
 
         const scriptLoaded = await loadRazorpayScript("https://checkout.razorpay.com/v1/checkout.js");
         if (!scriptLoaded) {
@@ -120,12 +108,11 @@ const RazorpayPaymentButton: React.FC<RazorpayPaymentButtonProps> = ({
         }
 
         try {
-            // 1. Create Order on your backend
             const orderResponse = await fetch('/api/payment/create-order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    amount: amountInSubunits, // Amount in smallest currency unit (e.g., paise)
+                    amount: amountInSubunits,
                     currency: currency,
                     receipt: receiptId,
                 }),
@@ -137,12 +124,10 @@ const RazorpayPaymentButton: React.FC<RazorpayPaymentButtonProps> = ({
             }
 
             const orderData = await orderResponse.json();
-            const { id: order_id, amount: backendAmount, currency: backendCurrency } = orderData; // Razorpay order details from backend
-
-            // 2. Initialize Razorpay Checkout
+            const { id: order_id, amount: backendAmount, currency: backendCurrency } = orderData;
             const options = {
                 key: razorpayKeyId,
-                amount: backendAmount.toString(), // Amount from backend (should be in smallest currency unit)
+                amount: backendAmount.toString(),
                 currency: backendCurrency,
                 name: companyName,
                 description: `Booking payment for receipt: ${receiptId}`,
@@ -150,16 +135,15 @@ const RazorpayPaymentButton: React.FC<RazorpayPaymentButtonProps> = ({
                 order_id: order_id,
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 handler: async function (response: any) {
-                    // 3. Payment Success from Razorpay: Verify payment on your backend & create booking
                     try {
-                        const verificationResponse = await fetch('/api/bookings/confirm-with-payment', { // IMPORTANT: New/Updated Endpoint
+                        const verificationResponse = await fetch('/api/bookings/confirm-with-payment', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 razorpay_payment_id: response.razorpay_payment_id,
                                 razorpay_order_id: response.razorpay_order_id,
                                 razorpay_signature: response.razorpay_signature,
-                                bookingPayload: bookingPayload, // Send the original full booking data
+                                bookingPayload: bookingPayload,
                             }),
                         });
 
@@ -169,8 +153,7 @@ const RazorpayPaymentButton: React.FC<RazorpayPaymentButtonProps> = ({
                         }
 
                         const confirmationData = await verificationResponse.json();
-                        await sendMail( bookingPayload);
-                        // 4. Call success callback with confirmation data
+                        // await sendMail( bookingPayload);
 
                         onPaymentSuccess(confirmationData);
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -188,7 +171,7 @@ const RazorpayPaymentButton: React.FC<RazorpayPaymentButtonProps> = ({
                 },
                 modal: {
                     ondismiss: function () {
-                        if (isProcessing) { // Only set error if it wasn't a success/failure that already set isProcessing to false
+                        if (isProcessing) {
                             onPaymentError("Payment was cancelled or modal closed.");
                             setIsProcessing(false);
                         }

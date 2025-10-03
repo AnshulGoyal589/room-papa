@@ -38,8 +38,8 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
           {/* Trip Details Section */}
           <div className="p-4 border rounded-md">
             <h3 className="text-lg font-semibold mb-2 text-[#003c95]">Trip Information</h3>
-            <p><strong>Title:</strong> {booking.tripDetails.title}</p>
-            <p><strong>Location:</strong> {booking.tripDetails.locationTo}</p>
+            <p><strong>Title:</strong> {booking.infoDetails.title}</p>
+            <p><strong>Location:</strong> {booking.infoDetails.locationTo}</p>
             <p><strong>Type:</strong> <span className="capitalize">{booking.type}</span></p>
           </div>
 

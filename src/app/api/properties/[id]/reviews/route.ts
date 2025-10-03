@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { getBookingRepository } from '@/lib/booking-db';
 import { ObjectId } from 'mongodb';
 import { addPropertyReview } from '@/lib/mongodb/models/Property';
+import { markBookingAsReviewed } from '@/lib/data/booking';
 
 export async function POST(
     request: NextRequest,
@@ -38,12 +39,14 @@ export async function POST(
         if (booking.userId !== userId) {
             return NextResponse.json({ message: 'You are not authorized to review this booking.' }, { status: 403 });
         }
-        if (booking?.tripDetails?.id?.toString() !== propertyId) {
+        if (booking?.infoDetails?.id?.toString() !== propertyId) {
             return NextResponse.json({ message: 'This booking does not match the property.' }, { status: 400 });
         }
         if (booking.isReviewed) {
              return NextResponse.json({ message: 'A review has already been submitted for this booking.' }, { status: 409 }); // 409 Conflict
         }
+
+        await markBookingAsReviewed(bookingId);
         
         await addPropertyReview(propertyId, {
             rating,
