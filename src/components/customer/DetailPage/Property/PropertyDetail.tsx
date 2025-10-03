@@ -412,6 +412,7 @@ export default function PropertyDetailPage( { property }: { property: Property |
 
         const bookingDateRange = getDatesInRange(checkInDate, checkOutDate);
         const numberOfNights = bookingDateRange.length;
+        // console.log("Calculating offers for", numberOfNights, "nights over dates:", bookingDateRange);
         if (numberOfNights === 0) return [];
 
         // Helper to get the hike amount safely
@@ -438,7 +439,7 @@ export default function PropertyDetailPage( { property }: { property: Property |
                 const catEndDate = new Date(cat.availabilityEndDate); catEndDate.setHours(23,59,59,999);
                 if (currentCheckOutDateOnly > catEndDate) return;
             }
-
+            // console.log("Pricing:", cat.pricing);
             // REFACTORED PRICE CALCULATION LOGIC
             const calculateOfferPrice = (numAdults: number): { price: number, originalPrice?: number, isDiscounted: boolean } => {
                 let basePrice = 0, discountedPrice = 0;
@@ -452,7 +453,7 @@ export default function PropertyDetailPage( { property }: { property: Property |
                     basePrice = getPrice(cat.pricing.doubleOccupancyAdultPrice, selectedMealPlan);
                     discountedPrice = getPrice(cat.pricing.discountedDoubleOccupancyAdultPrice, selectedMealPlan);
                     occupancyType = 'doubleOccupancyAdultHike';
-                } else if (numAdults >= 3) {
+                } else if (numAdults == 3) {
                     basePrice = getPrice(cat.pricing.tripleOccupancyAdultPrice, selectedMealPlan);
                     discountedPrice = getPrice(cat.pricing.discountedTripleOccupancyAdultPrice, selectedMealPlan);
                     occupancyType = 'tripleOccupancyAdultHike';
@@ -463,7 +464,7 @@ export default function PropertyDetailPage( { property }: { property: Property |
                     let fbBase = 0, fbDisc = 0;
                     if (numAdults === 1) { fbBase = getPrice(cat.pricing.singleOccupancyAdultPrice, 'noMeal'); fbDisc = getPrice(cat.pricing.discountedSingleOccupancyAdultPrice, 'noMeal');}
                     else if (numAdults === 2) { fbBase = getPrice(cat.pricing.doubleOccupancyAdultPrice, 'noMeal'); fbDisc = getPrice(cat.pricing.discountedDoubleOccupancyAdultPrice, 'noMeal');}
-                    else if (numAdults >= 3) { fbBase = getPrice(cat.pricing.tripleOccupancyAdultPrice, 'noMeal'); fbDisc = getPrice(cat.pricing.discountedTripleOccupancyAdultPrice, 'noMeal');}
+                    else if (numAdults == 3) { fbBase = getPrice(cat.pricing.tripleOccupancyAdultPrice, 'noMeal'); fbDisc = getPrice(cat.pricing.discountedTripleOccupancyAdultPrice, 'noMeal');}
                     basePrice = fbBase; discountedPrice = fbDisc;
                 }
                 
@@ -471,6 +472,7 @@ export default function PropertyDetailPage( { property }: { property: Property |
                 const finalBasePrice = isDisc ? discountedPrice : basePrice;
                 const originalPriceForCalc = isDisc ? basePrice : undefined;
 
+                // console.log(`Calculating price for category "${cat.title}" with ${numAdults} adults: Base Price = ${basePrice}, Discounted Price = ${discountedPrice}, Final Price = ${finalBasePrice}, Is Discounted = ${isDisc}`);
                 // --- START: SEASONAL HIKE CALCULATION ---
                 let totalStayPrice = 0;
                 let totalOriginalStayPrice = 0;
@@ -502,14 +504,14 @@ export default function PropertyDetailPage( { property }: { property: Property |
                     }
                 } else {
                     // No active hike, calculate price normally
-                    totalStayPrice = finalBasePrice * numberOfNights;
+                    totalStayPrice = finalBasePrice;
                     if(originalPriceForCalc !== undefined) {
-                        totalOriginalStayPrice = originalPriceForCalc * numberOfNights;
+                        totalOriginalStayPrice = originalPriceForCalc;
                     }
                 }
                 
-                const averagePricePerNight = totalStayPrice / numberOfNights;
-                const averageOriginalPricePerNight = totalOriginalStayPrice > 0 ? (totalOriginalStayPrice / numberOfNights) : undefined;
+                const averagePricePerNight = totalStayPrice;
+                const averageOriginalPricePerNight = totalOriginalStayPrice > 0 ? (totalOriginalStayPrice) : undefined;
                 // --- END: SEASONAL HIKE CALCULATION ---
 
                 return {
@@ -535,6 +537,7 @@ export default function PropertyDetailPage( { property }: { property: Property |
                     if (pricingExists) {
                         // Pass the whole category object to the price calculation function
                         const priceInfo = calculateOfferPrice(oc.intendedAdults);
+                        // console.log(`${oc.intendedAdults} adults: Calculated price info:`, priceInfo);
                         if (priceInfo.price > 0) {
                             offers.push({
                                 offerId: `${cat._id || cat.id}_${oc.offerKeySuffix}`,
@@ -924,6 +927,7 @@ export default function PropertyDetailPage( { property }: { property: Property |
                                     )}
 
                                     {displayableRoomOffers.map((offer, overallOfferIndex) => {
+                                        // console.log('Rendering offer:', offer);
                                         const category = property.categoryRooms?.find(cat => cat.id === offer.categoryId || cat._id === offer.categoryId);
                                         if (!category) return null;
 

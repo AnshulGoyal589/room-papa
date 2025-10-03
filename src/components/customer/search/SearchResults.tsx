@@ -139,7 +139,7 @@ export default function SearchResults() {
       }
       
       try {
-        console.log(" Fetching with params: ", params.toString());
+        // console.log(" Fetching with params: ", params.toString());
         const response = await fetch(`/api/search?${params.toString()}`);
         if (!response.ok) {
           throw new Error(`API Error: ${response.status}`);
@@ -292,7 +292,7 @@ export default function SearchResults() {
             <>
               <span className="text-2xl font-bold text-gray-800">
                 {currencySymbol}
-                {(property.costing.discountedPrice ).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})}
+                {(property.costing.discountedPrice * numNights * parseInt(adultsQuery) ).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})}
               </span>
               { taxesAndCharges > 0 && (
                 <p className="text-xs text-gray-500">
