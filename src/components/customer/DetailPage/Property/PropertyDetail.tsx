@@ -271,7 +271,7 @@ export default function PropertyDetailPage( { property }: { property: Property |
         if (typeof window === 'undefined') return null;
         const storedValue = localStorage.getItem(LOCAL_STORAGE_KEY);
         const parsedValue = storedValue ? JSON.parse(storedValue) : null;
-        const checkOutDate = parsedValue?.checkOutDate || localStorage.getItem('checkOut');
+        const checkOutDate = localStorage.getItem('checkOut') || parsedValue?.checkOutDate;
         const date = new Date(checkOutDate);
         if (date && !isNaN(date.getTime())) {
             const year = date.getFullYear();
