@@ -661,7 +661,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         <div> <label className="font-medium text-gray-700">Description</label> <Textarea value={formData.description || ''} onChange={(e) => handleChange("description", e.target.value)} placeholder="Detailed description of the property" rows={5} /> {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>} </div>
         <div>
           <label className="font-medium text-gray-700">Property Type</label>
-          <Select value={formData.type.toLowerCase() as PropertyType} onValueChange={(value) => handleChange("type", value as PropertyType)}>
+          <Select value={formData?.type?.toLowerCase() as PropertyType} onValueChange={(value) => handleChange("type", value as PropertyType)}>
             <SelectTrigger>
               <SelectValue placeholder="Select property type" />
             </SelectTrigger>
