@@ -17,11 +17,11 @@ import { Label } from '@/components/ui/label';
 import { Plus, X, Home, MapPin, DollarSign, BedDouble, ListChecks, ShieldCheck, Users, Baby, Utensils, CalendarOff, Sparkles, Wrench, CalendarDays } from 'lucide-react';
 import { categoryOptions } from '../../../../public/assets/data';
 
-import { DiscountedPricingByMealPlan, PricingByMealPlan } from '@/types'; // Assuming these are correctly defined
+import { DiscountedPricingByMealPlan, PricingByMealPlan } from '@/types';
 
 import { HikePricingByOccupancy, RoomCategoryPricing, StoredRoomCategory } from '@/types/booking';
 import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
-import { ExtendedProperty, Image, PropertyFormProps, SeasonalCoasting } from '@/lib/mongodb/models/Components';
+import { ExtendedProperty, Image, Period, PropertyFormProps, SeasonalCoasting } from '@/lib/mongodb/models/Components';
 import { propertyAmenitiesArray, PropertyType } from '@/types/property';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -32,7 +32,6 @@ const initialHikePricingState: HikePricingByOccupancy = {
     tripleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
 };
 
-// Configuration for Hike Pricing Form Section
 interface HikePricingRowConfig {
     occupancy: number;
     field: keyof HikePricingByOccupancy;
@@ -45,11 +44,10 @@ const hikePricingConfig: HikePricingRowConfig[] = [
     { occupancy: 3, field: 'tripleOccupancyAdultHike', label: '3 Adults' },
 ];
 
-// Initial state for the form to add a new room category
 const initialNewCategoryState = {
   title: '',
   qty: 1,
-  currency: 'USD',
+  currency: 'INR',
   pricing: {
     singleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
     discountedSingleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
@@ -62,10 +60,9 @@ const initialNewCategoryState = {
   } as RoomCategoryPricing,
   newUnavailableDate: '',
   currentUnavailableDates: [] as string[],
-  // New fields for availability, activities, facilities
-  availabilityStartDate: '',
+  newAvailabilityPeriod: { startDate: '', endDate: '' },
+  currentAvailabilityPeriods: [] as Period[],
   roomSize: '',
-  availabilityEndDate: '',
   newCategoryActivity: '',
   currentCategoryActivities: [] as string[],
   newCategoryFacility: '',
@@ -79,9 +76,8 @@ const initialNewCategoryState = {
 };
 
 
-// Create a default/initial state for PropertyData
 const initialPropertyData: ExtendedProperty = {
-  type: 'Hotel' as PropertyType, // Adjusted default type
+  type: 'Hotel' as PropertyType,
   location: {
     address: '',
     city: '',
@@ -91,7 +87,7 @@ const initialPropertyData: ExtendedProperty = {
   costing: {
     price: 0,
     discountedPrice: 0,
-    currency: 'USD',
+    currency: 'INR',
   },
   rooms: 0,
   categoryRooms: [],
@@ -125,13 +121,13 @@ useEffect(() => {
     const { costing, rooms, categoryRooms } = propertyData;
     const currentPrice = costing?.price ?? 0;
     const currentDiscountedPrice = costing?.discountedPrice ?? 0;
-    const currentCurrency = costing?.currency ?? 'USD';
+    const currentCurrency = costing?.currency ?? 'INR';
     const currentRooms = rooms ?? 0;
 
     if (categoryRooms && categoryRooms.length > 0) {
       let minOverallPrice = Infinity;
       let minOverallDiscountedPrice = Infinity;
-      let leadCurrency = 'USD'; // Default currency
+      let leadCurrency = 'INR';
 
       categoryRooms.forEach(cat => {
         const mealPlanPriorities: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
@@ -139,7 +135,6 @@ useEffect(() => {
         let categorySinglePrice = 0;
         let categorySingleDiscountedPrice = 0;
 
-        // Find the single occupancy price based on meal plan priority
         for (const mealPlan of mealPlanPriorities) {
           const singleBase = getPrice(cat.pricing.singleOccupancyAdultPrice, mealPlan);
           const singleDisc = getPrice(cat.pricing.discountedSingleOccupancyAdultPrice, mealPlan);
@@ -147,15 +142,14 @@ useEffect(() => {
           if (singleBase > 0) {
             categorySinglePrice = singleBase;
             categorySingleDiscountedPrice = singleDisc > 0 ? singleDisc : singleBase;
-            break; // Found a valid price, stop searching for this category
+            break;
           }
         }
         
-        // Only consider if a valid single occupancy price was found for this category
         if (categorySinglePrice > 0) {
           if (categorySinglePrice < minOverallPrice) {
             minOverallPrice = categorySinglePrice;
-            leadCurrency = cat.currency; // Update currency only when a new min price is found
+            leadCurrency = cat.currency;
           }
           if (categorySingleDiscountedPrice < minOverallDiscountedPrice) {
             minOverallDiscountedPrice = categorySingleDiscountedPrice;
@@ -188,7 +182,7 @@ useEffect(() => {
       if (currentPrice !== 0 || currentDiscountedPrice !== 0 || currentRooms !== 0) {
         setPropertyData(prev => ({
           ...prev,
-          costing: { price: 0, discountedPrice: 0, currency: 'USD' },
+          costing: { price: 0, discountedPrice: 0, currency: 'INR' },
           rooms: 0
         }));
       }
@@ -196,7 +190,41 @@ useEffect(() => {
   }, [propertyData, setPropertyData]);
 
 
-   const handleNewCategoryHikePricingChange = (
+  const handleNewAvailabilityPeriodChange = (field: 'startDate' | 'endDate', value: string) => {
+    setNewCategory(prev => ({
+        ...prev,
+        newAvailabilityPeriod: {
+            ...prev.newAvailabilityPeriod,
+            [field]: value
+        }
+    }));
+  };
+
+  const handleAddAvailabilityPeriod = () => {
+    const { startDate, endDate } = newCategory.newAvailabilityPeriod;
+    if (!startDate || !endDate) {
+        alert("Both Start Date and End Date are required.");
+        return;
+    }
+    if (new Date(endDate) < new Date(startDate)) {
+        alert('End Date cannot be before Start Date.');
+        return;
+    }
+    setNewCategory(prev => ({
+        ...prev,
+        currentAvailabilityPeriods: [...prev.currentAvailabilityPeriods, { startDate, endDate }],
+        newAvailabilityPeriod: { startDate: '', endDate: '' } // Reset input
+    }));
+  };
+
+  const handleRemoveAvailabilityPeriod = (indexToRemove: number) => {
+    setNewCategory(prev => ({
+        ...prev,
+        currentAvailabilityPeriods: prev.currentAvailabilityPeriods.filter((_, index) => index !== indexToRemove)
+    }));
+  };
+
+  const handleNewCategoryHikePricingChange = (
       occupancyField: keyof HikePricingByOccupancy,
       mealPlan: keyof PricingByMealPlan,
       value: string | number
@@ -219,7 +247,7 @@ useEffect(() => {
       });
   };
 
- const handlePropertyChange = (field: string, value: unknown) => {
+  const handlePropertyChange = (field: string, value: unknown) => {
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
       setPropertyData(prev => ({
@@ -355,15 +383,6 @@ useEffect(() => {
     if (getPrice(newCategory.pricing.singleOccupancyAdultPrice, 'noMeal') <= 0) {
         alert('Base Price for 1 Adult (No Meal) must be greater than 0.'); return;
     }
-
-    if (newCategory.availabilityStartDate && newCategory.availabilityEndDate) {
-        if (new Date(newCategory.availabilityEndDate) < new Date(newCategory.availabilityStartDate)) {
-            alert('Availability End Date cannot be before Start Date.'); return;
-        }
-    } else if (newCategory.availabilityEndDate && !newCategory.availabilityStartDate) {
-        alert('Please provide an Availability Start Date if End Date is set.'); return;
-    }
-
     const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
     const priceFieldsToCheck: (keyof RoomCategoryPricing)[] = [
         'singleOccupancyAdultPrice', 'doubleOccupancyAdultPrice', 'tripleOccupancyAdultPrice',
@@ -410,9 +429,8 @@ useEffect(() => {
       currency: newCategory.currency,
       pricing: JSON.parse(JSON.stringify(newCategory.pricing)),
       unavailableDates: [...newCategory.currentUnavailableDates],
-      categoryImages: [...newCategory.categoryImages], // Added images
-      availabilityStartDate: newCategory.availabilityStartDate || undefined,
-      availabilityEndDate: newCategory.availabilityEndDate || undefined,
+      categoryImages: [...newCategory.categoryImages],
+      availability: [...newCategory.currentAvailabilityPeriods],
       categoryActivities: [...newCategory.currentCategoryActivities],
       categoryFacilities: [...newCategory.currentCategoryFacilities],
       seasonalHike: seasonalHikeToAdd,
@@ -513,26 +531,10 @@ useEffect(() => {
       );
   };
   return (
-    <div className="space-y-8 max-h-[75vh] overflow-y-auto p-1 pr-4">
+    <div className="space-y-8  overflow-y-auto p-1 pr-4">
       <div className="space-y-4">
         <SectionHeader title="Property Details" icon={Home} />
         {/* Basic Property Info: Type, Title, Description, Rating, Maps */}
-        {/* <FormItem>
-            <FormLabel>Property Title</FormLabel>
-            <Input
-                value={ensurePropertyData.title || ''}
-                onChange={(e) => handlePropertyChange('title', e.target.value)}
-                placeholder="e.g., The Grand Hotel"
-            />
-        </FormItem>
-        <FormItem>
-            <FormLabel>Property Description</FormLabel>
-            <Input // Or use Textarea from shadcn
-                value={ensurePropertyData.description || ''}
-                onChange={(e) => handlePropertyChange('description', e.target.value)}
-                placeholder="Brief description of the property"
-            />
-        </FormItem> */}
         <FormItem>
           <FormLabel>Property Type</FormLabel>
           <Select
@@ -649,20 +651,23 @@ useEffect(() => {
                     <X size={18} />
                   </Button>
                 </div>
-
+ 
                 {/* Availability Period Display */}
-                {(cat.availabilityStartDate || cat.availabilityEndDate) && (
+                {cat.availability && cat.availability.length > 0 && (
                     <div className="text-sm mb-2 pt-2 border-t mt-2">
-                        <p className="font-medium flex items-center"><CalendarDays className="inline h-4 w-4 mr-1 text-primary"/>Availability Period:</p>
-                        <p className="pl-5 text-xs text-muted-foreground">
-                            {cat.availabilityStartDate ? cat.availabilityStartDate : 'Open Start'} - {cat.availabilityEndDate ? cat.availabilityEndDate : 'Open End'}
-                        </p>
+                        <p className="font-medium flex items-center"><CalendarDays className="inline h-4 w-4 mr-1 text-primary"/>Availability Periods:</p>
+                        <ul className="pl-5 text-xs text-muted-foreground list-disc list-inside">
+                            {cat.availability.map((period, index) => (
+                                <li key={index}>
+                                    {new Date(period.startDate).toLocaleDateString()} to {new Date(period.endDate).toLocaleDateString()}
+                                </li>
+                            ))}
+                        </ul>
                     </div>
                 )}
 
                 <div className="space-y-3 text-sm border-t pt-3">
                   <p className="font-medium flex items-center"><Users className="inline h-4 w-4 mr-1 text-primary"/>Adult Pricing (Total Room Price):</p>
-                  {/* ... (pricing display as before) ... */}
                   <div className="pl-4 space-y-1">
                     {[
                         { label: '1 Adult', base: cat.pricing.singleOccupancyAdultPrice, disc: cat.pricing.discountedSingleOccupancyAdultPrice },
@@ -775,7 +780,7 @@ useEffect(() => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <FormItem className="md:col-span-1"> <FormLabel>Category Title</FormLabel> <Input value={newCategory.title} onChange={(e) => handleNewCategoryFieldChange('title', e.target.value)} placeholder="e.g., Deluxe Room" /> </FormItem>
             <FormItem> <FormLabel>Quantity (Rooms)</FormLabel> <Input type="number" value={newCategory.qty} onChange={(e) => handleNewCategoryFieldChange('qty', Number(e.target.value))} min={1} /> </FormItem>
-            <FormItem> <FormLabel>Currency</FormLabel> <Select value={newCategory.currency} onValueChange={(value) => handleNewCategoryFieldChange('currency', value)}> <SelectTrigger><SelectValue placeholder="Currency" /></SelectTrigger> <SelectContent>{['USD', 'EUR', 'GBP', 'INR', 'JPY', 'KES'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent> </Select> </FormItem>
+            <FormItem> <FormLabel>Currency</FormLabel> <Select value={newCategory.currency} onValueChange={(value) => handleNewCategoryFieldChange('currency', value)}> <SelectTrigger><SelectValue placeholder="Currency" /></SelectTrigger> <SelectContent>{['INR', 'EUR', 'GBP', 'USD', 'JPY', 'KES'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent> </Select> </FormItem>
           </div>
 
           <div className="pt-4 border-t">
@@ -790,18 +795,41 @@ useEffect(() => {
 
           {/* Availability Period */}
           <div className="pt-4 border-t">
-            <FormLabel className="text-md font-medium text-foreground mb-3 block flex items-center"><CalendarDays className="inline h-5 w-5 mr-2 text-primary" />Availability Period (Optional)</FormLabel>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormItem>
-                    <FormLabel className="text-xs text-muted-foreground">Start Date</FormLabel>
-                    <Input type="date" value={newCategory.availabilityStartDate} onChange={(e) => handleNewCategoryFieldChange('availabilityStartDate', e.target.value)} />
-                </FormItem>
-                <FormItem>
-                    <FormLabel className="text-xs text-muted-foreground">End Date</FormLabel>
-                    <Input type="date" value={newCategory.availabilityEndDate} onChange={(e) => handleNewCategoryFieldChange('availabilityEndDate', e.target.value)} />
-                </FormItem>
+            <FormLabel className="text-md font-medium text-foreground mb-3 block flex items-center">
+                <CalendarDays className="inline h-5 w-5 mr-2 text-primary" /> Availability Periods (Optional)
+                </FormLabel>
+                <p className="text-xs text-muted-foreground mb-4">
+                    If no periods are added, the category is considered always available (unless blocked by unavailable dates).
+                </p>
+
+                {newCategory.currentAvailabilityPeriods.length > 0 && (
+                    <div className="mb-4 space-y-2">
+                        <FormLabel className="text-sm">Added Periods:</FormLabel>
+                        {newCategory.currentAvailabilityPeriods.map((period, index) => (
+                            <div key={index} className="flex items-center justify-between bg-muted/50 p-2 rounded-md text-sm">
+                                <span>{period.startDate} &mdash; {period.endDate}</span>
+                                <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleRemoveAvailabilityPeriod(index)}>
+                                    <X size={14} />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                    <FormItem>
+                        <FormLabel className="text-xs text-muted-foreground">Start Date</FormLabel>
+                        <Input type="date" value={newCategory.newAvailabilityPeriod.startDate} onChange={(e) => handleNewAvailabilityPeriodChange('startDate', e.target.value)} />
+                    </FormItem>
+                    <FormItem>
+                        <FormLabel className="text-xs text-muted-foreground">End Date</FormLabel>
+                        <Input type="date" value={newCategory.newAvailabilityPeriod.endDate} onChange={(e) => handleNewAvailabilityPeriodChange('endDate', e.target.value)} />
+                    </FormItem>
+                </div>
+                <Button type="button" variant="outline" onClick={handleAddAvailabilityPeriod} size="sm" className="w-full mt-3">
+                    <Plus size={16} className="mr-1" /> Add Availability Period
+                </Button>
             </div>
-          </div>
 
 
           <div className="pt-4 border-t">

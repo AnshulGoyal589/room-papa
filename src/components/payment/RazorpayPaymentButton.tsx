@@ -70,7 +70,6 @@ const RazorpayPaymentButton: React.FC<RazorpayPaymentButtonProps> = ({
 }) => {
     const [isProcessing, setIsProcessing] = useState(false);
 
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
     // const sendMail = async ( bookingPayload: any) => {
     //     try {
     //         const response = await fetch('/api/bookings', {

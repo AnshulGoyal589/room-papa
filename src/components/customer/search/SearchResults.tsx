@@ -14,18 +14,16 @@ import {
     Plane, 
     Train, 
     Car as CarIcon, 
-    Star as StarIcon, // Explicitly import StarIcon
-    ThumbsUp,        // For "Very good" rating indicator
-    Check,           // For reservation policies
-    ChevronRight     // For "See availability" button
+    Star as StarIcon,
+    ThumbsUp,        
+    Check,           
+    ChevronRight     
 } from 'lucide-react';
 import { Property } from '@/lib/mongodb/models/Property'; 
 import { Trip } from '@/lib/mongodb/models/Trip';
 import { Travelling } from '@/lib/mongodb/models/Travelling'; 
 import { Review } from '@/lib/mongodb/models/Components';
-// import { StoredRoomCategory } from '@/types/booking'; // Assuming this type is available
 
-// Define TransportationType as an enum
 export enum TransportationType {
   flight = 'flight',
   train = 'train', 
@@ -35,7 +33,6 @@ export enum TransportationType {
   other = 'other',
 }
 
-// Helper to get rating description
 const getRatingDescription = (rating?: number): { text: string; className: string } => {
   if (rating === undefined || rating === null) return { text: "No rating", className: "text-gray-600" };
   if (rating >= 9.5) return { text: "Exceptional", className: "text-green-700" };
@@ -47,21 +44,18 @@ const getRatingDescription = (rating?: number): { text: string; className: strin
   return { text: "Review score", className: "text-gray-700" };
 };
 
-// Helper to format review count
 const formatReviewCount = (reviews?: Array<Review>): string => {
   const count = reviews?.length || 0;
   if (count === 0) return "No reviews yet";
   return `${count} review${count === 1 ? '' : 's'}`;
 };
 
-// Define Sort Tabs Configuration
 const sortTabsConfig: Array<{ key: string; label: string; sortByValue: string; sortOrderValue: string; forCategories?: string[] }> = [
   { key: 'recommended_desc', label: 'Our Top Picks', sortByValue: 'recommended', sortOrderValue: 'desc' },
   { key: 'price_asc', label: 'Price (lowest first)', sortByValue: 'price', sortOrderValue: 'asc' },
   { key: 'rating_desc', label: 'Rating (highest first)', sortByValue: 'rating', sortOrderValue: 'desc', forCategories: ['property', 'trip'] },
 ];
 
-// Helper to calculate nights
 const calculateNights = (checkInStr?: string | null, checkOutStr?: string | null): number => {
   if (!checkInStr || !checkOutStr) return 1; 
   try {
@@ -79,17 +73,70 @@ const calculateNights = (checkInStr?: string | null, checkOutStr?: string | null
   }
 };
 
+/**
+ * Calculates the total discounted price per night for a property based on occupancy.
+ * @param adults - Number of adults.
+ * @param children - Number of children.
+ * @param rooms - Number of rooms.
+ * @param pricing - The pricing object from a categoryRoom.
+ * @param fallbackPrice - A default price to use if calculation is not possible.
+ * @returns The calculated total price for one night, or the fallback price.
+ */
+const calculateTotalPricePerNight = (
+    adults: number, 
+    children: number, 
+    rooms: number, 
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    pricing?:any,
+    fallbackPrice?: number
+): number | undefined => {
+    if (!pricing || adults <= 0 || rooms <= 0) {
+        return fallbackPrice;
+    }
+
+    let totalAdultPrice = 0;
+    const baseAdultsPerRoom = Math.floor(adults / rooms);
+    const extraAdults = adults % rooms;
+
+    if (adults > rooms * 3) {
+        console.warn(`Number of adults (${adults}) exceeds maximum capacity for ${rooms} rooms (3 per room). Pricing may be inaccurate.`);
+    }
+
+    for (let i = 0; i < rooms; i++) {
+        const occupants = i < extraAdults ? baseAdultsPerRoom + 1 : baseAdultsPerRoom;
+        switch (occupants) {
+            case 1:
+                totalAdultPrice += pricing.discountedSingleOccupancyAdultPrice?.noMeal ?? 0;
+                break;
+            case 2:
+                totalAdultPrice += pricing.discountedDoubleOccupancyAdultPrice?.noMeal ?? 0;
+                break;
+            case 3:
+                 totalAdultPrice += pricing.discountedTripleOccupancyAdultPrice?.noMeal ?? 0;
+                 break;
+            default:
+                // For occupants > 3, use the triple occupancy price as a cap.
+                // For occupants <= 0, price is 0 (this case is handled by loop structure).
+                if (occupants > 3) {
+                    totalAdultPrice += pricing.discountedTripleOccupancyAdultPrice?.noMeal ?? 0;
+                }
+                break;
+        }
+    }
+
+    const totalChildPrice = children * (pricing.discountedChild5to12Price?.noMeal ?? 0);
+    
+    return totalAdultPrice + totalChildPrice;
+};
+
 
 export default function SearchResults() {
   const router = useRouter();
   const currentSearchParams = useSearchParams();
   const [results, setResults] = useState<Array<Property | Trip | Travelling>>([]);
   const [isLoading, setIsLoading] = useState(true);
-  // const [currentPage, setCurrentPage] = useState(1);
-  // const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [category, setCategory] = useState<string>('property');
-  // const [filterChips, setFilterChips] = useState<Array<{key: string, value: string}>>([]);
   const [activeSortKey, setActiveSortKey] = useState<string>('recommended_desc');
 
   useEffect(() => {
@@ -98,7 +145,6 @@ export default function SearchResults() {
       params[key] = value;
     });
 
-    // setCurrentPage(parseInt(params.page || '1'));
     const currentCategory = params.category || 'property';
     setCategory(currentCategory);
     
@@ -126,10 +172,6 @@ export default function SearchResults() {
       if (!params.has('category')) {
         params.set('category', category); 
       }
-      // if (!params.has('page')) {
-      //   params.set('page', currentPage.toString()); 
-      // }
-      
       const activeSortOption = sortTabsConfig.find(tab => tab.key === activeSortKey);
       if (activeSortOption) {
         if(!params.has('sortBy') && activeSortOption.sortByValue !== 'recommended') { 
@@ -139,22 +181,17 @@ export default function SearchResults() {
       }
       
       try {
-        // console.log(" Fetching with params: ", params.toString());
         const response = await fetch(`/api/search?${params.toString()}`);
         if (!response.ok) {
           throw new Error(`API Error: ${response.status}`);
         }
         const data = await response.json();
-        // console.log('Search results:', data);
-        // storingFrames(data.results.googleMaps);
         setResults(data.results || []); 
         setTotalResults(data.total || 0);
-        // setTotalPages(Math.ceil((data.total || 0) / (data.limit || 10)));
       } catch (error) {
         console.error('Error fetching search results:', error);
         setResults([]);
         setTotalResults(0);
-        // setTotalPages(0);
       } finally {
         setIsLoading(false);
       }
@@ -163,37 +200,48 @@ export default function SearchResults() {
   }, [currentSearchParams, category, activeSortKey]);
 
   const renderPropertyCard = (property: Property) => {
-    const ratingDesc = getRatingDescription(property.totalRating || property.propertyRating); // Use totalRating if available
+    const ratingDesc = getRatingDescription(property.totalRating || property.propertyRating);
     const reviewText = formatReviewCount(Array.isArray(property.review) ? property.review : property.review ? [property.review] : []);
     
     const checkInQuery = localStorage.getItem('checkIn');
     const checkOutQuery = localStorage.getItem('checkOut');
     const adultsQuery = localStorage.getItem('adults') || '1';
     const childrenQuery = localStorage.getItem('children') || '0';
+    const roomsQuery = localStorage.getItem('rooms') || '1';
 
     const numNights = calculateNights(checkInQuery, checkOutQuery);
+    const numAdults = parseInt(adultsQuery);
+    const numChildren = parseInt(childrenQuery);
 
     let guestSummary = `${numNights} night${numNights === 1 ? '' : 's'}`;
-    if (adultsQuery) guestSummary += `, ${adultsQuery} adult${parseInt(adultsQuery) === 1 ? '' : 's'}`;
-    if (childrenQuery && parseInt(childrenQuery) > 0) guestSummary += `, ${childrenQuery} child${parseInt(childrenQuery) === 1 ? '' : 'ren'}`;
+    if (numAdults > 0) guestSummary += `, ${numAdults} adult${numAdults === 1 ? '' : 's'}`;
+    if (numChildren > 0) guestSummary += `, ${numChildren} child${numChildren === 1 ? '' : 'ren'}`;
 
-    const representativeRoom = property.categoryRooms && property.categoryRooms.length > 0 ? property.categoryRooms[0] : null;
-    const roomTypeTitle = representativeRoom?.title || "Standard Room"; // Fallback
-    const bedConfiguration = representativeRoom?.bedConfiguration || "Comfortable bedding"; // Fallback
+    const representativeRoom = Array.isArray(property.categoryRooms) && property.categoryRooms.length > 0 ? property.categoryRooms[0] : undefined;
+    const roomTypeTitle = representativeRoom?.title || "Standard Room";
+    const bedConfiguration = representativeRoom?.bedConfiguration || "Comfortable bedding";
     const hasFreeCancellation = property.reservationPolicy?.includes("Free Cancellation");
     const hasNoPrepayment = property.reservationPolicy?.includes("No prepayment needed") || property.reservationPolicy?.includes("Pay at Property");
+    
+    const propertyCostingDiscountedPrice = calculateTotalPricePerNight(
+        numAdults,
+        numChildren,
+        parseInt(roomsQuery, 10),
+        representativeRoom?.pricing,
+        property.costing?.discountedPrice
+    );
 
     const currencySymbol = property.costing?.currency === 'INR' ? '₹' : (property.costing?.currency || '$');
-    const taxesAndCharges = property.costing ? (property.costing.price * 0.1) : 0; // Example 10% of base price
+    const taxesAndCharges = property.costing ? (property.costing.price * 0.1) : 0; // Note: This tax calc is a sample and may need to be adjusted.
 
     return (
     <div 
       key={property._id?.toString()} 
       className="flex flex-col sm:flex-row border border-gray-300 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 bg-white group"
     >
-      {/* Image Column */}
+      
       <div className="w-full sm:w-[240px] md:w-[260px] lg:w-[280px] h-52 sm:h-auto relative">
-        <Link href={`/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}`} className="block w-full h-full">
+        <Link href={`/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}&rooms=${roomsQuery}`} className="block w-full h-full">
             {property.bannerImage?.url ? (
             <Image 
                 src={property.bannerImage.url} 
@@ -217,7 +265,7 @@ export default function SearchResults() {
       
       <div className="flex-grow p-4 flex flex-col">
         <div className="flex justify-between items-start">
-            <Link href={`/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}`} className="block mb-1">
+            <Link href={`/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}&rooms=${roomsQuery}`} className="block mb-1">
                 <h3 className="text-xl md:text-2xl font-bold text-[#003c95] hover:text-[#003c95] transition-colors line-clamp-2">{property.title || "Untitled Property"}</h3>
             </Link>
             {(property.totalRating || property.propertyRating) && (
@@ -273,26 +321,33 @@ export default function SearchResults() {
 
       <div className='w-full sm:w-auto sm:min-w-[200px] md:min-w-[220px] lg:min-w-[240px] p-4 flex flex-col justify-between items-center sm:items-end border-t sm:border-t-0 sm:border-l border-gray-200/80 bg-gray-50/30 sm:bg-transparent'>
         <div className="w-full text-center sm:text-right mb-3 sm:mb-0">
-          {(property.totalRating || property.propertyRating) && (
+            {(property.totalRating) ? (
             <div className="hidden sm:flex items-center justify-end gap-2 mb-1">
               <div className="text-right">
-                <p className={`text-sm font-semibold ${ratingDesc.className}`}>{ratingDesc.text}</p>
-                <p className="text-xs text-gray-500">{reviewText}</p>
+              <p className={`text-sm font-semibold ${ratingDesc.className}`}>{ratingDesc.text}</p>
+              <p className="text-xs text-gray-500">{reviewText}</p>
               </div>
               <div className="bg-[#003c95] text-white text-base font-bold px-2 py-1 rounded h-fit">
-                {(property.totalRating || property.propertyRating)?.toFixed(1)}
+              {(property.totalRating && property.review && property.review.length > 0
+                ? (property.totalRating / property.review.length).toFixed(1)
+                : property.totalRating?.toFixed(1))}
               </div>
             </div>
-          )}
+            ) : (
+            <div className="flex flex-col items-end mb-1">
+              <p className="text-xs text-gray-500 mb-1">No reviews yet</p>
+              {/* <span className="text-[10px] text-gray-400 italic"></span> */}
+            </div>
+            )}
         </div>
         
         <div className="w-full text-center sm:text-right">
           <p className="text-xs text-gray-500 mb-0.5">{guestSummary}</p>
-          {property.categoryRooms && property.categoryRooms.length > 0 && property.costing.discountedPrice !== undefined && (
+          {property.categoryRooms && property.categoryRooms.length > 0 && propertyCostingDiscountedPrice !== undefined && (
             <>
               <span className="text-2xl font-bold text-gray-800">
                 {currencySymbol}
-                {(property.costing.discountedPrice * numNights * parseInt(adultsQuery) ).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})}
+                {(propertyCostingDiscountedPrice * numNights).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})}
               </span>
               { taxesAndCharges > 0 && (
                 <p className="text-xs text-gray-500">
@@ -302,7 +357,7 @@ export default function SearchResults() {
             </>
           )}
            <Link 
-            href={`/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}`} 
+            href={`/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}&rooms=${roomsQuery}`} 
             className="mt-2.5 block bg-[#003c95] hover:bg-[#003c95] text-white font-semibold py-2.5 px-4 rounded-md text-sm transition-colors w-full flex items-center justify-center"
           >
             See availability
@@ -491,8 +546,8 @@ export default function SearchResults() {
   };
 
   return (
-    <div className="bg-[#003c95]/20 min-h-screen py-6 sm:py-8 px-2 sm:px-4 md:px-6 lg:px-8"> {/* Added light blue background to outer container */}
-      <div className="max-w-6xl mx-auto"> {/* Content wrapper */}
+    <div className="bg-[#003c95]/20 min-h-screen py-6 sm:py-8 px-2 sm:px-4 md:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
 
         <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-3 sm:mb-4"> 
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2 sm:mb-0">
@@ -525,7 +580,6 @@ export default function SearchResults() {
         ) : results.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:gap-5 mb-8 sm:mb-12"> 
             {results.map((item) => {
-              // console.log("Rendering item:", item);
               if (!item || typeof item._id === 'undefined') {
                   console.warn("Search result item is missing _id or is null:", item);
                   return null; 
@@ -547,56 +601,8 @@ export default function SearchResults() {
             <p className="text-sm sm:text-base text-gray-500">Try adjusting your search filters or check back later.</p>
           </div>
         )}
-        
-        {/* {totalPages > 1 && !isLoading && (
-          <div className="flex justify-center mt-8 sm:mt-10">
-            <nav className="flex items-center space-x-1 sm:space-x-2">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md border bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm font-medium shadow-sm"
-              >
-                Previous
-              </button>
-              
-              {[...Array(totalPages)].map((_, index) => {
-                const pageNumber = index + 1;
-                const showPage = pageNumber === 1 || pageNumber === totalPages || (pageNumber >= currentPage - 2 && pageNumber <= currentPage + 2); 
-                const showEllipsisStart = pageNumber === currentPage - 3 && currentPage > 4 && totalPages > 7; 
-                const showEllipsisEnd = pageNumber === currentPage + 3 && currentPage < totalPages - 3 && totalPages > 7; 
 
-                if (showPage) {
-                  return (
-                    <button
-                      key={pageNumber}
-                      onClick={() => handlePageChange(pageNumber)}
-                      className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors shadow-sm ${
-                        pageNumber === currentPage
-                          ? 'bg-[#003c95] text-white border border-[#003c95]'
-                          : 'border bg-white text-gray-600 hover:bg-gray-100 hover:border-gray-400'
-                      }`}
-                    >
-                      {pageNumber}
-                    </button>
-                  );
-                } else if (showEllipsisStart || showEllipsisEnd) {
-                  return <span key={`ellipsis-${pageNumber}`} className="px-1 sm:px-2 py-1.5 sm:py-2 text-gray-500 text-xs sm:text-sm">...</span>;
-                }
-                return null;
-              })}
-              
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages || totalPages === 0}
-                className="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md border bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm font-medium shadow-sm"
-              >
-                Next
-              </button>
-            </nav>
-          </div>
-        )} */}
-
-      </div> {/* End of max-w-6xl mx-auto */}
+      </div>
     </div>
   );
 }

@@ -12,10 +12,10 @@ export interface Property {
   userId?: string;
   title?: string;
   description?: string;
-  type?: PropertyType;
+  type: PropertyType;
   location: Location;
-  startDate: string;
-  endDate: string;
+  // startDate: string;
+  // endDate: string;
   costing: Costing;
   totalRating?: number;
   review?: Review[];

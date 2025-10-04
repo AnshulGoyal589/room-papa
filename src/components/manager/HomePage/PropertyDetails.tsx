@@ -1,31 +1,26 @@
-// src/components/PropertyDetails.tsx
 import React, { useEffect } from 'react';
-import { MapPin, Users, Tag, Star, Calendar, X, Plus, Baby, DollarSign as PriceIcon, Utensils, CalendarDays, Sparkles, Wrench, ImageIcon } from 'lucide-react'; // Added CalendarDays, Sparkles, Wrench
+import { MapPin, Users, Tag, Star, X, Plus, Baby, DollarSign as PriceIcon, Utensils, CalendarDays, Sparkles, Wrench, ImageIcon } from 'lucide-react'; // Added CalendarDays, Sparkles, Wrench
 import { Badge } from '@/components/ui/badge';
-import { Property } from '@/lib/mongodb/models/Property'; // Base Property type
+import { Property } from '@/lib/mongodb/models/Property';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormItem, FormLabel } from '@/components/ui/form';
 import GoogleMapsSection from './GoogleMapsSection';
-import { Image as ImageType, SeasonalCoasting } from '@/lib/mongodb/models/Components'; 
+import { Image as ImageType, Period, SeasonalCoasting } from '@/lib/mongodb/models/Components'; 
 
-// --- Assuming these types are defined correctly in '@/types' based on previous updates ---
 import {
     PricingByMealPlan,
     DiscountedPricingByMealPlan
 } from '@/types';
-import { Label } from '@/components/ui/label'; // Label is used in the form
-import { Button } from '@/components/ui/button'; // Button is used in the form
-import { HikePricingByOccupancy, RoomCategoryPricing, StoredRoomCategory } from '@/types/booking'; // StoredRoomCategory should have the new fields
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { HikePricingByOccupancy, RoomCategoryPricing, StoredRoomCategory } from '@/types/booking';
 import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
 import { CldImage } from 'next-cloudinary';
-// --- End Type Assumption ---
 
-// Helper to generate unique IDs if adding categories locally
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
-// Helper to get price safely from nested structure
 const getPrice = (
     priceGroup: PricingByMealPlan | DiscountedPricingByMealPlan | undefined | number,
     mealPlan?: keyof PricingByMealPlan
@@ -48,7 +43,6 @@ const initialHikePricingState: HikePricingByOccupancy = {
     tripleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
 };
 
-// Configuration for Hike Pricing Form Section
 interface HikePricingRowConfig {
     occupancy: number;
     field: keyof HikePricingByOccupancy;
@@ -62,7 +56,6 @@ const hikePricingConfig: HikePricingRowConfig[] = [
 ];
 
 
-// Initial state for the new category form
 const initialNewCategoryFormState = {
     title: '',
     qty: 1,
@@ -77,10 +70,11 @@ const initialNewCategoryFormState = {
         child5to12Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
         discountedChild5to12Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
     } as RoomCategoryPricing,
-    // New fields for availability, activities, facilities
-    availabilityStartDate: '',
+    // availabilityStartDate: '',
+    // availabilityEndDate: '',
+    newAvailabilityPeriod: { startDate: '', endDate: '' },
+    currentAvailabilityPeriods: [] as Period[],
     roomSize: '',
-    availabilityEndDate: '',
     newCategoryActivity: '',
     currentCategoryActivities: [] as string[],
     newCategoryFacility: '',
@@ -97,10 +91,8 @@ const initialNewCategoryFormState = {
 interface PropertyDetailsProps {
     item: Property;
     isEditable?: boolean;
-    // onUpdate?: (updatedProperty: Property) => void;
 }
 
-// Helper Component for Meal Plan labels
 const MealPlanLabel: React.FC<{ mealPlan: keyof PricingByMealPlan, showIcon?: boolean }> = ({ mealPlan, showIcon = true }) => {
     let text = '';
     switch(mealPlan) {
@@ -117,7 +109,6 @@ const MealPlanLabel: React.FC<{ mealPlan: keyof PricingByMealPlan, showIcon?: bo
     );
 }
 
-// Configuration for Adult Pricing Form Section
 interface AdultPricingRowConfig {
     occupancy: number;
     baseField: keyof RoomCategoryPricing;
@@ -131,7 +122,6 @@ const adultPricingConfig: AdultPricingRowConfig[] = [
     { occupancy: 3, baseField: 'tripleOccupancyAdultPrice', discField: 'discountedTripleOccupancyAdultPrice', label: '3 Adults' },
 ];
 
-// Configuration for Child Pricing Form Section
 interface ChildPricingRowConfig {
     age: string;
     baseField: keyof RoomCategoryPricing;
@@ -142,7 +132,6 @@ const childPricingConfig: ChildPricingRowConfig[] = [
     { age: '5-12 yrs', baseField: 'child5to12Price', discField: 'discountedChild5to12Price' },
 ];
 
-// Chip List component (can be moved to a shared location if used elsewhere)
 const ChipListDisplay: React.FC<{ items: string[] | undefined; onRemove?: (item: string) => void; noRemove?: boolean, baseColorClass?: string, icon?: React.ElementType }> = ({ items, onRemove, noRemove, baseColorClass = "bg-gray-100 text-gray-700 border-gray-300", icon: Icon }) => {
     if (!items || items.length === 0) return null;
     return (
@@ -177,8 +166,9 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
             id: cat.id || generateId(),
             pricing: cat.pricing || initialNewCategoryFormState.pricing,
             unavailableDates: cat.unavailableDates || [],
-            availabilityStartDate: cat.availabilityStartDate || '',
-            availabilityEndDate: cat.availabilityEndDate || '',
+            // availabilityStartDate: cat.availabilityStartDate || '',
+            // availabilityEndDate: cat.availabilityEndDate || '',
+            availability: cat.availability || [],
             roomSize: cat.roomSize || "Unknown",
             categoryActivities: cat.categoryActivities || [],
             categoryFacilities: cat.categoryFacilities || [],
@@ -192,8 +182,10 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
         qty: number;
         currency: string;
         pricing: RoomCategoryPricing;
-        availabilityStartDate: string;
-        availabilityEndDate: string;
+        // availabilityStartDate: string;
+        // availabilityEndDate: string;
+        newAvailabilityPeriod: { startDate: string, endDate: string };
+        currentAvailabilityPeriods: Period[];
         newCategoryActivity: string;
         currentCategoryActivities: string[];
         roomSize: string;
@@ -219,8 +211,9 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                 id: cat.id || generateId(),
                 pricing: cat.pricing || initialNewCategoryFormState.pricing,
                 unavailableDates: cat.unavailableDates || [],
-                availabilityStartDate: cat.availabilityStartDate || '',
-                availabilityEndDate: cat.availabilityEndDate || '',
+                // availabilityStartDate: cat.availabilityStartDate || '',
+                // availabilityEndDate: cat.availabilityEndDate || '',
+                availability: cat.availability || [],
                 categoryActivities: cat.categoryActivities || [],
                 categoryFacilities: cat.categoryFacilities || [],
                 categoryImages: cat.categoryImages || [],
@@ -233,7 +226,6 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
          }));
     }, [item]);
 
-    // Adjusted to cover all simple string/number fields in newCategory
     const handleNewCategoryFieldChange = (
         field: keyof Omit<typeof newCategory, 'pricing' | 'currentCategoryActivities' | 'currentCategoryFacilities'>,
         value: string | number
@@ -261,8 +253,40 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
             return { ...prev, pricing: updatedPricing };
         });
     };
+    const handleNewAvailabilityPeriodChange = (field: 'startDate' | 'endDate', value: string) => {
+        setNewCategory(prev => ({
+            ...prev,
+            newAvailabilityPeriod: {
+                ...prev.newAvailabilityPeriod,
+                [field]: value
+            }
+        }));
+    };
 
-    // Handlers for category-specific activities in the form
+    const handleAddAvailabilityPeriod = () => {
+        const { startDate, endDate } = newCategory.newAvailabilityPeriod;
+        if (!startDate || !endDate) {
+            alert("Both Start Date and End Date are required for an availability period.");
+            return;
+        }
+        if (new Date(endDate) < new Date(startDate)) {
+            alert('End Date cannot be before Start Date.');
+            return;
+        }
+        setNewCategory(prev => ({
+            ...prev,
+            currentAvailabilityPeriods: [...prev.currentAvailabilityPeriods, { startDate, endDate }],
+            newAvailabilityPeriod: { startDate: '', endDate: '' } // Reset form
+        }));
+    };
+
+    const handleRemoveAvailabilityPeriod = (indexToRemove: number) => {
+        setNewCategory(prev => ({
+            ...prev,
+            currentAvailabilityPeriods: prev.currentAvailabilityPeriods.filter((_, index) => index !== indexToRemove)
+        }));
+    };
+
     const handleAddCategoryActivityFromForm = () => {
         const activityToAdd = newCategory.newCategoryActivity.trim();
         if (activityToAdd && !newCategory.currentCategoryActivities.includes(activityToAdd)) {
@@ -282,7 +306,6 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
         }));
     };
 
-    // Handlers for category-specific facilities in the form
     const handleAddCategoryFacilityFromForm = () => {
         const facilityToAdd = newCategory.newCategoryFacility.trim();
         if (facilityToAdd && !newCategory.currentCategoryFacilities.includes(facilityToAdd)) {
@@ -333,13 +356,13 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
         if (getPrice(newCategory.pricing.singleOccupancyAdultPrice, 'noMeal') <= 0) {
             alert("Base Price for 1 Adult (Room Only) must be greater than 0."); return;
         }
-        if (newCategory.availabilityStartDate && newCategory.availabilityEndDate) {
-            if (new Date(newCategory.availabilityEndDate) < new Date(newCategory.availabilityStartDate)) {
-                alert('Availability End Date cannot be before Start Date.'); return;
-            }
-        } else if (newCategory.availabilityEndDate && !newCategory.availabilityStartDate) {
-             alert('Please provide an Availability Start Date if End Date is set.'); return;
-        }
+        // if (newCategory.availabilityStartDate && newCategory.availabilityEndDate) {
+        //     if (new Date(newCategory.availabilityEndDate) < new Date(newCategory.availabilityStartDate)) {
+        //         alert('Availability End Date cannot be before Start Date.'); return;
+        //     }
+        // } else if (newCategory.availabilityEndDate && !newCategory.availabilityStartDate) {
+        //      alert('Please provide an Availability Start Date if End Date is set.'); return;
+        // }
 
         const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
         const priceFieldsToCheck: (keyof RoomCategoryPricing)[] = [
@@ -385,10 +408,11 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
             qty: newCategory.qty,
             currency: newCategory.currency,
             pricing: JSON.parse(JSON.stringify(newCategory.pricing)),
-            unavailableDates: [], // New categories start with no unavailable dates from this form
-            availabilityStartDate: newCategory.availabilityStartDate || undefined,
+            unavailableDates: [],
+            // availabilityStartDate: newCategory.availabilityStartDate || undefined,
+            // availabilityEndDate: newCategory.availabilityEndDate || undefined,
+            availability: [...newCategory.currentAvailabilityPeriods],
             roomSize: newCategory.roomSize || "Unknown",
-            availabilityEndDate: newCategory.availabilityEndDate || undefined,
             categoryActivities: [...newCategory.currentCategoryActivities],
             categoryFacilities: [...newCategory.currentCategoryFacilities],
             seasonalHike: seasonalHikeToAdd,
@@ -398,10 +422,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
             ...prev,
             categoryRooms: [...(prev.categoryRooms || []), categoryToAdd]
         }));
-        setNewCategory({ ...initialNewCategoryFormState, currency: newCategory.currency }); // Reset form
-        // If onUpdate prop is used:
-        // const updatedProperty = { ...ensurePropertyData, categoryRooms: [...(ensurePropertyData.categoryRooms || []), categoryToAdd] };
-        // onUpdate?.(updatedProperty);
+        setNewCategory({ ...initialNewCategoryFormState, currency: newCategory.currency });
     };
     
 
@@ -411,9 +432,6 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
             ...prev,
             categoryRooms: updatedCategories
         }));
-        // If onUpdate prop is used:
-        // const updatedProperty = { ...ensurePropertyData, categoryRooms: updatedCategories };
-        // onUpdate?.(updatedProperty);
     };
 
     const getFormattedAddress = () => {
@@ -467,46 +485,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
     const currentCategories = ensurePropertyData.categoryRooms || [];
 
     if (Array.isArray(currentCategories) && currentCategories.length > 0) {
-        // let minOverallPrice = Infinity;
-        // let minOverallDiscountedPrice = Infinity;
-        // let leadCurrency = currentCategories[0].currency || "INR";
-        // const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
-
-        // currentCategories.forEach((cat: StoredRoomCategory) => {
-        //     const pricing = cat.pricing || initialNewCategoryFormState.pricing;
-        //     // This calculation doesn't filter by category availability dates for the *overall* property price
-        //     mealPlans.forEach(mealPlan => {
-        //         // ... (price calculation logic remains the same)
-        //         const singleBase = getPrice(pricing.singleOccupancyAdultPrice, mealPlan);
-        //         const singleDisc = getPrice(pricing.discountedSingleOccupancyAdultPrice, mealPlan);
-        //         const doubleBase = getPrice(pricing.doubleOccupancyAdultPrice, mealPlan);
-        //         const doubleDisc = getPrice(pricing.discountedDoubleOccupancyAdultPrice, mealPlan);
-        //         const tripleBase = getPrice(pricing.tripleOccupancyAdultPrice, mealPlan);
-        //         const tripleDisc = getPrice(pricing.discountedTripleOccupancyAdultPrice, mealPlan);
-
-        //         const pricesPerAdult: number[] = [];
-        //         const discountedPricesPerAdult: number[] = [];
-
-        //         if (singleBase > 0) pricesPerAdult.push(singleBase);
-        //         if (singleDisc > 0) discountedPricesPerAdult.push(singleDisc); else if (singleBase > 0) discountedPricesPerAdult.push(singleBase);
-        //         if (doubleBase > 0) pricesPerAdult.push(doubleBase / 2);
-        //         if (doubleDisc > 0) discountedPricesPerAdult.push(doubleDisc / 2); else if (doubleBase > 0) discountedPricesPerAdult.push(doubleBase / 2);
-        //         if (tripleBase > 0) pricesPerAdult.push(tripleBase / 3);
-        //         if (tripleDisc > 0) discountedPricesPerAdult.push(tripleDisc / 3); else if (tripleBase > 0) discountedPricesPerAdult.push(tripleBase / 3);
-
-        //         const currentMinForPlan = Math.min(...pricesPerAdult.filter(p => p > 0 && isFinite(p)), Infinity);
-        //         const currentMinDiscountedForPlan = Math.min(...discountedPricesPerAdult.filter(p => p > 0 && isFinite(p)), Infinity);
-
-        //          if (currentMinForPlan < minOverallPrice) { minOverallPrice = currentMinForPlan; leadCurrency = cat.currency; }
-        //          if (currentMinDiscountedForPlan < minOverallDiscountedPrice) { minOverallDiscountedPrice = currentMinDiscountedForPlan; }
-        //     });
-        // });
-
         displayTotalRooms = currentCategories.reduce((sum: number, category: StoredRoomCategory) => sum + (category.qty || 0), 0);
-        // displayPrice = minOverallPrice === Infinity ? (ensurePropertyData.costing?.price || 0) : parseFloat(minOverallPrice.toFixed(2));
-        // displayDiscountedPrice = minOverallDiscountedPrice !== Infinity ? parseFloat(minOverallDiscountedPrice.toFixed(2)) : (minOverallPrice !== Infinity ? parseFloat(minOverallPrice.toFixed(2)) : (ensurePropertyData.costing?.discountedPrice || 0));
-        // if (displayDiscountedPrice >= displayPrice && displayPrice > 0) displayDiscountedPrice = displayPrice; else if (displayDiscountedPrice === 0 && displayPrice > 0) displayDiscountedPrice = displayPrice;
-        // displayCurrency = leadCurrency;
     }
 
     return (
@@ -514,18 +493,17 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
             <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 border-b pb-4">{ensurePropertyData?.title || "Property Details"}</h2>
 
              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6 mb-8">
-                {/* ... (existing property summary display) ... */}
                 <div className="flex items-start space-x-3"> <MapPin className="w-5 h-5 text-gray-500 shrink-0 mt-1" /> <div> <p className="text-sm font-medium text-gray-500">Location</p> <p className="text-base text-gray-700">{getFormattedAddress()}</p> </div> </div>
                 <div className="flex items-start space-x-3"> <PriceIcon className="w-5 h-5 text-gray-500 shrink-0 mt-1" /> <div> <p className="text-sm font-medium text-gray-500">Starting Price (per adult/night)</p> <p className="text-base text-gray-700 font-semibold"> {displayCurrency} {displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {displayDiscountedPrice > 0 && displayDiscountedPrice < displayPrice && ( <span className="ml-2 text-green-600"> (From: {displayCurrency} {displayDiscountedPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}) </span> )} </p> <p className="text-xs text-gray-500">Lowest rate across rooms & meal plans.</p> </div> </div>
                 <div className="flex items-start space-x-3"> <Users className="w-5 h-5 text-gray-500 shrink-0 mt-1" /> <div> <p className="text-sm font-medium text-gray-500">Total Rooms Available</p> <p className="text-base text-gray-700">{displayTotalRooms}</p> </div> </div>
                 <div className="flex items-start space-x-3"> <Tag className="w-5 h-5 text-gray-500 shrink-0 mt-1" /> <div> <p className="text-sm font-medium text-gray-500">Type</p> <p className="text-base text-gray-700">{formatPropertyType(ensurePropertyData.type)}</p> </div> </div>
                 <div className="flex items-start space-x-3"> <Star className="w-5 h-5 text-yellow-500 shrink-0 mt-1" /> <div> <p className="text-sm font-medium text-gray-500">Property Rating</p> <p className="text-base text-gray-700"> {ensurePropertyData.propertyRating ? `${ensurePropertyData.propertyRating.toString()} / 5 Stars` : 'Not rated yet'} </p> </div> </div>
-                <div className="flex items-start space-x-3"> <Calendar className="w-5 h-5 text-gray-500 shrink-0 mt-1" /> <div> <p className="text-sm font-medium text-gray-500">Overall Availability</p> <p className="text-base text-gray-700"> {ensurePropertyData.startDate ? new Date(ensurePropertyData.startDate).toLocaleDateString() : 'N/A'} - {ensurePropertyData.endDate ? new Date(ensurePropertyData.endDate).toLocaleDateString() : 'N/A'} </p> </div> </div>
+                {/* <div className="flex items-start space-x-3"> <Calendar className="w-5 h-5 text-gray-500 shrink-0 mt-1" /> <div> <p className="text-sm font-medium text-gray-500">Overall Availability</p> <p className="text-base text-gray-700"> {ensurePropertyData.startDate ? new Date(ensurePropertyData.startDate).toLocaleDateString() : 'N/A'} - {ensurePropertyData.endDate ? new Date(ensurePropertyData.endDate).toLocaleDateString() : 'N/A'} </p> </div> </div> */}
             </div>
 
             <GoogleMapsSection item={ensurePropertyData} />
 
-             {(isEditable || (currentCategories && currentCategories.length > 0)) && (
+            {(isEditable || (currentCategories && currentCategories.length > 0)) && (
                 <div className="border-t pt-8 mt-8">
                     <h3 className="text-xl font-semibold text-gray-800 mb-6">Room Categories & Pricing</h3>
                      {currentCategories && currentCategories.length > 0 && (
@@ -568,17 +546,28 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                                         )}
 
                                         {/* Display Availability Period */}
-                                        {(cat.availabilityStartDate || cat.availabilityEndDate) && (
+                                        {/* {(cat.availabilityStartDate || cat.availabilityEndDate) && (
                                             <div className="text-sm mb-3">
                                                 <p className="font-semibold text-gray-700 flex items-center"><CalendarDays className="inline h-4 w-4 mr-1.5 text-[#003c95]"/>Availability:</p>
                                                 <p className="pl-6 text-gray-600">
                                                     {cat.availabilityStartDate ? new Date(cat.availabilityStartDate).toLocaleDateString() : 'Open Start'} - {cat.availabilityEndDate ? new Date(cat.availabilityEndDate).toLocaleDateString() : 'Open End'}
                                                 </p>
                                             </div>
+                                        )} */}
+                                        {cat.availability && cat.availability.length > 0 && (
+                                            <div className="text-sm mb-3">
+                                                <p className="font-semibold text-gray-700 flex items-center"><CalendarDays className="inline h-4 w-4 mr-1.5 text-[#003c95]"/>Availability Periods:</p>
+                                                <ul className="pl-6 text-gray-600 list-disc list-inside space-y-1">
+                                                    {cat.availability.map((period, index) => (
+                                                        <li key={index}>
+                                                            {new Date(period.startDate).toLocaleDateString()} to {new Date(period.endDate).toLocaleDateString()}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
                                         )}
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-                                            {/* ... (Adult and Child Pricing display remains the same) ... */}
                                             <div> <p className="font-semibold text-gray-700 flex items-center mb-2"><Users className="inline h-4 w-4 mr-1.5"/>Adult Pricing (Total Room Price):</p> {[{ label: '1 Adult', base: pricing.singleOccupancyAdultPrice, disc: pricing.discountedSingleOccupancyAdultPrice }, { label: '2 Adults', base: pricing.doubleOccupancyAdultPrice, disc: pricing.discountedDoubleOccupancyAdultPrice }, { label: '3 Adults', base: pricing.tripleOccupancyAdultPrice, disc: pricing.discountedTripleOccupancyAdultPrice }, ].map(occ => ( <div key={occ.label} className="mb-2 pl-2"> <strong className="block text-gray-600">{occ.label}:</strong> <div className="pl-4 space-y-0.5"> {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => { const basePrice = getPrice(occ.base, mealPlan); const discPrice = getPrice(occ.disc, mealPlan); if (basePrice > 0) { return ( <div key={mealPlan} className="flex justify-between items-center"> <MealPlanLabel mealPlan={mealPlan} /> <span className="text-gray-800"> {currency} {basePrice.toLocaleString()} {(discPrice > 0 && discPrice < basePrice) ? <span className="text-green-600 font-medium"> (Now: {discPrice.toLocaleString()})</span> : ''} </span> </div> ); } return null; })} </div> </div> ))} </div>
                                             <div> <p className="font-semibold text-gray-700 flex items-center mb-2"><Baby className="inline h-4 w-4 mr-1.5"/>Child Pricing (Per Child, Sharing):</p> {[{ label: '5-12 yrs', base: pricing.child5to12Price, disc: pricing.discountedChild5to12Price }, ].map(child => ( <div key={child.label} className="mb-2 pl-2"> <strong className="block text-gray-600">Child ({child.label}):</strong> <div className="pl-4 space-y-0.5"> {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => { const basePrice = getPrice(child.base, mealPlan); const discPrice = getPrice(child.disc, mealPlan); if (basePrice > 0) { return ( <div key={mealPlan} className="flex justify-between items-center"> <MealPlanLabel mealPlan={mealPlan} /> <span className="text-gray-800"> {currency} {basePrice.toLocaleString()} {(discPrice > 0 && discPrice < basePrice) ? <span className="text-green-600 font-medium"> (Now: {discPrice.toLocaleString()})</span> : ''} </span> </div> ); } return null; })} </div> </div> ))} <p className="text-xs text-gray-500 mt-1 pl-2 italic">Children below 5 typically free.</p> </div>
                                         </div>
@@ -677,18 +666,42 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
 
                             {/* Availability Period Inputs */}
                             <div className="pt-4 border-t border-gray-300">
-                                <FormLabel className="text-md font-semibold text-gray-700 mb-2 block flex items-center"><CalendarDays className="inline h-5 w-5 mr-2"/>Availability Period (Optional)</FormLabel>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormLabel className="text-md font-semibold text-gray-700 mb-2 block flex items-center">
+                                    <CalendarDays className="inline h-5 w-5 mr-2"/> Availability Periods (Optional)
+                                </FormLabel>
+                                <p className="text-xs text-gray-500 mb-3">
+                                    If no periods are set, this category is available year-round unless specific dates are blocked as unavailable.
+                                </p>
+
+                                {newCategory.currentAvailabilityPeriods.length > 0 && (
+                                    <div className="mb-4 space-y-2">
+                                        <Label className="text-sm text-gray-600">Added Periods:</Label>
+                                        {newCategory.currentAvailabilityPeriods.map((period, index) => (
+                                            <div key={index} className="flex items-center justify-between bg-white p-2 rounded border text-sm">
+                                                <span>{period.startDate} &mdash; {period.endDate}</span>
+                                                <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => handleRemoveAvailabilityPeriod(index)}>
+                                                    <X size={14} />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                                     <FormItem>
                                         <Label className="text-xs text-muted-foreground" htmlFor={`new-cat-avail-start-${ensurePropertyData._id || 'new'}`}>Start Date</Label>
-                                        <Input id={`new-cat-avail-start-${ensurePropertyData._id || 'new'}`} type="date" value={newCategory.availabilityStartDate} onChange={(e) => handleNewCategoryFieldChange('availabilityStartDate', e.target.value)} />
+                                        <Input id={`new-cat-avail-start-${ensurePropertyData._id || 'new'}`} type="date" value={newCategory.newAvailabilityPeriod.startDate} onChange={(e) => handleNewAvailabilityPeriodChange('startDate', e.target.value)} />
                                     </FormItem>
                                     <FormItem>
                                         <Label className="text-xs text-muted-foreground" htmlFor={`new-cat-avail-end-${ensurePropertyData._id || 'new'}`}>End Date</Label>
-                                        <Input id={`new-cat-avail-end-${ensurePropertyData._id || 'new'}`} type="date" value={newCategory.availabilityEndDate} onChange={(e) => handleNewCategoryFieldChange('availabilityEndDate', e.target.value)} />
+                                        <Input id={`new-cat-avail-end-${ensurePropertyData._id || 'new'}`} type="date" value={newCategory.newAvailabilityPeriod.endDate} onChange={(e) => handleNewAvailabilityPeriodChange('endDate', e.target.value)} />
                                     </FormItem>
                                 </div>
+                                <Button type="button" variant="outline" onClick={handleAddAvailabilityPeriod} size="sm" className="w-full mt-3">
+                                    <Plus size={16} className="mr-1" /> Add Availability Period
+                                </Button>
                             </div>
+
 
                              {/* Adult and Child Pricing forms remain the same */}
                              <div className="pt-4 border-t border-gray-300"> <FormLabel className="text-md font-semibold text-gray-700 mb-3 block flex items-center"><Users className="inline h-5 w-5 mr-2"/>Adult Pricing (Total Room Price)</FormLabel> {adultPricingConfig.map(occ => ( <div key={occ.occupancy} className="mb-6 p-3 border rounded bg-white/50"> <p className="text-sm font-semibold mb-3 text-gray-600">{occ.label}</p> <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3"> {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => ( <div key={mealPlan} className="space-y-2"> <FormLabel className="text-xs font-medium flex items-center text-gray-600"> <MealPlanLabel mealPlan={mealPlan} /> </FormLabel> <FormItem> <Label className="text-xs text-muted-foreground" htmlFor={`new-cat-${occ.baseField}-${mealPlan}`}>Base Price</Label> <Input id={`new-cat-${occ.baseField}-${mealPlan}`} type="number" value={getPrice(newCategory.pricing[occ.baseField], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(occ.baseField, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01" /> </FormItem> <FormItem> <Label className="text-xs text-muted-foreground" htmlFor={`new-cat-${occ.discField}-${mealPlan}`}>Discounted</Label> <Input id={`new-cat-${occ.discField}-${mealPlan}`} type="number" value={getPrice(newCategory.pricing[occ.discField], mealPlan) || ''} onChange={(e) => handleNewCategoryPricingChange(occ.discField, mealPlan, e.target.value)} placeholder="Optional" min="0" step="0.01" /> </FormItem> </div> ))} </div> </div> ))} </div>
@@ -783,7 +796,6 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                 </div>
             )}
 
-            {/* ... (renderSection calls for other property details remain the same) ... */}
             {renderSection("Amenities", ensurePropertyData.amenities, 'No specific amenities listed.')}
             {renderSection("Property Accessibility", ensurePropertyData.accessibility, 'No property-wide accessibility features detailed.')}
             {renderSection("Room Accessibility Features", ensurePropertyData.roomAccessibility, 'No specific room accessibility features detailed.')}

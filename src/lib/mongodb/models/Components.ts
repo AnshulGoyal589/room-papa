@@ -34,14 +34,19 @@ export interface Image {
 export type ReviewCategory = 'Service' | 'Value' | 'Location' | 'Cleanliness' | 'Comfort' | 'Facilities';
 
 export interface Review{
-    comment: string;
-    rating: number;
-    category?: ReviewCategory[];
-    name?: string;
-    userId : string;
-    date?: Date;
-    country?: string;
+  comment: string;
+  rating: number;
+  category?: ReviewCategory[];
+  name?: string;
+  userId : string;
+  date?: Date;
+  country?: string;
 };
+
+export interface Period{
+  startDate: string;
+  endDate: string;
+}
 
 
 export interface FAQItem {

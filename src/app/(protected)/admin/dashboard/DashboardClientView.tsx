@@ -6,55 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ListingItem from '@/components/manager/HomePage/ListingItem';
-import AddItemModal from '@/components/manager/HomePage/AddItemModal';
-// import { useToast } from '@/components/ui/use-toast';
 import { BaseItem } from '@/lib/mongodb/models/Components';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function DashboardClientView({ initialItems }: any) {
   const router = useRouter();
-  // const { toast } = useToast();
-
-  // const [items, setItems] = useState<BaseItem[]>(initialItems);
-  
-  // const [isLoading, setIsLoading] = useState(false);
-  
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
-
-  // const fetchItems = useCallback(async () => {
-  //   setIsLoading(true);
-  //   try {
-  //     const propertiesRes = await fetch('/api/properties');
-  //     const properties = await propertiesRes.json();
-  //     const formattedProperties = properties.map((prop: BaseItem) => ({...prop, category: 'Property' as ItemCategory, createdAt: new Date(prop.createdAt) }));
-
-  //     const tripsRes = await fetch('/api/trips');
-  //     const trips = await tripsRes.json();
-  //     const formattedTrips = trips.map((trip: BaseItem) => ({...trip, category: 'Trip' as ItemCategory, createdAt: new Date(trip.createdAt) }));
-      
-  //     const travellingsRes = await fetch('/api/travellings');
-  //     const travellings = await travellingsRes.json();
-  //     const formattedTravellings = travellings.map((travelling: BaseItem) => ({ ...travelling, category: 'Travelling' as ItemCategory, createdAt: new Date(travelling.createdAt) }));
-      
-  //     const allItems = [...formattedProperties, ...formattedTrips, ...formattedTravellings]
-  //       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-  //     setItems(allItems);
-  //   } catch (error) {
-  //     console.error('Error re-fetching items:', error);
-  //     toast({ title: 'Error', description: 'Failed to refresh items.', variant: 'destructive' });
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // }, [toast]);
-  
-
-  const handleAddItem = async () => {
-      // fetchItems();
-      router.refresh();
-      setIsModalOpen(false);
-  };
 
   const handleItemClick = (id: string) => {
     router.push(`/admin/dashboard/${id}`);
@@ -68,8 +25,8 @@ export default function DashboardClientView({ initialItems }: any) {
     <div className="container mx-auto py-8 px-4 sm:px-8 md:px-16">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <Button onClick={() => setIsModalOpen(true)}>
-          Add New Item
+        <Button onClick={() => router.push('/admin/dashboard/addItem')}>
+          Add New Inventory
         </Button>
       </div>
 
@@ -103,13 +60,6 @@ export default function DashboardClientView({ initialItems }: any) {
           )}
         </TabsContent>
       </Tabs>
-
-      {isModalOpen && (
-        <AddItemModal 
-          onClose={() => setIsModalOpen(false)} 
-          onAdd={handleAddItem} 
-        />
-      )}
     </div>
   );
 }

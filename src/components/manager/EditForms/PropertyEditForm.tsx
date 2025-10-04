@@ -11,7 +11,7 @@ import {
   SelectItem
 } from "@/components/ui/select";
 import ImageUpload from "@/components/cloudinary/ImageUpload";
-import { Image as ImageType, SeasonalCoasting } from "@/lib/mongodb/models/Components";
+import { Image as ImageType, Period, SeasonalCoasting } from "@/lib/mongodb/models/Components";
 import MultipleImageUpload from "@/components/cloudinary/MultipleImageUpload";
 import { Badge as UiBadge } from "@/components/ui/badge";
 import {
@@ -79,7 +79,7 @@ const initialNewCategoryState = {
   id: '',
   title: "",
   qty: 1,
-  currency: "USD",
+  currency: "INR",
   pricing: {
     singleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
     discountedSingleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
@@ -91,9 +91,11 @@ const initialNewCategoryState = {
     discountedChild5to12Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
   } as RoomCategoryPricing,
   unavailableDates: [] as string[],
-  availabilityStartDate: '',
+  // availabilityStartDate: '',
+  // availabilityEndDate: '',
+  availability: [] as Period[],
+  newAvailabilityPeriod: { startDate: '', endDate: '' },
   roomSize: '',
-  availabilityEndDate: '',
   categoryActivities: [] as string[],
   categoryFacilities: [] as string[],
   seasonalHike: {
@@ -176,6 +178,7 @@ const ChipList: React.FC<{ items: string[]; onRemove?: (item: string) => void; n
 };
 
 const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => {
+  // console.log("Type:: ",item.type);
   const [formData, setFormData] = useState<Property>(() => {
       const clonedItem = JSON.parse(JSON.stringify(item));
       if (clonedItem.categoryRooms && Array.isArray(clonedItem.categoryRooms)) {
@@ -186,8 +189,9 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
                   ? cat.pricing
                   : initialNewCategoryState.pricing,
               unavailableDates: Array.isArray(cat.unavailableDates) ? cat.unavailableDates.map(String).sort() : [],
-              availabilityStartDate: cat.availabilityStartDate || '',
-              availabilityEndDate: cat.availabilityEndDate || '',
+              availability: Array.isArray(cat.availability) ? cat.availability : [],
+              // availabilityStartDate: cat.availabilityStartDate || '',
+              // availabilityEndDate: cat.availabilityEndDate || '',
               roomSize: cat.roomSize || "Unknown",
               categoryActivities: Array.isArray(cat.categoryActivities) ? cat.categoryActivities.map(String) : [],
               seasonalHike: cat.seasonalHike || undefined,
@@ -203,7 +207,8 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
 
   const [newCategory, setNewCategory] = useState<typeof initialNewCategoryState>({
     ...initialNewCategoryState,
-    currency: item.costing?.currency || "USD",
+    currency: item.costing?.currency || "INR",
+    newAvailabilityPeriod: { startDate: '', endDate: '' },
   });
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -234,8 +239,9 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
                 : initialNewCategoryState.pricing,
             unavailableDates: Array.isArray(cat.unavailableDates) ? cat.unavailableDates.map(String).sort() : [],
             seasonalHike: cat.seasonalHike || undefined,
-            availabilityStartDate: cat.availabilityStartDate || '',
-            availabilityEndDate: cat.availabilityEndDate || '',
+             availability: Array.isArray(cat.availability) ? cat.availability : [],
+            // availabilityStartDate: cat.availabilityStartDate || '',
+            // availabilityEndDate: cat.availabilityEndDate || '',
             categoryActivities: Array.isArray(cat.categoryActivities) ? cat.categoryActivities.map(String) : [],
             categoryFacilities: Array.isArray(cat.categoryFacilities) ? cat.categoryFacilities.map(String) : [],
             categoryImages: Array.isArray(cat.categoryImages) ? cat.categoryImages : [], // Corrected initialization
@@ -494,13 +500,13 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     if (getPrice(newCategory.pricing.singleOccupancyAdultPrice, 'noMeal') <= 0) {
         alert('Base Price for 1 Adult (Room Only) must be greater than 0.'); return;
     }
-    if (newCategory.availabilityStartDate && newCategory.availabilityEndDate) {
-        if (new Date(newCategory.availabilityEndDate) < new Date(newCategory.availabilityStartDate)) {
-            alert('Availability End Date cannot be before Start Date.'); return;
-        }
-    } else if (newCategory.availabilityEndDate && !newCategory.availabilityStartDate) {
-        alert('Please provide an Availability Start Date if End Date is set.'); return;
-    }
+    // if (newCategory.availabilityStartDate && newCategory.availabilityEndDate) {
+    //     if (new Date(newCategory.availabilityEndDate) < new Date(newCategory.availabilityStartDate)) {
+    //         alert('Availability End Date cannot be before Start Date.'); return;
+    //     }
+    // } else if (newCategory.availabilityEndDate && !newCategory.availabilityStartDate) {
+    //     alert('Please provide an Availability Start Date if End Date is set.'); return;
+    // }
     const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals']; const priceFieldsToCheck: (keyof RoomCategoryPricing)[] = [ 'singleOccupancyAdultPrice', 'doubleOccupancyAdultPrice', 'tripleOccupancyAdultPrice', 'child5to12Price', ];
     for (const field of priceFieldsToCheck) {
         const basePrices = newCategory.pricing[field]; const discountPricesField = `discounted${field.charAt(0).toUpperCase() + field.slice(1)}` as keyof RoomCategoryPricing; const discountPrices = newCategory.pricing[discountPricesField];
@@ -535,8 +541,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       pricing: JSON.parse(JSON.stringify(newCategory.pricing)),
       unavailableDates: newCategory.unavailableDates.sort(),
       roomSize: newCategory.roomSize || "Unknown",
-      availabilityStartDate: newCategory.availabilityStartDate || undefined,
-      availabilityEndDate: newCategory.availabilityEndDate || undefined,
+      availability: [...newCategory.availability],
       categoryActivities: [...newCategory.categoryActivities],
       categoryFacilities: [...newCategory.categoryFacilities],
       categoryImages: [...newCategory.categoryImages],
@@ -568,8 +573,10 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         pricing: fullPricing,
         roomSize: categoryToEdit.roomSize || "Unknown",
         unavailableDates: Array.isArray(categoryToEdit.unavailableDates) ? categoryToEdit.unavailableDates.map(String).sort() : [],
-        availabilityStartDate: categoryToEdit.availabilityStartDate || '',
-        availabilityEndDate: categoryToEdit.availabilityEndDate || '',
+        availability: Array.isArray(categoryToEdit.availability) ? categoryToEdit.availability : [], // ADD THIS
+        newAvailabilityPeriod: { startDate: '', endDate: '' },
+        // availabilityStartDate: categoryToEdit.availabilityStartDate || '',
+        // availabilityEndDate: categoryToEdit.availabilityEndDate || '',
         categoryActivities: Array.isArray(categoryToEdit.categoryActivities) ? categoryToEdit.categoryActivities.map(String) : [],
         categoryFacilities: Array.isArray(categoryToEdit.categoryFacilities) ? categoryToEdit.categoryFacilities.map(String) : [],
         categoryImages: Array.isArray(categoryToEdit.categoryImages) ? categoryToEdit.categoryImages : [],
@@ -592,6 +599,40 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
   const handleRemoveCategory = (idToRemove: string) => {
     if (isEditMode && newCategory.id === idToRemove) { handleCancelEditCategory(); }
     setFormData(prev => ({ ...prev, categoryRooms: (prev.categoryRooms || []).filter(cat => cat.id !== idToRemove) }));
+  };
+
+  const handleNewAvailabilityPeriodChange = (field: 'startDate' | 'endDate', value: string) => {
+    setNewCategory(prev => ({
+        ...prev,
+        newAvailabilityPeriod: {
+            ...prev.newAvailabilityPeriod,
+            [field]: value
+        }
+    }));
+  };
+
+  const handleAddAvailabilityPeriod = () => {
+      const { startDate, endDate } = newCategory.newAvailabilityPeriod;
+      if (!startDate || !endDate) {
+          alert("Both Start Date and End Date are required.");
+          return;
+      }
+      if (new Date(endDate) < new Date(startDate)) {
+          alert('End Date cannot be before Start Date.');
+          return;
+      }
+      setNewCategory(prev => ({
+          ...prev,
+          availability: [...prev.availability, { startDate, endDate }],
+          newAvailabilityPeriod: { startDate: '', endDate: '' } // Reset form
+      }));
+  };
+
+  const handleRemoveAvailabilityPeriod = (indexToRemove: number) => {
+      setNewCategory(prev => ({
+          ...prev,
+          availability: prev.availability.filter((_, index) => index !== indexToRemove)
+      }));
   };
 
   const validateForm = (): boolean => {
@@ -618,7 +659,19 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><Home className="mr-3 h-6 w-6 text-primary"/>Basic Information</h2>
         <div> <label className="font-medium text-gray-700">Title</label> <Input value={formData.title || ''} onChange={(e) => handleChange("title", e.target.value)} placeholder="Property Title" /> {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>} </div>
         <div> <label className="font-medium text-gray-700">Description</label> <Textarea value={formData.description || ''} onChange={(e) => handleChange("description", e.target.value)} placeholder="Detailed description of the property" rows={5} /> {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>} </div>
-        <div> <label className="font-medium text-gray-700">Property Type</label> <Select value={formData.type || ''} onValueChange={(value) => handleChange("type", value as PropertyType)}> <SelectTrigger><SelectValue placeholder="Select property type" /></SelectTrigger> <SelectContent>{['Hotel', 'Apartment', 'Villa', 'Hostel', 'Resort' , 'Cottage' , 'Homestay' ].map(type => <SelectItem key={type} value={type.toLowerCase() as PropertyType}>{type}</SelectItem>)}</SelectContent> </Select> {errors.type && <p className="text-red-500 text-xs mt-1">{errors.type}</p>} </div>
+        <div>
+          <label className="font-medium text-gray-700">Property Type</label>
+          <Select value={formData.type.toLowerCase() as PropertyType} onValueChange={(value) => handleChange("type", value as PropertyType)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select property type" />
+            </SelectTrigger>
+            <SelectContent>{['Hotel', 'Apartment', 'Villa', 'Hostel', 'Resort' , 'Cottage' , 'Homestay' ].map(type =>
+              <SelectItem key={type} value={type.toLowerCase() as PropertyType}>{type}
+              </SelectItem>)}
+            </SelectContent>
+          </Select>
+          {errors.type && <p className="text-red-500 text-xs mt-1">{errors.type}</p>}
+        </div>
       </div>
 
       <div className="space-y-4 pt-6 border-t">
@@ -697,12 +750,16 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
                         </div>
                     )}
 
-                    {(cat.availabilityStartDate || cat.availabilityEndDate) && (
+                    {cat.availability && cat.availability.length > 0 && (
                         <div className="text-sm mb-3">
-                            <p className="font-semibold text-gray-700 flex items-center"><CalendarDays size={14} className="mr-1.5 text-[#003c95]"/>Availability:</p>
-                            <p className="pl-6 text-gray-600">
-                                {cat.availabilityStartDate ? new Date(cat.availabilityStartDate).toLocaleDateString() : 'Open Start'} - {cat.availabilityEndDate ? new Date(cat.availabilityEndDate).toLocaleDateString() : 'Open End'}
-                            </p>
+                            <p className="font-semibold text-gray-700 flex items-center"><CalendarDays size={14} className="mr-1.5 text-[#003c95]"/>Availability Periods:</p>
+                            <ul className="pl-6 text-gray-600 list-disc list-inside space-y-1">
+                                {cat.availability.map((period, index) => (
+                                    <li key={index}>
+                                        {new Date(period.startDate).toLocaleDateString()} to {new Date(period.endDate).toLocaleDateString()}
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     )}
 
@@ -816,18 +873,37 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
             </div>
 
             <div className="pt-4 border-t border-gray-300">
-                <label className="text-lg font-semibold text-gray-700 mb-3 block flex items-center"><CalendarDays className="inline h-5 w-5 mr-2"/>Availability Period (Optional)</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="text-xs text-muted-foreground">Start Date</label>
-                        <Input type="date" value={newCategory.availabilityStartDate} onChange={(e) => handleNewCategoryFieldChange('availabilityStartDate', e.target.value)} />
-                    </div>
-                    <div>
-                        <label className="text-xs text-muted-foreground">End Date</label>
-                        <Input type="date" value={newCategory.availabilityEndDate} onChange={(e) => handleNewCategoryFieldChange('availabilityEndDate', e.target.value)} />
-                    </div>
-                </div>
-            </div>
+              <label className="text-lg font-semibold text-gray-700 mb-3 block flex items-center"><CalendarDays className="inline h-5 w-5 mr-2"/>Availability Periods (Optional)</label>
+              <p className="text-xs text-gray-500 mb-4">If no periods are added, the category is considered always available (unless blocked by unavailable dates).</p>
+
+              {newCategory.availability.length > 0 && (
+                  <div className="mb-4 space-y-2">
+                      <label className="text-sm font-medium text-gray-600">Added Periods:</label>
+                      {newCategory.availability.map((period, index) => (
+                          <div key={index} className="flex items-center justify-between bg-white p-2 rounded border text-sm">
+                              <span>{period.startDate} &mdash; {period.endDate}</span>
+                              <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleRemoveAvailabilityPeriod(index)}>
+                                  <X size={14} />
+                              </Button>
+                          </div>
+                      ))}
+                  </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                  <div>
+                      <label className="text-xs text-muted-foreground">Start Date</label>
+                      <Input type="date" value={newCategory.newAvailabilityPeriod.startDate} onChange={(e) => handleNewAvailabilityPeriodChange('startDate', e.target.value)} />
+                  </div>
+                  <div>
+                      <label className="text-xs text-muted-foreground">End Date</label>
+                      <Input type="date" value={newCategory.newAvailabilityPeriod.endDate} onChange={(e) => handleNewAvailabilityPeriodChange('endDate', e.target.value)} />
+                  </div>
+              </div>
+              <Button type="button" variant="outline" onClick={handleAddAvailabilityPeriod} size="sm" className="w-full mt-3">
+                  <Plus size={16} className="mr-1" /> Add Availability Period
+              </Button>
+          </div>
 
             <div className="pt-4 border-t border-gray-300"> <label className="text-lg font-semibold text-gray-700 mb-3 block flex items-center"><Users className="inline h-5 w-5 mr-2"/>Adult Pricing (Total Room Price)</label> {adultPricingConfig.map(occ => ( <div key={occ.occupancy} className="mb-6 p-3 border rounded bg-white/50"> <p className="text-sm font-semibold mb-3 text-gray-600">{occ.label}</p> <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3"> {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => ( <div key={mealPlan} className="space-y-2"> <label className="text-xs font-medium flex items-center text-gray-600"> <MealPlanLabel mealPlan={mealPlan} className="text-gray-600"/> </label> <div> <label className="text-xs text-muted-foreground">Base Price</label> <Input type="number" value={getPrice(newCategory.pricing[occ.baseField], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(occ.baseField, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01" /> </div> <div> <label className="text-xs text-muted-foreground">Discounted</label> <Input type="number" value={getPrice(newCategory.pricing[occ.discField], mealPlan) || ''} onChange={(e) => handleNewCategoryPricingChange(occ.discField, mealPlan, e.target.value)} placeholder="Optional" min="0" step="0.01" /> </div> </div> ))} </div> </div> ))} </div>
             <div className="pt-4 border-t border-gray-300"> <label className="text-lg font-semibold text-gray-700 mb-3 block flex items-center"><Baby className="inline h-5 w-5 mr-2"/>Child Pricing (Per Child, sharing)</label> {childPricingConfig.map(child => ( <div key={child.age} className="mb-6 p-3 border rounded bg-white/50"> <p className="text-sm font-semibold mb-3 text-gray-600">Child ({child.age})</p> <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3"> {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => ( <div key={mealPlan} className="space-y-2"> <label className="text-xs font-medium flex items-center text-gray-600"> <MealPlanLabel mealPlan={mealPlan} className="text-gray-600"/> </label> <div> <label className="text-xs text-muted-foreground">Base Price</label> <Input type="number" value={getPrice(newCategory.pricing[child.baseField], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(child.baseField, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01" /> </div> <div> <label className="text-xs text-muted-foreground">Discounted</label> <Input type="number" value={getPrice(newCategory.pricing[child.discField], mealPlan) || ''} onChange={(e) => handleNewCategoryPricingChange(child.discField, mealPlan, e.target.value)} placeholder="Optional" min="0" step="0.01" /> </div> </div> ))} </div> </div> ))} </div>
