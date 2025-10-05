@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { getAllUploaderProperties } from '@/lib/mongodb/models/Property';
-import { getAllTrips } from '@/lib/mongodb/models/Trip';
+import { getAllUploaderTrips } from '@/lib/mongodb/models/Trip';
 import Unauthorized from '@/components/manager/Unauthorized';
 import DashboardClientView from './DashboardClientView';
 import { checkManagerStatus } from '@/lib/mongodb/models/User';
@@ -21,7 +21,7 @@ async function fetchAllItems() {
       return [];
     }
     const properties = await getAllUploaderProperties(userId);
-    const trips = await getAllTrips(userId);
+    const trips = await getAllUploaderTrips(userId);
     const travellings = await getAllUploaderTravellings(userId);
 
     const allItems = [

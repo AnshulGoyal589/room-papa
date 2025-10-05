@@ -14,18 +14,15 @@ export const metadata: Metadata = {
 
 async function fetchAllItems() {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return [];
-    }
+
     const properties = await getAllUploaderProperties(null as unknown as string);
     const trips = await getAllUploaderTrips(null as unknown as string);
     const travellings = await getAllUploaderTravellings(null as unknown as string);
 
     const allItems = [
-      ...properties,
-      ...trips,
-      ...travellings
+      ...properties.map(item => ({ ...item, category: 'Property' })),
+      ...trips.map(item => ({ ...item, category: 'Trip' })),
+      ...travellings.map(item => ({ ...item, category: 'Travelling' }))
     ].sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
