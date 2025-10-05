@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Plus, X, Home, MapPin, DollarSign, BedDouble, ListChecks, ShieldCheck, Users, Baby, Utensils, CalendarOff, Sparkles, Wrench, CalendarDays } from 'lucide-react';
+import { Plus, X, Home, MapPin, DollarSign, BedDouble, ListChecks, ShieldCheck, Users, Baby, Utensils, CalendarOff, Sparkles, Wrench, CalendarDays, ClipboardList } from 'lucide-react';
 import { categoryOptions } from '../../../../public/assets/data';
 
 
@@ -103,6 +103,14 @@ const initialPropertyData: ExtendedProperty = {
   roomFacilities: [],
   propertyRating: 0,
   googleMaps: '',
+  houseRules: {
+    checkInTime: '',
+    checkOutTime: '',
+    smokingAllowed: false,
+    petsAllowed: false,
+    partiesAllowed: false,
+    additionalRules: [],
+  },
 };
 
 
@@ -115,6 +123,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
   setPropertyData
 }) => {
   const [newCategory, setNewCategory] = useState<typeof initialNewCategoryState>(initialNewCategoryState);
+  const [newAdditionalRule, setNewAdditionalRule] = useState('');
 
 useEffect(() => {
     const { costing, rooms, categoryRooms } = propertyData;
@@ -481,10 +490,29 @@ useEffect(() => {
     );
   };
 
+  const handleAddAdditionalRule = () => {
+    const ruleToAdd = newAdditionalRule.trim();
+    if (ruleToAdd) {
+      const currentRules = propertyData.houseRules?.additionalRules || [];
+      if (!currentRules.includes(ruleToAdd)) {
+        handlePropertyChange('houseRules.additionalRules', [...currentRules, ruleToAdd]);
+        setNewAdditionalRule('');
+      } else {
+        alert("This rule is already added.");
+      }
+    }
+  };
+
+  const handleRemoveAdditionalRule = (ruleToRemove: string) => {
+    const currentRules = propertyData.houseRules?.additionalRules || [];
+    handlePropertyChange('houseRules.additionalRules', currentRules.filter(r => r !== ruleToRemove));
+  };
+
    const ensurePropertyData: ExtendedProperty = {
     ...initialPropertyData,
     ...propertyData,
     location: { ...initialPropertyData.location, ...(propertyData?.location || {}) },
+    houseRules: { ...initialPropertyData.houseRules, ...(propertyData?.houseRules || {}) }, 
     categoryRooms: propertyData?.categoryRooms || [],
     amenities: propertyData?.amenities || [],
   };
@@ -989,6 +1017,79 @@ useEffect(() => {
           ))}
         </div>
       </div>
+
+      <div className="space-y-4 pt-6 border-t">
+        <SectionHeader title="House Rules" icon={ClipboardList} />
+
+        {/* Check-in / Check-out times */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormItem>
+            <FormLabel>Check-in Time</FormLabel>
+            <Input
+              type="time"
+              value={ensurePropertyData.houseRules?.checkInTime}
+              onChange={(e) => handlePropertyChange('houseRules.checkInTime', e.target.value)}
+            />
+          </FormItem>
+          <FormItem>
+            <FormLabel>Check-out Time</FormLabel>
+            <Input
+              type="time"
+              value={ensurePropertyData.houseRules?.checkOutTime}
+              onChange={(e) => handlePropertyChange('houseRules.checkOutTime', e.target.value)}
+            />
+          </FormItem>
+        </div>
+
+        {/* Boolean rules (checkboxes) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="smokingAllowed"
+              checked={ensurePropertyData.houseRules?.smokingAllowed}
+              onCheckedChange={(checked) => handlePropertyChange('houseRules.smokingAllowed', !!checked)}
+            />
+            <Label htmlFor="smokingAllowed">Smoking Allowed</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="petsAllowed"
+              checked={ensurePropertyData.houseRules?.petsAllowed}
+              onCheckedChange={(checked) => handlePropertyChange('houseRules.petsAllowed', !!checked)}
+            />
+            <Label htmlFor="petsAllowed">Pets Allowed</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="partiesAllowed"
+              checked={ensurePropertyData.houseRules?.partiesAllowed}
+              onCheckedChange={(checked) => handlePropertyChange('houseRules.partiesAllowed', !!checked)}
+            />
+            <Label htmlFor="partiesAllowed">Parties/Events Allowed</Label>
+          </div>
+        </div>
+
+        {/* Additional Rules (text input with list) */}
+        <div className="pt-4">
+          <FormLabel>Additional Rules</FormLabel>
+          <div className="flex flex-col md:flex-row gap-2 items-start mt-2">
+            <Input
+              value={newAdditionalRule}
+              onChange={(e) => setNewAdditionalRule(e.target.value)}
+              placeholder="e.g., Quiet hours after 10 PM"
+              className="flex-grow"
+            />
+            <Button type="button" variant="outline" onClick={handleAddAdditionalRule} size="sm" className="w-full md:w-auto">
+              <Plus size={16} className="mr-1" /> Add Rule
+            </Button>
+          </div>
+          <ChipList
+            items={ensurePropertyData.houseRules?.additionalRules || []}
+            onRemove={handleRemoveAdditionalRule}
+          />
+        </div>
+      </div>
+
 
       <div className="space-y-4 pt-6 border-t">
         <SectionHeader title="Additional Classifications & Features" icon={ShieldCheck} />

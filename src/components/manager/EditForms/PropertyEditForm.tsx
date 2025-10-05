@@ -32,6 +32,7 @@ import {
   CalendarDays,
   Sparkles,
   Wrench,
+  ClipboardList,
 } from "lucide-react";
 import { HikePricingByOccupancy, StoredRoomCategory } from "@/types/booking";
 import { CldImage } from "next-cloudinary";
@@ -50,6 +51,15 @@ const getPrice = (
         return typeof price === 'number' ? price : 0;
     }
     return 0;
+};
+
+const initialHouseRulesState = {
+    checkInTime: '',
+    checkOutTime: '',
+    smokingAllowed: false,
+    petsAllowed: false,
+    partiesAllowed: false,
+    additionalRules: [],
 };
 
 const initialHikePricingState: HikePricingByOccupancy = {
@@ -100,6 +110,7 @@ const initialNewCategoryState = {
     hikePricing: initialHikePricingState,
   },
   categoryImages: [] as ImageType[],
+  houseRules: { ...initialHouseRulesState }
 };
 
 
@@ -177,6 +188,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
   // console.log("Type:: ",item.type);
   const [formData, setFormData] = useState<Property>(() => {
       const clonedItem = JSON.parse(JSON.stringify(item));
+      clonedItem.houseRules = clonedItem.houseRules ?? initialHouseRulesState;
       if (clonedItem.categoryRooms && Array.isArray(clonedItem.categoryRooms)) {
           clonedItem.categoryRooms = clonedItem.categoryRooms.map((cat: StoredRoomCategory) => ({
               ...cat,
@@ -199,6 +211,9 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       }
       return clonedItem;
   });
+
+  const [newAdditionalRule, setNewAdditionalRule] = useState('');
+
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [newCategory, setNewCategory] = useState<typeof initialNewCategoryState>({
@@ -552,6 +567,24 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     handleCancelEditCategory();
   };
 
+  const handleAddAdditionalRule = () => {
+    const ruleToAdd = newAdditionalRule.trim();
+    if (ruleToAdd) {
+        const currentRules = formData.houseRules?.additionalRules || [];
+        if (!currentRules.includes(ruleToAdd)) {
+            handleChange('houseRules.additionalRules', [...currentRules, ruleToAdd]);
+            setNewAdditionalRule('');
+        } else {
+            alert("This rule is already added.");
+        }
+    }
+  };
+
+  const handleRemoveAdditionalRule = (ruleToRemove: string) => {
+      const currentRules = formData.houseRules?.additionalRules || [];
+      handleChange('houseRules.additionalRules', currentRules.filter(r => r !== ruleToRemove));
+  };
+
   const handleEditCategory = (category: StoredRoomCategory) => {
     const categoryToEdit = JSON.parse(JSON.stringify(category));
     const fullPricing = { ...initialNewCategoryState.pricing, ...categoryToEdit.pricing };
@@ -566,6 +599,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         title: categoryToEdit.title,
         qty: categoryToEdit.qty,
         currency: categoryToEdit.currency,
+        houseRules: categoryToEdit.houseRules ? { ...initialHouseRulesState, ...categoryToEdit.houseRules } : { ...initialHouseRulesState },
         pricing: fullPricing,
         roomSize: categoryToEdit.roomSize || "Unknown",
         unavailableDates: Array.isArray(categoryToEdit.unavailableDates) ? categoryToEdit.unavailableDates.map(String).sort() : [],
@@ -704,6 +738,66 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       <div className="space-y-4 pt-6 border-t">
         <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3">Other Property Details</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> <div> <label className="font-medium text-gray-700">Property Rating (Stars)</label> <Input type="number" value={formData.propertyRating || 0} onChange={(e) => handleChange("propertyRating", parseFloat(e.target.value) || 0)} min={0} max={5} step={0.5} /> </div> <div> <label className="font-medium text-gray-700">Google Maps Link (Optional)</label> <Input value={formData.googleMaps || ""} onChange={(e) => handleChange("googleMaps", e.target.value || "")} placeholder="https://maps.app.goo.gl/..." /> </div> </div>
+      </div>
+      <div className="space-y-4 pt-6 border-t">
+        <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center">
+          <ClipboardList className="mr-3 h-6 w-6 text-primary"/>House Rules
+        </h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="font-medium text-gray-700">Check-in Time</label>
+            <Input
+              type="time"
+              value={formData.houseRules?.checkInTime || ''}
+              onChange={(e) => handleChange("houseRules.checkInTime", e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="font-medium text-gray-700">Check-out Time</label>
+            <Input
+              type="time"
+              value={formData.houseRules?.checkOutTime || ''}
+              onChange={(e) => handleChange("houseRules.checkOutTime", e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+            <div className="flex items-center space-x-2">
+                <input type="checkbox" id="smokingAllowed" checked={!!formData.houseRules?.smokingAllowed} onChange={(e) => handleChange("houseRules.smokingAllowed", e.target.checked)} className="form-checkbox h-4 w-4 text-[#003c95] transition duration-150 ease-in-out"/>
+                <label htmlFor="smokingAllowed" className="text-sm text-gray-600 cursor-pointer">Smoking Allowed</label>
+            </div>
+            <div className="flex items-center space-x-2">
+                <input type="checkbox" id="petsAllowed" checked={!!formData.houseRules?.petsAllowed} onChange={(e) => handleChange("houseRules.petsAllowed", e.target.checked)} className="form-checkbox h-4 w-4 text-[#003c95] transition duration-150 ease-in-out"/>
+                <label htmlFor="petsAllowed" className="text-sm text-gray-600 cursor-pointer">Pets Allowed</label>
+            </div>
+            <div className="flex items-center space-x-2">
+                <input type="checkbox" id="partiesAllowed" checked={!!formData.houseRules?.partiesAllowed} onChange={(e) => handleChange("houseRules.partiesAllowed", e.target.checked)} className="form-checkbox h-4 w-4 text-[#003c95] transition duration-150 ease-in-out"/>
+                <label htmlFor="partiesAllowed" className="text-sm text-gray-600 cursor-pointer">Parties/Events Allowed</label>
+            </div>
+        </div>
+        
+        <div>
+            <label className="font-medium text-gray-700">Additional Rules</label>
+            <div className="flex items-end gap-2 mt-1">
+                <div className="flex-grow">
+                    <Input 
+                      value={newAdditionalRule} 
+                      onChange={(e) => setNewAdditionalRule(e.target.value)} 
+                      placeholder="e.g., No visitors after 11 PM"
+                    />
+                </div>
+                <Button type="button" onClick={handleAddAdditionalRule} variant="outline" size="sm" className="px-3 py-2">
+                    <Plus size={16} className="mr-1.5" /> Add
+                </Button>
+            </div>
+            <ChipList
+                items={formData.houseRules?.additionalRules || []}
+                onRemove={handleRemoveAdditionalRule}
+                baseColorClass="bg-gray-100 text-gray-700 border-gray-200"
+            />
+        </div>
       </div>
 
       <div className="space-y-4 pt-6 border-t">

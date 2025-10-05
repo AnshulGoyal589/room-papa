@@ -82,3 +82,12 @@ export interface PricingByMealPlan {
   breakfastOnly: number;
   allMeals: number;
 }
+
+export interface HouseRules {
+  checkInTime?: string;  
+  checkOutTime?: string; 
+  smokingAllowed?: boolean; 
+  petsAllowed?: boolean;   
+  partiesAllowed?: boolean; 
+  additionalRules?: string[]; 
+}

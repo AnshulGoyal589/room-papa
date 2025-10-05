@@ -23,6 +23,7 @@ import PropertyHeader from './PropertyHeader';
 import ImageGalleryAndMap from './ImageGalleryAndMap';
 import AboutProperty from './AboutProperty';
 import { DiscountedPricingByMealPlan, PricingByMealPlan } from '@/types/property';
+import { HouseRules } from './HouseRules';
 
 const LOCAL_STORAGE_KEY = 'propertyBookingPreferences_v3';
 const RESERVATION_DATA_KEY = 'reservationData_v1';
@@ -455,9 +456,30 @@ export default function PropertyDetailPage({ property }: { property: Property | 
             <div className="bg-gray-100">
                 <div className="container mx-auto px-2 sm:px-4 lg:max-w-7xl py-16">
                     
-                    <PropertyHeader title={property.title ?? ''} type={property.type} totalRating={property.totalRating} propertyRating={property.propertyRating} address={property.location.address ?? ''} city={property.location.city ?? ''} />
-                    <ImageGalleryAndMap bannerImage={property.bannerImage} detailImages={property.detailImages} googleMaps={property.googleMaps} title={property.title} type={property.type} amenities={property.amenities} funThingsToDo={property.funThingsToDo} meals={property.meals} />
-                    <AboutProperty description={property.description} />
+                    <PropertyHeader
+                        title={property.title ?? ''}
+                        type={property.type}
+                        totalRating={property.totalRating}
+                        propertyRating={property.propertyRating}
+                        address={property.location.address ?? ''}
+                        city={property.location.city ?? ''}
+                    />
+                    
+                    <ImageGalleryAndMap
+                        bannerImage={property.bannerImage}
+                        detailImages={property.detailImages}
+                        googleMaps={property.googleMaps}
+                        title={property.title}
+                        type={property.type}
+                        amenities={property.amenities}
+                        funThingsToDo={property.funThingsToDo}
+                        meals={property.meals}
+                    />
+                    
+                    <AboutProperty
+                        description={property.description}
+                    />
+
                     <SignedOut>
                         <div className="bg-yellow-50 border border-yellow-300 p-4 rounded-md mb-6 flex flex-col sm:flex-row items-center sm:items-center justify-between text-center sm:text-left gap-4 sm:gap-2">
                             <div className="flex-grow">
@@ -589,8 +611,17 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                         </div>
                     </div>
                     
-                    <GuestReviews reviews={property?.review ?? []} />
-                    <HotelFacilities hotelName={property.title ?? ''} facilities={property.facilities ?? []} amenities={property.amenities ?? []} />
+                    <GuestReviews
+                        reviews={property?.review ?? []}
+                    />
+
+                    <HouseRules rules={property?.houseRules} />
+
+                    <HotelFacilities
+                        hotelName={property.title ?? ''}
+                        facilities={property.facilities ?? []}
+                        amenities={property.amenities ?? []}
+                    />
 
                 </div>
             </div>

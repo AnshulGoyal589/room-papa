@@ -4,7 +4,7 @@ import { Collection, ObjectId } from 'mongodb';
 import { getDb } from '..';
 import { StoredRoomCategory } from '@/types/booking';
 import { Costing, Image, Location, Review } from './Components';
-import { PropertyAmenities, propertyAmenitiesArray, PropertyType } from '@/types/property';
+import { HouseRules, PropertyAmenities, propertyAmenitiesArray, PropertyType } from '@/types/property';
 
 
 export interface Property {
@@ -14,8 +14,6 @@ export interface Property {
   description?: string;
   type: PropertyType;
   location: Location;
-  // startDate: string;
-  // endDate: string;
   costing: Costing;
   totalRating?: number;
   review?: Review[];
@@ -38,6 +36,7 @@ export interface Property {
   roomFacilities?: string[];
   propertyRating?: number;
   googleMaps?: string;
+  houseRules?: HouseRules;
 }
 
 

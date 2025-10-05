@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { MapPin, Users, Tag, Star, X, Plus, Baby, DollarSign as PriceIcon, Utensils, CalendarDays, Sparkles, Wrench, ImageIcon } from 'lucide-react'; // Added CalendarDays, Sparkles, Wrench
+import { MapPin, Users, Tag, Star, X, Plus, Baby, DollarSign as PriceIcon, Utensils, CalendarDays, Sparkles, Wrench, ImageIcon, ClipboardList } from 'lucide-react'; // Added CalendarDays, Sparkles, Wrench
 import { Badge } from '@/components/ui/badge';
 import { Property } from '@/lib/mongodb/models/Property';
 import Image from 'next/image';
@@ -14,6 +14,7 @@ import { HikePricingByOccupancy, StoredRoomCategory } from '@/types/booking';
 import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
 import { CldImage } from 'next-cloudinary';
 import { DiscountedPricingByMealPlan, PricingByMealPlan, RoomCategoryPricing } from '@/types/property';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -32,6 +33,14 @@ const getPrice = (
     return 0;
 };
 
+const initialHouseRulesState = {
+    checkInTime: '',
+    checkOutTime: '',
+    smokingAllowed: false,
+    petsAllowed: false,
+    partiesAllowed: false,
+    additionalRules: [],
+};
 
 const initialHikePricingState: HikePricingByOccupancy = {
     singleOccupancyAdultHike: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
@@ -80,7 +89,8 @@ const initialNewCategoryFormState = {
         startDate: '',
         endDate: '',
         hikePricing: initialHikePricingState,
-    }
+    },
+    houseRules: initialHouseRulesState
 };
 
 
@@ -157,6 +167,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
 
     const [ensurePropertyData, setEnsurePropertyData] = React.useState<Property>(() => ({
         ...item,
+        houseRules: item.houseRules || initialHouseRulesState,
         categoryRooms: Array.isArray(item.categoryRooms) ? item.categoryRooms.map(cat => ({
             ...cat,
             id: cat.id || generateId(),
@@ -169,9 +180,11 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
             categoryActivities: cat.categoryActivities || [],
             categoryFacilities: cat.categoryFacilities || [],
             categoryImages: cat.categoryImages || [],
-            seasonalHike: cat.seasonalHike || undefined 
+            seasonalHike: cat.seasonalHike || undefined
         })) : []
     }));
+
+    const [newAdditionalRule, setNewAdditionalRule] = React.useState('');
 
     const [newCategory, setNewCategory] = React.useState<{
         title: string;
@@ -202,6 +215,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
     useEffect(() => {
         setEnsurePropertyData({
             ...item,
+            houseRules: item.houseRules || initialHouseRulesState,
             categoryRooms: Array.isArray(item.categoryRooms) ? item.categoryRooms.map(cat => ({
                 ...cat,
                 id: cat.id || generateId(),
@@ -221,6 +235,40 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
             currency: item.costing?.currency || prev.currency || "USD"
          }));
     }, [item]);
+
+    const handlePropertyChange = (field: string, value: unknown) => {
+        if (field.includes('.')) {
+            const [parent, child] = field.split('.');
+            setEnsurePropertyData(prev => ({
+                ...prev,
+                [parent]: {
+                    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    ...((prev as any)[parent] as object),
+                    [child]: value
+                }
+            }));
+        } else {
+            setEnsurePropertyData(prev => ({ ...prev, [field]: value as Property[keyof Property] }));
+        }
+    };
+
+    const handleAddAdditionalRule = () => {
+        const ruleToAdd = newAdditionalRule.trim();
+        if (ruleToAdd) {
+            const currentRules = ensurePropertyData.houseRules?.additionalRules || [];
+            if (!currentRules.includes(ruleToAdd)) {
+                handlePropertyChange('houseRules.additionalRules', [...currentRules, ruleToAdd]);
+                setNewAdditionalRule('');
+            } else {
+                alert("This rule is already added.");
+            }
+        }
+    };
+
+    const handleRemoveAdditionalRule = (ruleToRemove: string) => {
+        const currentRules = ensurePropertyData.houseRules?.additionalRules || [];
+        handlePropertyChange('houseRules.additionalRules', currentRules.filter(r => r !== ruleToRemove));
+    };
 
     const handleNewCategoryFieldChange = (
         field: keyof Omit<typeof newCategory, 'pricing' | 'currentCategoryActivities' | 'currentCategoryFacilities'>,
@@ -498,6 +546,90 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
             </div>
 
             <GoogleMapsSection item={ensurePropertyData} />
+
+            <div className="border-t pt-8 mt-8">
+                <h3 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                    <ClipboardList className="w-6 h-6 mr-2 text-gray-600" />
+                    House Rules
+                </h3>
+
+                {!isEditable ? (
+                    // --- DISPLAY MODE ---
+                    <div className="space-y-4 text-gray-700">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <p className="font-semibold">Check-in Time:</p>
+                                <p>{ensurePropertyData.houseRules?.checkInTime || 'Not specified'}</p>
+                            </div>
+                            <div>
+                                <p className="font-semibold">Check-out Time:</p>
+                                <p>{ensurePropertyData.houseRules?.checkOutTime || 'Not specified'}</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <p><span className="font-semibold">Smoking:</span> {ensurePropertyData.houseRules?.smokingAllowed ? 'Allowed' : 'Not Allowed'}</p>
+                            <p><span className="font-semibold">Pets:</span> {ensurePropertyData.houseRules?.petsAllowed ? 'Allowed' : 'Not Allowed'}</p>
+                            <p><span className="font-semibold">Parties/Events:</span> {ensurePropertyData.houseRules?.partiesAllowed ? 'Allowed' : 'Not Allowed'}</p>
+                        </div>
+                        {ensurePropertyData.houseRules?.additionalRules && ensurePropertyData.houseRules.additionalRules.length > 0 && (
+                            <div>
+                                <p className="font-semibold mb-2">Additional Rules:</p>
+                                <ul className="list-disc list-inside space-y-1 pl-2">
+                                    {ensurePropertyData.houseRules.additionalRules.map((rule, index) => (
+                                        <li key={index}>{rule}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    // --- EDIT MODE ---
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormItem>
+                                <FormLabel>Check-in Time</FormLabel>
+                                <Input
+                                    type="time"
+                                    value={ensurePropertyData.houseRules?.checkInTime || ''}
+                                    onChange={(e) => handlePropertyChange('houseRules.checkInTime', e.target.value)}
+                                />
+                            </FormItem>
+                            <FormItem>
+                                <FormLabel>Check-out Time</FormLabel>
+                                <Input
+                                    type="time"
+                                    value={ensurePropertyData.houseRules?.checkOutTime || ''}
+                                    onChange={(e) => handlePropertyChange('houseRules.checkOutTime', e.target.value)}
+                                />
+                            </FormItem>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="smokingAllowed" checked={ensurePropertyData.houseRules?.smokingAllowed} onCheckedChange={(checked) => handlePropertyChange('houseRules.smokingAllowed', !!checked)} />
+                                <Label htmlFor="smokingAllowed">Smoking Allowed</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="petsAllowed" checked={ensurePropertyData.houseRules?.petsAllowed} onCheckedChange={(checked) => handlePropertyChange('houseRules.petsAllowed', !!checked)} />
+                                <Label htmlFor="petsAllowed">Pets Allowed</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <Checkbox id="partiesAllowed" checked={ensurePropertyData.houseRules?.partiesAllowed} onCheckedChange={(checked) => handlePropertyChange('houseRules.partiesAllowed', !!checked)} />
+                                <Label htmlFor="partiesAllowed">Parties/Events Allowed</Label>
+                            </div>
+                        </div>
+                        <div>
+                            <FormLabel>Additional Rules</FormLabel>
+                            <div className="flex flex-col sm:flex-row gap-2 items-start mt-2">
+                                <Input value={newAdditionalRule} onChange={(e) => setNewAdditionalRule(e.target.value)} placeholder="e.g., Quiet hours after 10 PM" className="flex-grow" />
+                                <Button type="button" variant="outline" onClick={handleAddAdditionalRule} size="sm" className="w-full sm:w-auto">
+                                    <Plus size={16} className="mr-1" /> Add Rule
+                                </Button>
+                            </div>
+                            <ChipListDisplay items={ensurePropertyData.houseRules?.additionalRules} onRemove={handleRemoveAdditionalRule} />
+                        </div>
+                    </div>
+                )}
+            </div>
 
             {(isEditable || (currentCategories && currentCategories.length > 0)) && (
                 <div className="border-t pt-8 mt-8">
