@@ -2,10 +2,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-    PricingByMealPlan,
-    DiscountedPricingByMealPlan
-} from '@/types';
-import {
     Coffee as CoffeeIconLucide, CheckCircle, Users as UsersIcon, CalendarOff,
     AlertTriangle, Bed,
     Utensils,
@@ -26,6 +22,7 @@ import { HotelFacilities } from './HotelFacilities';
 import PropertyHeader from './PropertyHeader';
 import ImageGalleryAndMap from './ImageGalleryAndMap';
 import AboutProperty from './AboutProperty';
+import { DiscountedPricingByMealPlan, PricingByMealPlan } from '@/types/property';
 
 const LOCAL_STORAGE_KEY = 'propertyBookingPreferences_v3';
 const RESERVATION_DATA_KEY = 'reservationData_v1';

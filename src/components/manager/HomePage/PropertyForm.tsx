@@ -17,12 +17,11 @@ import { Label } from '@/components/ui/label';
 import { Plus, X, Home, MapPin, DollarSign, BedDouble, ListChecks, ShieldCheck, Users, Baby, Utensils, CalendarOff, Sparkles, Wrench, CalendarDays } from 'lucide-react';
 import { categoryOptions } from '../../../../public/assets/data';
 
-import { DiscountedPricingByMealPlan, PricingByMealPlan } from '@/types';
 
-import { HikePricingByOccupancy, RoomCategoryPricing, StoredRoomCategory } from '@/types/booking';
+import { HikePricingByOccupancy, StoredRoomCategory } from '@/types/booking';
 import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
 import { ExtendedProperty, Image, Period, PropertyFormProps, SeasonalCoasting } from '@/lib/mongodb/models/Components';
-import { propertyAmenitiesArray, PropertyType } from '@/types/property';
+import { DiscountedPricingByMealPlan, PricingByMealPlan, propertyAmenitiesArray, PropertyType, RoomCategoryPricing } from '@/types/property';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 

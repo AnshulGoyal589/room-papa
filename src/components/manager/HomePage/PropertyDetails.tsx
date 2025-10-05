@@ -8,16 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FormItem, FormLabel } from '@/components/ui/form';
 import GoogleMapsSection from './GoogleMapsSection';
 import { Image as ImageType, Period, SeasonalCoasting } from '@/lib/mongodb/models/Components'; 
-
-import {
-    PricingByMealPlan,
-    DiscountedPricingByMealPlan
-} from '@/types';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { HikePricingByOccupancy, RoomCategoryPricing, StoredRoomCategory } from '@/types/booking';
+import { HikePricingByOccupancy, StoredRoomCategory } from '@/types/booking';
 import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
 import { CldImage } from 'next-cloudinary';
+import { DiscountedPricingByMealPlan, PricingByMealPlan, RoomCategoryPricing } from '@/types/property';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 

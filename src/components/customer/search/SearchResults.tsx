@@ -23,6 +23,8 @@ import { Property } from '@/lib/mongodb/models/Property';
 import { Trip } from '@/lib/mongodb/models/Trip';
 import { Travelling } from '@/lib/mongodb/models/Travelling'; 
 import { Review } from '@/lib/mongodb/models/Components';
+import { RoomCategoryPricing } from '@/types/property';
+import { getMinPropertyPrice } from '@/lib/data/property';
 
 export enum TransportationType {
   flight = 'flight',
@@ -73,12 +75,13 @@ const calculateNights = (checkInStr?: string | null, checkOutStr?: string | null
   }
 };
 
-const calculateTotalPricePerNight = (
+
+
+const calculateTotalDiscountedPricePerNight = (
     adults: number, 
     children: number, 
     rooms: number, 
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    pricing?: any,
+    pricing?: RoomCategoryPricing,
     fallbackPrice?: number
 ): number | undefined => {
     if (!pricing || adults <= 0 || rooms <= 0) {
@@ -97,17 +100,61 @@ const calculateTotalPricePerNight = (
         const occupants = i < extraAdults ? baseAdultsPerRoom + 1 : baseAdultsPerRoom;
         switch (occupants) {
             case 1:
-                totalAdultPrice += pricing.discountedSingleOccupancyAdultPrice?.noMeal ?? 0;
+                totalAdultPrice += getMinPropertyPrice(pricing.discountedSingleOccupancyAdultPrice);
                 break;
             case 2:
-                totalAdultPrice += pricing.discountedDoubleOccupancyAdultPrice?.noMeal ?? 0;
+                totalAdultPrice += getMinPropertyPrice(pricing.discountedDoubleOccupancyAdultPrice);
                 break;
             case 3:
-                 totalAdultPrice += pricing.discountedTripleOccupancyAdultPrice?.noMeal ?? 0;
+                 totalAdultPrice += getMinPropertyPrice(pricing.discountedTripleOccupancyAdultPrice);
                  break;
             default:
                 if (occupants > 3) {
-                    totalAdultPrice += pricing.discountedTripleOccupancyAdultPrice?.noMeal ?? 0;
+                    totalAdultPrice += getMinPropertyPrice(pricing.discountedTripleOccupancyAdultPrice);
+                }
+                break;
+        }
+    }
+
+    const totalChildPrice = children * (pricing.discountedChild5to12Price?.noMeal ?? 0);
+    
+    return totalAdultPrice + totalChildPrice;
+};
+
+const calculateTotalBasePricePerNight = (
+    adults: number, 
+    children: number, 
+    rooms: number, 
+    pricing?: RoomCategoryPricing,
+    fallbackPrice?: number
+): number | undefined => {
+    if (!pricing || adults <= 0 || rooms <= 0) {
+        return fallbackPrice;
+    }
+
+    let totalAdultPrice = 0;
+    const baseAdultsPerRoom = Math.floor(adults / rooms);
+    const extraAdults = adults % rooms;
+
+    if (adults > rooms * 3) {
+        console.warn(`Number of adults (${adults}) exceeds maximum capacity for ${rooms} rooms (3 per room). Pricing may be inaccurate.`);
+    }
+
+    for (let i = 0; i < rooms; i++) {
+        const occupants = i < extraAdults ? baseAdultsPerRoom + 1 : baseAdultsPerRoom;
+        switch (occupants) {
+            case 1:
+                totalAdultPrice += getMinPropertyPrice(pricing.singleOccupancyAdultPrice);
+                break;
+            case 2:
+                totalAdultPrice += getMinPropertyPrice(pricing.doubleOccupancyAdultPrice);
+                break;
+            case 3:
+                 totalAdultPrice += getMinPropertyPrice(pricing.tripleOccupancyAdultPrice);
+                 break;
+            default:
+                if (occupants > 3) {
+                    totalAdultPrice += getMinPropertyPrice(pricing.tripleOccupancyAdultPrice);
                 }
                 break;
         }
@@ -212,22 +259,22 @@ export default function SearchResults() {
     const hasFreeCancellation = property.reservationPolicy?.includes("Free Cancellation");
     const hasNoPrepayment = property.reservationPolicy?.includes("No prepayment needed") || property.reservationPolicy?.includes("Pay at Property");
     
-    let propertyCostingDiscountedPrice = calculateTotalPricePerNight(
+    let propertyCostingDiscountedPrice = calculateTotalDiscountedPricePerNight(
         numAdults,
         numChildren,
         parseInt(roomsQuery, 10),
         representativeRoom?.pricing,
         property.costing?.discountedPrice
     );
-
     if( propertyCostingDiscountedPrice==0 ){
-        propertyCostingDiscountedPrice = calculateTotalPricePerNight(
+        
+        propertyCostingDiscountedPrice = calculateTotalBasePricePerNight(
           numAdults,
           numChildren,
           parseInt(roomsQuery, 10),
           representativeRoom?.pricing,
           property.costing?.price
-      ); 
+      );
     }
 
     const currencySymbol = property.costing?.currency === 'INR' ? '₹' : (property.costing?.currency || '$');

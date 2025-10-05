@@ -59,3 +59,26 @@ export interface PropertySearchParams extends SearchParams {
   amenities?: PropertyAmenities[];
   rooms?: number;
 }
+
+export interface RoomCategoryPricing {
+  singleOccupancyAdultPrice: PricingByMealPlan;
+  discountedSingleOccupancyAdultPrice: DiscountedPricingByMealPlan;
+  doubleOccupancyAdultPrice: PricingByMealPlan;
+  discountedDoubleOccupancyAdultPrice: DiscountedPricingByMealPlan;
+  tripleOccupancyAdultPrice: PricingByMealPlan;
+  discountedTripleOccupancyAdultPrice: DiscountedPricingByMealPlan;
+  child5to12Price: PricingByMealPlan;
+  discountedChild5to12Price: DiscountedPricingByMealPlan;
+}
+
+export interface DiscountedPricingByMealPlan {
+  noMeal: number;       
+  breakfastOnly: number;
+  allMeals: number;
+}
+
+export interface PricingByMealPlan {
+  noMeal: number;
+  breakfastOnly: number;
+  allMeals: number;
+}

@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb";
-import { RoomCategoryPricing } from "./booking";
+import { RoomCategoryPricing } from "./property";
 
 export type PopularFilters = 'Free cancellation' | 'No prepayment' | 'Book without credit card' | 'Breakfast & dinner included' | 'Swimming Pool';
 export type RoomAccessibility = 'Entire unit located on ground floor' | 'Upper floors accessible by elevator' | 'Entire unit wheelchair accessible' | 'Toilet with grab rails' | 'Adapted bath' | 'Roll-in shower' | 'Walk-in shower' | 'Raised toilet' | 'Lowered sink' | 'Emergency cord in bathroom' | 'Shower chair';
@@ -17,17 +17,7 @@ export interface SearchHeaderProps {
 }
   
 
-export interface PricingByMealPlan {
-  noMeal: number;
-  breakfastOnly: number;
-  allMeals: number; // Represents Breakfast + Lunch/Dinner
-}
 
-export interface DiscountedPricingByMealPlan {
-  noMeal?: number;        // Use optional if discount might not exist
-  breakfastOnly?: number;
-  allMeals?: number;
-}
 
 
 

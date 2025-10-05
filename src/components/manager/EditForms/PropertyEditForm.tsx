@@ -15,10 +15,6 @@ import { Image as ImageType, Period, SeasonalCoasting } from "@/lib/mongodb/mode
 import MultipleImageUpload from "@/components/cloudinary/MultipleImageUpload";
 import { Badge as UiBadge } from "@/components/ui/badge";
 import {
-  PricingByMealPlan,
-  DiscountedPricingByMealPlan
-} from "@/types";
-import {
   X,
   Plus,
   Edit,
@@ -37,9 +33,9 @@ import {
   Sparkles,
   Wrench,
 } from "lucide-react";
-import { HikePricingByOccupancy, RoomCategoryPricing, StoredRoomCategory } from "@/types/booking";
+import { HikePricingByOccupancy, StoredRoomCategory } from "@/types/booking";
 import { CldImage } from "next-cloudinary";
-import { propertyAmenitiesArray, PropertyType } from "@/types/property";
+import { DiscountedPricingByMealPlan, PricingByMealPlan, propertyAmenitiesArray, PropertyType, RoomCategoryPricing } from "@/types/property";
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 
