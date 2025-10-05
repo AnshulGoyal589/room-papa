@@ -41,7 +41,6 @@ export default function ManagerUsersClientView({ initialManagers }: ManagerUsers
         throw new Error(`Failed to update manager status`);
       }
 
-      // Update local state optimistically for a snappy UI.
       setManagers(currentManagers => 
         currentManagers.map(manager => 
           manager.clerkId === id ? { ...manager, status } : manager

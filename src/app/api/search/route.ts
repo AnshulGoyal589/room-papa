@@ -18,13 +18,8 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
-    // console.log("Search Params: ", searchParams);
     const query = buildSearchQuery(searchParams);
     const sort = buildSortQuery(searchParams);
-    
-    console.log("Final Query: ", JSON.stringify(query));
-    // console.log("Sort: ", JSON.stringify(sort));
-
     const collectionName = getCategoryCollection(category);
     if (!collectionName) {
       return NextResponse.json(
@@ -32,7 +27,6 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
-    // console.log("Query: ",query);
     const total = await db.collection(collectionName).countDocuments(query);
     const results = await db.collection(collectionName)
       .find(query)
@@ -41,7 +35,6 @@ export async function GET(request: NextRequest) {
 
       
     const plainResults = serializeDocuments(results);
-    // console.log("Results: ",plainResults);
     
     return NextResponse.json({ 
       results: plainResults, 
@@ -80,7 +73,6 @@ function validateSearchParams(searchParams: URLSearchParams) {
     }
   }
   
-  // Validate numeric params
   const numericParams = ['minPrice', 'maxPrice', 'totalRating', 'propertyRating', 'travellingRating'];
   
   for (const param of numericParams) {
@@ -95,10 +87,10 @@ function validateSearchParams(searchParams: URLSearchParams) {
 function buildSearchQuery(searchParams: URLSearchParams): QueryType {
   const query: QueryType = {};
   const category = searchParams.get('category') || 'property';
-  // Basic text search for general search input
+  
   if (searchParams.has('title')) {
     const titleQuery = searchParams.get('title') as string;
-    // console.log("Title Query: ", titleQuery);
+    
     query.$or = [
       { 'title': { $regex: titleQuery, $options: 'i' } },
       { 'destination.city': { $regex: titleQuery, $options: 'i' } },
@@ -127,12 +119,9 @@ function buildSearchQuery(searchParams: URLSearchParams): QueryType {
       { 'activities': { $elemMatch: { $regex: titleQuery2, $options: 'i' } } },
     ];
   }
-  // Common filters across all categories
+
   addPriceRangeFilter(query, searchParams);
-  // addCurrencyFilter(query, searchParams);
-  // addRatingFilter(query, searchParams);
-  
-  // Apply category-specific filters
+
   const filterFunctions: Record<string, (q: QueryType, sp: URLSearchParams) => void> = {
     'property': addPropertyFilters,
     'travelling': addTravellingFilters,
@@ -143,7 +132,6 @@ function buildSearchQuery(searchParams: URLSearchParams): QueryType {
     filterFunctions[category.toLowerCase()](query, searchParams);
   }
   
-  // Add common category filters for all modes
   addCommonCategoryFilters(query, searchParams);
   
   return query;
@@ -153,8 +141,6 @@ function addPriceRangeFilter(query: Record<string, any>, searchParams: URLSearch
 
   const minPrice = searchParams.get('minPrice');
   const maxPrice = searchParams.get('maxPrice');
-
-  // console.log("Min Price: ", minPrice, " Max Price: ", maxPrice);
 
   if (minPrice || maxPrice) {
     query['costing.discountedPrice'] = {};

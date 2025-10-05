@@ -73,21 +73,12 @@ const calculateNights = (checkInStr?: string | null, checkOutStr?: string | null
   }
 };
 
-/**
- * Calculates the total discounted price per night for a property based on occupancy.
- * @param adults - Number of adults.
- * @param children - Number of children.
- * @param rooms - Number of rooms.
- * @param pricing - The pricing object from a categoryRoom.
- * @param fallbackPrice - A default price to use if calculation is not possible.
- * @returns The calculated total price for one night, or the fallback price.
- */
 const calculateTotalPricePerNight = (
     adults: number, 
     children: number, 
     rooms: number, 
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    pricing?:any,
+    pricing?: any,
     fallbackPrice?: number
 ): number | undefined => {
     if (!pricing || adults <= 0 || rooms <= 0) {
@@ -115,8 +106,6 @@ const calculateTotalPricePerNight = (
                  totalAdultPrice += pricing.discountedTripleOccupancyAdultPrice?.noMeal ?? 0;
                  break;
             default:
-                // For occupants > 3, use the triple occupancy price as a cap.
-                // For occupants <= 0, price is 0 (this case is handled by loop structure).
                 if (occupants > 3) {
                     totalAdultPrice += pricing.discountedTripleOccupancyAdultPrice?.noMeal ?? 0;
                 }
@@ -223,13 +212,23 @@ export default function SearchResults() {
     const hasFreeCancellation = property.reservationPolicy?.includes("Free Cancellation");
     const hasNoPrepayment = property.reservationPolicy?.includes("No prepayment needed") || property.reservationPolicy?.includes("Pay at Property");
     
-    const propertyCostingDiscountedPrice = calculateTotalPricePerNight(
+    let propertyCostingDiscountedPrice = calculateTotalPricePerNight(
         numAdults,
         numChildren,
         parseInt(roomsQuery, 10),
         representativeRoom?.pricing,
         property.costing?.discountedPrice
     );
+
+    if( propertyCostingDiscountedPrice==0 ){
+        propertyCostingDiscountedPrice = calculateTotalPricePerNight(
+          numAdults,
+          numChildren,
+          parseInt(roomsQuery, 10),
+          representativeRoom?.pricing,
+          property.costing?.price
+      ); 
+    }
 
     const currencySymbol = property.costing?.currency === 'INR' ? '₹' : (property.costing?.currency || '$');
     const taxesAndCharges = property.costing ? (property.costing.price * 0.1) : 0; // Note: This tax calc is a sample and may need to be adjusted.
@@ -336,7 +335,6 @@ export default function SearchResults() {
             ) : (
             <div className="flex flex-col items-end mb-1">
               <p className="text-xs text-gray-500 mb-1">No reviews yet</p>
-              {/* <span className="text-[10px] text-gray-400 italic"></span> */}
             </div>
             )}
         </div>
