@@ -95,7 +95,7 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
         if (!reservationDetails) return [];
         const instances: { key: string; offer: DisplayableRoomOffer }[] = [];
         Object.entries(reservationDetails.selectedOffers).forEach(([offerId, qty]) => {
-            const offer = reservationDetails.displayableRoomOffers.find(o => o.offerId === offerId);
+            const offer = reservationDetails.displayableRoomOffers?.find(o => o.offerId === offerId);
             if (offer) {
                 for (let i = 0; i < qty; i++) {
                     instances.push({ key: `${offerId}-${i}`, offer });
@@ -293,7 +293,7 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                             totalGuests: globalGuestCount,
                                             totalRoomsSelected: reservationDetails.totalSelectedPhysicalRooms,
                                             selectedMealPlan: reservationDetails.selectedMealPlan,
-                                            roomsDetail: Object.entries(reservationDetails.selectedOffers).filter(([, qty]) => qty > 0).map(([offerId, qty]) => { const offer = reservationDetails.displayableRoomOffers.find(o => o.offerId === offerId); return { categoryId: propertyId || 'unknown',
+                                            roomsDetail: Object.entries(reservationDetails.selectedOffers).filter(([, qty]) => qty > 0).map(([offerId, qty]) => { const offer = reservationDetails.displayableRoomOffers?.find(o => o.offerId === offerId); return { categoryId: propertyId || 'unknown',
                                             offerKey: offerId.split('_').slice(1).join('_'),
                                             title: offer?.categoryTitle || 'Unknown', qty,
                                             estimatedPricePerRoomNight: offer?.pricePerNight || 0,

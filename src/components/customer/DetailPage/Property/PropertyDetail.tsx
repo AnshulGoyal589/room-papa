@@ -216,6 +216,7 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                         ? validateDate(parsedPrefs.checkOutDate)
                         : null
                     );
+                    console.log("one: ",parsedPrefs);
                     // setCheckOutDate(parsedPrefs.checkOutDate ? validateDate(parsedPrefs.checkOutDate) : null);
                     setAdultCount(parsedPrefs.adultCount || localStorage.getItem('adults') || 1);
                     setChildCount(parsedPrefs.childCount || localStorage.getItem('children') || 0);
@@ -228,9 +229,9 @@ export default function PropertyDetailPage({ property }: { property: Property | 
         // Fallback for new visit or different property
         // setCheckInDate(null);
         // setCheckOutDate(null);
-        setAdultCount(localStorage.getItem('adults') ? parseInt(localStorage.getItem('adults')!) : 1);
-        setChildCount(localStorage.getItem('children') ? parseInt(localStorage.getItem('children')!) : 0);
-        setSelectedOffers({});
+        // setAdultCount(localStorage.getItem('adults') ? parseInt(localStorage.getItem('adults')!) : 1);
+        // setChildCount(localStorage.getItem('children') ? parseInt(localStorage.getItem('children')!) : 0);
+        // setSelectedOffers({});
     }, [property]);
 
     // Effect for saving state to localStorage

@@ -9,6 +9,7 @@ export const metadata: Metadata = {
 
 export default async function BookPropertyPage({ params }: { params: Promise<{ id: string }> }) {
     const param = await params;
+    const id = param.id;
     return (
         <Suspense fallback={
             <div className="flex justify-center items-center min-h-screen bg-gray-100">
@@ -18,7 +19,7 @@ export default async function BookPropertyPage({ params }: { params: Promise<{ i
                 </div>
             </div>
         }>
-            <ReservationForm propertyId={param.id} />
+            <ReservationForm propertyId={id} />
         </Suspense>
     );
 }
