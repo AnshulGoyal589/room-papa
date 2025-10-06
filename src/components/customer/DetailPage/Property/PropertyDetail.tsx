@@ -198,9 +198,27 @@ export default function PropertyDetailPage({ property }: { property: Property | 
         if (storedPrefsStr) {
             try {
                 const parsedPrefs = JSON.parse(storedPrefsStr);
+                // console.log( parsedPrefs );
                 if (parsedPrefs.propertyId === property._id?.toString()) {
-                    setCheckInDate(parsedPrefs.checkInDate ? validateDate(parsedPrefs.checkInDate) : null);
-                    setCheckOutDate(parsedPrefs.checkOutDate ? validateDate(parsedPrefs.checkOutDate) : null);
+                    const storedCheckIn = localStorage.getItem('checkIn');
+
+                    setCheckInDate(
+                    storedCheckIn
+                        ? new Date(storedCheckIn) 
+                        : parsedPrefs.checkInDate
+                        ? validateDate(parsedPrefs.checkInDate)
+                        : null
+                    );
+                    
+                    const storedCheckOut = localStorage.getItem('checkOut');
+                    setCheckOutDate(
+                    storedCheckOut
+                        ? new Date(storedCheckOut) 
+                        : parsedPrefs.checkOutDate
+                        ? validateDate(parsedPrefs.checkOutDate)
+                        : null
+                    );
+                    // setCheckOutDate(parsedPrefs.checkOutDate ? validateDate(parsedPrefs.checkOutDate) : null);
                     setAdultCount(parsedPrefs.adultCount || localStorage.getItem('adults') || 1);
                     setChildCount(parsedPrefs.childCount || localStorage.getItem('children') || 0);
                     setSelectedOffers(parsedPrefs.selectedOffers || {});
@@ -210,8 +228,8 @@ export default function PropertyDetailPage({ property }: { property: Property | 
             } catch (e) { console.error("Failed to parse stored preferences:", e); }
         }
         // Fallback for new visit or different property
-        setCheckInDate(null);
-        setCheckOutDate(null);
+        // setCheckInDate(null);
+        // setCheckOutDate(null);
         setAdultCount(localStorage.getItem('adults') ? parseInt(localStorage.getItem('adults')!) : 1);
         setChildCount(localStorage.getItem('children') ? parseInt(localStorage.getItem('children')!) : 0);
         setSelectedOffers({});
