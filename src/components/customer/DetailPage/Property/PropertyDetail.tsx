@@ -198,23 +198,21 @@ export default function PropertyDetailPage({ property }: { property: Property | 
         if (storedPrefsStr) {
             try {
                 const parsedPrefs = JSON.parse(storedPrefsStr);
+                const storedCheckIn = localStorage.getItem('checkIn');
+                const storedCheckOut = localStorage.getItem('checkOut');
+                if( storedCheckIn ) setCheckInDate( new Date(storedCheckIn) );
+                if( storedCheckOut ) setCheckOutDate( new Date(storedCheckOut) );
                 // console.log( parsedPrefs );
                 if (parsedPrefs.propertyId === property._id?.toString()) {
-                    const storedCheckIn = localStorage.getItem('checkIn');
 
                     setCheckInDate(
-                    storedCheckIn
-                        ? new Date(storedCheckIn) 
-                        : parsedPrefs.checkInDate
+                        parsedPrefs.checkInDate
                         ? validateDate(parsedPrefs.checkInDate)
                         : null
                     );
                     
-                    const storedCheckOut = localStorage.getItem('checkOut');
                     setCheckOutDate(
-                    storedCheckOut
-                        ? new Date(storedCheckOut) 
-                        : parsedPrefs.checkOutDate
+                        parsedPrefs.checkOutDate
                         ? validateDate(parsedPrefs.checkOutDate)
                         : null
                     );
