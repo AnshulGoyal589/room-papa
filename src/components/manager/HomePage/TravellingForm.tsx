@@ -32,7 +32,7 @@ const initialTravellingData: Travelling = {
   costing: {
     price: 0,
     discountedPrice: 0,
-    currency: 'USD',
+    currency: 'INR',
   },
   amenities: [],
   accessibility: [], // Renamed to vehicleAccessibility in renderMultiSelect call

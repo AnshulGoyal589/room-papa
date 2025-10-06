@@ -25,6 +25,11 @@ export interface Costing {
     currency: string;
 }
 
+export interface CurrencyCosting {
+    price: number;
+    currency: string;
+}
+
 export interface Image {
   url: string;
   publicId?: string;

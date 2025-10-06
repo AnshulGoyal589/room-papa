@@ -267,7 +267,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     if (!isEditMode) {
         setNewCategory({
             ...initialNewCategoryState,
-            currency: formData.costing?.currency || item.costing?.currency || "USD",
+            currency: formData.costing?.currency || item.costing?.currency || "INR",
         });
         setCurrentUnavailableDateInput("");
         setNewCategoryActivityInput("");
@@ -281,7 +281,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
 //     if (currentCategories && currentCategories.length > 0) {
 //       let minOverallPrice = Infinity;
 //       let minOverallDiscountedPrice = Infinity;
-//       let leadCurrency = currentCategories[0].currency || "USD";
+//       let leadCurrency = currentCategories[0].currency || "INR";
 //       const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
 
 //       currentCategories.forEach((cat: StoredRoomCategory) => {
@@ -307,7 +307,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
 //       if (finalDiscountedPrice >= (minOverallPrice === Infinity ? 0 : minOverallPrice) && minOverallPrice !== Infinity) { finalDiscountedPrice = minOverallPrice; }
 //       setFormData(prev => ({ ...prev, costing: { price: minOverallPrice === Infinity ? 0 : parseFloat(minOverallPrice.toFixed(2)), discountedPrice: parseFloat(finalDiscountedPrice.toFixed(2)), currency: leadCurrency }, rooms: totalRooms }));
 //     } else {
-//       setFormData(prev => ({ ...prev, costing: { price: 0, discountedPrice: 0, currency: prev.costing?.currency || 'USD' }, rooms: 0 }));
+//       setFormData(prev => ({ ...prev, costing: { price: 0, discountedPrice: 0, currency: prev.costing?.currency || 'INR' }, rooms: 0 }));
 //     }
 //   }, [formData.categoryRooms]);
 
@@ -317,7 +317,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     if (currentCategories && currentCategories.length > 0) {
       let minOverallPrice = Infinity;
       let minOverallDiscountedPrice = Infinity;
-      let leadCurrency = currentCategories[0].currency || "USD"; // Default to first category's currency or USD
+      let leadCurrency = currentCategories[0].currency || "INR"; // Default to first category's currency or INR
 
       const mealPlanPriorities: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
 
@@ -384,7 +384,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       if (formData.costing?.price !== 0 || formData.costing?.discountedPrice !== 0 || formData.rooms !== 0) {
         setFormData(prev => ({ 
           ...prev, 
-          costing: { price: 0, discountedPrice: 0, currency: prev.costing?.currency || 'USD' }, // Keep existing currency if possible
+          costing: { price: 0, discountedPrice: 0, currency: prev.costing?.currency || 'INR' }, // Keep existing currency if possible
           rooms: 0 
         }));
       }
@@ -810,7 +810,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
             {(formData.categoryRooms || []).map((cat: StoredRoomCategory) => {
                 const pricing = cat.pricing || initialNewCategoryState.pricing;
                 // console.log( "Testing Pricing" , pricing);
-                const currency = cat.currency || "USD";
+                const currency = cat.currency || "INR";
                 return (
                 <div key={cat.id} className="p-4 bg-white border border-gray-200 rounded-lg shadow">
                     <div className="flex items-start justify-between mb-4 pb-3 border-b">

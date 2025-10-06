@@ -31,6 +31,7 @@ import {
   useClerk
 } from '@clerk/nextjs';
 import { QuestionMarkCircledIcon } from '@radix-ui/react-icons';
+import CurrencySwitcher from '../customer/HomePage/CurrencySwitcher';
 
 // Type definition for user role
 type UserRole = 'customer' | 'manager' | 'admin' | 'guest';
@@ -241,6 +242,12 @@ export function Header() {
         </nav>
 
         <div className="hidden md:flex items-center gap-2">
+
+          {
+            role && (role === 'customer' || role === 'guest') && (
+              <CurrencySwitcher />
+            )
+          }
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>

@@ -47,7 +47,7 @@ const initialTripData: Trip = {
   costing: {
     price: 0,
     discountedPrice: 0,
-    currency: 'USD',
+    currency: 'INR',
   },
   totalRating: 0,
   activities: [],

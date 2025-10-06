@@ -64,7 +64,7 @@ const hikePricingConfig: HikePricingRowConfig[] = [
 const initialNewCategoryFormState = {
     title: '',
     qty: 1,
-    currency: 'USD',
+    currency: 'INR',
     pricing: {
         singleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
         discountedSingleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
@@ -208,7 +208,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
         };
     }>({
         ...initialNewCategoryFormState,
-        currency: item.costing?.currency || "USD",
+        currency: item.costing?.currency || "INR",
         roomSize: initialNewCategoryFormState.roomSize || "Unknown"
     });
 
@@ -232,7 +232,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
         });
         setNewCategory(prev => ({
             ...initialNewCategoryFormState,
-            currency: item.costing?.currency || prev.currency || "USD"
+            currency: item.costing?.currency || prev.currency || "INR"
          }));
     }, [item]);
 
@@ -523,7 +523,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
 
     const displayPrice = ensurePropertyData.costing?.price || 0;
     const displayDiscountedPrice = ensurePropertyData.costing?.discountedPrice || 0;
-    const displayCurrency = ensurePropertyData.costing?.currency || 'USD';
+    const displayCurrency = ensurePropertyData.costing?.currency || 'INR';
     let displayTotalRooms = ensurePropertyData.rooms || 0;
 
     const currentCategories = ensurePropertyData.categoryRooms || [];
@@ -638,7 +638,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                         <div className="mb-6 space-y-4">
                              {currentCategories.map((cat: StoredRoomCategory) => {
                                 const pricing = cat?.pricing || initialNewCategoryFormState.pricing;
-                                const currency = cat.currency || 'USD';
+                                const currency = cat.currency || 'INR';
                                 return (
                                     <div key={cat.id} className="p-4 bg-gray-50 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
                                         <div className="flex items-start justify-between mb-4 pb-3 border-b">

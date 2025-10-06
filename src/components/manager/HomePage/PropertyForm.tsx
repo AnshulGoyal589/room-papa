@@ -823,7 +823,7 @@ useEffect(() => {
           {/* Availability Period */}
           <div className="pt-4 border-t">
             <FormLabel className="text-md font-medium text-foreground mb-3 block flex items-center">
-                <CalendarDays className="inline h-5 w-5 mr-2 text-primary" /> Availability Periods (Optional)
+                <CalendarDays className="inline h-5 w-5 mr-2 text-primary" /> BULK UPDATE Availability Periods (Optional)
                 </FormLabel>
                 <p className="text-xs text-muted-foreground mb-4">
                     If no periods are added, the category is considered always available (unless blocked by unavailable dates).

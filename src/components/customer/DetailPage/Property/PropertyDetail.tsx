@@ -440,7 +440,7 @@ export default function PropertyDetailPage({ property }: { property: Property | 
             propertyId: property?._id, propertyTitle: property?.title, propertyImage: property?.bannerImage?.url,
             propertyLocation: property?.location, checkInDate: checkInDate?.toISOString(), checkOutDate: checkOutDate?.toISOString(),
             days, adultCount, childCount, selectedOffers, selectedMealPlan,
-            pricingDetails: { subtotalNights, serviceCharge, taxesApplied, totalBookingPricing, currency: property?.costing?.currency || 'USD' },
+            pricingDetails: { subtotalNights, serviceCharge, taxesApplied, totalBookingPricing, currency: property?.costing?.currency || 'INR' },
             ownerId: property?.userId,
         };
         localStorage.setItem(RESERVATION_DATA_KEY, JSON.stringify(reservationData));
