@@ -13,7 +13,9 @@ export default function DashboardClientView({ initialItems }: any) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('all');
 
-  console.log(initialItems);
+  const titles = initialItems.map((obj: any) => obj.title);
+console.log(titles);
+
 
   const handleItemClick = (id: string) => {
     router.push(`/admin/dashboard/${id}`);
