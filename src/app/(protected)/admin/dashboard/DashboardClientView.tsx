@@ -13,6 +13,8 @@ export default function DashboardClientView({ initialItems }: any) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('all');
 
+  console.log(initialItems);
+
   const handleItemClick = (id: string) => {
     router.push(`/admin/dashboard/${id}`);
   };
