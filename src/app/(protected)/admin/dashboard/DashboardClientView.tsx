@@ -13,6 +13,7 @@ export default function DashboardClientView({ initialItems }: any) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('all');
 
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const titles = initialItems.map((obj: any) => obj.title);
 console.log(titles);
 
