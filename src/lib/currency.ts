@@ -34,17 +34,6 @@ const mockRates: Rates = {
   EGP: 51.20,  // Egyptian Pound
 };
 
-/**
- * Converts an amount from one currency to another using MOCK data.
- * Useful for UI development and testing without making API calls.
- *
- * @param amount The amount of money to convert.
- * @param fromCurrency The currency code to convert from (e.g., 'USD').
- * @param toCurrency The currency code to convert to (e.g., 'INR').
- * @returns The converted amount.
- * @throws An error if a currency code is not found in the mock rates.
- */
-
 export function convertCurrencyMock(
   amount: number,
   fromCurrency: string,
@@ -62,9 +51,6 @@ export function convertCurrencyMock(
     throw new Error('Invalid currency code provided for mock conversion.');
   }
 
-  // The formula for cross-currency conversion using a base currency (EUR):
-  // 1. Convert the initial amount to the base currency (EUR).
-  // 2. Convert the amount in the base currency to the target currency.
   const amountInBase = amount / fromRate;
   const convertedAmount = amountInBase * toRate;
 
@@ -73,83 +59,37 @@ export function convertCurrencyMock(
 
 
 
-// // --- OPTION 2: Production-Ready API Conversion Function ---
+export const currencyToCountryMap: { [key: string]: string } = {
+  EUR: 'Eurozone',
+  INR: 'India',
+  USD: 'United States',
+  GBP: 'United Kingdom',
+  JPY: 'Japan',
+  AUD: 'Australia',
+  CAD: 'Canada',
+  CHF: 'Switzerland',
+  CNY: 'China',
+  SEK: 'Sweden',
+  NZD: 'New Zealand',
+  MXN: 'Mexico',
+  SGD: 'Singapore',
+  HKD: 'Hong Kong',
+  NOK: 'Norway',
+  KRW: 'South Korea',
+  TRY: 'Turkey',
+  RUB: 'Russia',
+  BRL: 'Brazil',
+  ZAR: 'South Africa',
+  AED: 'United Arab Emirates',
+  THB: 'Thailand',
+  ARS: 'Argentina',
+  CLP: 'Chile',
+  COP: 'Colombia',
+  EGP: 'Egypt',
+};
 
-// let cachedRates: {
-//   rates: Rates;
-//   timestamp: number;
-// } | null = null;
-
-// const CACHE_DURATION_MS = 60 * 60 * 1000; // Cache rates for 1 hour
-
-// /**
-//  * Fetches the latest exchange rates from a free API (api.frankfurter.app).
-//  * It uses an in-memory cache to avoid excessive API calls.
-//  * @returns A promise that resolves to an object of exchange rates.
-//  */
-// async function getExchangeRates(): Promise<Rates> {
-//   // Check if we have valid, non-expired cached rates
-//   if (cachedRates && (Date.now() - cachedRates.timestamp < CACHE_DURATION_MS)) {
-//     return cachedRates.rates;
-//   }
-
-//   try {
-//     // Using api.frankfurter.app because it's free, no API key required, and uses ECB data.
-//     const response = await fetch('https://api.frankfurter.app/latest?from=EUR');
-//     if (!response.ok) {
-//       throw new Error('Failed to fetch exchange rates.');
-//     }
-//     const data = await response.json();
-    
-//     // Add the base currency to the rates object
-//     const ratesWithBase = { ...data.rates, EUR: 1 };
-
-//     // Update cache
-//     cachedRates = {
-//       rates: ratesWithBase,
-//       timestamp: Date.now(),
-//     };
-
-//     return ratesWithBase;
-
-//   } catch (error) {
-//     console.error("Currency API Error:", error);
-//     // If API fails, you might want to fall back to stale cache or mock data
-//     if (cachedRates) return cachedRates.rates;
-//     throw new Error('Could not fetch exchange rates and no cache is available.');
-//   }
-// }
-
-// /**
-//  * Converts an amount from one currency to another using LIVE data from an API.
-//  *
-//  * @param amount The amount of money to convert.
-//  * @param fromCurrency The currency code to convert from (e.g., 'USD').
-//  * @param toCurrency The currency code to convert to (e.g., 'INR').
-//  * @returns A Promise that resolves to the converted amount.
-//  * @throws An error if the API call fails or currency codes are invalid.
-//  */
-// export async function convertCurrency(
-//   amount: number,
-//   fromCurrency: string,
-//   toCurrency: string
-// ): Promise<number> {
-//   if (fromCurrency === toCurrency) {
-//     return amount;
-//   }
-
-//   const rates = await getExchangeRates();
-
-//   const fromRate = rates[fromCurrency];
-//   const toRate = rates[toCurrency];
-
-//   if (!fromRate || !toRate) {
-//     throw new Error(`Invalid currency code. Could not find rates for ${fromCurrency} or ${toCurrency}.`);
-//   }
-
-//   // Same conversion logic as the mock function, but with live rates.
-//   const amountInBase = amount / fromRate;
-//   const convertedAmount = amountInBase * toRate;
-
-//   return convertedAmount;
-// }
+export function getCountryFromCurrency(currencyCode: string | null): string {
+  if( currencyCode==null ) return '';
+  const country = currencyToCountryMap[currencyCode];
+  return country;
+}

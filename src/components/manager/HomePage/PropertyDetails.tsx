@@ -397,9 +397,9 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
         if (!newCategory.title.trim()) { alert("Category title is required."); return; }
         if (newCategory.qty <= 0) { alert("Quantity must be greater than 0."); return; }
         if (newCategory.categoryImages.length < 3) { alert('Please upload at least 3 images for the category.'); return; } // Validation for images
-        if (getPrice(newCategory.pricing.singleOccupancyAdultPrice, 'noMeal') <= 0) {
-            alert("Base Price for 1 Adult (Room Only) must be greater than 0."); return;
-        }
+        // if (getPrice(newCategory.pricing.singleOccupancyAdultPrice, 'noMeal') <= 0) {
+        //     alert("Base Price for 1 Adult (Room Only) must be greater than 0."); return;
+        // }
         // if (newCategory.availabilityStartDate && newCategory.availabilityEndDate) {
         //     if (new Date(newCategory.availabilityEndDate) < new Date(newCategory.availabilityStartDate)) {
         //         alert('Availability End Date cannot be before Start Date.'); return;

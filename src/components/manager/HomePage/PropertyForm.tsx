@@ -388,9 +388,9 @@ useEffect(() => {
     if (!newCategory.title.trim()) { alert('Category title is required.'); return; }
     if (newCategory.qty <= 0) { alert('Quantity must be greater than 0.'); return; }
     if (newCategory.categoryImages.length < 3) { alert('Please upload at least 3 images for the category.'); return; }
-    if (getPrice(newCategory.pricing.singleOccupancyAdultPrice, 'noMeal') <= 0) {
-        alert('Base Price for 1 Adult (No Meal) must be greater than 0.'); return;
-    }
+    // if (getPrice(newCategory.pricing.singleOccupancyAdultPrice, 'noMeal') <= 0) {
+    //     alert('Base Price for 1 Adult (No Meal) must be greater than 0.'); return;
+    // }
     const mealPlans: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
     const priceFieldsToCheck: (keyof RoomCategoryPricing)[] = [
         'singleOccupancyAdultPrice', 'doubleOccupancyAdultPrice', 'tripleOccupancyAdultPrice',
@@ -447,6 +447,7 @@ useEffect(() => {
     const updatedCategories = [...(propertyData.categoryRooms || []), categoryToAdd];
     handlePropertyChange('categoryRooms', updatedCategories);
     setNewCategory(initialNewCategoryState);
+    alert("Category Added Successfully!!");
   };
 
   const handleRemoveCategory = (id: string) => {
@@ -662,16 +663,17 @@ useEffect(() => {
         </div>
       </div>
 
-      <div className="space-y-4 pt-6 border-t">
+      <div className="space-y-4 pt-6 border-t ">
         <SectionHeader title="Manage Room Categories" icon={BedDouble} />
         {(ensurePropertyData.categoryRooms ?? []).length > 0 && (
           <div className="mb-6 space-y-4">
             <h4 className="text-md font-medium text-foreground">Added Categories:</h4>
             {(ensurePropertyData.categoryRooms ?? []).map((cat) => (
-              <div key={cat.id} className="p-4 bg-muted/50 border rounded-lg">
+              <div key={cat.id} className="p-4 bg-white border rounded-lg">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <p className="font-semibold text-foreground text-lg">{cat.title} <span className="text-sm text-muted-foreground">({cat.qty} rooms)</span></p>
+                    <p className="font-semibold text-foreground text-lg">{cat.title}
+                    <span className="text-sm text-muted-foreground">({cat.qty} rooms)</span></p>
                     <p className="text-xs text-muted-foreground">Currency: {cat.currency}</p>
                   </div>
                   <Button variant="ghost" size="icon" type="button" onClick={() => handleRemoveCategory(cat.id)} className="text-destructive hover:text-destructive/80 -mt-2 -mr-2" aria-label={`Remove ${cat.title}`}>
@@ -707,14 +709,16 @@ useEffect(() => {
                               const mealKey = mp as keyof PricingByMealPlan;
                               const basePrice = getPrice(p.base, mealKey);
                               const discPrice = getPrice(p.disc, mealKey);
-                              if (basePrice > 0 || discPrice > 0) {
+                              // if (basePrice > 0 || discPrice > 0) {
                                   return (
                                       <span key={mealKey} className="ml-2">
                                           <MealPlanLabel mealPlan={mealKey} /> {cat.currency} {basePrice}
                                           {discPrice > 0 && discPrice < basePrice ? ` (Disc: ${discPrice})` : ''}
                                       </span>
                                   )
-                              } return null;
+                              // } 
+                              
+                              // return null;
                             })}
                         </div>
                     ))}
@@ -874,11 +878,21 @@ useEffect(() => {
                                 <FormLabel className="text-xs font-medium flex items-center"> <Utensils className="h-3 w-3 mr-1 inline"/> {mealPlan.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} </FormLabel>
                                 <FormItem>
                                   <Label className="text-xs text-muted-foreground">Base Price</Label>
-                                  <Input type="number" value={getPrice(newCategory.pricing[occ.baseField as keyof RoomCategoryPricing], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(occ.baseField as keyof RoomCategoryPricing, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01"/>
+                                  <Input 
+                                    type="number"
+                                    value={getPrice(newCategory.pricing[occ.baseField as keyof RoomCategoryPricing], mealPlan)} 
+                                    onChange={(e) => handleNewCategoryPricingChange(occ.baseField as keyof RoomCategoryPricing, mealPlan, e.target.value)} 
+                                    placeholder="0.00" min="0" step="0.01"
+                                  />
                                 </FormItem>
                                 <FormItem>
                                   <Label className="text-xs text-muted-foreground">Discounted</Label>
-                                  <Input type="number" value={getPrice(newCategory.pricing[occ.discField as keyof RoomCategoryPricing], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(occ.discField as keyof RoomCategoryPricing, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01"/>
+                                  <Input 
+                                    type="number" 
+                                    value={getPrice(newCategory.pricing[occ.discField as keyof RoomCategoryPricing], mealPlan)} 
+                                    onChange={(e) => handleNewCategoryPricingChange(occ.discField as keyof RoomCategoryPricing, mealPlan, e.target.value)} 
+                                    placeholder="0.00" min="0" step="0.01"
+                                  />
                                 </FormItem>
                             </div>
                         ))}
@@ -897,8 +911,24 @@ useEffect(() => {
                         {(['noMeal', 'breakfastOnly', 'allMeals'] as (keyof PricingByMealPlan)[]).map(mealPlan => (
                            <div key={mealPlan} className="space-y-2">
                                 <FormLabel className="text-xs font-medium flex items-center"> <Utensils className="h-3 w-3 mr-1 inline"/> {mealPlan.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} </FormLabel>
-                                <FormItem> <Label className="text-xs text-muted-foreground">Base Price</Label> <Input type="number" value={getPrice(newCategory.pricing[child.baseField as keyof RoomCategoryPricing], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(child.baseField as keyof RoomCategoryPricing, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01"/> </FormItem>
-                                <FormItem> <Label className="text-xs text-muted-foreground">Discounted</Label> <Input type="number" value={getPrice(newCategory.pricing[child.discField as keyof RoomCategoryPricing], mealPlan)} onChange={(e) => handleNewCategoryPricingChange(child.discField as keyof RoomCategoryPricing, mealPlan, e.target.value)} placeholder="0.00" min="0" step="0.01"/> </FormItem>
+                                <FormItem>
+                                  <Label className="text-xs text-muted-foreground">Base Price</Label> 
+                                  <Input 
+                                    type="number" 
+                                    value={getPrice(newCategory.pricing[child.baseField as keyof RoomCategoryPricing], mealPlan)} 
+                                    onChange={(e) => handleNewCategoryPricingChange(child.baseField as keyof RoomCategoryPricing, mealPlan, e.target.value)} 
+                                    placeholder="0.00" min="0" step="0.01"
+                                  />
+                                </FormItem>
+                                <FormItem>
+                                  <Label className="text-xs text-muted-foreground">Discounted</Label>
+                                  <Input 
+                                    type="number" 
+                                    value={getPrice(newCategory.pricing[child.discField as keyof RoomCategoryPricing], mealPlan)}
+                                    onChange={(e) => handleNewCategoryPricingChange(child.discField as keyof RoomCategoryPricing, mealPlan, e.target.value)}
+                                    placeholder="0.00" min="0" step="0.01"
+                                  />
+                                </FormItem>
                             </div>
                         ))}
                     </div>

@@ -9,16 +9,67 @@ const ReviewCard: React.FC<{ review: Review }> = ({ review }) => {
     const { name = 'Anonymous', country, comment } = review;
     const initial = name.charAt(0).toUpperCase();
 
-    const getCountryFlag = (countryName: string): string => {
-        switch (countryName.toLowerCase()) {
-            case 'india':
-                return '🇮🇳';
-            case 'poland':
-                return '🇵🇱';
-            default:
-                return '🏳️';
-        }
-    };
+    const getCountryFlagSwitch = (countryName: string): string => {
+    switch (countryName.toLowerCase()) {
+        case 'eurozone':
+            return '🇪🇺';
+        case 'india':
+            return '🇮🇳';
+        case 'united states':
+            return '🇺🇸';
+        case 'united kingdom':
+            return '🇬🇧';
+        case 'japan':
+            return '🇯🇵';
+        case 'australia':
+            return '🇦🇺';
+        case 'canada':
+            return '🇨🇦';
+        case 'switzerland':
+            return '🇨🇭';
+        case 'china':
+            return '🇨🇳';
+        case 'sweden':
+            return '🇸🇪';
+        case 'new zealand':
+            return '🇳🇿';
+        case 'mexico':
+            return '🇲🇽';
+        case 'singapore':
+            return '🇸🇬';
+        case 'hong kong':
+            return '🇭🇰';
+        case 'norway':
+            return '🇳🇴';
+        case 'south korea':
+            return '🇰🇷';
+        case 'turkey':
+            return '🇹🇷';
+        case 'russia':
+            return '🇷🇺';
+        case 'brazil':
+            return '🇧🇷';
+        case 'south africa':
+            return '🇿🇦';
+        case 'united arab emirates':
+            return '🇦🇪';
+        case 'thailand':
+            return '🇹🇭';
+        case 'argentina':
+            return '🇦🇷';
+        case 'chile':
+            return '🇨🇱';
+        case 'colombia':
+            return '🇨🇴';
+        case 'egypt':
+            return '🇪🇬';
+        // Add your previous ones if needed
+        case 'poland':
+            return '🇵🇱';
+        default:
+            return '🏳️';
+    }
+};
 
     return (
         <div className="flex-shrink-0 w-full sm:w-[380px] p-6 border border-gray-200 rounded-xl space-y-4 bg-white">
@@ -29,7 +80,7 @@ const ReviewCard: React.FC<{ review: Review }> = ({ review }) => {
                 <div>
                     <h3 className="font-bold text-gray-900">{name}</h3>
                     <p className="text-sm text-gray-600 flex items-center">
-                        <span className="mr-2">{getCountryFlag(country ?? '')}</span>
+                        <span className="mr-2">{getCountryFlagSwitch(country ?? '')}</span>
                         {country}
                     </p>
                 </div>

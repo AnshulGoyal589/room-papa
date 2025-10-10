@@ -17,7 +17,7 @@ export async function POST(
         const {id:propertyId} = await params; 
 
         const body = await request.json();
-        const { bookingId, rating, comment } = body;
+        const { bookingId, rating, comment , country , username } = body;
 
         if (!ObjectId.isValid(propertyId) || !ObjectId.isValid(bookingId)) {
             return NextResponse.json({ message: 'Invalid property or booking ID.' }, { status: 400 });
@@ -51,9 +51,9 @@ export async function POST(
         await addPropertyReview(propertyId, {
             rating,
             comment,
-            name: "testing",
+            name: username,
             date: new Date(),
-            country: "India",
+            country,
             userId: userId
         });
 

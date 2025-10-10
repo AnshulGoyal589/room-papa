@@ -11,10 +11,9 @@ const CurrencySwitcher = () => {
 
   // Effect to load currency from localStorage on initial client-side render
   useEffect(() => {
-    const storedCurrency = localStorage.getItem('currency');
-    if (storedCurrency) {
+    const storedCurrency = localStorage.getItem('currency') || "INR";
+    // if (storedCurrency) {
       setSelectedCurrency(storedCurrency);
-    }
   }, []);
 
   // Effect to handle closing modal with Escape key or outside click

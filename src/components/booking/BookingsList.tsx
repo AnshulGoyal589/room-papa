@@ -6,6 +6,8 @@ import {
   Calendar, Hash, Hotel, MapPin, Moon, Users, X, FileText, Briefcase, Plane, User, AlertCircle, Star
 } from 'lucide-react';
 import { BookingDetails } from '@/lib/mongodb/models/Booking';
+import { getCountryFromCurrency } from '@/lib/currency';
+import { useUser } from "@clerk/nextjs";
 // import { Booking } from '@/lib/mongodb/models/Booking';
 
 
@@ -284,7 +286,12 @@ const ReviewModal = ({ booking, onClose, onReviewSubmitted }: { booking: Booking
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);    
+    const {  isSignedIn, user } = useUser();
+    let username = "Anonymous";
+    if(isSignedIn){
+        username = user.username || 'Anonymous';
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -292,6 +299,8 @@ const ReviewModal = ({ booking, onClose, onReviewSubmitted }: { booking: Booking
             setError('Please select a rating.');
             return;
         }
+        const currency = localStorage.getItem('currency');
+        const country = getCountryFromCurrency(currency);
         if (comment.trim().length < 10) {
             setError('Please write a comment of at least 10 characters.');
             return;
@@ -306,6 +315,8 @@ const ReviewModal = ({ booking, onClose, onReviewSubmitted }: { booking: Booking
                     bookingId: booking._id,
                     rating,
                     comment,
+                    country,
+                    username
                 }),
             });
 
@@ -431,7 +442,7 @@ export default function BookingsList({ initialBookings }: { initialBookings: Boo
                         {filteredBookings.map(booking => (
                             <BookingCard 
                                 key={(booking._id as unknown as string)} 
-                                booking={booking} 
+                                booking={booking}
                                 onSelect={setSelectedBooking}
                                 onReview={setReviewingBooking}
                             />

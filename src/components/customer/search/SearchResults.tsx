@@ -88,33 +88,46 @@ const calculateTotalDiscountedPricePerNight = (
         return fallbackPrice;
     }
 
+    const singlePrice = getMinPropertyPrice(pricing.discountedSingleOccupancyAdultPrice) || 0;
+    const doublePrice = getMinPropertyPrice(pricing.discountedDoubleOccupancyAdultPrice) || 0;
+    const triplePrice = getMinPropertyPrice(pricing.discountedTripleOccupancyAdultPrice) || 0;
+
+    if (singlePrice === 0 && doublePrice === 0 && triplePrice === 0) {
+        return fallbackPrice;
+    }
+
     let totalAdultPrice = 0;
     const baseAdultsPerRoom = Math.floor(adults / rooms);
     const extraAdults = adults % rooms;
 
     if (adults > rooms * 3) {
-        console.warn(`Number of adults (${adults}) exceeds maximum capacity for ${rooms} rooms (3 per room). Pricing may be inaccurate.`);
-    }
-
-    for (let i = 0; i < rooms; i++) {
-        const occupants = i < extraAdults ? baseAdultsPerRoom + 1 : baseAdultsPerRoom;
-        switch (occupants) {
-            case 1:
-                totalAdultPrice += getMinPropertyPrice(pricing.discountedSingleOccupancyAdultPrice);
-                break;
-            case 2:
-                totalAdultPrice += getMinPropertyPrice(pricing.discountedDoubleOccupancyAdultPrice);
-                break;
-            case 3:
-                 totalAdultPrice += getMinPropertyPrice(pricing.discountedTripleOccupancyAdultPrice);
-                 break;
-            default:
-                if (occupants > 3) {
-                    totalAdultPrice += getMinPropertyPrice(pricing.discountedTripleOccupancyAdultPrice);
-                }
-                break;
+        totalAdultPrice += adults * getMinPropertyPrice(pricing.discountedSingleOccupancyAdultPrice);
+    }else{
+        for (let i = 0; i < rooms; i++) {
+            const occupants = i < extraAdults ? baseAdultsPerRoom + 1 : baseAdultsPerRoom;
+            switch (occupants) {
+                case 1:
+                    totalAdultPrice += singlePrice;;
+                    break;
+                case 2:
+                    totalAdultPrice += doublePrice || triplePrice || (singlePrice * 2);
+                    break;
+                case 3:
+                    totalAdultPrice += triplePrice || (doublePrice > 0 ? doublePrice + singlePrice : 0) || (singlePrice * 3);
+                    break;
+                default:
+                    if (occupants > 3) {
+                        const baseRoomPrice = triplePrice || doublePrice || (singlePrice * 3);
+                        const baseOccupants = triplePrice ? 3 : (doublePrice ? 2 : 3);
+                        
+                        const extraOccupants = occupants - baseOccupants;
+                        totalAdultPrice += baseRoomPrice + (extraOccupants * singlePrice);
+                    }
+                    break;
+            }
         }
     }
+
 
     const totalChildPrice = children * (pricing.discountedChild5to12Price?.noMeal ?? 0);
     
@@ -132,33 +145,46 @@ const calculateTotalBasePricePerNight = (
         return fallbackPrice;
     }
 
+    const singlePrice = getMinPropertyPrice(pricing.singleOccupancyAdultPrice) || 0;
+    const doublePrice = getMinPropertyPrice(pricing.discountedDoubleOccupancyAdultPrice) || 0;
+    const triplePrice = getMinPropertyPrice(pricing.discountedTripleOccupancyAdultPrice) || 0;
+
+    if (singlePrice === 0 && doublePrice === 0 && triplePrice === 0) {
+        return fallbackPrice;
+    }
+
     let totalAdultPrice = 0;
     const baseAdultsPerRoom = Math.floor(adults / rooms);
     const extraAdults = adults % rooms;
 
     if (adults > rooms * 3) {
-        console.warn(`Number of adults (${adults}) exceeds maximum capacity for ${rooms} rooms (3 per room). Pricing may be inaccurate.`);
-    }
-
-    for (let i = 0; i < rooms; i++) {
-        const occupants = i < extraAdults ? baseAdultsPerRoom + 1 : baseAdultsPerRoom;
-        switch (occupants) {
-            case 1:
-                totalAdultPrice += getMinPropertyPrice(pricing.singleOccupancyAdultPrice);
-                break;
-            case 2:
-                totalAdultPrice += getMinPropertyPrice(pricing.doubleOccupancyAdultPrice);
-                break;
-            case 3:
-                 totalAdultPrice += getMinPropertyPrice(pricing.tripleOccupancyAdultPrice);
-                 break;
-            default:
-                if (occupants > 3) {
-                    totalAdultPrice += getMinPropertyPrice(pricing.tripleOccupancyAdultPrice);
-                }
-                break;
+        totalAdultPrice += adults * getMinPropertyPrice(pricing.singleOccupancyAdultPrice);
+    }else{
+        for (let i = 0; i < rooms; i++) {
+            const occupants = i < extraAdults ? baseAdultsPerRoom + 1 : baseAdultsPerRoom;
+            switch (occupants) {
+                case 1:
+                    totalAdultPrice += singlePrice;;
+                    break;
+                case 2:
+                    totalAdultPrice += doublePrice || triplePrice || (singlePrice * 2);
+                    break;
+                case 3:
+                    totalAdultPrice += triplePrice || (doublePrice > 0 ? doublePrice + singlePrice : 0) || (singlePrice * 3);
+                    break;
+                default:
+                    if (occupants > 3) {
+                        const baseRoomPrice = triplePrice || doublePrice || (singlePrice * 3);
+                        const baseOccupants = triplePrice ? 3 : (doublePrice ? 2 : 3);
+                        
+                        const extraOccupants = occupants - baseOccupants;
+                        totalAdultPrice += baseRoomPrice + (extraOccupants * singlePrice);
+                    }
+                    break;
+            }
         }
     }
+
 
     const totalChildPrice = children * (pricing.discountedChild5to12Price?.noMeal ?? 0);
     
