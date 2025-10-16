@@ -1,12 +1,55 @@
-import React, { useState } from "react";
-import { Trip } from "@/lib/mongodb/models/Trip";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem
+} from "@/components/ui/select";
 import ImageUpload from "@/components/cloudinary/ImageUpload";
 import MultipleImageUpload from "@/components/cloudinary/MultipleImageUpload";
+import { Badge as UiBadge } from "@/components/ui/badge";
+import {
+  X,
+  Plus,
+  Check,
+  Info,
+  DollarSign,
+  MapPin,
+  ListChecks,
+  Image as ImageIcon,
+  CalendarDays,
+  Sparkles,
+  Bus,
+  Globe,
+} from "lucide-react";
+import { Trip } from "@/lib/mongodb/models/Trip";
+import { Period } from "@/lib/mongodb/models/Components";
+import { tripOptions } from "../../../../public/assets/data";
 
+
+const ChipList: React.FC<{ items: string[]; onRemove?: (item: string) => void; baseColorClass?: string }> = ({ items, onRemove, baseColorClass = "bg-gray-100 text-gray-700" }) => {
+    if (!items || items.length === 0) return null;
+    return (
+        <div className="flex flex-wrap gap-1.5 mt-1">
+            {items.map(item => (
+                <UiBadge key={item} variant="outline" className={`font-normal ${baseColorClass} text-xs inline-flex items-center`}>
+                    <span>{item}</span>
+                    {onRemove && (
+                        <Button type="button" variant="ghost" size="icon" className="h-4 w-4 ml-1.5 text-muted-foreground hover:bg-gray-200 hover:text-destructive p-0" onClick={() => onRemove(item)} aria-label={`Remove ${item}`}>
+                            <X size={12} />
+                        </Button>
+                    )}
+                </UiBadge>
+            ))}
+        </div>
+    );
+};
+
+// --- Component Definition ---
 interface TripEditFormProps {
   item: Trip;
   onSave: (updatedTrip: Trip) => void;
@@ -16,61 +59,90 @@ const TripEditForm: React.FC<TripEditFormProps> = ({ item, onSave }) => {
   const [formData, setFormData] = useState<Trip>(item);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
-  // Define options for various trip features
-  const amenitiesOptions = ["wifi", "pool", "gym", "spa", "restaurant", "parking", "airConditioning", "breakfast"];
-  const propertyAccessibilityOptions =['Wheelchair Accessible', 'Elevator', 'Accessible Parking', 'Braille Signage', 'Accessible Bathroom', 'Roll-in Shower'];
-  // const roomAccessibilityOptions = ["wideDoorway", "loweredSink", "grabBars", "showerChair", "visualAlerts"];
-  const popularFiltersOptions =  ['Pet Friendly', 'Free Cancellation', 'Free Breakfast', 'Pool', 'Hot Tub', 'Ocean View', 'Family Friendly', 'Business Facilities'];
-  const funThingsToDoOptions = ['Beach', 'Hiking', 'Shopping', 'Nightlife', 'Local Tours', 'Museums', 'Theme Parks', 'Water Sports'];
-  const mealsOptions =['Breakfast', 'Lunch', 'Dinner', 'All-Inclusive', 'Buffet', 'À la carte', 'Room Service', 'Special Diets'];
-  const facilitiesOptions = ['Parking', 'WiFi', 'Swimming Pool', 'Fitness Center', 'Restaurant', 'Bar', 'Spa', 'Conference Room'];
-   const reservationPolicyOptions = ['Free Cancellation', 'Flexible', 'Moderate', 'Strict', 'Non-Refundable', 'Pay at Property', 'Pay Now'];
-  const brandsOptions =  ['Hilton', 'Marriott', 'Hyatt', 'Best Western', 'Accor', 'IHG', 'Wyndham', 'Choice Hotels'];
- const activitiesOptions = ["sightseeing", "adventure", "cultural", "relaxation", "entertainment", "sports"];
+  const [newActivity, setNewActivity] = useState('');
+  const [newAvailabilityPeriod, setNewAvailabilityPeriod] = useState<Period>({ startDate: '', endDate: '' });
+
+  useEffect(() => {
+    const clonedItem = JSON.parse(JSON.stringify(item));
+    const initialTripState: Partial<Trip> = {
+        title: '',
+        description: '',
+        type: 'Domestic',
+        domain: '',
+        destination: { address: '', city: '', state: '', country: '' },
+        costing: { price: 0, discountedPrice: 0, currency: 'INR' },
+        activities: [],
+        availability: [],
+        amenities: [],
+        accessibility: [],
+        popularFilters: [],
+        funThingsToDo: [],
+        meals: [],
+        facilities: [],
+        reservationPolicy: [],
+        brands: [],
+        pickupService: false,
+    };
+    setFormData({ ...initialTripState, ...clonedItem } as Trip);
+  }, [item]);
 
   const handleChange = (field: string, value: unknown) => {
     setFormData((prev) => {
       const keys = field.split(".");
-      // Create a deep copy of the previous state
-      const updated = JSON.parse(JSON.stringify(prev)) as Trip;
-      
-      // Navigate to the right part of the object
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const updated = JSON.parse(JSON.stringify(prev));
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
       let current: any = updated;
       for (let i = 0; i < keys.length - 1; i++) {
-        // Ensure the path exists
-        if (!current[keys[i]]) {
-          current[keys[i]] = keys[i + 1].match(/^\d+$/) ? [] : {};
-        }
+        if (!current[keys[i]]) current[keys[i]] = {};
         current = current[keys[i]];
       }
-      
-      // Set the value at the final key
-      const lastKey = keys[keys.length - 1];
-      current[lastKey] = value;
-      
+      current[keys[keys.length - 1]] = value;
       return updated;
     });
   };
   
-  const validateForm = () => {
+  const handleAddActivity = () => {
+    const activityToAdd = newActivity.trim();
+    if (activityToAdd && !formData.activities.includes(activityToAdd)) {
+        handleChange('activities', [...formData.activities, activityToAdd]);
+        setNewActivity('');
+    }
+  };
+
+  const handleRemoveActivity = (activityToRemove: string) => {
+    handleChange('activities', formData.activities.filter(a => a !== activityToRemove));
+  };
+  
+  const handleAddAvailabilityPeriod = () => {
+    const { startDate, endDate } = newAvailabilityPeriod;
+    if (!startDate || !endDate || new Date(endDate) < new Date(startDate)) {
+        alert("Please select a valid start and end date for the availability period.");
+        return;
+    }
+    const currentPeriods = formData.availability || [];
+    handleChange('availability', [...currentPeriods, { startDate, endDate }]);
+    setNewAvailabilityPeriod({ startDate: '', endDate: '' });
+  };
+  
+  const handleRemoveAvailabilityPeriod = (indexToRemove: number) => {
+    const currentPeriods = formData.availability || [];
+    handleChange('availability', currentPeriods.filter((_, index) => index !== indexToRemove));
+  };
+
+  const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-
-    if (!formData.title) newErrors.title = "Title is required";
-    if (!formData.description) newErrors.description = "Description is required";
+    if (!formData.title?.trim()) newErrors.title = "Title is required";
+    if (!formData.description?.trim()) newErrors.description = "Description is required";
     if (!formData.type) newErrors.type = "Trip type is required";
-    if (!formData.destination?.city) newErrors.city = "City is required";
-    if (!formData.destination?.state) newErrors.state = "State is required";
-    if (!formData.destination?.country) newErrors.country = "Country is required";
-    if (!formData.costing?.price) newErrors.price = "Price is required";
-    if (!formData.costing?.currency) newErrors.currency = "Currency is required";
-    if (!formData.bannerImage) newErrors.bannerImage = "Banner image is required";
-    if (!formData.detailImages || formData.detailImages.length < 3) newErrors.detailImages = "At least 3 detail images are required";
-    if (!formData.startDate) newErrors.startDate = "Start date is required";
-    if (!formData.endDate) newErrors.endDate = "End date is required";
-    if (!formData.amenities || formData.amenities.length === 0) newErrors.amenities = "At least one amenity is required";
+    if (!formData.destination?.city?.trim()) newErrors.city = "City is required";
+    if (!formData.destination?.state?.trim()) newErrors.state = "State/Province is required";
+    if (!formData.destination?.country?.trim()) newErrors.country = "Country is required";
+    if (!formData.costing || formData.costing.price <= 0) newErrors.costing = "Base price must be greater than 0";
+    if (formData.costing?.discountedPrice > formData.costing?.price) newErrors.costing_discount = "Discounted price cannot be greater than base price";
     if (!formData.activities || formData.activities.length === 0) newErrors.activities = "At least one activity is required";
-
+    if (!formData.bannerImage?.url) newErrors.bannerImage = "Banner image is required";
+    if (!formData.detailImages || formData.detailImages.length < 3) newErrors.detailImages = "At least 3 detail images are required";
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -79,42 +151,29 @@ const TripEditForm: React.FC<TripEditFormProps> = ({ item, onSave }) => {
     e.preventDefault();
     if (validateForm()) {
       onSave(formData);
+    } else {
+      alert("Please correct the errors highlighted in the form before saving.");
     }
   };
 
-  // Helper component for checkbox groups
-  const CheckboxGroup = ({ 
-    options, 
-    value = [], 
-    onChange, 
-    label, 
-    fieldName 
-  }: { 
-    options: string[], 
-    value: string[], 
-    onChange: (field: string, value: string[]) => void, 
-    label: string,
-    fieldName: string
-  }) => (
+  const CheckboxGroup: React.FC<{ options: string[], value: string[], onChange: (field: string, value: string[]) => void, label: string, fieldName: string }> = ({ options, value = [], onChange, label, fieldName }) => (
     <div className="mb-4">
-      <label className="block mb-2 font-medium">{label}</label>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <label className="block mb-1.5 font-medium text-gray-700">{label}</label>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2">
         {options.map((option) => (
           <div key={option} className="flex items-center space-x-2">
             <input
               type="checkbox"
-              id={`${fieldName}-${option}`}
+              id={`${fieldName}-${option.replace(/\s+/g, '-')}`}
               checked={value.includes(option)}
               onChange={(e) => {
-                if (e.target.checked) {
-                  onChange(fieldName, [...value, option]);
-                } else {
-                  onChange(fieldName, value.filter((item) => item !== option));
-                }
+                const newValues = e.target.checked ? [...value, option] : value.filter((item) => item !== option);
+                onChange(fieldName, newValues);
               }}
+              className="form-checkbox h-4 w-4 text-primary transition duration-150 ease-in-out"
             />
-            <label htmlFor={`${fieldName}-${option}`} className="text-sm capitalize">
-              {option.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+            <label htmlFor={`${fieldName}-${option.replace(/\s+/g, '-')}`} className="text-sm text-gray-600 cursor-pointer">
+              {option}
             </label>
           </div>
         ))}
@@ -123,306 +182,111 @@ const TripEditForm: React.FC<TripEditFormProps> = ({ item, onSave }) => {
   );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label>Title</label>
-        <Input
-          name="title"
-          value={formData.title}
-          onChange={(e) => handleChange("title", e.target.value)}
-          placeholder="Enter title"
-        />
-        {errors.title && <span className="text-red-500">{errors.title}</span>}
-      </div>
-
-      <div>
-        <label>Description</label>
-        <Textarea
-          name="description"
-          value={formData.description}
-          onChange={(e) => handleChange("description", e.target.value)}
-          placeholder="Enter description"
-          rows={5}
-        />
-        {errors.description && <span className="text-red-500">{errors.description}</span>}
-      </div>
-
-      <div>
-        <label>Domain</label>
-        <Input
-          name="domain"
-          value={formData.domain || ''}
-          onChange={(e) => handleChange("domain", e.target.value)}
-          placeholder="Enter domain"
-        />
-      </div>
-
-      <div>
-        <label>Trip Type</label>
-        <Select
-          value={formData.type}
-          onValueChange={(value) => handleChange("type", value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select trip type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Domestic">Domestic</SelectItem>
-            <SelectItem value="International">International</SelectItem>
-          </SelectContent>
-        </Select>
-        {errors.type && <span className="text-red-500">{errors.type}</span>}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label>City</label>
-          <Input
-            name="destination.city"
-            value={formData.destination?.city || ''}
-            onChange={(e) => handleChange("destination.city", e.target.value)}
-            placeholder="Enter city"
-          />
-          {errors.city && <span className="text-red-500">{errors.city}</span>}
-        </div>
-        <div>
-          <label>State</label>
-          <Input
-            name="destination.state"
-            value={formData.destination?.state || ''}
-            onChange={(e) => handleChange("destination.state", e.target.value)}
-            placeholder="Enter state"
-          />
-          {errors.state && <span className="text-red-500">{errors.state}</span>}
-        </div>
-        <div>
-          <label>Country</label>
-          <Input
-            name="destination.country"
-            value={formData.destination?.country || ''}
-            onChange={(e) => handleChange("destination.country", e.target.value)}
-            placeholder="Enter country"
-          />
-          {errors.country && <span className="text-red-500">{errors.country}</span>}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label>Price</label>
-          <Input
-            type="number"
-            name="costing.price"
-            value={formData.costing?.price || ''}
-            onChange={(e) => handleChange("costing.price", parseFloat(e.target.value) || 0)}
-            min={1}
-          />
-          {errors.price && <span className="text-red-500">{errors.price}</span>}
-        </div>
-
-        <div>
-          <label>Discounted Price</label>
-          <Input
-            type="number"
-            name="costing.discountedPrice"
-            value={formData.costing?.discountedPrice || ''}
-            onChange={(e) => handleChange("costing.discountedPrice", parseFloat(e.target.value) || 0)}
-            min={0}
-          />
-        </div>
-
-        <div>
-          <label>Currency</label>
-          <Select
-            value={formData.costing?.currency || ''}
-            onValueChange={(value) => handleChange("costing.currency", value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select currency" />
-            </SelectTrigger>
-            <SelectContent>
-              {["INR", "USD", "EUR", "GBP", "JPY"].map((currency) => (
-                <SelectItem key={currency} value={currency}>
-                  {currency}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.currency && <span className="text-red-500">{errors.currency}</span>}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label>Total Rating</label>
-          <Input
-            type="number"
-            name="totalRating"
-            value={formData.totalRating || ''}
-            onChange={(e) => handleChange("totalRating", parseFloat(e.target.value) || 0)}
-            min={0}
-            max={5}
-            step={0.1}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label>Start Date</label>
-          <Input
-            type="date"
-            name="startDate"
-            value={formData.startDate || ''}
-            onChange={(e) => handleChange("startDate", e.target.value)}
-          />
-          {errors.startDate && <span className="text-red-500">{errors.startDate}</span>}
-        </div>
-        <div>
-          <label>End Date</label>
-          <Input
-            type="date"
-            name="endDate"
-            value={formData.endDate || ''}
-            onChange={(e) => handleChange("endDate", e.target.value)}
-          />
-
-          {errors.endDate && <span className="text-red-500">{errors.endDate}</span>}
-        </div>
-      </div>
-
-      {/* Feature Sections */}
-      <div className="border p-4 rounded-md">
-        <h3 className="text-lg font-semibold mb-4">Trip Features</h3>
-        
-        <CheckboxGroup
-          options={activitiesOptions}
-          value={formData.activities || []}
-          onChange={handleChange}
-          label="Activities"
-          fieldName="activities"
-        />
-        {errors.activities && <span className="text-red-500 block mb-4">{errors.activities}</span>}
-        
-        <CheckboxGroup
-          options={amenitiesOptions}
-          value={formData.amenities || []}
-          onChange={handleChange}
-          label="Amenities"
-          fieldName="amenities"
-        />
-        {errors.amenities && <span className="text-red-500 block mb-4">{errors.amenities}</span>}
-        
-        <CheckboxGroup
-          options={propertyAccessibilityOptions}
-          value={formData.accessibility || []}
-          onChange={handleChange}
-          label="Trip Accessibility"
-          fieldName="accessibility"
-        />
-        
-        <CheckboxGroup
-          options={popularFiltersOptions}
-          value={formData.popularFilters || []}
-          onChange={handleChange}
-          label="Popular Filters"
-          fieldName="popularFilters"
-        />
-        
-        <CheckboxGroup
-          options={funThingsToDoOptions}
-          value={formData.funThingsToDo || []}
-          onChange={handleChange}
-          label="Fun Things To Do"
-          fieldName="funThingsToDo"
-        />
-        
-        <CheckboxGroup
-          options={mealsOptions}
-          value={formData.meals || []}
-          onChange={handleChange}
-          label="Meals"
-          fieldName="meals"
-        />
-        
-        <CheckboxGroup
-          options={facilitiesOptions}
-          value={formData.facilities || []}
-          onChange={handleChange}
-          label="Facilities"
-          fieldName="facilities"
-        />
-
-        <CheckboxGroup
-          options={reservationPolicyOptions}
-          value={formData.reservationPolicy || []}
-          onChange={handleChange}
-          label="Reservation Policies"
-          fieldName="reservationPolicy"
-        />
-        
-        <CheckboxGroup
-          options={brandsOptions}
-          value={formData.brands || []}
-          onChange={handleChange}
-          label="Brands"
-          fieldName="brands"
-        />
-        
-      </div>
-
-      <div>
-        <label>Banner Image</label>
-        <ImageUpload
-          label='banner image'
-          value={formData.bannerImage || null}
-          onChange={(image) => handleChange("bannerImage", image)}
-        />
-        {errors.bannerImage && <span className="text-red-500">{errors.bannerImage}</span>}
-      </div>
-
-      <div>
-        <label>Detail Images</label>
-        <MultipleImageUpload
-          label='detail images'
-          key={formData.detailImages?.length}
-          value={formData.detailImages || []}
-          onChange={(images) => handleChange("detailImages", images)}
-          maxImages={10}
-        />
-        {errors.detailImages && <span className="text-red-500">{errors.detailImages}</span>}
-      </div>
-
-      {/* Reviews Section */}
-      {formData.review && formData.review.length > 0 && (
-        <div className="space-y-2">
-          <label className="block font-medium">Reviews</label>
-          {formData.review.map((review, index) => (
-            <div key={index} className="border p-3 rounded-md">
-              <div>
-                <label>Comment</label>
-                <Textarea
-                  value={review.comment}
-                  onChange={(e) => handleChange(`review.${index}.comment`, e.target.value)}
-                  placeholder="Review comment"
-                />
-              </div>
-              <div className="mt-2">
-                <label>Rating</label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={5}
-                  value={review.rating}
-                  onChange={(e) => handleChange(`review.${index}.rating`, parseInt(e.target.value))}
-                />
-              </div>
+    <form onSubmit={handleSubmit} className="space-y-8 p-6 bg-white shadow-xl rounded-lg">
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><Info className="mr-3 h-6 w-6 text-primary"/>Basic Information</h2>
+        <div> <label className="font-medium text-gray-700">Title</label> <Input value={formData.title || ''} onChange={(e) => handleChange("title", e.target.value)} placeholder="Trip Title" /> {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>} </div>
+        <div> <label className="font-medium text-gray-700">Description</label> <Textarea value={formData.description || ''} onChange={(e) => handleChange("description", e.target.value)} placeholder="Detailed description of the trip" rows={5} /> {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>} </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="font-medium text-gray-700">Trip Type</label>
+            <Select value={formData.type} onValueChange={(value) => handleChange("type", value)}>
+              <SelectTrigger><SelectValue placeholder="Select trip type" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Domestic">Domestic</SelectItem>
+                <SelectItem value="International">International</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.type && <p className="text-red-500 text-xs mt-1">{errors.type}</p>}
+          </div>
+          <div>
+            <label className="font-medium text-gray-700">Domain (Optional)</label>
+            <div className="relative">
+              <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"/>
+              <Input value={formData.domain || ''} onChange={(e) => handleChange("domain", e.target.value)} placeholder="e.g., adventure, leisure, spiritual" className="pl-9"/>
             </div>
-          ))}
+          </div>
         </div>
-      )}
+      </div>
 
-      <Button type="submit" className="w-full">Save Changes</Button>
+      <div className="space-y-4 pt-6 border-t">
+        <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><MapPin className="mr-3 h-6 w-6 text-primary"/>Location</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div> <label className="font-medium text-gray-700">Address / Starting Point</label> <Input value={formData.destination?.address || ''} onChange={(e) => handleChange("destination.address", e.target.value)} placeholder="e.g., Mall Road, Manali" /> </div>
+          <div> <label className="font-medium text-gray-700">City</label> <Input value={formData.destination?.city || ''} onChange={(e) => handleChange("destination.city", e.target.value)} placeholder="City" /> {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>} </div>
+          <div> <label className="font-medium text-gray-700">State/Province</label> <Input value={formData.destination?.state || ''} onChange={(e) => handleChange("destination.state", e.target.value)} placeholder="State or Province" /> {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>} </div>
+          <div> <label className="font-medium text-gray-700">Country</label> <Input value={formData.destination?.country || ''} onChange={(e) => handleChange("destination.country", e.target.value)} placeholder="Country" /> {errors.country && <p className="text-red-500 text-xs mt-1">{errors.country}</p>} </div>
+        </div>
+      </div>
+
+      <div className="space-y-4 pt-6 border-t">
+        <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><DollarSign className="mr-3 h-6 w-6 text-primary"/>Costing (Per Person)</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div> <label className="font-medium text-gray-700">Base Price</label> <Input type="number" value={formData.costing?.price ?? ''} onChange={(e) => handleChange("costing.price", parseFloat(e.target.value) || 0)} placeholder="0.00" /> {errors.costing && <p className="text-red-500 text-xs mt-1">{errors.costing}</p>} </div>
+          <div> <label className="font-medium text-gray-700">Discounted Price</label> <Input type="number" value={formData.costing?.discountedPrice ?? ''} onChange={(e) => handleChange("costing.discountedPrice", parseFloat(e.target.value) || 0)} placeholder="Optional" /> {errors.costing_discount && <p className="text-red-500 text-xs mt-1">{errors.costing_discount}</p>} </div>
+          <div> <label className="font-medium text-gray-700">Currency</label> <Select value={formData.costing?.currency} onValueChange={(value) => handleChange("costing.currency", value)}> <SelectTrigger><SelectValue/></SelectTrigger> <SelectContent>{['INR', 'USD', 'EUR', 'GBP'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent> </Select> </div>
+        </div>
+      </div>
+      
+      <div className="space-y-4 pt-6 border-t">
+        <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><CalendarDays className="mr-3 h-6 w-6 text-primary"/>Availability Periods</h2>
+        {formData.availability && formData.availability.length > 0 && (
+            <div className="mb-4 space-y-2">
+                {formData.availability.map((period, index) => (
+                    <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded border text-sm">
+                        <span>{period.startDate} &mdash; {period.endDate}</span>
+                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleRemoveAvailabilityPeriod(index)}>
+                            <X size={14} />
+                        </Button>
+                    </div>
+                ))}
+            </div>
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+            <div><label className="text-xs text-muted-foreground">Start Date</label><Input type="date" value={newAvailabilityPeriod.startDate} onChange={(e) => setNewAvailabilityPeriod(p => ({...p, startDate: e.target.value}))} /></div>
+            <div><label className="text-xs text-muted-foreground">End Date</label><Input type="date" value={newAvailabilityPeriod.endDate} onChange={(e) => setNewAvailabilityPeriod(p => ({...p, endDate: e.target.value}))} /></div>
+        </div>
+        <Button type="button" variant="outline" onClick={handleAddAvailabilityPeriod} size="sm" className="w-full mt-3"><Plus size={16} className="mr-1" /> Add Period</Button>
+      </div>
+      
+      <div className="space-y-4 pt-6 border-t">
+        <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><Sparkles className="mr-3 h-6 w-6 text-primary"/>Activities & Services</h2>
+        <div>
+          <label className="font-medium text-gray-700">Add Activity</label>
+          <div className="flex items-end gap-2 mt-1">
+              <Input value={newActivity} onChange={(e) => setNewActivity(e.target.value)} placeholder="e.g., Paragliding, Trekking" />
+              <Button type="button" onClick={handleAddActivity} variant="outline" size="sm" className="px-3 py-2"><Plus size={16} className="mr-1.5" /> Add</Button>
+          </div>
+          <ChipList items={formData.activities} onRemove={handleRemoveActivity} baseColorClass="bg-yellow-50 text-yellow-700 border-yellow-200" />
+          {errors.activities && <p className="text-red-500 text-xs mt-1">{errors.activities}</p>}
+        </div>
+        <div className="pt-2 flex items-center space-x-2">
+            <input type="checkbox" id="pickupService" checked={!!formData.pickupService} onChange={(e) => handleChange("pickupService", e.target.checked)} className="form-checkbox h-4 w-4 text-primary transition duration-150 ease-in-out"/>
+            <label htmlFor="pickupService" className="font-medium text-gray-700 cursor-pointer flex items-center"><Bus className="mr-2 h-4 w-4"/>Pickup Service Available</label>
+        </div>
+      </div>
+      
+      <div className="pt-6 border-t">
+        <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><ListChecks className="mr-3 h-6 w-6 text-primary"/>Features & Policies</h2>
+        <CheckboxGroup options={tripOptions.amenities} value={formData.amenities || []} onChange={handleChange} label="Trip Amenities" fieldName="amenities" />
+        <CheckboxGroup options={tripOptions.accessibility} value={formData.accessibility || []} onChange={handleChange} label="Trip Accessibility" fieldName="accessibility" />
+        <CheckboxGroup options={tripOptions.popularFilters} value={formData.popularFilters || []} onChange={handleChange} label="Popular Filters" fieldName="popularFilters" />
+        <CheckboxGroup options={tripOptions.funThingsToDo} value={formData.funThingsToDo || []} onChange={handleChange} label="Fun Things To Do" fieldName="funThingsToDo" />
+        <CheckboxGroup options={tripOptions.meals} value={formData.meals || []} onChange={handleChange} label="Meal Options" fieldName="meals" />
+        <CheckboxGroup options={tripOptions.facilities} value={formData.facilities || []} onChange={handleChange} label="On-Trip Facilities" fieldName="facilities" />
+        <CheckboxGroup options={tripOptions.reservationPolicy} value={formData.reservationPolicy || []} onChange={handleChange} label="Reservation Policies" fieldName="reservationPolicy" />
+        <CheckboxGroup options={tripOptions.brands} value={formData.brands || []} onChange={handleChange} label="Associated Brands" fieldName="brands" />
+      </div>
+
+      <div className="space-y-4 pt-6 border-t">
+        <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><ImageIcon className="mr-3 h-6 w-6 text-primary"/>Images</h2>
+        <div> <label className="font-medium text-gray-700">Banner Image</label> <ImageUpload label='banner image' value={formData.bannerImage || null} onChange={(image) => handleChange("bannerImage", image)} /> {errors.bannerImage && <p className="text-red-500 text-xs mt-1">{errors.bannerImage}</p>} </div>
+        <div> <label className="font-medium text-gray-700">Detail Images (minimum 3)</label> <MultipleImageUpload label='detail images' value={formData.detailImages || []} onChange={(images) => handleChange("detailImages", images)} maxImages={10} /> {errors.detailImages && <p className="text-red-500 text-xs mt-1">{errors.detailImages}</p>} </div>
+      </div>
+
+      <Button type="submit" className="w-full py-3 text-lg font-semibold mt-8">
+        <Check className="mr-2 h-5 w-5"/> Save Trip Changes
+      </Button>
     </form>
   );
 };

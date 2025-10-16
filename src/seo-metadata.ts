@@ -11,7 +11,7 @@ interface Property {
   type: string;
   images?: string[];
 }
-
+ 
 export const seoMetadata = {
   home: {
     title: 'Room Papa | Find & Book Hotels, Apartments & Vacation Rentals Online',

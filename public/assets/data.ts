@@ -12,3 +12,16 @@ export const categoryOptions = {
     brands: ['Hilton', 'Marriott', 'Hyatt', 'Best Western', 'Accor', 'IHG', 'Wyndham', 'Choice Hotels'],
     roomFacilities: ['Air Conditioning', 'TV', 'Mini Bar', 'Coffee Maker', 'Safe', 'Desk', 'Balcony', 'Bathtub', 'Shower']
   };
+
+
+  export const tripOptions = {
+    accessibility: ['Wheelchair Accessible', 'Stroller Friendly', 'Elevator Access', 'Senior Friendly'],
+    amenities: ['Wi-Fi Included', 'Tour Guide', 'Transportation', 'Travel Insurance', 'Entry Tickets'],
+    brands: ['MakeMyTrip', 'Goibibo', 'Trafalgar', 'Contiki', 'Viator', 'GetYourGuide'],
+    facilities: ['First-Aid Kit', 'Restroom on Vehicle', 'Snacks Provided', 'Water Bottle'],
+    funThingsToDo: ['Sightseeing', 'Hiking', 'Boating', 'Shopping', 'Museums', 'Adventure Sports', 'Cultural Shows'],
+    meals: ['Breakfast', 'Lunch', 'Dinner', 'Snacks', 'Vegetarian Option', 'Vegan Option', 'Jain Meal'],
+    popularFilters: ['Family Friendly', 'Solo Traveler', 'Couples', 'Budget Friendly', 'Luxury Trip', 'Adventure'],
+    reservationPolicy: ['Free Cancellation', 'Instant Confirmation', 'Book Now, Pay Later', 'Non-refundable'],
+  };
+  

@@ -7,11 +7,11 @@ export const STAYS_KEYWORD_LIST: string[] = [
     "Kufri",
 
     // --- Specific Hotel and Resort Names (44 entries) ---
-    "KUFRI PACIFIC RESORT",
+    "Kufri Pacific Resort",
     "Comfort Inn Snow Park",
     "Hotel Anand Palace",
     "Hotel wild rose manali",
-    "SNOW CREEK BY JNS HOTELS",
+    "Snow Creek by JNS Hotels",
     "Hotel Asia holidays",
     "HOTEL SAKURA PALACE",
     "Rhythm Retreat by JNS Hotels",

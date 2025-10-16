@@ -9,34 +9,34 @@ import { HouseRules, PropertyAmenities, propertyAmenitiesArray, PropertyType } f
 
 export interface Property {
   _id?: ObjectId;
-  userId?: string;
-  title?: string;
-  description?: string;
-  type: PropertyType;
-  location: Location;
-  costing: Costing;
-  totalRating?: number;
-  review?: Review[];
-  createdAt?: Date;
-  updatedAt?: Date;
-  bannerImage?: Image;
-  detailImages?: Image[];
-  rooms: number;
-  categoryRooms?: StoredRoomCategory[];
-  amenities: string[];
   accessibility?: string[];
-  roomAccessibility?: string[];
-  popularFilters?: string[];
-  funThingsToDo?: string[];
-  meals?: string[];
-  facilities?: string[];
+  amenities: string[];
+  bannerImage?: Image;
   bedPreference?: string[];
-  reservationPolicy?: string[];
   brands?: string[];
-  roomFacilities?: string[];
-  propertyRating?: number;
+  categoryRooms?: StoredRoomCategory[];
+  costing: Costing;
+  createdAt?: Date;
+  description?: string;
+  detailImages?: Image[];
+  facilities?: string[];
+  funThingsToDo?: string[];
   googleMaps?: string;
   houseRules?: HouseRules;
+  location: Location;
+  meals?: string[];
+  popularFilters?: string[];
+  propertyRating?: number;
+  reservationPolicy?: string[];
+  review?: Review[];
+  roomAccessibility?: string[];
+  roomFacilities?: string[];
+  rooms: number;
+  title?: string;
+  totalRating?: number;
+  type: PropertyType;
+  updatedAt?: Date;
+  userId?: string;
 }
 
 

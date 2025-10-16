@@ -26,7 +26,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import ImageUpload from '@/components/cloudinary/ImageUpload';
 import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
-import PropertyForm from './PropertyForm';
+import PropertyForm from '../../AddItem/Property/PropertyForm';
 import TripForm from './TripForm';
 import TravellingForm from './TravellingForm';
 import { useUser } from "@clerk/nextjs";
@@ -159,9 +159,13 @@ const NewItemForm = () => {
           />
         );
       case 'Trip':
-        return <TripForm tripData={tripData as Trip} setTripData={setTripData} />;
+        return (
+          <TripForm tripData={tripData as Trip} setTripData={setTripData} />
+        );
       case 'Travelling':
-        return <TravellingForm travellingData={travellingData as Travelling} setTravellingData={setTravellingData} />;
+        return (
+          <TravellingForm travellingData={travellingData as Travelling} setTravellingData={setTravellingData} />
+        );
       default:
         return null;
     }
@@ -226,8 +230,8 @@ const NewItemForm = () => {
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="Property">Property</SelectItem>
-                      {/* <SelectItem value="Trip">Trip</SelectItem>
-                      <SelectItem value="Travelling">Travelling</SelectItem> */}
+                      <SelectItem value="Trip">Trip</SelectItem>
+                      {/* <SelectItem value="Travelling">Travelling</SelectItem> */}
                     </SelectContent>
                   </Select>
                   <FormMessage />

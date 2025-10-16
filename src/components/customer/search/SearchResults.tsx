@@ -441,7 +441,7 @@ export default function SearchResults() {
   };
   
   const renderTripCard = (trip: Trip) => {
-    const ratingDesc = getRatingDescription(trip.rating);
+    const ratingDesc = getRatingDescription(trip.totalRating);
     const reviewText = formatReviewCount(Array.isArray(trip.review) ? trip.review : trip.review ? [trip.review] : []);
     const placeholderImage = '/placeholder-trip.jpg';
 
@@ -469,14 +469,14 @@ export default function SearchResults() {
                 <Link href={`/customer/trip/${trip._id}`} className="block">
                   <h3 className="text-lg sm:text-xl font-bold text-[#003c95] hover:text-[#003c95] transition-colors line-clamp-2">{trip.title || "Adventure Awaits"}</h3>
                 </Link>
-                {trip.rating !== undefined && trip.rating !== null && (
+                {trip.totalRating !== undefined && trip.totalRating !== null && (
                   <div className="flex items-center gap-2 mt-1 sm:mt-0 sm:ml-4 flex-shrink-0">
                     <div className="text-right">
                       <p className={`text-xs sm:text-sm font-semibold ${ratingDesc.className}`}>{ratingDesc.text}</p>
                       <p className="text-xs text-gray-500">{reviewText}</p>
                     </div>
                     <div className="bg-[#003c95] text-white text-sm sm:text-base font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md h-fit">
-                      {trip.rating.toFixed(1)}
+                      {trip.totalRating.toFixed(1)}
                     </div>
                   </div>
                 )}
@@ -489,7 +489,7 @@ export default function SearchResults() {
           
           <div className="flex items-center text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">
             <Calendar size={14} className="mr-1 sm:mr-1.5 text-gray-500" />
-            <span>{new Date(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(trip.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            {/* <span>{new Date(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(trip.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span> */}
           </div>
 
           {trip.activities && trip.activities.length > 0 && (

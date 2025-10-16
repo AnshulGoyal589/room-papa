@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   FormItem,
   FormLabel,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+// Textarea is imported but not used. It can be removed if not needed.
+// import { Textarea } from '@/components/ui/textarea'; 
 import {
   Select,
   SelectContent,
@@ -11,141 +13,193 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox'; // Import Checkbox
-import { Label } from '@/components/ui/label'; // Import Label
-import { X, Globe, MapPin, DollarSign, Star, ListChecks, Activity, Settings2 } from 'lucide-react'; // Added more icons
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Plus, X, Info, MapPin, DollarSign, CalendarDays, Sparkles, ShieldCheck, Bus } from 'lucide-react';
+import { tripOptions } from '../../../../public/assets/data';
 import { Trip } from '@/lib/mongodb/models/Trip';
-import { TripFormProps } from '@/lib/mongodb/models/Components';
-import { propertyAmenitiesArray } from '@/types/property';
+import { Period } from '@/lib/mongodb/models/Components';
 
-// Define options for each multi-select category (shared or imported if used elsewhere)
-const categoryOptions = {
-  activities: ['Sightseeing', 'Adventure', 'Relaxation', 'Food Tours', 'Cultural Experience', 'Shopping', 'Hiking', 'Beach Activities', 'Wildlife Safari', 'Historical Tours'],
-  amenities: propertyAmenitiesArray, // Added some trip-specific amenities
-  accessibility: ['Wheelchair Accessible Pickup', 'Accessible Accommodations', 'Sign Language Guides', 'Service Animal Friendly'], // Trip-specific accessibility
-  roomAccessibility: ['Accessible Vehicle', 'Ground Floor Access', 'Support for Medical Devices'], // Trip-specific room/transport accessibility
-  popularFilters: ['Family Friendly', 'Adventure Focused', 'Luxury', 'Budget-Friendly', 'Eco-tourism', 'Solo Traveler', 'Group Tours', 'All-Inclusive'],
-  funThingsToDo: ['Local Markets', 'Cooking Classes', 'Festivals', 'Photography Tours', 'Wine Tasting', 'Scuba Diving', 'City Exploration', 'Nature Walks'],
-  meals: ['Breakfast Included', 'Lunch Included', 'Dinner Included', 'All Meals', 'Local Cuisine Focus', 'Vegetarian Options', 'Vegan Options', 'Gluten-Free Options'],
-  facilities: ['Airport Transfer', 'Luggage Storage', 'Tour Desk', 'Currency Exchange', 'Emergency Support', 'First Aid Kit'], // Trip specific facilities
-  reservationPolicy: ['Free Cancellation', 'Partial Refund', 'Flexible Booking', 'Non-Refundable', 'Book Now Pay Later', 'Deposit Required'],
-  brands: ['G Adventures', 'Intrepid Travel', 'Contiki', 'Trafalgar', 'Local Operators', 'Specialized Agencies'], // Travel brands
-  // roomFacilities is less relevant for a Trip, perhaps 'equipmentProvided' or similar could be used if needed.
-  // For now, I'll remove roomFacilities from the Trip form's multi-selects unless you intend to use it.
-};
 
-// Create a default/initial state for TripData
+// --- End of assumed definitions ---
+
+export interface TripFormProps {
+  tripData: Partial<Trip>; // Use Partial<Trip> to allow incomplete data from parent
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setTripData: React.Dispatch<React.SetStateAction<any>>; // Use `any` for flexibility in parent state
+}
+
 const initialTripData: Trip = {
-  domain: '',
+  type: 'Domestic',
   destination: {
+    address: '',
     city: '',
     state: '',
     country: '',
   },
-  startDate: new Date().toISOString().split('T')[0],
-  endDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0],
   costing: {
     price: 0,
     discountedPrice: 0,
     currency: 'INR',
   },
-  totalRating: 0,
   activities: [],
-  type: 'Domestic',
+  availability: [],
   amenities: [],
+  accessibility: [],
   popularFilters: [],
   funThingsToDo: [],
   meals: [],
   facilities: [],
   reservationPolicy: [],
   brands: [],
+  pickupService: false,
 };
 
-
-
-const TripForm: React.FC<TripFormProps> = ({ 
-  tripData = initialTripData, 
-  setTripData 
+const TripForm: React.FC<TripFormProps> = ({
+  tripData,
+  setTripData
 }) => {
-  
+  const [newActivity, setNewActivity] = useState('');
+  const [newAvailabilityPeriod, setNewAvailabilityPeriod] = useState<Period>({ startDate: '', endDate: '' });
+
+  // --- FIX: Perform a deep merge for nested objects to prevent properties from becoming undefined ---
+  const ensureTripData: Trip = {
+    ...initialTripData,
+    ...tripData,
+    destination: {
+      ...initialTripData.destination,
+      ...(tripData.destination || {}),
+    },
+    costing: {
+      ...initialTripData.costing,
+      ...(tripData.costing || {}),
+    },
+    // Ensure arrays are not undefined
+    activities: tripData.activities || [],
+    availability: tripData.availability || [],
+    amenities: tripData.amenities || [],
+    accessibility: tripData.accessibility || [],
+    popularFilters: tripData.popularFilters || [],
+    funThingsToDo: tripData.funThingsToDo || [],
+    meals: tripData.meals || [],
+    facilities: tripData.facilities || [],
+    reservationPolicy: tripData.reservationPolicy || [],
+    brands: tripData.brands || [],
+  };
+
   const handleTripChange = (field: string, value: unknown) => {
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
-      setTripData(prev => ({
+      setTripData((prev: Trip) => ({
         ...prev,
         [parent]: {
-          ...(prev[parent as keyof typeof prev] as Record<string, unknown>),
+          ...(prev[parent as keyof Trip] as object),
           [child]: value
         }
       }));
     } else {
-      setTripData(prev => ({ ...prev, [field]: value }));
+      setTripData((prev: Trip) => ({ ...prev, [field]: value as Trip[keyof Trip] }));
     }
   };
 
   const toggleArrayItem = (field: keyof Trip, item: string) => {
-    const currentArray = (tripData[field] as string[] | undefined) || [];
-    
+    const currentArray = (ensureTripData[field] as string[] | undefined) || [];
     if (currentArray.includes(item)) {
       handleTripChange(field, currentArray.filter(i => i !== item));
     } else {
       handleTripChange(field, [...currentArray, item]);
     }
   };
-  
+
   const handleRemoveItem = (field: keyof Trip, item: string) => {
-    const currentArray = (tripData[field] as string[] | undefined) || [];
+    const currentArray = (ensureTripData[field] as string[] | undefined) || [];
     handleTripChange(field, currentArray.filter(i => i !== item));
   };
 
-  const renderMultiSelect = (field: keyof Trip, label: string, IconComponent?: React.ElementType) => {
-    const selectedValues = (tripData[field] as string[] | undefined) || [];
-    const options = categoryOptions[field as keyof typeof categoryOptions] || [];
-      
+  const handleAddAvailabilityPeriod = () => {
+    const { startDate, endDate } = newAvailabilityPeriod;
+    if (!startDate || !endDate) {
+      alert("Both Start Date and End Date are required.");
+      return;
+    }
+    if (new Date(endDate) < new Date(startDate)) {
+      alert('End Date cannot be before Start Date.');
+      return;
+    }
+    handleTripChange('availability', [...(ensureTripData.availability || []), { startDate, endDate }]);
+    setNewAvailabilityPeriod({ startDate: '', endDate: '' }); // Reset
+  };
+
+  const handleRemoveAvailabilityPeriod = (indexToRemove: number) => {
+    handleTripChange('availability', (ensureTripData.availability || []).filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleAddActivity = () => {
+    const activityToAdd = newActivity.trim();
+    if (activityToAdd && !ensureTripData.activities.includes(activityToAdd)) {
+      handleTripChange('activities', [...ensureTripData.activities, activityToAdd]);
+      setNewActivity('');
+    } else if (ensureTripData.activities.includes(activityToAdd)) {
+      alert("This activity is already added.");
+    }
+  };
+
+  const handleRemoveActivity = (activityToRemove: string) => {
+    handleTripChange('activities', ensureTripData.activities.filter(a => a !== activityToRemove));
+  };
+
+  const SectionHeader: React.FC<{ title: string; icon?: React.ElementType; className?: string }> = ({ title, icon: Icon, className }) => (
+    <div className={`flex items-center mb-4 ${className}`}>
+      {Icon && <Icon className="h-5 w-5 mr-2 text-primary" />}
+      <h3 className="text-lg font-semibold text-foreground tracking-tight">{title}</h3>
+    </div>
+  );
+
+  const ChipList: React.FC<{ items: string[]; onRemove: (item: string) => void; }> = ({ items, onRemove }) => {
+    if (!items || items.length === 0) return null;
+    return (
+      <div className="flex flex-wrap gap-1.5 mt-2">
+        {items.map(item => (
+          <div key={item} className="flex items-center bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs">
+            <span>{item}</span>
+            <button
+              type="button"
+              onClick={() => onRemove(item)}
+              className="ml-1.5 text-muted-foreground hover:text-destructive transition-colors"
+              aria-label={`Remove ${item}`}
+            >
+              <X size={12} />
+            </button>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderMultiSelect = (field: keyof Trip, label: string) => {
+    const selectedValues = (ensureTripData[field] as string[]) || [];
+    const options = tripOptions[field as keyof typeof tripOptions] || [];
     return (
       <FormItem className="space-y-2">
-        <FormLabel className="flex items-center">
-          {IconComponent && <IconComponent className="mr-2 h-4 w-4 text-muted-foreground" />}
-          {label}
-        </FormLabel>
-        
-        <Select
-          onValueChange={(value) => {
-            if (value) {
-              toggleArrayItem(field, value);
-            }
-          }}
-          value="" // Keep it empty to act as a selection trigger
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder={`Select ${label.toLowerCase()}...`} />
-          </SelectTrigger>
+        <FormLabel>{label}</FormLabel>
+        <Select onValueChange={(value) => { if (value) { toggleArrayItem(field, value); } }} value="">
+          <SelectTrigger className="w-full"><SelectValue placeholder={`Select ${label.toLowerCase()}...`} /></SelectTrigger>
           <SelectContent>
-            {options.map((option) => (
-              <SelectItem 
-                key={option} 
-                value={option}
-                disabled={selectedValues.includes(option)}
-                className={selectedValues.includes(option) ? 'text-muted-foreground' : ''}
-              >
+            {options.map((option: string) => (
+              <SelectItem key={option} value={option} disabled={selectedValues.includes(option)} className={selectedValues.includes(option) ? 'text-muted-foreground' : ''}>
                 {option}
               </SelectItem>
             ))}
             {options.length === 0 && <SelectItem value="no-options" disabled>No options available</SelectItem>}
           </SelectContent>
         </Select>
-        
         {selectedValues.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-2">
             {selectedValues.map((item) => (
               <div key={item} className="flex items-center bg-muted text-muted-foreground rounded-md px-2.5 py-1 text-sm">
                 <span className="mr-1.5">{item}</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveItem(field, item)}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label={`Remove ${item}`}
-                >
+                <button type="button" onClick={() => handleRemoveItem(field, item)} className="text-muted-foreground hover:text-foreground transition-colors" aria-label={`Remove ${item}`}>
                   <X size={14} />
                 </button>
               </div>
@@ -156,40 +210,14 @@ const TripForm: React.FC<TripFormProps> = ({
     );
   };
 
-  const ensureTripData = {
-    ...initialTripData,
-    ...tripData,
-    destination: { ...initialTripData.destination, ...(tripData?.destination || {}) },
-    costing: { ...initialTripData.costing, ...(tripData?.costing || {}) },
-    amenities: tripData?.amenities || [],
-    activities: tripData?.activities || [],
-  };
-
-  const SectionHeader: React.FC<{ title: string; icon?: React.ElementType, className?: string }> = ({ title, icon: Icon, className }) => (
-    <div className={`flex items-center mb-4 ${className}`}>
-      {Icon && <Icon className="h-5 w-5 mr-2 text-primary" />}
-      <h3 className="text-lg font-semibold text-foreground tracking-tight">{title}</h3>
-    </div>
-  );
-
-
   return (
-    <div className="space-y-8 max-h-[70vh] overflow-y-auto p-1 pr-3"> {/* Increased max-h, added pr for scrollbar */}
-      
-      {/* Section: Trip Overview */}
+    <div className="space-y-8 overflow-y-auto p-1 pr-4">
+      {/* Section: Trip Details */}
       <div className="space-y-4">
-        <SectionHeader title="Trip Overview" icon={Globe} />
-        <FormItem>
-          <FormLabel>Domain / Theme</FormLabel>
-          <Input 
-            value={ensureTripData.domain || ''}
-            onChange={(e) => handleTripChange('domain', e.target.value)}
-            placeholder="e.g., Adventure Holiday, Cultural Exploration"
-          />
-        </FormItem>
+        <SectionHeader title="Trip Details" icon={Info} />
         <FormItem>
           <FormLabel>Trip Type</FormLabel>
-          <Select value={ensureTripData.type} onValueChange={(value) => handleTripChange('type', value)}>
+          <Select value={ensureTripData.type} onValueChange={(value) => handleTripChange('type', value as 'Domestic' | 'International')}>
             <SelectTrigger><SelectValue placeholder="Select trip type" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="Domestic">Domestic</SelectItem>
@@ -198,116 +226,89 @@ const TripForm: React.FC<TripFormProps> = ({
           </Select>
         </FormItem>
       </div>
-      
-      {/* Section: Destination & Dates */}
+
+      {/* Section: Destination */}
       <div className="space-y-4 pt-6 border-t">
-        <SectionHeader title="Destination & Dates" icon={MapPin} />
+        <SectionHeader title="Destination" icon={MapPin} />
         <FormItem>
-          <FormLabel>Destination City</FormLabel>
-          <Input 
-            value={ensureTripData.destination.city}
-            onChange={(e) => handleTripChange('destination.city', e.target.value)}
-            placeholder="e.g., Paris, Kyoto"
-          />
+          <FormLabel>Address / Starting Point (Optional)</FormLabel>
+          {/* FIX: Add fallback `|| ''` to prevent value from ever being undefined */}
+          <Input value={ensureTripData.destination.address || ''} onChange={(e) => handleTripChange('destination.address', e.target.value)} placeholder="e.g., 123 Touring St, Main Square" />
         </FormItem>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormItem>
-            <FormLabel>State/Province (Optional)</FormLabel>
-            <Input value={ensureTripData.destination.state} onChange={(e) => handleTripChange('destination.state', e.target.value)} placeholder="e.g., California, Tuscany" />
-          </FormItem>
-          <FormItem>
-            <FormLabel>Country</FormLabel>
-            <Input value={ensureTripData.destination.country} onChange={(e) => handleTripChange('destination.country', e.target.value)} placeholder="e.g., France, Japan" />
-          </FormItem>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormItem>
-            <FormLabel>Start Date</FormLabel>
-            <Input type="date" value={ensureTripData.startDate} onChange={(e) => handleTripChange('startDate', e.target.value)} />
-          </FormItem>
-          <FormItem>
-            <FormLabel>End Date</FormLabel>
-            <Input type="date" value={ensureTripData.endDate} onChange={(e) => handleTripChange('endDate', e.target.value)} />
-          </FormItem>
-        </div>
-      </div>
-      
-      {/* Section: Pricing & Rating */}
-      <div className="space-y-4 pt-6 border-t">
-        <SectionHeader title="Pricing & Rating" icon={DollarSign} />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormItem>
-            <FormLabel>Price</FormLabel>
-            <Input type="number" value={ensureTripData.costing.price} onChange={(e) => handleTripChange('costing.price', Math.max(0, Number(e.target.value)))} min={0} placeholder="0.00" />
-          </FormItem>
-          <FormItem>
-            <FormLabel>Discounted Price (Optional)</FormLabel>
-            <Input type="number" value={ensureTripData.costing.discountedPrice} onChange={(e) => handleTripChange('costing.discountedPrice', Math.max(0,Number(e.target.value)))} min={0} placeholder="0.00" />
-          </FormItem>
-          <FormItem>
-            <FormLabel>Currency</FormLabel>
-            <Select value={ensureTripData.costing.currency} onValueChange={(value) => handleTripChange('costing.currency', value)}>
-              <SelectTrigger><SelectValue placeholder="Currency" /></SelectTrigger>
-              <SelectContent>
-                {['USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </FormItem>
+          <FormItem> <FormLabel>City</FormLabel> <Input value={ensureTripData.destination.city || ''} onChange={(e) => handleTripChange('destination.city', e.target.value)} placeholder="e.g., Manali" /> </FormItem>
+          <FormItem> <FormLabel>State/Province</FormLabel> <Input value={ensureTripData.destination.state || ''} onChange={(e) => handleTripChange('destination.state', e.target.value)} placeholder="e.g., Himachal Pradesh" /> </FormItem>
+          <FormItem> <FormLabel>Country</FormLabel> <Input value={ensureTripData.destination.country || ''} onChange={(e) => handleTripChange('destination.country', e.target.value)} placeholder="e.g., India" /> </FormItem>
         </div>
-        <FormItem>
-          <FormLabel className="flex items-center"><Star className="h-4 w-4 mr-1.5 text-amber-500" />Overall Rating (0-5)</FormLabel>
-          <Input 
-            type="number"
-            value={ensureTripData.totalRating || 0}
-            onChange={(e) => handleTripChange('totalRating', Math.min(5, Math.max(0, Number(e.target.value))))}
-            min={0} max={5} step={0.1} placeholder="e.g., 4.5"
-          />
-        </FormItem>
       </div>
       
-      {/* Section: Key Features (Amenities & Activities) */}
+      {/* Section: Costing */}
       <div className="space-y-4 pt-6 border-t">
-        <SectionHeader title="Key Features" icon={ListChecks} />
-        <FormItem>
-          <FormLabel>Included Amenities / Services</FormLabel>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 pt-1">
-            {(categoryOptions.amenities || []).map((amenity) => (
-              <div key={amenity} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`amenity-${amenity.replace(/\s+/g, '-')}`} // Create a unique ID
-                  checked={ensureTripData.amenities?.includes(amenity)}
-                  onCheckedChange={(checked) => {
-                    const currentAmenities = ensureTripData.amenities || [];
-                    if (checked) {
-                      handleTripChange('amenities', [...currentAmenities, amenity]);
-                    } else {
-                      handleTripChange('amenities', currentAmenities.filter(a => a !== amenity));
-                    }
-                  }}
-                />
-                <Label htmlFor={`amenity-${amenity.replace(/\s+/g, '-')}`} className="text-sm font-normal capitalize cursor-pointer">
-                  {amenity}
-                </Label>
-              </div>
-            ))}
-          </div>
-        </FormItem>
-        {renderMultiSelect('activities', 'Main Activities', Activity)}
+        <SectionHeader title="Costing (Per Person)" icon={DollarSign} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <FormItem> <FormLabel>Base Price</FormLabel> <Input type="number" value={ensureTripData.costing.price || 0} onChange={e => handleTripChange('costing.price', parseFloat(e.target.value) || 0)} placeholder="0.00" min="0" /> </FormItem>
+            <FormItem> <FormLabel>Discounted Price</FormLabel> <Input type="number" value={ensureTripData.costing.discountedPrice || 0} onChange={e => handleTripChange('costing.discountedPrice', parseFloat(e.target.value) || 0)} placeholder="0.00" min="0" /> </FormItem>
+            <FormItem> <FormLabel>Currency</FormLabel> <Select value={ensureTripData.costing.currency} onValueChange={(value) => handleTripChange('costing.currency', value)}> <SelectTrigger><SelectValue placeholder="Currency" /></SelectTrigger> <SelectContent>{['INR', 'EUR', 'GBP', 'USD', 'JPY', 'KES'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent> </Select> </FormItem>
+        </div>
       </div>
       
+      {/* Section: Availability */}
+      <div className="space-y-4 pt-6 border-t">
+        <SectionHeader title="Availability Periods" icon={CalendarDays} />
+        {ensureTripData.availability && ensureTripData.availability.length > 0 && (
+            <div className="mb-4 space-y-2">
+                <FormLabel className="text-sm">Added Periods:</FormLabel>
+                {ensureTripData.availability.map((period, index) => (
+                    <div key={index} className="flex items-center justify-between bg-muted/50 p-2 rounded-md text-sm">
+                        <span>{new Date(period.startDate).toLocaleDateString()} &mdash; {new Date(period.endDate).toLocaleDateString()}</span>
+                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleRemoveAvailabilityPeriod(index)}> <X size={14} /> </Button>
+                    </div>
+                ))}
+            </div>
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+            <FormItem> <FormLabel className="text-xs text-muted-foreground">Start Date</FormLabel> <Input type="date" value={newAvailabilityPeriod.startDate} onChange={(e) => setNewAvailabilityPeriod(p => ({...p, startDate: e.target.value}))} /> </FormItem>
+            <FormItem> <FormLabel className="text-xs text-muted-foreground">End Date</FormLabel> <Input type="date" value={newAvailabilityPeriod.endDate} onChange={(e) => setNewAvailabilityPeriod(p => ({...p, endDate: e.target.value}))} /> </FormItem>
+        </div>
+        <Button type="button" variant="outline" onClick={handleAddAvailabilityPeriod} size="sm" className="w-full mt-3"> <Plus size={16} className="mr-1" /> Add Availability Period </Button>
+      </div>
+
+      {/* Section: Activities */}
+      <div className="space-y-4 pt-6 border-t">
+        <SectionHeader title="Activities Included" icon={Sparkles} />
+        <p className="text-sm text-muted-foreground -mt-3">List the key activities included in the trip package.</p>
+        <div className="flex flex-col md:flex-row gap-2 items-start">
+            <Input value={newActivity} onChange={(e) => setNewActivity(e.target.value)} placeholder="e.g., Paragliding, River Rafting" className="flex-grow" />
+            <Button type="button" variant="outline" onClick={handleAddActivity} size="sm" className="w-full md:w-auto"> <Plus size={16} className="mr-1" /> Add Activity </Button>
+        </div>
+        <ChipList items={ensureTripData.activities} onRemove={handleRemoveActivity} />
+      </div>
+
+      {/* Section: Other Details */}
+      <div className="space-y-4 pt-6 border-t">
+          <SectionHeader title="Other Details" icon={Bus} />
+          <div className="flex items-center space-x-2">
+              <Checkbox
+                  id="pickupService"
+                  checked={ensureTripData.pickupService || false}
+                  onCheckedChange={(checked) => handleTripChange('pickupService', !!checked)}
+              />
+              <Label htmlFor="pickupService" className="cursor-pointer">Pickup Service Available</Label>
+          </div>
+      </div>
+
       {/* Section: Additional Classifications */}
       <div className="space-y-4 pt-6 border-t">
-        <SectionHeader title="Additional Classifications" icon={Settings2} />
+        <SectionHeader title="Additional Classifications & Features" icon={ShieldCheck} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+          {renderMultiSelect('amenities', 'Trip Amenities')}
+          {renderMultiSelect('meals', 'Meal Options Included')}
+          {renderMultiSelect('popularFilters', 'Popular Filters/Tags')}
+          {renderMultiSelect('funThingsToDo', 'Fun Things To Do Nearby')}
+          {renderMultiSelect('facilities', 'On-trip Facilities')}
+          {renderMultiSelect('reservationPolicy', 'Reservation Policies')}
           {renderMultiSelect('accessibility', 'Accessibility Features')}
-          {renderMultiSelect('popularFilters', 'Popular Tags/Filters')}
-          {renderMultiSelect('funThingsToDo', 'Highlight Experiences')}
-          {renderMultiSelect('meals', 'Meal Plans & Options')}
-          {renderMultiSelect('facilities', 'Provided Facilities/Support')}
-          {renderMultiSelect('reservationPolicy', 'Booking & Cancellation Policies')}
-          {renderMultiSelect('brands', 'Associated Tour Operators/Brands')}
-          {/* Removed roomAccessibility, bedPreference, roomFacilities as they are less typical for a general trip. 
-              If they are needed for specific trip types (e.g., involving specific accommodation details), they can be added back. */}
+          {renderMultiSelect('brands', 'Associated Brands (if any)')}
         </div>
       </div>
     </div>
