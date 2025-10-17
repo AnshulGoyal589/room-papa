@@ -36,7 +36,7 @@ export async function POST(
         if (!booking) {
             return NextResponse.json({ message: 'Booking not found.' }, { status: 404 });
         }
-        if (booking.userId !== userId) {
+        if (booking.guestDetails.userId !== userId) {
             return NextResponse.json({ message: 'You are not authorized to review this booking.' }, { status: 403 });
         }
         if (booking?.infoDetails?.id?.toString() !== propertyId) {

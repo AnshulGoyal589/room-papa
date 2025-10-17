@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Calendar, Hash, Hotel, MapPin, Moon, Users, X, FileText, Briefcase, Plane, User, AlertCircle, Star
 } from 'lucide-react';
-import { BookingDetails } from '@/lib/mongodb/models/Booking';
+import { Booking } from '@/lib/mongodb/models/Booking';
 import { getCountryFromCurrency } from '@/lib/currency';
 import { useUser } from "@clerk/nextjs";
 // import { Booking } from '@/lib/mongodb/models/Booking';
@@ -24,7 +24,7 @@ const formatDate = (dateString: string) => new Date(dateString).toLocaleDateStri
     weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
 });
 
-const getBookingIcon = (type: BookingDetails['type']) => {
+const getBookingIcon = (type: Booking['type']) => {
     switch (type) {
         case 'property': return <Hotel size={16} className="mr-2 text-[#003c95]" />;
         case 'trip': return <Briefcase size={16} className="mr-2 text-purple-600" />;
@@ -33,7 +33,7 @@ const getBookingIcon = (type: BookingDetails['type']) => {
     }
 };
 
-const BookingCard = ({ booking, onSelect, onReview }: { booking: BookingDetails; onSelect: (booking: BookingDetails) => void; onReview: (booking: BookingDetails) => void; }) => {
+const BookingCard = ({ booking, onSelect, onReview }: { booking: Booking; onSelect: (booking: Booking) => void; onReview: (booking: Booking) => void; }) => {
     // const isPastBooking = new Date(booking.bookingDetails.checkIn) < new Date();
     // console.log("Booking card: ",booking);
     // const canReview = isPastBooking && booking.status == 'Not Reviewed' && !booking.isReviewed;
@@ -57,7 +57,7 @@ const BookingCard = ({ booking, onSelect, onReview }: { booking: BookingDetails;
                 </div>
                 <div className="flex items-center text-sm text-gray-500 mb-4">
                     <MapPin size={14} className="mr-1.5" />
-                    <span>{booking?.infoDetails?.locationTo}</span>
+                    <span>{booking?.infoDetails?.location?.address}</span>
                 </div>
                 <div className="space-y-3 text-sm border-t pt-3">
                     <div className="flex items-center text-gray-700">
@@ -129,7 +129,7 @@ const CancelConfirmationModal = ({ onConfirm, onCancel, isCancelling }: { onConf
 
 
 // --- Booking Detail Modal ---
-const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: BookingDetails; onClose: () => void; onBookingUpdate: (updatedBooking: BookingDetails) => void; }) => {
+const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Booking; onClose: () => void; onBookingUpdate: (updatedBooking: Booking) => void; }) => {
     const [isCancelling, setIsCancelling] = useState(false);
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
@@ -175,7 +175,7 @@ const BookingDetailModal = ({ booking, onClose, onBookingUpdate }: { booking: Bo
                     <div className="p-5 sticky top-0 bg-white/80 backdrop-blur-lg border-b z-10 flex justify-between items-center">
                         <div>
                             <h2 className="text-2xl font-bold text-gray-900">{booking?.infoDetails?.title}</h2>
-                            <p className="text-sm text-gray-500">{booking?.infoDetails?.locationTo}</p>
+                            <p className="text-sm text-gray-500">{booking?.infoDetails?.location?.address}</p>
                         </div>
                         <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
                     </div>
@@ -282,7 +282,7 @@ const StarRating = ({ rating, setRating }: { rating: number; setRating: (rating:
     );
 };
 
-const ReviewModal = ({ booking, onClose, onReviewSubmitted }: { booking: BookingDetails; onClose: () => void; onReviewSubmitted: (bookingId: string) => void; }) => {
+const ReviewModal = ({ booking, onClose, onReviewSubmitted }: { booking: Booking; onClose: () => void; onReviewSubmitted: (bookingId: string) => void; }) => {
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -387,14 +387,14 @@ const ReviewModal = ({ booking, onClose, onReviewSubmitted }: { booking: Booking
     );
 };
 
-export default function BookingsList({ initialBookings }: { initialBookings: BookingDetails[] }) {
+export default function BookingsList({ initialBookings }: { initialBookings: Booking[] }) {
     
-    const [bookings, setBookings] = useState<BookingDetails[]>(initialBookings);
+    const [bookings, setBookings] = useState<Booking[]>(initialBookings);
     const [filter, setFilter] = useState<'all' | 'upcoming' | 'past'>('all');
-    const [selectedBooking, setSelectedBooking] = useState<BookingDetails | null>(null);
-    const [reviewingBooking, setReviewingBooking] = useState<BookingDetails | null>(null);
+    const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+    const [reviewingBooking, setReviewingBooking] = useState<Booking | null>(null);
 
-    const handleBookingUpdate = (updatedBooking: BookingDetails) => {
+    const handleBookingUpdate = (updatedBooking: Booking) => {
         setBookings(currentBookings =>
             currentBookings.map(b => (b._id as unknown as string) === (updatedBooking._id as unknown as string) ? updatedBooking : b)
         );

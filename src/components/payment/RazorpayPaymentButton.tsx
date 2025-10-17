@@ -70,22 +70,6 @@ const RazorpayPaymentButton: React.FC<RazorpayPaymentButtonProps> = ({
 }) => {
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // const sendMail = async ( bookingPayload: any) => {
-    //     try {
-    //         const response = await fetch('/api/bookings', {
-    //             method: 'POST',
-    //             headers: { 'Content-Type': 'application/json' },
-    //             body: JSON.stringify(bookingPayload)
-    //         });
-    //         if (!response.ok) {
-    //             const errorData = await response.json();
-    //             throw new Error(errorData.message || 'Failed to send email');
-    //         }
-    //     } catch (error) {
-    //         console.error('Error sending booking confirmation email:', error);
-    //     }
-    // };
-
     const handlePayment = async () => {
         if (!razorpayKeyId) {
             onPaymentError("Payment gateway key is not configured.");
@@ -152,7 +136,6 @@ const RazorpayPaymentButton: React.FC<RazorpayPaymentButtonProps> = ({
                         }
 
                         const confirmationData = await verificationResponse.json();
-                        // await sendMail( bookingPayload);
 
                         onPaymentSuccess(confirmationData);
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any

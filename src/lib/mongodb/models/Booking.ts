@@ -1,30 +1,80 @@
 import { PropertyType } from '@/types/property';
-import { ItemCategory } from './Components';
+import { ItemCategory, Location } from './Components';
 import { ObjectId } from 'mongodb';
+import { Image } from '@/types';
 
-export interface BaseDetails {
+export interface BookingInfoDetails {
   id: string;
-  title: string;
-  locationFrom: string;
-  locationTo: string;
+  accessibility?: string[];
+  amenities?: string[];
+  bannerImage?: Image;
+  bedPreference?: string[];
+  brands?: string[];
+  description?: string;
+  detailImages?: Image[];
+  facilities?: string[];
+  funThingsToDo?: string[];
+  googleMaps?: string;
+  houseRules?: string[];
+  location?: Location;
+  propertyRating?: number;
   reservationPolicy?: string[];
+  roomAccessibility?: string[];
+  roomFacilities?: string[];
+  title: string;
+  totalRating?: number;
   type: PropertyType;
-  ownerId: string;
+  userId: string;
 }
 
+export interface BookingDetails {
+  checkIn: string;
+  checkOut: string;
+  adults: number;
+  children: number;
+  totalGuests: number;
+  rooms?: number;
+  totalRoomsSelected: number;
+  selectedMealPlan: 'noMeal' | 'breakfastOnly' | 'allMeals';
+  roomsDetail: PropertyRoomDetail[];
+  pricePerNight: number;
+  numberOfNights: number;
+  subtotal: number;
+  serviceFee: number;
+  taxes: number;
+  currency: string;
+  totalPrice: number;
+  payment: {
+    provider: string;
+    orderId?: string;
+    paymentId?: string;
+    status?: 'pending' | 'succeeded' | 'failed';
+  },
+  specialRequests?: string;
+}
 
-interface BaseGuestDetails {
+export interface BookingGuestDetails {
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
-  arrivalTime?: string;
-  travelingFor?: string;
+  country: string;
+  countryCode: string;
+  clerkId?: string;
+  bookingFor?: 'self' | 'someoneElse';
+  travellingFor?: string;
+  gstDetails?: number;
   addOns?: {
     wantsAirportShuttle : boolean;
     wantsCarRental: boolean;
   };
-  specialRequests?: string;
+  arrivalTime?: string;
+  roomGuests?: {
+    [roomId: string]: {
+      guestName: string;
+    };
+  };
+  userId: string;
 }
 
 export interface PropertyRoomDetail {
@@ -35,113 +85,17 @@ export interface PropertyRoomDetail {
     currency: string;
 }
 
-// export interface PropertyBooking {
-//   _id?: ObjectId;
-//   type: 'property';
-//   propertyId?: ObjectId;
-//   isReviewed?: boolean;
-//   infoDetails: BaseDetails;
-//   bookingDetails: BaseBookingCoreDetails & {
-//       adults: number;
-//       children: number;
-//       totalGuests: number;
-//       totalRoomsSelected: number;
-//       selectedMealPlan: 'noMeal' | 'breakfastOnly' | 'allMeals';
-//       pricePerNight: number;
-//       numberOfNights: number;
-//       subtotal: number;
-//       serviceFee: number;
-//       taxes: number;
-//       roomsDetail: PropertyRoomDetail[];
-//   };
-//   userId: string;
-//   status: 'pending' | 'confirmed' | 'cancelled';
-//   guestDetails: BaseGuestDetails;
-//   recipients: string[];
-//   createdAt: Date;
-//   updatedAt: Date;
-// }
 
-// export interface TravellingBooking {
-//   _id?: ObjectId;
-//   type: 'travelling';
-//   propertyId?: ObjectId;
-//   isReviewed?: boolean;
-//   infoDetails: BaseDetails & {
-//     transportType: 'flight' | 'train' | 'bus';
-//   };
-//   bookingDetails: BaseBookingCoreDetails & {
-//     adults: number;
-//     children: number;
-//     totalGuests: number;
-//     pricePerPerson?: number;
-//     seatPreference?: string;
-//     class?: string;
-//   };
-//   userId: string;
-//   guestDetails: BaseGuestDetails;
-//   recipients: string[];
-//   status: 'pending' | 'confirmed' | 'cancelled';
-//   createdAt: Date;
-//   updatedAt: Date;
-// }
 
-// export interface TripBooking {
-//   _id?: ObjectId;
-//   type: 'trip';
-//   propertyId?: ObjectId;
-//   isReviewed?: boolean;
-//   infoDetails: BaseDetails & {
-//     itinerary: string[];
-//   };
-//   bookingDetails: BaseBookingCoreDetails & {
-//     adults: number;
-//     children: number;
-//     totalGuests: number;
-//     pricePerPerson?: number;
-//     activities: string[];
-//     guide?: boolean;
-//   };
-//   userId: string;
-//   guestDetails: BaseGuestDetails;
-//   recipients: string[];
-//   status: 'pending' | 'confirmed' | 'cancelled';
-//   createdAt: Date;
-//   updatedAt: Date;
-// }
-
-// export type Booking = PropertyBooking | TravellingBooking | TripBooking;
-
-export interface BookingDetails {
+export interface Booking {
   _id?: ObjectId;
   type: ItemCategory;
   isReviewed?: boolean;
-  infoDetails: BaseDetails;
-  bookingDetails: {
-    checkIn: string;
-    checkOut: string;
-    adults: number;
-    children: number;
-    totalGuests: number;
-    rooms?: number;
-    totalRoomsSelected: number;
-    selectedMealPlan: 'noMeal' | 'breakfastOnly' | 'allMeals';
-    roomsDetail: PropertyRoomDetail[];
-    pricePerNight: number;
-    numberOfNights: number;
-    subtotal: number;
-    serviceFee: number;
-    taxes: number;
-    currency: string;
-    totalPrice: number;
-    payment: {
-      provider: string;
-    }
-  };
-  guestDetails: BaseGuestDetails;
+  infoDetails: BookingInfoDetails;
+  bookingDetails: BookingDetails;
+  guestDetails: BookingGuestDetails;
   status?: 'pending' | 'confirmed' | 'cancelled';
   recipients: string[];
-  userId?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

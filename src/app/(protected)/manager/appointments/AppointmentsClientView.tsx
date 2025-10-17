@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookingDetails } from '@/lib/mongodb/models/Booking';
+import { Booking } from '@/lib/mongodb/models/Booking';
 import { Button } from '@/components/ui/button';
 import BookingDetailModal from './BookingDetailModal';
 
 interface AppointmentsClientViewProps {
-  initialBookings: BookingDetails[];
+  initialBookings: Booking[];
   currentFilters: {
     type: string;
     search: string;
@@ -21,7 +21,7 @@ export default function AppointmentsClientView({
   const router = useRouter();
   const [typeFilter, setTypeFilter] = useState(currentFilters.type);
   const [searchTerm, setSearchTerm] = useState(currentFilters.search);
-  const [selectedBooking, setSelectedBooking] = useState<BookingDetails | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   
   const bookings = initialBookings;
   
@@ -117,7 +117,8 @@ export default function AppointmentsClientView({
                         {booking.infoDetails.title}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {booking.infoDetails.locationTo}
+                        {booking.infoDetails.location?.address}
+                        
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

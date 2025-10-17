@@ -28,7 +28,7 @@ export async function POST(
         }
 
         // Security check: Ensure the person cancelling is the one who booked it
-        if (booking.userId !== userId) {
+        if (booking.guestDetails.userId !== userId) {
             return new NextResponse("Forbidden: You are not authorized to cancel this booking.", { status: 403 });
         }
         

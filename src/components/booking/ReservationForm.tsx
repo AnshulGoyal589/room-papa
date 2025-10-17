@@ -8,8 +8,9 @@ import { Star as StarIcon, CheckCircle, Users, Wifi, ParkingSquare, Wind, Utensi
 import RazorpayPaymentButton from '@/components/payment/RazorpayPaymentButton';
 import { DisplayableRoomOffer } from '@/types/booking';
 import { ReservationData } from '@/lib/mongodb/models/Components';
+import { Property } from '@/lib/mongodb/models/Property';
 
-const RESERVATION_DATA_KEY = 'reservationData_v1';
+const RESERVATION_DATA_KEY =  process.env.NEXT_RESERVATION_DATA_KEY || "reservationData_v1";
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "";
 
 const renderRatingStars = (rating: number) => (
@@ -40,7 +41,7 @@ const Stepper = () => (
 );
 
 
-export default function ReservationForm({ propertyId }: { propertyId: string }) {
+export default function ReservationForm({ property }: { property: Property }) {
     const router = useRouter();
     const { user, isLoaded, isSignedIn } = useUser();
     const [reservationDetails, setReservationDetails] = useState<ReservationData | null>(null);
@@ -67,23 +68,27 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
         const storedData = localStorage.getItem(RESERVATION_DATA_KEY);
         if (!storedData) {
             setError("Booking details not found. Please start over."); setLoading(false);
-            router.push(`/properties/${propertyId}`); return;
+            router.push(`/properties/${property._id}`); return;
         }
         try {
             const parsedData: ReservationData = JSON.parse(storedData);
-            if (parsedData.propertyId !== propertyId) {
-                setError("Mismatched booking data. Redirecting..."); setLoading(false);
+            if (parsedData.propertyId !== property._id?.toString()) {
+                setError("Mismatched booking data. Redirecting...");
+                setLoading(false);
                 localStorage.removeItem(RESERVATION_DATA_KEY);
-                router.push(`/properties/${propertyId}`); return;
+                router.push(`/properties/${property._id}`);
+                return;
             }
             setReservationDetails(parsedData);
         } catch (error) {
             console.error("Error parsing reservation data:", error);
             setError("Could not read booking details. Please start over.");
             localStorage.removeItem(RESERVATION_DATA_KEY);
-            router.push(`/properties/${propertyId}`);
-        } finally { setLoading(false); }
-    }, [propertyId, router]);
+            router.push(`/properties/${property._id}`);
+        } finally {
+            setLoading(false);
+        }
+    }, [property._id, router]);
 
     useEffect(() => {
         if (isLoaded && isSignedIn && user) {
@@ -125,7 +130,7 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
     if (loading) { return <div className="flex justify-center items-center min-h-screen bg-gray-100"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#003c95] mx-auto"></div></div>; }
     if (error || !reservationDetails) { return <div className="container mx-auto px-4 py-16 text-center"><h2 className="text-2xl font-bold text-red-600 mb-4">{error || 'Could not load reservation.'}</h2><button onClick={() => router.push('/properties')} className="mt-4 px-6 py-2 bg-[#003c95] text-white rounded-md hover:bg-[#003c95]">Find Properties</button></div>; }
     
-    const { propertyTitle, propertyImage, propertyLocation, propertyRating, checkInDate, checkOutDate, days, globalGuestCount, pricingDetails } = reservationDetails;
+    const { checkInDate, checkOutDate, days, globalGuestCount, pricingDetails } = reservationDetails;
     const checkIn = new Date(checkInDate);
     const checkOut = new Date(checkOutDate);
     
@@ -139,15 +144,15 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                         <div className="lg:col-span-1 space-y-4 lg:sticky top-5 self-start">
                             <div className="border border-gray-300 rounded-md p-4 space-y-4">
                                 <div className="flex space-x-4">
-                                    {propertyImage && <div className="relative w-24 h-20 rounded-md overflow-hidden flex-shrink-0"><Image src={propertyImage} alt={propertyTitle} layout="fill" objectFit="cover" /></div>}
+                                    {property.bannerImage?.url && <div className="relative w-24 h-20 rounded-md overflow-hidden flex-shrink-0"><Image src={property.bannerImage.url} alt={property.bannerImage.alt || property.title || "alt tag" } layout="fill" objectFit="cover" /></div>}
                                     <div>
                                         <span className="text-xs">Hotel</span>
-                                        {propertyRating && renderRatingStars(propertyRating)}
-                                        <h3 className="font-bold text-gray-800 leading-tight">{propertyTitle}</h3>
-                                        <p className="text-xs text-gray-600 mt-1">{propertyLocation.address}</p>
+                                        {property.totalRating && renderRatingStars(property.totalRating)}
+                                        <h3 className="font-bold text-gray-800 leading-tight">{property.title}</h3>
+                                        <p className="text-xs text-gray-600 mt-1">{property.location.address}</p>
                                     </div>
                                 </div>
-                                {propertyRating && <div className="flex items-center gap-2"><div className="bg-[#003c95] text-white font-bold text-sm px-2 py-1 rounded-md">{propertyRating.toFixed(1)}</div><span className="font-semibold">Good</span><span className="text-xs text-gray-500">1,012 reviews</span></div>}
+                                {property.totalRating && <div className="flex items-center gap-2"><div className="bg-[#003c95] text-white font-bold text-sm px-2 py-1 rounded-md">{property.totalRating.toFixed(1)}</div><span className="font-semibold">Good</span><span className="text-xs text-gray-500">1,012 reviews</span></div>}
                                 <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
                                     <span className="flex items-center"><Wifi size={14} className="mr-1.5"/>Free Wifi</span>
                                     <span className="flex items-center"><ParkingSquare size={14} className="mr-1.5"/>Parking</span>
@@ -279,11 +284,31 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                             <div className="text-right">
                                 <RazorpayPaymentButton
                                     className="bg-[#003c95] text-white font-bold py-3 px-6 rounded-md hover:bg-[#003c95] transition-colors text-lg"
-                                    amountInSubunits={Math.round(pricingDetails.totalBookingPricing * 100)} currency={pricingDetails.currency} receiptId={`booking_${propertyId}_${Date.now()}`}
+                                    amountInSubunits={Math.round(pricingDetails.totalBookingPricing * 100)} currency={pricingDetails.currency} receiptId={`booking_${property._id}_${Date.now()}`}
                                     bookingPayload={{ 
                                         type: "property", 
                                         infoDetails: { 
-                                            id: propertyId, title: propertyTitle, ownerId: reservationDetails.ownerId, locationFrom: "NA", locationTo: `${propertyLocation.address}, ${propertyLocation.city}`, type: reservationDetails.propertyType, reservationPolicy: reservationDetails.reservationPolicy,
+                                            id: property._id || 'unknown',
+                                            accessibility : property.accessibility || [],
+                                            amenities: property.amenities || [],
+                                            bannerImage: property.bannerImage || null,
+                                            bedPreference: property.bedPreference || [],
+                                            brands: property.brands || [],
+                                            description: property.description || '',
+                                            detailImages: property.detailImages || [],
+                                            facilities: property.facilities || [],
+                                            funThingsToDo: property.funThingsToDo || [],
+                                            googleMaps: property.googleMaps || '',
+                                            houseRules: property.houseRules || '',
+                                            location: property.location || { address: '', city: '', state: '', country: '' },
+                                            propertyRating: property.propertyRating || 'unrated',
+                                            reservationPolicy: property.reservationPolicy || 'standard',
+                                            roomAccessibility: property.roomAccessibility || [],
+                                            roomFacilities: property.roomFacilities || [],
+                                            title: property.title || 'Unknown Property',
+                                            totalRating: property.totalRating || null,
+                                            type: property.type || 'Unknown',
+                                            userId: property.userId || 'unknown'
                                         },
                                         bookingDetails: { 
                                             checkIn: checkIn.toISOString(),
@@ -293,25 +318,38 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                             totalGuests: globalGuestCount,
                                             totalRoomsSelected: reservationDetails.totalSelectedPhysicalRooms,
                                             selectedMealPlan: reservationDetails.selectedMealPlan,
-                                            roomsDetail: Object.entries(reservationDetails.selectedOffers).filter(([, qty]) => qty > 0).map(([offerId, qty]) => { const offer = reservationDetails.displayableRoomOffers?.find(o => o.offerId === offerId); return { categoryId: propertyId || 'unknown',
-                                            offerKey: offerId.split('_').slice(1).join('_'),
-                                            title: offer?.categoryTitle || 'Unknown', qty,
-                                            estimatedPricePerRoomNight: offer?.pricePerNight || 0,
-                                            currency: offer?.currency || pricingDetails.currency }; 
-                                        }),
-                                        calculatedPricePerNight: pricingDetails.totalBookingPricePerNight, 
-                                        currency: pricingDetails.currency,
-                                        numberOfNights: days,
-                                        subtotal: pricingDetails.subtotalNights,
-                                        serviceFee: pricingDetails.serviceCharge,
-                                        taxes: pricingDetails.taxesApplied,
-                                        totalPrice: pricingDetails.totalBookingPricing, 
-                                    },
-                                    guestDetails: {
-                                        ...formData, country, countryCode : "+91", clerkId : user?.id , bookingFor, travelingFor, gstDetails: travelingFor === 'work' ? gstDetails : null, addOns: { wantsAirportShuttle, wantsCarRental }, specialRequests: `${specialRequests}${wantsRoomsTogether ? ' (Rooms close together requested)' : ''}`, arrivalTime, roomGuests: guestDetailsPerRoom }, userId : user?.id, recipients: [formData.email, user?.primaryEmailAddress?.emailAddress].filter(Boolean) as string[] 
+                                            roomsDetail: Object.entries(reservationDetails.selectedOffers)
+                                                .filter(([, qty]) => qty > 0)
+                                                .map(([]) => {
+                                                    // const offer = reservationDetails.displayableRoomOffers?.find(o => o.offerId === offerId);
+                                                    return { categoryId: property._id || 'unknown' };
+                                                }),
+                                            calculatedPricePerNight: pricingDetails.totalBookingPricePerNight, 
+                                            currency: pricingDetails.currency,
+                                            numberOfNights: days,
+                                            subtotal: pricingDetails.subtotalNights,
+                                            serviceFee: pricingDetails.serviceCharge,
+                                            taxes: pricingDetails.taxesApplied,
+                                            totalPrice: pricingDetails.totalBookingPricing, 
+                                        },
+                                        guestDetails: {
+                                            ...formData,
+                                            country,
+                                            countryCode : "+91",
+                                            clerkId : user?.id ,
+                                            bookingFor,
+                                            travelingFor,
+                                            gstDetails: travelingFor === 'work' ? gstDetails : null,
+                                            addOns: { wantsAirportShuttle, wantsCarRental },
+                                            specialRequests: `${specialRequests}${wantsRoomsTogether ? ' (Rooms close together requested)' : ''}`,
+                                            arrivalTime,
+                                            roomGuests: guestDetailsPerRoom,
+                                            userId : user?.id,
+                                        },
+                                        recipients: [formData.email, user?.primaryEmailAddress?.emailAddress].filter(Boolean) as string[] 
                                     }}
                                     prefill={{ name: `${formData.firstName} ${formData.lastName}`, email: formData.email, contact: `+91${formData.phone}` }}
-                                    notes={{ propertyTitle, checkIn: checkIn.toISOString().split('T')[0], checkOut: checkOut.toISOString().split('T')[0] }}
+                                    notes={{ property: property.title || 'Unknown Property', checkIn: checkIn.toISOString().split('T')[0], checkOut: checkOut.toISOString().split('T')[0] }}
                                     onPaymentSuccess={() => { setBookingConfirmed(true); localStorage.removeItem(RESERVATION_DATA_KEY); }}
                                     onPaymentError={(errorMessage) => console.error(errorMessage)}
                                     razorpayKeyId={RAZORPAY_KEY_ID} companyName="YourStays.com"
@@ -325,11 +363,11 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
             </div>
 
             {bookingConfirmed && (
-                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[110] backdrop-blur-sm">
+                <div className="fixed inset-0 bg-black/40 bg-opacity-10 flex items-center justify-center p-4 z-[110]">
                     <div className="bg-white rounded-lg max-w-md w-full p-7 text-center shadow-xl">
                         <div className="mb-4"><div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center border-2 border-green-200"><CheckCircle className="w-10 h-10 text-green-500" /></div></div>
                         <h3 className="text-xl font-bold text-gray-800 mb-2">Booking Confirmed!</h3>
-                        <p className="mb-5 text-sm text-gray-600">Your booking for <span className="font-semibold">{propertyTitle}</span> is confirmed. A confirmation email has been sent to <span className="font-semibold">{formData.email}</span>.</p>
+                        <p className="mb-5 text-sm text-gray-600">Your booking for <span className="font-semibold">{property.title || 'Unknown Property'}</span> is confirmed. A confirmation email has been sent to <span className="font-semibold">{formData.email}</span>.</p>
                         <button onClick={() => router.push('/customer/bookings')} className="w-full bg-[#003c95] text-white py-2.5 px-4 rounded-lg font-semibold hover:bg-[#003c95]">View My Bookings</button>
                     </div>
                 </div>

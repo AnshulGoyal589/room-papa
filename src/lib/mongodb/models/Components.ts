@@ -4,7 +4,6 @@ import { Travelling } from "./Travelling";
 import { Trip } from "./Trip";
 import { ReactNode } from "react";
 import { DisplayableRoomOffer, HikePricingByOccupancy } from "@/types/booking";
-import { PropertyType } from "@/types/property";
 
 export interface Location{
     address: string;
@@ -120,13 +119,13 @@ export interface RoleProtectionProps {
 
 export interface ReservationData {
     propertyId: string;
-    propertyTitle: string;
-    propertyImage: string | null;
-    propertyLocation: Location;
-    propertyRating: number | null;
+    // propertyTitle: string;
+    // propertyImage: string | null;
+    // propertyLocation: Location;
+    // propertyRating: number | null;
     checkInDate: string;
     checkOutDate: string;
-    reservationPolicy : string[];
+    // reservationPolicy : string[];
     days: number;
     adultCount: number;
     childCount: number;
@@ -143,8 +142,8 @@ export interface ReservationData {
         currency: string;
         totalBookingPricePerNight: number;
     };
-    ownerId: string;
-    propertyType: PropertyType;
+    // ownerId: string;
+    // propertyType: PropertyType;
 }
 
 export interface SearchFormProps {

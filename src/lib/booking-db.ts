@@ -1,96 +1,74 @@
 import { Collection, Db, Filter, ObjectId } from 'mongodb';
 import { getDb } from '@/lib/mongodb';
-import { BaseDetails, BookingDetails, BookingQueryFilters, ManagerBookingQueryFilters } from '@/lib/mongodb/models/Booking';
+import { Booking, BookingQueryFilters, ManagerBookingQueryFilters } from '@/lib/mongodb/models/Booking';
 
 export class BookingRepository {
   private db: Db;
-  private collection: Collection<BookingDetails>;
+  private collection: Collection<Booking>;
 
   constructor(db: Db) {
     this.db = db;
-    this.collection = this.db.collection<BookingDetails>('bookings');
+    this.collection = this.db.collection<Booking>('bookings');
   }
 
-  async createBooking(bookingData: BookingDetails): Promise<{ id: string; booking: BookingDetails }> {
+  async createBooking(bookingData: Booking): Promise<{ id: string }> {
     const now = new Date();
-    let newBooking!: BookingDetails;
-    // console.log("Creating booking with data:", bookingData);
-    // return
-    const { infoDetails, ...restOfInput } = bookingData as BookingDetails;
-    const infoDetailsPayload: BaseDetails = {
-      id: infoDetails.id,
-      title: infoDetails.title,
-      locationFrom: infoDetails.locationFrom,
-      locationTo: infoDetails.locationTo,
-      reservationPolicy: infoDetails.reservationPolicy,
-      type: infoDetails.type,
-      ownerId: infoDetails.ownerId,
-    };
+    let newBooking!: Booking;
 
     if (bookingData.type === 'property') {
-      const propertyInput = bookingData as BookingDetails;
       newBooking = {
-        type: 'property',
-        infoDetails: infoDetailsPayload,
-        bookingDetails: {
-          ...propertyInput.bookingDetails,
-          pricePerNight: propertyInput.bookingDetails.totalPrice / propertyInput.bookingDetails.numberOfNights, 
-          payment : {
-            provider: 'razorpay'
-          }
-        },
-        guestDetails: propertyInput.guestDetails,
+        type: bookingData.type,
         isReviewed: false,
-        userId: restOfInput.userId || 'some-user-id',
-        recipients: propertyInput.recipients,
+        infoDetails: bookingData.infoDetails,
+        bookingDetails: bookingData.bookingDetails,
+        guestDetails: bookingData.guestDetails,
         status: 'confirmed',
+        recipients: bookingData.recipients,
         createdAt: now,
         updatedAt: now,
-      } as BookingDetails;
-    } else if (bookingData.type === 'travelling') {
-      const travellingInput = bookingData as BookingDetails;
-      newBooking = {
-        type: 'travelling',
-        infoDetails: infoDetailsPayload,
-        isReviewed: false,
-        bookingDetails: travellingInput.bookingDetails,
-        guestDetails: travellingInput.guestDetails,
-        userId: restOfInput.userId || 'some-user-id',
-        recipients: travellingInput.recipients,
-        status: 'confirmed',
-        createdAt: now,
-        updatedAt: now,
-      } as BookingDetails;
-    } else if (bookingData.type === 'trip') {
-      const tripInput = bookingData as BookingDetails;
-      newBooking = {
-        type: 'trip',
-        infoDetails: infoDetailsPayload,
-        isReviewed: false,
-        bookingDetails: tripInput.bookingDetails,
-        guestDetails: tripInput.guestDetails,
-        userId: restOfInput.userId || 'some-user-id',
-        recipients: tripInput.recipients,
-        status: 'confirmed',
-        createdAt: now,
-        updatedAt: now,
-      } as BookingDetails;
-    } else {
+      } as Booking;
+    } 
+    // else if (bookingData.type === 'travelling') {
+    //   const travellingInput = bookingData as Booking;
+    //   newBooking = {
+    //     type: 'travelling',
+    //     infoDetails: infoDetailsPayload,
+    //     isReviewed: false,
+    //     bookingDetails: travellingInput.bookingDetails,
+    //     guestDetails: travellingInput.guestDetails,
+    //     userId: restOfInput.userId || 'some-user-id',
+    //     recipients: travellingInput.recipients,
+    //     status: 'confirmed',
+    //     createdAt: now,
+    //     updatedAt: now,
+    //   } as Booking;
+    // } else if (bookingData.type === 'trip') {
+    //   const tripInput = bookingData as Booking;
+    //   newBooking = {
+    //     type: 'trip',
+    //     infoDetails: infoDetailsPayload,
+    //     isReviewed: false,
+    //     bookingDetails: tripInput.bookingDetails,
+    //     guestDetails: tripInput.guestDetails,
+    //     userId: restOfInput.userId || 'some-user-id',
+    //     recipients: tripInput.recipients,
+    //     status: 'confirmed',
+    //     createdAt: now,
+    //     updatedAt: now,
+    //   } as Booking;
+    // } 
+    else {
         throw new Error(`Invalid booking type`);
     }
 
     const result = await this.collection.insertOne(newBooking);
 
     return {
-      id: result.insertedId.toString(),
-      booking: {
-        ...newBooking,
-        _id: result.insertedId,
-      },
+      id: result.insertedId.toString()
     };
   }
 
-  async getBookingById(id: string): Promise<BookingDetails | null> {
+  async getBookingById(id: string): Promise<Booking | null> {
     try {
       return await this.collection.findOne({ _id: new ObjectId(id) });
     } catch (error) {
@@ -99,7 +77,7 @@ export class BookingRepository {
     }
   }
 
-  async updateBooking(id: string, updateData: Partial<BookingDetails>): Promise<boolean> {
+  async updateBooking(id: string, updateData: Partial<Booking>): Promise<boolean> {
     try {
       const result = await this.collection.updateOne(
         { _id: new ObjectId(id) },
@@ -142,8 +120,8 @@ export class BookingRepository {
     }
   }
 
-  async queryBookings(filters: BookingQueryFilters): Promise<BookingDetails[]> {
-    const query: Filter<BookingDetails> = {};
+  async queryBookings(filters: BookingQueryFilters): Promise<Booking[]> {
+    const query: Filter<Booking> = {};
 
     if (filters.userId) {
       query.userId = filters.userId;
@@ -197,20 +175,20 @@ export class BookingRepository {
     return bookingsQuery.toArray();
   }
 
-  async getPropertyBookings(filters: BookingQueryFilters = {}): Promise<BookingDetails[]> {
-    return this.queryBookings({ ...filters, type: 'property' }) as Promise<BookingDetails[]>;
+  async getPropertyBookings(filters: BookingQueryFilters = {}): Promise<Booking[]> {
+    return this.queryBookings({ ...filters, type: 'property' }) as Promise<Booking[]>;
   }
 
-  async getTravellingBookings(filters: BookingQueryFilters = {}): Promise<BookingDetails[]> {
-    return this.queryBookings({ ...filters, type: 'travelling' }) as Promise<BookingDetails[]>;
+  async getTravellingBookings(filters: BookingQueryFilters = {}): Promise<Booking[]> {
+    return this.queryBookings({ ...filters, type: 'travelling' }) as Promise<Booking[]>;
   }
 
-  async getTripBookings(filters: BookingQueryFilters = {}): Promise<BookingDetails[]> {
-    return this.queryBookings({ ...filters, type: 'trip' }) as Promise<BookingDetails[]>;
+  async getTripBookings(filters: BookingQueryFilters = {}): Promise<Booking[]> {
+    return this.queryBookings({ ...filters, type: 'trip' }) as Promise<Booking[]>;
   }
 
-  async getManagerBookings(filters: ManagerBookingQueryFilters): Promise<BookingDetails[]> {
-    const query: Filter<BookingDetails> = {};
+  async getManagerBookings(filters: ManagerBookingQueryFilters): Promise<Booking[]> {
+    const query: Filter<Booking> = {};
 
     if (!filters.ownerId) {
       throw new Error('ownerId is required for manager bookings query');
@@ -268,7 +246,7 @@ export class BookingRepository {
   }
 
   async getManagerBookingsCount(filters: ManagerBookingQueryFilters): Promise<number> {
-    const query: Filter<BookingDetails> = {};
+    const query: Filter<Booking> = {};
 
     if (!filters.ownerId) {
       throw new Error('ownerId is required for manager bookings count');
@@ -310,7 +288,7 @@ export class BookingRepository {
     return this.collection.countDocuments(query);
   }
 
-  async getUpcomingManagerBookings(ownerId: string, limit: number = 5): Promise<BookingDetails[]> {
+  async getUpcomingManagerBookings(ownerId: string, limit: number = 5): Promise<Booking[]> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -324,7 +302,7 @@ export class BookingRepository {
     });
   }
 
-  async getRecentManagerBookings(ownerId: string, limit: number = 10): Promise<BookingDetails[]> {
+  async getRecentManagerBookings(ownerId: string, limit: number = 10): Promise<Booking[]> {
     return this.getManagerBookings({
       ownerId,
       sortBy: 'updatedAt',

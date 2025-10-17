@@ -25,14 +25,13 @@ import AboutProperty from './AboutProperty';
 import { DiscountedPricingByMealPlan, PricingByMealPlan } from '@/types/property';
 import { HouseRules } from './HouseRules';
 
-const LOCAL_STORAGE_KEY = 'propertyBookingPreferences_v3';
-const RESERVATION_DATA_KEY = 'reservationData_v1';
-const MAX_COMBINED_ROOMS = 5;
-const MAX_OCCUPANTS_PER_ROOM = 3;
-const SERVICE_FEE_FIXED = 10;
-const TAX_RATE_PERCENTAGE = 0.05;
+const LOCAL_STORAGE_KEY = process.env.NEXT_LOCAL_STORAGE_KEY || "propertyBookingPreferences_v3";
+const RESERVATION_DATA_KEY = process.env.NEXT_RESERVATION_DATA_KEY || "reservationData_v1";
+const MAX_COMBINED_ROOMS = parseInt(process.env.NEXT_MAX_COMBINED_ROOMS || '5', 10);
+const MAX_OCCUPANTS_PER_ROOM = parseInt(process.env.NEXT_MAX_OCCUPANTS_PER_ROOM || '3', 10);
+const SERVICE_FEE_FIXED = parseFloat(process.env.NEXT_SERVICE_FEE_FIXED || '10');
+const TAX_RATE_PERCENTAGE = parseFloat(process.env.NEXT_TAX_RATE_PERCENTAGE || '0.05');
 
-// --- Helper Functions ---
 
 const calculateDays = (start: Date | null, end: Date | null): number => {
     if (!start || !end || end <= start) return 0;
@@ -62,7 +61,7 @@ const getPrice = (
     return 0;
 };
 
-// --- Child Components ---
+
 
 const ImageGalleryModal: React.FC<{ title: string; images: PropertyImage[]; onClose: () => void; }> = ({ title, images, onClose }) => {
   const [activeImage, setActiveImage] = useState<PropertyImage | null>(images?.[0] || null);
@@ -97,17 +96,14 @@ const ImageGalleryModal: React.FC<{ title: string; images: PropertyImage[]; onCl
 };
 
 
-// --- Main Page Component ---
+
 
 export default function PropertyDetailPage({ property }: { property: Property | null }) {
-
-    // console.log("Rendering PropertyDetailPage for property:", property); 
 
     const { openSignIn } = useClerk();
     const router = useRouter();
     const { isSignedIn } = useUser();
 
-    // State declarations
     const [checkInDate, setCheckInDate] = useState<Date | null>(null);
     const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
     const [adultCount, setAdultCount] = useState<number>(localStorage.getItem('adults') ? parseInt(localStorage.getItem('adults')!) : 1);
@@ -118,7 +114,6 @@ export default function PropertyDetailPage({ property }: { property: Property | 
     const [bookingError, setBookingError] = useState<string | null>(null);
     const [modalData, setModalData] = useState<{ title: string; images: PropertyImage[] } | null>(null);
 
-    // Memoized calculations
     const days = useMemo(() => calculateDays(checkInDate, checkOutDate), [checkInDate, checkOutDate]);
     const totalSelectedPhysicalRooms = useMemo(() => Object.values(selectedOffers).reduce((sum, qty) => sum + qty, 0), [selectedOffers]);
     
@@ -190,7 +185,6 @@ export default function PropertyDetailPage({ property }: { property: Property | 
         return { available: true, message: null };
     }, []);
 
-    // Effect for initializing state from localStorage or query params
     useEffect(() => {
         if (!property || typeof window === 'undefined') return;
 
@@ -202,7 +196,7 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                 const storedCheckOut = localStorage.getItem('checkOut');
                 if( storedCheckIn ) setCheckInDate( new Date(storedCheckIn) );
                 if( storedCheckOut ) setCheckOutDate( new Date(storedCheckOut) );
-                // console.log( parsedPrefs );
+                
                 if (parsedPrefs.propertyId === property._id?.toString()) {
 
                     setCheckInDate(
@@ -217,7 +211,6 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                         : null
                     );
                     console.log("one: ",parsedPrefs);
-                    // setCheckOutDate(parsedPrefs.checkOutDate ? validateDate(parsedPrefs.checkOutDate) : null);
                     setAdultCount(parsedPrefs.adultCount || localStorage.getItem('adults') || 1);
                     setChildCount(parsedPrefs.childCount || localStorage.getItem('children') || 0);
                     setSelectedOffers(parsedPrefs.selectedOffers || {});
@@ -226,15 +219,8 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                 }
             } catch (e) { console.error("Failed to parse stored preferences:", e); }
         }
-        // Fallback for new visit or different property
-        // setCheckInDate(null);
-        // setCheckOutDate(null);
-        // setAdultCount(localStorage.getItem('adults') ? parseInt(localStorage.getItem('adults')!) : 1);
-        // setChildCount(localStorage.getItem('children') ? parseInt(localStorage.getItem('children')!) : 0);
-        // setSelectedOffers({});
     }, [property]);
 
-    // Effect for saving state to localStorage
     useEffect(() => {
         if (property && typeof window !== 'undefined') {
             const preferencesToSave = {
@@ -252,7 +238,7 @@ export default function PropertyDetailPage({ property }: { property: Property | 
     
     const displayableRoomOffers = useMemo((): DisplayableRoomOffer[] => {
         if (!property?.categoryRooms || !checkInDate || !checkOutDate || days <= 0) return [];
-        // console.log("Testing");
+        
         const offers: DisplayableRoomOffer[] = [];
         const bookingDateRange = getDatesInRange(checkInDate, checkOutDate);
         if (bookingDateRange.length === 0) return [];
@@ -264,7 +250,7 @@ export default function PropertyDetailPage({ property }: { property: Property | 
         };
 
         property.categoryRooms.forEach(cat => {
-            // --- AVAILABILITY LOGIC ---
+
             // 1. Check against defined availability periods
             if (cat.availability && cat.availability.length > 0) {
                 const bookingStart = new Date(checkInDate); bookingStart.setHours(0,0,0,0);
@@ -352,7 +338,6 @@ export default function PropertyDetailPage({ property }: { property: Property | 
         }
 
         let pricePerNight = 0;
-        // let adultCapacity = 0;
         const roomInstances: { category: StoredRoomCategory, offer: DisplayableRoomOffer }[] = [];
 
         Object.entries(selectedOffers).forEach(([offerId, qty]) => {
@@ -360,7 +345,6 @@ export default function PropertyDetailPage({ property }: { property: Property | 
             const category = property.categoryRooms?.find(c => c.id === offer?.categoryId || c._id === offer?.categoryId);
             if (offer && category && qty > 0) {
                 pricePerNight += offer.pricePerNight * qty;
-                // adultCapacity += offer.intendedAdults * qty;
                 for (let i = 0; i < qty; i++) roomInstances.push({ category, offer });
             }
         });
@@ -392,7 +376,6 @@ export default function PropertyDetailPage({ property }: { property: Property | 
 
     }, [selectedOffers, displayableRoomOffers, days, childCount, property, totalSelectedPhysicalRooms, selectedMealPlan]);
     
-    // Handlers
     const handleCheckInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedValue = e.target.value;
         const newCheckIn = selectedValue ? validateDate(selectedValue) : null;
@@ -454,11 +437,15 @@ export default function PropertyDetailPage({ property }: { property: Property | 
         setBookingError(null);
         
         const reservationData = {
-            propertyId: property?._id, propertyTitle: property?.title, propertyImage: property?.bannerImage?.url,
-            propertyLocation: property?.location, checkInDate: checkInDate?.toISOString(), checkOutDate: checkOutDate?.toISOString(),
-            days, adultCount, childCount, selectedOffers, selectedMealPlan,
+            propertyId: property?._id,
+            checkInDate: checkInDate?.toISOString(),
+            checkOutDate: checkOutDate?.toISOString(),
+            days,
+            adultCount,
+            childCount,
+            selectedOffers,
+            selectedMealPlan,
             pricingDetails: { subtotalNights, serviceCharge, taxesApplied, totalBookingPricing, currency: property?.costing?.currency || 'INR' },
-            ownerId: property?.userId,
         };
         localStorage.setItem(RESERVATION_DATA_KEY, JSON.stringify(reservationData));
         router.push(`/customer/book/${property?._id}`);
@@ -585,10 +572,8 @@ export default function PropertyDetailPage({ property }: { property: Property | 
 
                                         return (
                                             <tr key={offer.offerId} className={`block p-4 border rounded-lg mb-4 lg:p-0 lg:table-row lg:border-none lg:mb-0 ${currentQtySelected > 0 ? 'bg-blue-50' : 'bg-white'}`}>
-                                                {/* --- Category Info Cell (Row-spanned) --- */}
                                                 {offerIndexInCategory === 0 && (
                                                     <td className="block border-b pb-4 mb-4 lg:border-b-0 lg:pb-0 lg:mb-0 lg:table-cell lg:px-4 lg:py-3 lg:align-top lg:border-r" rowSpan={offersForThisCategory.length}>
-                                                        {/* ... Category image, title, and details JSX remains the same ... */}
                                                         <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden cursor-pointer group mb-3 shadow-sm" onClick={() => handleCategoryTitleClick(category)}>
                                                             <CldImage src={category.categoryImages?.[0]?.publicId || '/images/placeholder-property.png'} alt={`Image of ${category.title}`} layout="fill" objectFit="cover" />
                                                             {category.categoryImages && category.categoryImages.length > 0 && <div className="absolute bottom-2 left-2 bg-white/90 text-gray-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-lg"> {category.categoryImages.length} PHOTOS </div>}

@@ -1,9 +1,7 @@
-// components/manager/BookingDetailModal.tsx
-
-import { BookingDetails } from '@/lib/mongodb/models/Booking';
+import { Booking } from '@/lib/mongodb/models/Booking';
 
 interface BookingDetailModalProps {
-  booking: BookingDetails;
+  booking: Booking;
   onClose: () => void;
 }
 
@@ -39,7 +37,7 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
           <div className="p-4 border rounded-md">
             <h3 className="text-lg font-semibold mb-2 text-[#003c95]">Trip Information</h3>
             <p><strong>Title:</strong> {booking.infoDetails.title}</p>
-            <p><strong>Location:</strong> {booking.infoDetails.locationTo}</p>
+            <p><strong>Location:</strong> {booking.infoDetails.location?.address}</p>
             <p><strong>Type:</strong> <span className="capitalize">{booking.type}</span></p>
           </div>
 
@@ -49,8 +47,8 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
             <p><strong>Name:</strong> {booking.guestDetails.firstName} {booking.guestDetails.lastName}</p>
             <p><strong>Email:</strong> {booking.guestDetails.email}</p>
             <p><strong>Phone:</strong> {booking.guestDetails.phone}</p>
-            {booking.guestDetails.specialRequests && (
-                <p><strong>Special Requests:</strong> {booking.guestDetails.specialRequests}</p>
+            {booking.bookingDetails.specialRequests && (
+                <p><strong>Special Requests:</strong> {booking.bookingDetails.specialRequests}</p>
             )}
           </div>
 

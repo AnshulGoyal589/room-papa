@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { ObjectId } from 'mongodb';
 import { getBookingRepository } from '@/lib/booking-db';
-import { BookingDetails } from '@/lib/mongodb/models/Booking';
+import { Booking } from '@/lib/mongodb/models/Booking';
 import { getPropertiesCollection } from '@/lib/mongodb/models/Property';
-import { sendBookingConfirmationEmail } from '../route';
+import { sendBookingConfirmationEmail } from '@/lib/email-service';
 
 const getDatesInRange = (startDate: Date, endDate: Date): string[] => {
     const dates: string[] = [];
@@ -41,17 +41,9 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: "Payment verification failed: Invalid signature." }, { status: 400 });
         }
         
-        const bookingInput: BookingDetails = {
+        const bookingInput: Booking = {
             type: bookingPayload.type,
-            infoDetails: {
-                id: bookingPayload.infoDetails.id,
-                title: bookingPayload.infoDetails.title,
-                locationFrom: bookingPayload.infoDetails.locationFrom,
-                locationTo: bookingPayload.infoDetails.locationTo,
-                type: bookingPayload.infoDetails.type,
-                ownerId: bookingPayload.infoDetails.ownerId,
-                reservationPolicy : bookingPayload.infoDetails.reservationPolicy,
-            },
+            infoDetails: bookingPayload.infoDetails,
             bookingDetails: {
                 ...bookingPayload.bookingDetails,
                 payment: {
@@ -61,12 +53,8 @@ export async function POST(request: Request) {
                     status: 'succeeded',
                 },
             },
-            guestDetails: {
-                ...bookingPayload.guestDetails,
-                userId: bookingPayload.userId, 
-            },
-            recipients: bookingPayload.recipients,
-            userId: bookingPayload.userId,
+            guestDetails: bookingPayload.guestDetails,
+            recipients: bookingPayload.recipients
         };
 
         const bookingRepository = await getBookingRepository();
