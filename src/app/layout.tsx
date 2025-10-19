@@ -76,18 +76,22 @@ export const metadata: Metadata = {
   // Category for better content classification
   category: 'Travel & Tourism',
 
-  // Canonical URL configuration
+  // Canonical + hreflang for India
   alternates: {
     canonical: siteUrl,
+    languages: {
+      'en-IN': siteUrl,
+      'x-default': siteUrl,
+    },
   },
 
-  // Enhanced Open Graph metadata
+  // Set OG locale to India
   openGraph: {
     title: 'Room Papa | Find & Book Hotels, Apartments & More',
     description: 'Discover amazing accommodations worldwide. Book hotels, apartments, and vacation rentals with confidence. Best prices guaranteed!',
     url: siteUrl,
     siteName: 'Room Papa',
-    locale: 'en_US',
+    locale: 'en_IN',
     type: 'website',
     images: [
       {
@@ -194,12 +198,13 @@ export default function RootLayout({
       "contactType": "customer service",
       "availableLanguage": "English"
     },
+    "inLanguage": "en-IN",
     "address": {
       "@type": "PostalAddress",
-      "addressCountry": "US"
+      "addressCountry": "IN"
     },
+    "areaServed": "IN",
     "serviceType": "Hotel Booking, Vacation Rental Booking, Travel Accommodation",
-    "areaServed": "Worldwide",
     "potentialAction": {
       "@type": "SearchAction",
       "target": {
@@ -212,11 +217,19 @@ export default function RootLayout({
 
   return (
     <ClerkProvider>
-      <html lang="en" itemScope itemType="https://schema.org/TravelAgency">
+      {/* Set document language to India */}
+      <html lang="en-IN" itemScope itemType="https://schema.org/TravelAgency">
         <head>
-          {/* Enhanced robots meta tag */}
+          {/* Robots stays indexable */}
           <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-          
+
+          {/* Geo targeting for India */}
+          <meta httpEquiv="content-language" content="en-IN" />
+          <meta name="geo.region" content="IN" />
+          <meta name="geo.placename" content="India" />
+          <meta name="geo.position" content="20.5937;78.9629" />
+          <meta name="ICBM" content="20.5937, 78.9629" />
+
           {/* Additional SEO meta tags */}
           <meta name="theme-color" content="#2563eb" />
           <meta name="msapplication-TileColor" content="#2563eb" />
