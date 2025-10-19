@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next'
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://roompapa.com';
 
-async function safeFetch<T = any>(url: string): Promise<T | null> {
+async function safeFetch<T = unknown>(url: string): Promise<T | null> {
   try {
     const res = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 3600 } });
     if (!res.ok) return null;
@@ -10,6 +10,12 @@ async function safeFetch<T = any>(url: string): Promise<T | null> {
   } catch {
     return null;
   }
+}
+
+interface Property {
+  id?: string;
+  _id?: string;
+  updatedAt?: string;
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -24,9 +30,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   const dynamicPages: MetadataRoute.Sitemap = [];
-  const propData = await safeFetch<any>(`${baseUrl}/api/properties`);
-  const properties = Array.isArray(propData?.data) ? propData.data : Array.isArray(propData) ? propData : [];
-  for (const p of properties) {
+  const propData = await safeFetch<unknown>(`${baseUrl}/api/properties`);
+  const properties = Array.isArray((propData as Record<string, unknown>)?.data) ? (propData as Record<string, unknown>).data : Array.isArray(propData) ? propData : [];
+  
+  for (const p of properties as Property[]) {
     const id = p?.id || p?._id;
     if (!id) continue;
     dynamicPages.push({
