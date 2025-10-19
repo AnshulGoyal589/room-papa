@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
-import { Booking } from '@/lib/mongodb/models/Booking';
+import { Booking, BookingDetails, BookingGuestDetails, BookingInfoDetails, PropertyRoomDetail } from '@/lib/mongodb/models/Booking'; // Assuming these types are in your models
+import { ObjectId } from 'mongodb';
 
 // Configure email transport
 const transporter = nodemailer.createTransport({
@@ -46,17 +47,17 @@ export async function sendRoleConfirmationEmail(email: string) {
 
 
 export async function sendBookingConfirmationEmail(bookingData: Booking) { 
-  const { infoDetails, bookingDetails, guestDetails, recipients, _id : bookingId } = bookingData;
+  const { infoDetails, bookingDetails, guestDetails, recipients, _id : bookingId, createdAt } = bookingData;
 
-
+  // --- Helper Functions ---
   const formatDate = (date: string | Date, options: Intl.DateTimeFormatOptions): string => {
     if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-US', options);
+    return new Date(date).toLocaleDateString('en-GB', options);
   };
 
   const formatDateTime = (date: string | Date): string => {
     if (!date) return 'N/A';
-    return new Date(date).toLocaleString('en-US', {
+    return new Date(date).toLocaleString('en-GB', {
       weekday: 'short',
       day: 'numeric',
       month: 'short',
@@ -77,186 +78,160 @@ export async function sendBookingConfirmationEmail(bookingData: Booking) {
   };
   
   const formatCurrency = (amount: number, currency: string): string => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency }).format(amount);
+    // Use INR for display as per PDF example
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
   };
-
   
+  // --- Data Preparation ---
   const checkInDate = formatDate(bookingDetails.checkIn, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   const checkOutDate = formatDate(bookingDetails.checkOut, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-  // const bookedOnDate = formatDate(createdAt || new Date(), { day: 'numeric', month: 'short', year: 'numeric' });
+  const bookedOnDate = formatDate(createdAt || new Date(), { day: 'numeric', month: 'short', year: 'numeric' });
   
-  // 24 hours before check-in as a fallback cancellation deadline
+  // Using 24 hours before check-in as a fallback cancellation deadline, but ideally this would come from the booking data.
   const cancellationDeadline = new Date(new Date(bookingDetails.checkIn).getTime() - 24 * 60 * 60 * 1000); 
 
-  const guestFullName = `${guestDetails.firstName} ${guestDetails.lastName}`;
-  const fullAddress = [
-    infoDetails.location?.address,
-    infoDetails.location?.city,
-    infoDetails.location?.state,
-    infoDetails.location?.country,
-  ].filter(Boolean).join(', ');
-
-  const roomDetailsHtml = bookingDetails.roomsDetail.map(room => `
-    <div style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #eeeeee;">
-        <p style="margin: 0; font-weight: bold; color: #333;">${room.qty} x ${room.title}</p>
-        <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">
-            Guests: ${bookingDetails.adults} Adult(s)${bookingDetails.children > 0 ? `, ${bookingDetails.children} Child(ren)` : ''}
-        </p>
-    </div>
-  `).join('');
-
-  const reservationPolicyHtml = infoDetails.reservationPolicy && infoDetails.reservationPolicy.length > 0 
-    ? `<ul>${infoDetails.reservationPolicy.map(policy => `<li style="margin-bottom: 5px; font-size: 13px; color: #555;">${policy}</li>`).join('')}</ul>`
-    : `<p style="margin: 15px 0; font-size: 13px; color: #555;">Please refer to the property's terms and conditions for detailed cancellation rules.</p>`;
-
+  const guestFullName = `Ms. ${guestDetails.firstName} ${guestDetails.lastName}`;
   
+  const roomsSummary = bookingDetails.roomsDetail.map(room => `${room.qty} x ${room.title}`).join(', ');
+
+  const calculatedTotalBeforeDiscount = bookingDetails.subtotal + bookingDetails.serviceFee + bookingDetails.taxes;
+  const discount = calculatedTotalBeforeDiscount - bookingDetails.totalPrice;
+
+  // --- New Email Template ---
   const emailHtml = `
   <!DOCTYPE html>
   <html lang="en">
   <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Booking Confirmation</title>
-      <style>
-              body { margin: 0; padding: 0; background-color: #f6f9fc; font-family: Arial, sans-serif; }
-              .container { width: 100%; max-width: 650px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-              .header { background-color: #003366; color: #ffffff; padding: 25px; text-align: center; border-top-left-radius: 8px; border-top-right-radius: 8px; }
-              .header h1 { margin: 0; font-size: 24px; font-weight: 700; }
-              .content { padding: 30px; }
-              .section { margin-bottom: 25px; padding-bottom: 25px; border-bottom: 1px solid #eeeeee; }
-              .section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-              h2 { font-size: 18px; color: #333; margin: 0 0 15px 0; font-weight: 500; }
-              p, li { color: #555; font-size: 14px; line-height: 1.6; }
-              .price-table td { padding: 10px 0; font-size: 14px; }
-              .total-row td { font-weight: bold; font-size: 16px; border-top: 2px solid #003366; padding-top: 15px; color: #003366; }
-              .button { display: inline-block; background-color: #ff6600; color: #ffffff; padding: 12px 25px; text-align: center; text-decoration: none; border-radius: 5px; font-weight: bold; }
-              .footer { text-align: center; padding: 20px; font-size: 12px; color: #999; }
-      </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Confirmation</title>
+    <style>
+      body { margin: 0; padding: 0; background-color: #f4f4f4; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; }
+      .container { max-width: 650px; margin: 20px auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; }
+      .content { padding: 20px 30px; }
+      .card { border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 20px; }
+      .card-header { background-color: #f9f9f9; padding: 12px 15px; border-bottom: 1px solid #e0e0e0; font-weight: 500; font-size: 16px; color: #333; }
+      .card-content { padding: 15px; }
+      h1, h2, h3, p { margin: 0; }
+    </style>
   </head>
-  <body style="margin: 0; padding: 0; background-color: #f6f9fc; font-family: Arial, sans-serif;">
-      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-              <tr>
-                      <td align="center">
-                              <table role="presentation" class="container" border="0" cellpadding="0" cellspacing="0" width="650">
-                                      
-                                      <!-- Header -->
-                                      <tr>
-                                              <td class="header" style="background-color: #003366; color: #ffffff; padding: 25px; text-align: center; border-top-left-radius: 8px; border-top-right-radius: 8px;">
-                                                      <h1 style="margin: 0; font-size: 24px; font-weight: 700;">Your Booking is Confirmed!</h1>
-                                                      <p style="margin: 5px 0 0 0; font-size: 16px; color: #ffffff; opacity: 0.9;">Booking ID: ${bookingId || 'N/A'}</p>
-                                              </td>
-                                      </tr>
-
-                                      <!-- Main Content -->
-                                      <tr>
-                                              <td class="content" style="padding: 30px;">
-                                                      <p style="font-size: 16px;">Dear ${guestFullName},</p>
-                                                      <p>Thank you for booking with us. Your reservation for <strong>${infoDetails.title}</strong> is confirmed. Please find the details of your booking below.</p>
-                                                      
-                                                      <!-- Hotel Details Section -->
-                                                      <div class="section">
-                                                              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                                                                      <tr>
-                                                                              <td valign="top" width="70%">
-                                                                                      <h2 style="margin: 0 0 5px 0; font-size: 22px; color: #003366;">${infoDetails.title}</h2>
-                                                                                      <p style="margin: 0 0 10px 0; font-size: 20px; color: #ffab00;">${generateStars(infoDetails.propertyRating || 0)}</p>
-                                                                                      <p style="margin: 0; font-size: 14px; color: #555;">
-                                                                                              📍 ${fullAddress || 'Address not available'}
-                                                                                      </p>
-                                                                              </td>
-                                                                              <td valign="top" width="30%" align="right">
-                                                                                      <img src="${infoDetails.bannerImage?.url || 'https://via.placeholder.com/150x100'}" alt="Hotel Image" width="150" style="border-radius: 8px; border: 1px solid #eee;">
-                                                                              </td>
-                                                                      </tr>
-                                                              </table>
-                                                      </div>
-
-                                                      <!-- Booking Summary Section -->
-                                                      <div class="section">
-                                                              <h2>Your Stay</h2>
-                                                              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                                                                      <tr>
-                                                                              <td width="50%" valign="top" style="padding-right: 10px;">
-                                                                                      <p style="margin: 0 0 5px 0; font-weight: 500; color: #333;">Check-in</p>
-                                                                                      <p style="margin: 0; font-size: 16px;">${checkInDate}</p>
-                                                                                      <p style="margin: 0; font-size: 13px; color: #666;">From 02:00 PM</p>
-                                                                              </td>
-                                                                              <td width="50%" valign="top" style="padding-left: 10px;">
-                                                                                      <p style="margin: 0 0 5px 0; font-weight: 500; color: #333;">Check-out</p>
-                                                                                      <p style="margin: 0; font-size: 16px;">${checkOutDate}</p>
-                                                                                      <p style="margin: 0; font-size: 13px; color: #666;">Until 12:00 PM</p>
-                                                                              </td>
-                                                                      </tr>
-                                                                      <tr><td colspan="2" style="padding-top: 20px;">
-                                                                              <p style="margin: 0 0 5px 0; font-weight: 500; color: #333;">Duration</p>
-                                                                              <p style="margin: 0;">${bookingDetails.numberOfNights} Night(s)</p>
-                                                                      </td></tr>
-                                                              </table>
-                                                      </div>
-
-                                                      <!-- Room & Guest Details Section -->
-                                                      <div class="section">
-                                                              <h2>Room and Guest Details</h2>
-                                                              ${roomDetailsHtml}
-                                                              <div style="margin-top: 20px;">
-                                                                      <p style="margin: 0 0 5px 0; font-weight: 500; color: #333;">Primary Guest</p>
-                                                                      <p style="margin: 0;">${guestFullName}</p>
-                                                                      <p style="margin: 0;">${guestDetails.email}</p>
-                                                                      <p style="margin: 0;">${guestDetails.phone}</p>
-                                                              </div>
-                                                      </div>
-                                                      
-                                                      <!-- Price Break-up Section -->
-                                                      <div class="section">
-                                                              <h2>Price Break-up</h2>
-                                                              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="price-table">
-                                                                      <tr>
-                                                                              <td>Room Charges (${bookingDetails.numberOfNights} night(s) x ${bookingDetails.totalRoomsSelected} room(s))</td>
-                                                                              <td align="right">${formatCurrency(bookingDetails.subtotal, bookingDetails.currency)}</td>
-                                                                      </tr>
-                                                                      <tr>
-                                                                              <td>Service Fee</td>
-                                                                              <td align="right">${formatCurrency(bookingDetails.serviceFee, bookingDetails.currency)}</td>
-                                                                      </tr>
-                                                                      <tr>
-                                                                              <td>Taxes & Fees</td>
-                                                                              <td align="right">${formatCurrency(bookingDetails.taxes, bookingDetails.currency)}</td>
-                                                                      </tr>
-                                                                      <tr class="total-row">
-                                                                              <td>TOTAL AMOUNT PAID</td>
-                                                                              <td align="right">${formatCurrency(bookingDetails.totalPrice, bookingDetails.currency)}</td>
-                                                                      </tr>
-                                                              </table>
-                                                      </div>
-
-                                                      <!-- Cancellation Policy Section -->
-                                                      <div class="section">
-                                                              <h2>Cancellation Policy</h2>
-                                                              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                                                                      <tr>
-                                                                              <td style="background-color: #e6f7ff; padding: 15px; border: 1px solid #91d5ff; border-radius: 5px; color: #0050b3; text-align: center; font-weight: 500;">
-                                                                                      Free Cancellation before ${formatDateTime(cancellationDeadline)}
-                                                                              </td>
-                                                                      </tr>
-                                                              </table>
-                                                              ${reservationPolicyHtml}
-                                                      </div>
-                                                      
-                                                      <!-- Action Buttons -->
-                                                    <!-- Action Buttons -->
-                                                      <div style="text-align: center; margin-top: 20px;">
-                                                          <a href="https://example.com/some-booking-url" class="button" style="display: inline-block; background-color: #ff6600; color: #ffffff; padding: 12px 25px; text-align: center; text-decoration: none; border-radius: 5px; font-weight: bold;">Manage My Booking</a>
-                                                            
-                                                          </div>
-                                              </td>
-                                      </tr>
-                              </table>
-                      </td>
-              </tr>
-      </table>
+  <body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';">
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr>
+        <td align="center">
+          <table role="presentation" class="container" border="0" cellpadding="0" cellspacing="0" width="650" style="max-width: 650px; margin: 20px auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px;">
+            <!-- Header -->
+            <tr>
+              <td style="padding: 20px 30px; border-bottom: 1px solid #e0e0e0;">
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                  <tr>
+                    <td valign="middle">
+                      <p style="font-size: 18px; font-weight: bold; color: #333;"><span style="color: #007bff;">RoomPapa</span></p>
+                    </td>
+                    <td valign="middle" align="right" style="font-size: 12px; color: #555; line-height: 1.6;">
+                      <b>Booking ID:</b> ${bookingId || 'N/A'}<br>
+                      <b>PNR:</b> ${bookingDetails.payment.orderId || 'N/A'}<br>
+                      (Booked on ${bookedOnDate})
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <!-- Main Content -->
+            <tr>
+              <td class="content" style="padding: 20px 30px;">
+                <!-- Hotel Details Card -->
+                <div class="card" style="border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 20px;">
+                  <div class="card-content" style="padding: 15px;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                      <tr>
+                        <td valign="top" style="line-height: 1.5;">
+                          <h2 style="font-size: 20px; color: #333; margin-bottom: 5px;">${infoDetails.title}</h2>
+                          <p style="font-size: 18px; color: #ffab00; margin-bottom: 15px;">${generateStars(infoDetails.propertyRating || 0)}</p>
+                          <p style="font-size: 14px; color: #555;"><b>${checkInDate}</b> - <b>${checkOutDate}</b></p>
+                          <p style="font-size: 14px; color: #555;">${bookingDetails.totalRoomsSelected} Room • ${bookingDetails.adults} Adult (${guestFullName})</p>
+                        </td>
+                        <td width="150" align="right" valign="top">
+                          <img src="${infoDetails.bannerImage?.url || 'https://via.placeholder.com/150x100'}" alt="Hotel Image" style="width: 150px; border-radius: 6px;">
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                </div>
+                <!-- Room Type Card -->
+                <div class="card" style="border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 20px;">
+                  <div class="card-header" style="background-color: #f9f9f9; padding: 12px 15px; border-bottom: 1px solid #e0e0e0; font-weight: 500; font-size: 16px; color: #333;">Room Type and Amenities</div>
+                  <div class="card-content" style="padding: 15px;">
+                    <h3 style="font-size: 15px; font-weight: 600; color: #333; margin-bottom: 10px;">${roomsSummary}</h3>
+                    <p style="font-size: 13px; color: #666; line-height: 1.8;">
+                      <span style="display: inline-block; margin-right: 15px;">✓ Room Only</span>
+                      <span style="display: inline-block; margin-right: 15px;">✓ ${infoDetails.bedPreference?.[0] || '1 Queen Bed'}</span>
+                      <span style="display: inline-block;">✓ ${bookingDetails.adults} Adult(s)</span>
+                    </p>
+                    <p style="font-size: 13px; color: #666; line-height: 1.6; margin-top: 10px; border-top: 1px dashed #ddd; padding-top: 10px;">
+                      TV, Bathroom, Hot & Cold Water, Daily Housekeeping, Wi-Fi, Closet, Hairdryer, Work Desk, Mini Fridge, Air Conditioning, In-room Dining.
+                    </p>
+                  </div>
+                </div>
+                <!-- Cancellation Policy Card -->
+                <div class="card" style="border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 20px;">
+                  <div class="card-header" style="background-color: #f9f9f9; padding: 12px 15px; border-bottom: 1px solid #e0e0e0; font-weight: 500; font-size: 16px; color: #333;">Cancellation Policy</div>
+                  <div class="card-content" style="padding: 15px;">
+                    <p style="font-size: 14px; color: #333; margin-bottom: 15px;">Free Cancellation (100% refund) till <b>${formatDateTime(cancellationDeadline)}</b>.</p>
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="font-size: 12px; text-align: center;">
+                      <tr>
+                        <td width="40%" style="background-color: #28a745; color: white; padding: 8px; border-radius: 4px 0 0 4px;">Free Cancellation before ${formatDate(cancellationDeadline, {day: 'numeric', month: 'short'})}</td>
+                        <td width="30%" style="background-color: #e9ecef; padding: 8px;">Check-in Day</td>
+                        <td width="30%" style="background-color: #e9ecef; padding: 8px; border-radius: 0 4px 4px 0;">During Stay</td>
+                      </tr>
+                    </table>
+                  </div>
+                </div>
+                <!-- Price Break-up Card -->
+                <div class="card" style="border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 20px;">
+                  <div class="card-header" style="background-color: #f9f9f9; padding: 12px 15px; border-bottom: 1px solid #e0e0e0; font-weight: 500; font-size: 16px; color: #333;">Booking Price Break-up</div>
+                  <div class="card-content" style="padding: 15px; font-size: 14px; color: #555;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                      <tr style="line-height: 2;">
+                        <td>Accommodation charges (incl. applicable Hotel taxes)</td>
+                        <td align="right">${formatCurrency(bookingDetails.subtotal, bookingDetails.currency)}</td>
+                      </tr>
+                      <tr style="line-height: 2;">
+                        <td>MMT Service Fee</td>
+                        <td align="right">${formatCurrency(bookingDetails.serviceFee, bookingDetails.currency)}</td>
+                      </tr>
+                      <tr style="line-height: 2; border-bottom: 1px solid #e0e0e0;">
+                        <td>Taxes & Fees</td>
+                        <td align="right">${formatCurrency(bookingDetails.taxes, bookingDetails.currency)}</td>
+                      </tr>
+                      ${discount > 0 ? `
+                      <tr style="line-height: 2; color: #28a745;">
+                        <td>Hotelier Discount</td>
+                        <td align="right">- ${formatCurrency(discount, bookingDetails.currency)}</td>
+                      </tr>
+                      ` : ''}
+                      <tr style="line-height: 2;">
+                        <td style="padding-top: 10px;"><b>TOTAL</b></td>
+                        <td align="right" style="padding-top: 10px;"><b>${formatCurrency(bookingDetails.totalPrice, bookingDetails.currency)}</b></td>
+                      </tr>
+                    </table>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td style="text-align: center; padding: 20px 30px; font-size: 12px; color: #999; border-top: 1px solid #e0e0e0;">
+                <p>For any assistance, please contact our support at +0124 6280411.</p>
+                <p style="margin-top: 5px;">This is an automated email. Please do not reply.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
-  </html>
-  `;
+  </html>`;
 
   try {
     // Send the email

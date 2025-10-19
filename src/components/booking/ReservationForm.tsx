@@ -389,7 +389,7 @@ export default function ReservationForm({ property }: { property: Property }) {
                                     notes={{ property: property.title || 'Unknown Property', checkIn: checkIn.toISOString().split('T')[0], checkOut: checkOut.toISOString().split('T')[0] }}
                                     onPaymentSuccess={() => { setBookingConfirmed(true); localStorage.removeItem(RESERVATION_DATA_KEY); }}
                                     onPaymentError={(errorMessage) => console.error(errorMessage)}
-                                    razorpayKeyId={RAZORPAY_KEY_ID} companyName="YourStays.com"
+                                    razorpayKeyId={RAZORPAY_KEY_ID} companyName="RoomPapa"
                                     disabled={!formData.firstName || !formData.lastName || !formData.email || !formData.phone || pricingDetails.totalBookingPricing <= 0}
                                     buttonText="Next: Final details >"
                                 />
