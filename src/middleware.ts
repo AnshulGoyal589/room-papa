@@ -4,7 +4,6 @@ import type { NextRequest } from 'next/server';
 export function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const p = req.nextUrl.pathname;
-
   const isExcluded =
     p.startsWith('/api') ||
     p.startsWith('/_next') ||
