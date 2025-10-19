@@ -1,4 +1,4 @@
-import { PropertyType } from '@/types/property';
+import { HouseRules, PropertyType } from '@/types/property';
 import { ItemCategory, Location } from './Components';
 import { ObjectId } from 'mongodb';
 import { Image } from '@/types';
@@ -15,7 +15,7 @@ export interface BookingInfoDetails {
   facilities?: string[];
   funThingsToDo?: string[];
   googleMaps?: string;
-  houseRules?: string[];
+  houseRules?: HouseRules;
   location?: Location;
   propertyRating?: number;
   reservationPolicy?: string[];
@@ -116,6 +116,18 @@ export interface BookingQueryFilters {
 
 export interface ManagerBookingQueryFilters {
   ownerId: string;
+  type?: 'property' | 'travelling' | 'trip' | 'all';
+  status?: 'pending' | 'confirmed' | 'cancelled' | 'all';
+  dateFrom?: string;
+  dateTo?: string;
+  searchTerm?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  limit?: number;
+  skip?: number;
+}
+
+export interface AdminBookingQueryFilters {
   type?: 'property' | 'travelling' | 'trip' | 'all';
   status?: 'pending' | 'confirmed' | 'cancelled' | 'all';
   dateFrom?: string;

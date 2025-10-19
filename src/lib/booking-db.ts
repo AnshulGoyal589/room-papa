@@ -1,6 +1,6 @@
 import { Collection, Db, Filter, ObjectId } from 'mongodb';
 import { getDb } from '@/lib/mongodb';
-import { Booking, BookingQueryFilters, ManagerBookingQueryFilters } from '@/lib/mongodb/models/Booking';
+import { AdminBookingQueryFilters, Booking, BookingQueryFilters, ManagerBookingQueryFilters } from '@/lib/mongodb/models/Booking';
 
 export class BookingRepository {
   private db: Db;
@@ -195,6 +195,57 @@ export class BookingRepository {
     }
 
     query['infoDetails.ownerId'] = filters.ownerId;
+
+    if (filters.type && filters.type !== 'all') {
+      query.type = filters.type;
+    }
+
+    if (filters.status && filters.status !== 'all') {
+       query.status = filters.status;
+    }
+
+    if (filters.dateFrom || filters.dateTo) {
+      query.bookingDetails = query.bookingDetails || {};
+      if (filters.dateFrom) {
+        (query.bookingDetails).checkIn = { $gte: new Date(filters.dateFrom) };
+      }
+      if (filters.dateTo) {
+        (query.bookingDetails).checkOut = { $lte: new Date(filters.dateTo) };
+      }
+    }
+
+    if (filters.searchTerm) {
+      const searchRegex = new RegExp(filters.searchTerm, 'i');
+      query.$or = [
+        { 'infoDetails.title': searchRegex },
+        { 'infoDetails.locationFrom': searchRegex },
+        { 'infoDetails.locationTo': searchRegex },
+        { 'guestDetails.firstName': searchRegex },
+        { 'guestDetails.lastName': searchRegex },
+        { 'guestDetails.email': searchRegex },
+        { 'type': searchRegex },
+      ];
+    }
+
+    let bookingsQuery = this.collection.find(query);
+
+    if (filters.sortBy) {
+      const sortDirection = filters.sortOrder === 'desc' ? -1 : 1;
+      bookingsQuery = bookingsQuery.sort({ [filters.sortBy]: sortDirection });
+    } else {
+      bookingsQuery = bookingsQuery.sort({ updatedAt: -1 });
+    }
+
+    if (filters.limit) {
+      bookingsQuery = bookingsQuery.limit(filters.limit);
+      if (filters.skip) {
+        bookingsQuery = bookingsQuery.skip(filters.skip);
+      }
+    }
+    return bookingsQuery.toArray();
+  }
+  async getAdminBookings(filters: AdminBookingQueryFilters): Promise<Booking[]> {
+    const query: Filter<Booking> = {};
 
     if (filters.type && filters.type !== 'all') {
       query.type = filters.type;

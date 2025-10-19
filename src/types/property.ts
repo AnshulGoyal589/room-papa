@@ -89,5 +89,5 @@ export interface HouseRules {
   smokingAllowed?: boolean; 
   petsAllowed?: boolean;   
   partiesAllowed?: boolean; 
-  additionalRules?: string[]; 
+  additionalRules?: string[];
 }

@@ -66,3 +66,19 @@ export async function fetchManagerBookings(userId: string , type?: string , sear
         return [];
     }
 }
+
+export async function fetchAdminBookings(type?: string , searchTerm?: string) {
+    try {
+        const bookingRepository = await getBookingRepository();
+        const adminBookings = await bookingRepository.getAdminBookings({
+            sortBy: 'updatedAt',
+            sortOrder: 'desc',
+            type: type as 'property' | 'travelling' | 'trip' | undefined,
+            searchTerm: searchTerm || undefined
+        });
+        return JSON.parse(JSON.stringify(adminBookings));
+    } catch (error) {
+        console.error("Failed to fetch admin bookings:", error);
+        return [];
+    }
+}
