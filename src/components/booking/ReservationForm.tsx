@@ -4,41 +4,49 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import Image from 'next/image';
-import { Star as StarIcon, CheckCircle, Users, Wifi, ParkingSquare, Wind, Utensils, Info, AlertTriangle, Car, Bus, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, Users, Wifi, ParkingSquare, Wind, Utensils, Info, AlertTriangle, Car, Bus, ChevronDown, ChevronUp } from 'lucide-react';
 import RazorpayPaymentButton from '@/components/payment/RazorpayPaymentButton';
-import { DisplayableRoomOffer } from '@/types/booking';
+import { StoredRoomCategory } from '@/types/booking';
 import { ReservationData } from '@/lib/mongodb/models/Components';
 import { Property } from '@/lib/mongodb/models/Property';
+import { renderRatingStars, Stepper } from './Helper';
 
 const RESERVATION_DATA_KEY =  process.env.NEXT_RESERVATION_DATA_KEY || "reservationData_v1";
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "";
 
-const renderRatingStars = (rating: number) => (
-    <div className="flex items-center">
-        {[...Array(5)].map((_, i) => (
-            <StarIcon key={i} className={`w-4 h-4 ${i < Math.floor(rating) ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} />
-        ))}
-    </div>
-);
 
-const Stepper = () => (
-    <div className="flex items-center justify-between max-w-lg mx-auto mb-6">
-        <div className="flex items-center text-[#003c95]">
-            <CheckCircle className="w-6 h-6 mr-2" />
-            <span className="font-semibold">Your Selection</span>
-        </div>
-        <div className="flex-1 border-t-2 border-gray-300 mx-4"></div>
-        <div className="flex items-center text-[#003c95] font-bold">
-            <span className="flex items-center justify-center w-6 h-6 mr-2 border-2 border-[#003c95] rounded-full text-sm">2</span>
-            <span>Your Details</span>
-        </div>
-        <div className="flex-1 border-t-2 border-gray-300 mx-4"></div>
-        <div className="flex items-center text-gray-400">
-            <span className="flex items-center justify-center w-6 h-6 mr-2 border-2 border-gray-400 rounded-full text-sm">3</span>
-            <span>Finish booking</span>
-        </div>
-    </div>
-);
+// Helper function to reconstruct a basic offer detail for the form display
+function getBasicOfferDetails(
+    offerId: string, 
+    categories: StoredRoomCategory[]
+): { categoryTitle: string; intendedAdults: number; guestCapacityInOffer: number } | null {
+    const parts = offerId.split('_');
+    const categoryId = parts[0];
+    const category = categories.find(c => c.id === categoryId);
+
+    if (!category) return null;
+
+    const bookingModel = category.pricingModel || 'perOccupancy';
+
+    if (bookingModel === 'perUnit') {
+        // Per Unit model: capacity is totalOccupancy, intended adults is totalOccupancy
+        return {
+            categoryTitle: category.title,
+            intendedAdults: category.totalOccupancy || 1,
+            guestCapacityInOffer: category.totalOccupancy || 1,
+        };
+    }
+
+    // Per Occupancy model
+    const guestCountMatch = parts[1]?.match(/(\d+)guests/);
+    const intendedAdults = guestCountMatch ? parseInt(guestCountMatch[1], 10) : 1;
+    
+    return {
+        categoryTitle: category.title,
+        intendedAdults: intendedAdults,
+        guestCapacityInOffer: intendedAdults, // Base capacity for this offer type
+    };
+}
 
 
 export default function ReservationForm({ property }: { property: Property }) {
@@ -79,7 +87,14 @@ export default function ReservationForm({ property }: { property: Property }) {
                 router.push(`/properties/${property._id}`);
                 return;
             }
-            setReservationDetails(parsedData);
+            // Ensure necessary defaults are set for new fields if they weren't stored
+            const globalGuestCount = parsedData.adultCount + parsedData.childCount;
+            setReservationDetails({ 
+                ...parsedData, 
+                globalGuestCount: globalGuestCount, // Ensure this exists for UI display
+                totalSelectedPhysicalRooms: Object.values(parsedData.selectedOffers).reduce((sum, qty) => sum + qty, 0) // Ensure this exists
+            });
+
         } catch (error) {
             console.error("Error parsing reservation data:", error);
             setError("Could not read booking details. Please start over.");
@@ -96,19 +111,30 @@ export default function ReservationForm({ property }: { property: Property }) {
         }
     }, [isLoaded, isSignedIn, user]);
 
+    // MODIFIED roomInstances calculation
     const roomInstances = useMemo(() => {
-        if (!reservationDetails) return [];
-        const instances: { key: string; offer: DisplayableRoomOffer }[] = [];
+        if (!reservationDetails || !property.categoryRooms) return [];
+        
+        const instances: { key: string; offer: { categoryTitle: string; intendedAdults: number; guestCapacityInOffer: number; offerId: string; } }[] = [];
+        
         Object.entries(reservationDetails.selectedOffers).forEach(([offerId, qty]) => {
-            const offer = reservationDetails.displayableRoomOffers?.find(o => o.offerId === offerId);
-            if (offer) {
-                for (let i = 0; i < qty; i++) {
-                    instances.push({ key: `${offerId}-${i}`, offer });
+            const offerDetails = getBasicOfferDetails(offerId, property.categoryRooms || []);
+
+            if (offerDetails) {
+                // If perUnit, qty is always 1, and we push 1 instance representing the unit
+                // If perOccupancy, push `qty` instances
+                const count = reservationDetails.selectedBookingModel === 'perUnit' ? 1 : qty;
+
+                for (let i = 0; i < count; i++) {
+                    instances.push({ 
+                        key: `${offerId}-${i}`, 
+                        offer: { ...offerDetails, offerId } 
+                    });
                 }
             }
         });
         return instances;
-    }, [reservationDetails]);
+    }, [reservationDetails, property.categoryRooms]);
     
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -128,11 +154,16 @@ export default function ReservationForm({ property }: { property: Property }) {
     };
 
     if (loading) { return <div className="flex justify-center items-center min-h-screen bg-gray-100"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#003c95] mx-auto"></div></div>; }
-    if (error || !reservationDetails) { return <div className="container mx-auto px-4 py-16 text-center"><h2 className="text-2xl font-bold text-red-600 mb-4">{error || 'Could not load reservation.'}</h2><button onClick={() => router.push('/properties')} className="mt-4 px-6 py-2 bg-[#003c95] text-white rounded-md hover:bg-[#003c95]">Find Properties</button></div>; }
+    if (error || !reservationDetails) { return <div className="container mx-auto px-4 py-16 text-center"><h2 className="text-2xl font-bold text-red-600 mb-4">{error || 'Could not load reservation.'}</h2><button onClick={() => router.push(`/properties/${property._id}`)} className="mt-4 px-6 py-2 bg-[#003c95] text-white rounded-md hover:bg-[#003c95]">Restart Booking</button></div>; }
     
-    const { checkInDate, checkOutDate, days, globalGuestCount, pricingDetails } = reservationDetails;
+    const { checkInDate, checkOutDate, days, pricingDetails, selectedBookingModel } = reservationDetails;
+    // Recalculating globalGuestCount safely, as we ensured it exists in useEffect
+    const globalGuestCount = reservationDetails.adultCount + reservationDetails.childCount; 
+    
     const checkIn = new Date(checkInDate);
     const checkOut = new Date(checkOutDate);
+
+    const isPerUnitBooking = selectedBookingModel === 'perUnit';
     
     return (
         <>
@@ -163,12 +194,31 @@ export default function ReservationForm({ property }: { property: Property }) {
                             <div className="border border-gray-300 rounded-md p-4 space-y-3">
                                 <h3 className="font-bold text-lg">Your booking details</h3>
                                 <div className="flex justify-between items-start">
-                                    <div><p className="font-semibold">Check-in</p><p className="text-gray-800 font-bold text-sm">{checkIn.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p><p className="text-xs text-gray-500">From 3:00 PM</p></div>
-                                    <div className="text-right"><p className="font-semibold">Check-out</p><p className="text-gray-800 font-bold text-sm">{checkOut.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p><p className="text-xs text-gray-500">Until 12:00 PM</p></div>
+                                    <div>
+                                        <p className="font-semibold">Check-in</p>
+                                        <p className="text-gray-800 font-bold text-sm">{checkIn.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                        <p className="text-xs text-gray-500">From 3:00 PM</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-semibold">Check-out</p>
+                                        <p className="text-gray-800 font-bold text-sm">{checkOut.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                        <p className="text-xs text-gray-500">Until 12:00 PM</p>
+                                    </div>
                                 </div>
-                                <div><p className="font-semibold text-sm">Total length of stay:</p><p className="text-gray-600 text-sm">{days} {days === 1 ? 'night' : 'nights'}</p></div>
+                                <div>
+                                    <p className="font-semibold text-sm">Total length of stay:</p>
+                                    <p className="text-gray-600 text-sm">{days} {days === 1 ? 'night' : 'nights'}</p>
+                                </div>
                                 <hr/>
-                                <div><p className="font-semibold">You selected</p><p className="text-[#003c95] font-bold text-sm">{roomInstances.length} room{roomInstances.length > 1 && 's'} for {globalGuestCount} guests</p><button onClick={() => router.back()} className="text-[#003c95] text-sm font-semibold hover:underline">Change your selection</button></div>
+                                <div>
+                                    <p className="font-semibold">You selected</p>
+                                    {isPerUnitBooking ? (
+                                        <p className="text-[#003c95] font-bold text-sm">1 entire unit for {globalGuestCount} guests</p>
+                                    ) : (
+                                        <p className="text-[#003c95] font-bold text-sm">{roomInstances.length} room{roomInstances.length > 1 && 's'} for {globalGuestCount} guests</p>
+                                    )}
+                                    <button onClick={() => router.back()} className="text-[#003c95] text-sm font-semibold hover:underline">Change your selection</button>
+                                </div>
                             </div>
                             <div className="border border-gray-300 rounded-md p-4">
                                 <h3 className="font-bold text-lg">Your price summary</h3>
@@ -246,12 +296,14 @@ export default function ReservationForm({ property }: { property: Property }) {
                                 </div>
                             </div>
                             
-                            {roomInstances.map(({ key, offer }) => (
+                            {roomInstances.map(({ key, offer }, index) => (
                                 <div key={key} className="bg-white p-6 rounded-lg border border-gray-200">
-                                    <h3 className="font-bold text-lg">{offer.categoryTitle}</h3>
+                                    <h3 className="font-bold text-lg">
+                                        {isPerUnitBooking ? `${offer.categoryTitle} (Entire Unit)` : `${offer.categoryTitle} (Room ${index + 1})`}
+                                    </h3>
                                     <div className="my-2 space-y-1 text-sm">
                                         <p className="flex items-center text-green-600 font-semibold"><CheckCircle size={16} className="mr-2"/>Free cancellation before June 8, 2025</p>
-                                        <p className="flex items-center"><Users size={16} className="mr-2"/>Guests: {offer.intendedAdults} adult{offer.intendedAdults > 1 && 's'}</p>
+                                        <p className="flex items-center"><Users size={16} className="mr-2"/>Guests covered: {offer.guestCapacityInOffer} {isPerUnitBooking ? 'guests' : 'adults'}</p>
                                     </div>
                                     <div className="mt-4"><label className="block text-sm font-medium text-gray-700 mb-1">Full Guest Name</label><input onChange={(e) => handleGuestDetailChange(key, 'guestName', e.target.value)} className="w-full sm:w-2/3 p-2 border border-gray-300 rounded-md" /></div>
                                 </div>
@@ -287,29 +339,7 @@ export default function ReservationForm({ property }: { property: Property }) {
                                     amountInSubunits={Math.round(pricingDetails.totalBookingPricing * 100)} currency={pricingDetails.currency} receiptId={`booking_${property._id}_${Date.now()}`}
                                     bookingPayload={{ 
                                         type: "property", 
-                                        infoDetails: { 
-                                            id: property._id || 'unknown',
-                                            accessibility : property.accessibility || [],
-                                            amenities: property.amenities || [],
-                                            bannerImage: property.bannerImage || null,
-                                            bedPreference: property.bedPreference || [],
-                                            brands: property.brands || [],
-                                            description: property.description || '',
-                                            detailImages: property.detailImages || [],
-                                            facilities: property.facilities || [],
-                                            funThingsToDo: property.funThingsToDo || [],
-                                            googleMaps: property.googleMaps || '',
-                                            houseRules: property.houseRules || '',
-                                            location: property.location || { address: '', city: '', state: '', country: '' },
-                                            propertyRating: property.propertyRating || 'unrated',
-                                            reservationPolicy: property.reservationPolicy || 'standard',
-                                            roomAccessibility: property.roomAccessibility || [],
-                                            roomFacilities: property.roomFacilities || [],
-                                            title: property.title || 'Unknown Property',
-                                            totalRating: property.totalRating || null,
-                                            type: property.type || 'Unknown',
-                                            userId: property.userId || 'unknown'
-                                        },
+                                        infoDetails: property, // Pass the whole property object here
                                         bookingDetails: { 
                                             checkIn: checkIn.toISOString(),
                                             checkOut: checkOut.toISOString(),
@@ -318,13 +348,20 @@ export default function ReservationForm({ property }: { property: Property }) {
                                             totalGuests: globalGuestCount,
                                             totalRoomsSelected: reservationDetails.totalSelectedPhysicalRooms,
                                             selectedMealPlan: reservationDetails.selectedMealPlan,
+                                            selectedBookingModel: reservationDetails.selectedBookingModel, // Pass the model
                                             roomsDetail: Object.entries(reservationDetails.selectedOffers)
                                                 .filter(([, qty]) => qty > 0)
-                                                .map(([]) => {
-                                                    // const offer = reservationDetails.displayableRoomOffers?.find(o => o.offerId === offerId);
-                                                    return { categoryId: property._id || 'unknown' };
+                                                .map(([offerId]) => {
+                                                    // This needs to be robust, using property data is safer for backend processing
+                                                    const parts = offerId.split('_');
+                                                    return { 
+                                                        categoryId: parts[0],
+                                                        quantity: reservationDetails.selectedBookingModel === 'perUnit' ? 1 : reservationDetails.selectedOffers[offerId],
+                                                        type: reservationDetails.selectedBookingModel,
+                                                    };
                                                 }),
-                                            calculatedPricePerNight: pricingDetails.totalBookingPricePerNight, 
+                                            // Assuming totalBookingPricePerNight is available or calculated
+                                            calculatedPricePerNight: pricingDetails.totalBookingPricing / days, 
                                             currency: pricingDetails.currency,
                                             numberOfNights: days,
                                             subtotal: pricingDetails.subtotalNights,

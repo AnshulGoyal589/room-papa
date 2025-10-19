@@ -8,6 +8,7 @@ import { Home, MapPin, DollarSign } from 'lucide-react';
 import { ExtendedProperty } from '@/lib/mongodb/models/Components';
 import { PropertyType } from '@/types/property';
 import { SectionHeader } from './SharedUI';
+import { propertyTypes } from '../../../../public/assets/data';
 
 interface PropertyDetailsSectionProps {
   propertyData: ExtendedProperty;
@@ -30,16 +31,15 @@ const PropertyDetailsSection: React.FC<PropertyDetailsSectionProps> = ({ propert
           >
             <SelectTrigger><SelectValue placeholder="Select property type" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="Hotel">Hotel</SelectItem>
-              <SelectItem value="Apartment">Apartment</SelectItem>
-              <SelectItem value="Villa">Villa</SelectItem>
-              <SelectItem value="Hostel">Hostel</SelectItem>
-              <SelectItem value="Resort">Resort</SelectItem>
-              <SelectItem value="Cottage">Cottage</SelectItem>
-              <SelectItem value="Homestay">Homestay</SelectItem>
+              {
+                propertyTypes.map((type) => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))
+              }
             </SelectContent>
           </Select>
         </FormItem>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormItem>
             <FormLabel>Property Rating</FormLabel>
@@ -67,6 +67,7 @@ const PropertyDetailsSection: React.FC<PropertyDetailsSectionProps> = ({ propert
             />
           </FormItem>
         </div>
+        
       </div>
 
       <div className="space-y-4 pt-6 border-t">

@@ -25,3 +25,21 @@ export const categoryOptions = {
     reservationPolicy: ['Free Cancellation', 'Instant Confirmation', 'Book Now, Pay Later', 'Non-refundable'],
   };
   
+  export const propertyTypes = [
+    'Hotel',
+    'Apartment',
+    'Villa',
+    'Hostel',
+    'Resort',
+    'Cottage',
+    'Homestay'
+  ] as const;
+
+  export const singleAndMultipleOccupancyPropertyTypes = [
+    'Cottage',
+    'Villa'
+  ] as const;
+
+  export const singleOccupancyPropertyTypes = [
+    'Homestay'
+  ] as const;

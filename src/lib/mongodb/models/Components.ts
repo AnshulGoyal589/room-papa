@@ -126,6 +126,7 @@ export interface ReservationData {
     checkInDate: string;
     checkOutDate: string;
     // reservationPolicy : string[];
+    selectedBookingModel: 'perUnit' | 'perOccupancy';
     days: number;
     adultCount: number;
     childCount: number;

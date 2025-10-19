@@ -1,9 +1,7 @@
-// /components/property-form/RoomCategoryList.tsx
-
 import React from 'react';
 import { StoredRoomCategory } from '@/types/booking';
 import { Button } from '@/components/ui/button';
-import { Baby, CalendarDays, CalendarOff, DollarSign, Sparkles, Users, Wrench, X } from 'lucide-react';
+import { Baby, CalendarDays, CalendarOff, DollarSign, Home, Sparkles, Users, Wrench, X } from 'lucide-react';
 import { PricingByMealPlan } from '@/types/property';
 import { ChipList, MealPlanLabel } from './SharedUI';
 
@@ -51,29 +49,50 @@ const RoomCategoryList: React.FC<RoomCategoryListProps> = ({ categories, onRemov
           )}
 
           <div className="space-y-3 text-sm border-t pt-3">
-            <p className="font-medium flex items-center"><Users className="inline h-4 w-4 mr-1 text-primary"/>Adult Pricing (Total Room Price):</p>
-            <div className="pl-4 space-y-1">
-              {[
-                  { label: '1 Adult', base: cat.pricing.singleOccupancyAdultPrice, disc: cat.pricing.discountedSingleOccupancyAdultPrice },
-                  { label: '2 Adults', base: cat.pricing.doubleOccupancyAdultPrice, disc: cat.pricing.discountedDoubleOccupancyAdultPrice },
-                  { label: '3 Adults', base: cat.pricing.tripleOccupancyAdultPrice, disc: cat.pricing.discountedTripleOccupancyAdultPrice },
-              ].map(p => (
-                  <div key={p.label}>
-                    <strong>{p.label}:</strong>
-                    {['noMeal', 'breakfastOnly', 'allMeals'].map(mp => {
-                        const mealKey = mp as keyof PricingByMealPlan;
-                        const basePrice = getPrice(p.base, mealKey);
-                        const discPrice = getPrice(p.disc, mealKey);
-                        return (
-                            <span key={mealKey} className="ml-2">
-                                <MealPlanLabel mealPlan={mealKey} /> {cat.currency} {basePrice}
-                                {discPrice > 0 && discPrice < basePrice ? ` (Disc: ${discPrice})` : ''}
-                            </span>
-                        )
-                      })}
-                  </div>
-              ))}
-            </div>
+            {cat.pricingModel === 'perUnit' ? (
+                            <div>
+                                <p className="font-medium flex items-center"><Home className="inline h-4 w-4 mr-1 text-primary"/>Pricing for Entire Unit (Max: {cat.totalOccupancy} guests):</p>
+                                <div className="pl-4 space-y-1 mt-1">
+                                    {(['noMeal', 'breakfastOnly', 'allMeals'] as const).map(mp => {
+                                        const basePrice = getPrice(cat.totalOccupancyPrice, mp);
+                                        const discPrice = getPrice(cat.discountedTotalOccupancyPrice, mp);
+                                        if (basePrice === 0 && discPrice === 0) return null;
+                                        return (
+                                            <span key={mp} className="mr-4 inline-block">
+                                                <MealPlanLabel mealPlan={mp} /> {cat.currency} {basePrice}
+                                                {discPrice > 0 && discPrice < basePrice ? ` (Disc: ${discPrice})` : ''}
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ) : (
+                          <>
+                            <p className="font-medium flex items-center"><Users className="inline h-4 w-4 mr-1 text-primary"/>Adult Pricing (Total Room Price):</p>
+                            <div className="pl-4 space-y-1">
+                              {[
+                                  { label: '1 Adult', base: cat.pricing.singleOccupancyAdultPrice, disc: cat.pricing.discountedSingleOccupancyAdultPrice },
+                                  { label: '2 Adults', base: cat.pricing.doubleOccupancyAdultPrice, disc: cat.pricing.discountedDoubleOccupancyAdultPrice },
+                                  { label: '3 Adults', base: cat.pricing.tripleOccupancyAdultPrice, disc: cat.pricing.discountedTripleOccupancyAdultPrice },
+                              ].map(p => (
+                                  <div key={p.label}>
+                                    <strong>{p.label}:</strong>
+                                    {['noMeal', 'breakfastOnly', 'allMeals'].map(mp => {
+                                        const mealKey = mp as keyof PricingByMealPlan;
+                                        const basePrice = getPrice(p.base, mealKey);
+                                        const discPrice = getPrice(p.disc, mealKey);
+                                        return (
+                                            <span key={mealKey} className="ml-2">
+                                                <MealPlanLabel mealPlan={mealKey} /> {cat.currency} {basePrice}
+                                                {discPrice > 0 && discPrice < basePrice ? ` (Disc: ${discPrice})` : ''}
+                                            </span>
+                                        )
+                                      })}
+                                  </div>
+                              ))}
+                            </div>
+                            </>
+                        )}
 
             <p className="font-medium flex items-center pt-2"><Baby className="inline h-4 w-4 mr-1 text-primary"/>Child Pricing (Per Child, Sharing):</p>
             <div className="pl-4 space-y-1">

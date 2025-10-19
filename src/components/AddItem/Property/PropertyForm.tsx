@@ -1,5 +1,3 @@
-// /components/property-form/PropertyForm.tsx
-
 import React, { useEffect } from 'react';
 import { BedDouble } from 'lucide-react';
 import { StoredRoomCategory } from '@/types/booking';
@@ -7,17 +5,16 @@ import { ExtendedProperty, PropertyFormProps } from '@/lib/mongodb/models/Compon
 import { PricingByMealPlan, PropertyType } from '@/types/property';
 import { SectionHeader } from './SharedUI';
 
-// Import the new components
 import PropertyDetailsSection from './PropertyDetailsSection';
 import RoomCategoryList from './RoomCategoryList';
 import RoomCategoryForm from './RoomCategoryForm';
 import PropertyFeaturesSection from './PropertyFeaturesSection';
+import { singleOccupancyPropertyTypes } from '../../../../public/assets/data';
 
 const getPrice = (pricing: Partial<PricingByMealPlan> | undefined, mealPlan: keyof PricingByMealPlan): number => {
     return pricing?.[mealPlan] ?? 0;
 };
 
-// The initial property data structure, used as a default
 const initialPropertyData: ExtendedProperty = {
   type: 'Hotel' as PropertyType,
   location: { address: '', city: '', state: '', country: '' },
@@ -51,7 +48,6 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
   propertyData = initialPropertyData,
   setPropertyData
 }) => {
-  // Effect to calculate and update the property's overall price summary
   useEffect(() => {
     const { costing, rooms, categoryRooms } = propertyData;
     const currentPrice = costing?.price ?? 0;
@@ -66,22 +62,29 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
       const mealPlanPriorities: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
 
       categoryRooms.forEach(cat => {
-        for (const mealPlan of mealPlanPriorities) {
-          const singleBase = getPrice(cat.pricing.singleOccupancyAdultPrice, mealPlan);
-          if (singleBase > 0) {
-            const singleDisc = getPrice(cat.pricing.discountedSingleOccupancyAdultPrice, mealPlan);
-            const effectivePrice = singleDisc > 0 ? singleDisc : singleBase;
-            
-            if (singleBase < minOverallPrice) {
-                minOverallPrice = singleBase;
-                leadCurrency = cat.currency;
-            }
-            if (effectivePrice < minOverallDiscountedPrice) {
-                minOverallDiscountedPrice = effectivePrice;
-            }
-            break; // Found the first valid price for this category, move to next category
+          for (const mealPlan of mealPlanPriorities) {
+              let basePrice = 0;
+              let discPrice = 0;
+              if (cat.pricingModel === 'perUnit') {
+                  basePrice = getPrice(cat.totalOccupancyPrice, mealPlan);
+                  discPrice = getPrice(cat.discountedTotalOccupancyPrice, mealPlan);
+              } else { // 'perOccupancy' is the default/fallback
+                  basePrice = getPrice(cat.pricing.singleOccupancyAdultPrice, mealPlan);
+                  discPrice = getPrice(cat.pricing.discountedSingleOccupancyAdultPrice, mealPlan);
+              }
+              
+              if (basePrice > 0) {
+                  const effectivePrice = discPrice > 0 ? discPrice : basePrice;
+                  if (basePrice < minOverallPrice) {
+                      minOverallPrice = basePrice;
+                      leadCurrency = cat.currency;
+                  }
+                  if (effectivePrice < minOverallDiscountedPrice) {
+                      minOverallDiscountedPrice = effectivePrice;
+                  }
+                  break; // Found the cheapest meal plan for this category, move to next category
+              }
           }
-        }
       });
 
       const newTotalRooms = categoryRooms.reduce((sum, cat) => sum + (cat.qty || 0), 0);
@@ -146,18 +149,32 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
 
   return (
     <div className="space-y-8 overflow-y-auto p-1 pr-4">
+
       <PropertyDetailsSection 
         propertyData={ensurePropertyData} 
         onPropertyChange={handlePropertyChange} 
       />
 
       <div className="space-y-4 pt-6 border-t">
+
         <SectionHeader title="Manage Room Categories" icon={BedDouble} />
-        <RoomCategoryList 
-            categories={ensurePropertyData.categoryRooms ?? []} 
-            onRemoveCategory={handleRemoveCategory} 
+
+        {(singleOccupancyPropertyTypes as readonly string[]).includes(ensurePropertyData.type) && (
+            <p className="text-sm text-muted-foreground p-3 bg-blue-50 border border-blue-200 rounded-md">
+                For {ensurePropertyData.type} properties, it&apos;s recommended to have a single room category representing the entire property.
+            </p>
+        )}
+
+        <RoomCategoryList
+            categories={ensurePropertyData.categoryRooms ?? []}
+            onRemoveCategory={handleRemoveCategory}
         />
-        <RoomCategoryForm onAddCategory={handleAddCategory} />
+          
+        <RoomCategoryForm 
+            onAddCategory={handleAddCategory} 
+            propertyType={ensurePropertyData.type} 
+        />
+
       </div>
 
       <PropertyFeaturesSection
@@ -166,6 +183,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
         onToggleArrayItem={toggleArrayItem}
         onRemoveArrayItem={removeArrayItem}
       />
+      
     </div>
   );
 };
