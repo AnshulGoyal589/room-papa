@@ -1,6 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, ChangeEvent, KeyboardEvent } from 'react';
 import { ChevronDown, X, Plus, Minus } from 'lucide-react';
 import { DateRange, RecentSearchItem } from '@/lib/mongodb/models/Components';
+import { STAYS_KEYWORD_LIST } from '@/lib/data/staysKeywords';
+import { SuggestionText } from './Suggestion';
 
 
 const MAX_RECENT_SEARCHES = 3;
@@ -39,6 +41,11 @@ const saveSearchToRecentList = (searchData: Omit<RecentSearchItem, 'id' | 'times
 export default function StaysSearchForm() {
   // State variables with proper typing
   const [title, setLocation] = useState<string>('');
+
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const locationInputRef = useRef<HTMLInputElement>(null);
+
   const [dateRange, setDateRange] = useState<DateRange>({
     startDate: new Date(Date.now()),
     endDate: new Date(Date.now()+  7 * 24 * 60 * 60 * 1000 )  
@@ -94,7 +101,6 @@ export default function StaysSearchForm() {
     // Create date in local timezone. Month is 0-indexed for Date constructor.
     return new Date(year, month - 1, day, 0, 0, 0, 0);
   }, []);
-
 
   // Get initial values from URL parameters or localStorage
   const setDefaultsFromURL = () => {
@@ -232,6 +238,68 @@ export default function StaysSearchForm() {
       localStorage.removeItem('pets');
     }
   };
+
+  const filteredSuggestions = useMemo(() => {
+    if (title.length === 0) {
+        return [];
+    }
+    const lowerInput = title.toLowerCase();
+
+    return STAYS_KEYWORD_LIST
+        .filter(keyword => keyword.toLowerCase().includes(lowerInput))
+        .slice(0, 8); // Limit suggestions for performance/UI
+}, [title]);
+
+  // Handler to select a keyword (used for click and Enter key)
+  const handleSelectSuggestion = (keyword: string) => {
+      setLocation(keyword);
+      localStorage.setItem('title', keyword);
+      setShowSuggestions(false);
+      setActiveSuggestionIndex(-1);
+      locationInputRef.current?.focus(); // Keep focus after selection
+  };
+
+  // Handler for input change
+  const handleLocationChange = (e: ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setLocation(value);
+      localStorage.setItem('title', value);
+      
+      // Only show suggestions if there's input and matches exist
+      if (value.length > 0) {
+          setShowSuggestions(true);
+          setActiveSuggestionIndex(-1);
+      } else {
+          setShowSuggestions(false);
+      }
+  };
+
+  // Handler for keyboard navigation
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+      if (!showSuggestions || filteredSuggestions.length === 0) return;
+
+      if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setActiveSuggestionIndex(prev => 
+              (prev < filteredSuggestions.length - 1) ? prev + 1 : 0
+          );
+      } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setActiveSuggestionIndex(prev => 
+              (prev > 0) ? prev - 1 : filteredSuggestions.length - 1
+          );
+      } else if (e.key === 'Enter') {
+          e.preventDefault(); // Prevent form submission
+          if (activeSuggestionIndex >= 0) {
+              handleSelectSuggestion(filteredSuggestions[activeSuggestionIndex]);
+          } else {
+              // If nothing is highlighted, just accept the current input value
+              setShowSuggestions(false);
+          }
+      } else if (e.key === 'Escape') {
+          setShowSuggestions(false);
+      }
+  };
   
   useEffect(() => {
     setDefaultsFromURL();
@@ -350,6 +418,7 @@ export default function StaysSearchForm() {
   };
 
   const { days: currentDays, monthName: currentMonthName } = generateCalendar(selectedMonth, selectedYear);
+
   const { days: nextDays, monthName: nextMonthName } = generateCalendar(
     selectedMonth === 11 ? 0 : selectedMonth + 1, 
     selectedMonth === 11 ? selectedYear + 1 : selectedYear
@@ -481,29 +550,96 @@ export default function StaysSearchForm() {
       <div className="flex flex-wrap ">
         {/* Location Input */}
         <div className="w-full md:w-1/3 relative">
-            <div className="bg-white text-black  h-full p-4 rounded-md flex items-center border-yellow-400 border-3">
-             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bed-double-icon lucide-bed-double"><path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 4v6"/><path d="M2 18h20"/></svg>
-              <input 
-                type="text" 
-                placeholder="Where are you going?" 
-                className="flex-1 outline-none text-sm ml-4"
-                value={title}
-                onChange={(e) => {
-                  setLocation(e.target.value);
-                  localStorage.setItem('title', e.target.value);
-                }}
-              />
-              {title && (
-                <button className="text-gray-400" onClick={() => {
-                  setLocation('');
-                  localStorage.removeItem('title');
-                }}>
-                  <X className="h-4 w-4" />
-                </button>
-              )}
+            <div className="bg-white text-black h-full p-4 rounded-md flex items-center border-yellow-400 border-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bed-double-icon lucide-bed-double">
+                    <path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8" /><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4" /><path d="M12 4v6" /><path d="M2 18h20" />
+                </svg>
+                <input
+                    ref={locationInputRef} // <-- ATTACH REF
+                    type="text"
+                    placeholder="Where are you going?"
+                    className="flex-1 outline-none text-sm ml-4"
+                    value={title}
+                    onChange={handleLocationChange} // <-- USE NEW HANDLER
+                    onKeyDown={handleKeyDown}     // <-- USE NEW KEYBOARD HANDLER
+                    onFocus={() => {
+                        // Show suggestions if input is present when focused
+                        if (title.length > 0 && filteredSuggestions.length > 0) {
+                            setShowSuggestions(true);
+                        }
+                    }}
+                    onBlur={() => {
+                        // Delay hiding to allow click events on suggestions to register
+                        setTimeout(() => setShowSuggestions(false), 150);
+                    }}
+                />
+                {title && (
+                    <button className="text-gray-400" onClick={() => {
+                        setLocation('');
+                        localStorage.removeItem('title');
+                        setShowSuggestions(false); // Hide suggestions on clear
+                        setActiveSuggestionIndex(-1);
+                        locationInputRef.current?.focus();
+                    }}>
+                        <X className="h-4 w-4" />
+                    </button>
+                )}
             </div>
+
+            {/* Autocomplete Suggestions Dropdown */}
+            {showSuggestions && filteredSuggestions.length > 0 && (
+                <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-30 max-h-80 overflow-y-auto transform transition duration-300 ease-out origin-top">
+                    
+                    {/* Optional: Add a subtle header for context */}
+                    <div className="p-3 pt-4 text-xs font-semibold uppercase text-gray-500 tracking-wider border-b border-gray-100 sticky top-0 bg-white">
+                        Matching Destinations ({filteredSuggestions.length})
+                    </div>
+
+                    <ul className="divide-y divide-gray-100">
+                        {filteredSuggestions.map((suggestion, index) => {
+                            const isActive = index === activeSuggestionIndex;
+                            
+                            return (
+                                <li
+                                    key={suggestion}
+                                    className={`
+                                        flex items-center p-3 sm:p-4 text-base cursor-pointer transition-colors duration-150
+                                        ${isActive 
+                                            ? 'bg-[#003c95] text-white' // Active/Selected style
+                                            : 'hover:bg-gray-50 text-gray-800' // Hover style
+                                        }
+                                    `}
+                                    // Use mousedown to prevent onBlur from firing before onClick
+                                    onMouseDown={(e) => { 
+                                        e.preventDefault(); 
+                                        handleSelectSuggestion(suggestion);
+                                    }}
+                                >
+                                    {/* Optional Icon: Pin icon adds visual relevance */}
+                                    <svg 
+                                        xmlns="http://www.w3.org/2000/svg" 
+                                        width="20" height="20" viewBox="0 0 24 24" fill="none" 
+                                        stroke="currentColor" strokeWidth="2" strokeLinecap="round" 
+                                        strokeLinejoin="round" 
+                                        className={`mr-3 flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-400'}`}
+                                    >
+                                        <path d="M12 21.7c-4.4-4.4-8-7.7-8-10.7a8 8 0 0 1 16 0c0 3-3.6 6.3-8 10.7z"/><circle cx="12" cy="10" r="3"/>
+                                    </svg>
+                                    
+                                    {/* Highlight the matching text */}
+                                    <SuggestionText 
+                                        suggestion={suggestion} 
+                                        query={title} 
+                                        isActive={isActive}
+                                    />
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </div>
+            )}
         </div>
-        
+
         {/* Date Range */}
         <div className="w-full md:w-1/3 relative">
           <div 
@@ -534,6 +670,7 @@ export default function StaysSearchForm() {
             </div>
             <ChevronDown className="h-4 w-4 text-gray-500" />
           </div>
+
           
           {showCalendar && (
             <div 

@@ -2,42 +2,41 @@
 
 import { Collection, ObjectId } from 'mongodb';
 import { getDb } from '..';
-import {  PropertyAmenities, PropertyType } from '@/types';
 import { StoredRoomCategory } from '@/types/booking';
 import { Costing, Image, Location, Review } from './Components';
+import { HouseRules, PropertyAmenities, propertyAmenitiesArray, PropertyType } from '@/types/property';
 
 
 export interface Property {
   _id?: ObjectId;
-  userId?: string;
-  title?: string;
-  description?: string;
-  type: PropertyType;
-  location: Location;
-  startDate: string;
-  endDate: string;
-  costing: Costing;
-  totalRating?: number;
-  review?: Review[];
-  createdAt?: Date;
-  updatedAt?: Date;
-  bannerImage?: Image;
-  detailImages?: Image[];
-  rooms: number;
-  categoryRooms?: StoredRoomCategory[];
-  amenities: string[];
   accessibility?: string[];
-  roomAccessibility?: string[];
-  popularFilters?: string[];
-  funThingsToDo?: string[];
-  meals?: string[];
-  facilities?: string[];
+  amenities: string[];
+  bannerImage?: Image;
   bedPreference?: string[];
-  reservationPolicy?: string[];
   brands?: string[];
-  roomFacilities?: string[];
-  propertyRating?: number;
+  categoryRooms?: StoredRoomCategory[];
+  costing: Costing;
+  createdAt?: Date;
+  description?: string;
+  detailImages?: Image[];
+  facilities?: string[];
+  funThingsToDo?: string[];
   googleMaps?: string;
+  houseRules?: HouseRules;
+  location: Location;
+  meals?: string[];
+  popularFilters?: string[];
+  propertyRating?: number;
+  reservationPolicy?: string[];
+  review?: Review[];
+  roomAccessibility?: string[];
+  roomFacilities?: string[];
+  rooms: number;
+  title?: string;
+  totalRating?: number;
+  type: PropertyType;
+  updatedAt?: Date;
+  userId?: string;
 }
 
 
@@ -69,7 +68,7 @@ export interface Property {
     }
     
     // Validate amenities
-    const validAmenities: PropertyAmenities[] = ['wifi', 'pool', 'gym', 'spa', 'restaurant', 'parking', 'airConditioning', 'breakfast'];
+    const validAmenities: PropertyAmenities[] = Array.from(propertyAmenitiesArray);
     for (const amenity of propertyData.amenities) {
       if (!validAmenities.includes(amenity as PropertyAmenities)) {
         throw new Error(`Invalid amenity: ${amenity}. Valid amenities are: ${validAmenities.join(', ')}`);
@@ -91,23 +90,37 @@ export interface Property {
 
   export async function getPropertiesCollection(): Promise<Collection<Property>> {
     const db = await getDb();
-    // console.log(db);
     return db.collection<Property>('properties');
   }
   
-  export async function getAllProperties(userId?: string): Promise<Property[]> {
+  export async function getAllProperties(): Promise<Property[]> {
     const properties = await getPropertiesCollection();
-    
-    const query = userId ? { userId } : {};
-    // console.log("query: ",query);
-    return properties.find(query).toArray();
+    return properties.find({}).toArray();
+  }
+  export async function getAllUploaderProperties(userId: string): Promise<Property[]> {
+    const properties = await getPropertiesCollection();
+    if(!userId){
+      return properties.find({}).toArray();
+    }
+    return properties.find({ userId }).toArray();
   }
   
   export async function getPropertyById(id: string): Promise<Property | null> {
     const properties = await getPropertiesCollection();
-    // console.log("hurrrr: ",properties);
     return properties.findOne({ _id: new ObjectId(id) });
   }
+
+  export async function addPropertyReview(propertyId: string, review: Review): Promise<void> {
+    const properties = await getPropertiesCollection();
+    await properties.updateOne(
+      { _id: new ObjectId(propertyId) },
+      {
+        $push: { review: review },
+        $inc: { totalRating: review.rating }
+      }
+    );
+  }
+
   
   export async function createProperty(propertyData: Omit<Property, '_id' | 'createdAt' | 'updatedAt'>): Promise<Property> {
     try {
@@ -188,4 +201,10 @@ export async function updateProperty(id: string, propertyData: Partial<Property>
     const properties = await getPropertiesCollection();
     const result = await properties.deleteOne({ _id: new ObjectId(id) });
     return result.deletedCount === 1;
+  }
+
+  export async function checkReviewStatus(PropertyId: string, userId: string): Promise<boolean> {
+    const properties = await getPropertiesCollection();
+    const property = await properties.findOne({ _id: new ObjectId(PropertyId), 'review.userId': userId });
+    return !!property;
   }

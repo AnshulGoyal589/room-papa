@@ -13,21 +13,17 @@ import PropertyEditForm from '@/components/manager/EditForms/PropertyEditForm';
 import TripEditForm from '@/components/manager/EditForms/TripEditForm';
 import TravellingEditForm from '@/components/manager/EditForms/TravellingEditForm';
 
-type ItemCategory = 'Property' | 'Trip' | 'Travelling';
 type ItemData = Property | Trip | Travelling;
 
-// Define the props this component receives from the server page
 interface ItemEditClientViewProps {
   initialItemData: ItemData;
-  initialCategory: ItemCategory;
+  initialCategory: string;
 }
 
 export default function ItemEditClientView({ initialItemData, initialCategory }: ItemEditClientViewProps) {
   const router = useRouter();
   const { toast } = useToast();
 
-  // The component is initialized with server-fetched data.
-  // No need for `useEffect` or `isLoading` for the initial fetch.
   const [item] = useState(initialItemData);
   const [category] = useState(initialCategory);
   
@@ -57,7 +53,7 @@ export default function ItemEditClientView({ initialItemData, initialCategory }:
 
       toast({ title: 'Success', description: 'Item updated successfully.' });
       router.push(`/admin/dashboard/${itemId}`);
-      router.refresh(); // Important: tells Next.js to re-fetch server data on the next page
+      router.refresh();
 
     } catch (error) {
       console.error('Error updating item:', error);
@@ -68,8 +64,6 @@ export default function ItemEditClientView({ initialItemData, initialCategory }:
       });
     }
   };
-
-  // The top-level loading and not-found checks are now handled by the parent server component.
   
   return (
     <div className="container mx-auto py-8">

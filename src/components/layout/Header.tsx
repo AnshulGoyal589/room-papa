@@ -4,18 +4,8 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  Home, 
-  // Plane, 
-  // Hotel, 
-  // ShoppingBag, 
-  Briefcase,
-  BookAIcon,
-  Menu,
-  X,
-  Ticket,
-  LogIn,
-  UserPlus
+import {
+  Home, Briefcase, BookAIcon, Menu, X, Ticket, LogIn, UserPlus
 } from 'lucide-react';
 import {
   Tooltip,
@@ -24,18 +14,13 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip"
 import {
-  SignedIn,
-  SignedOut,
-  UserButton,
-  useUser,
-  useClerk
+  SignedIn, SignedOut, UserButton, useUser, useClerk
 } from '@clerk/nextjs';
 import { QuestionMarkCircledIcon } from '@radix-ui/react-icons';
+import CurrencySwitcher from '../customer/HomePage/CurrencySwitcher';
 
-// Type definition for user role
 type UserRole = 'customer' | 'manager' | 'admin' | 'guest';
 
-// --- Data structure for navigation links to make the component cleaner ---
 type NavLinkType = {
   href: string;
   label: string;
@@ -49,7 +34,6 @@ const navLinks: {
   admin: NavLinkType[];
 } = {
   customer: [
-    // { href: "/", label: "Home", icon: Home },
     { href: "/customer/bookings", label: "My Bookings", icon: Ticket, signedInOnly: true }
   ],
   manager: [
@@ -60,10 +44,10 @@ const navLinks: {
   admin: [
     { href: "/admin/dashboard", label: "Dashboard", icon: Home },
     { href: "/admin/managers", label: "Managers", icon: Briefcase },
+    { href: "/admin/appointments", label: "Bookings", icon: BookAIcon },
   ],
 };
 
-// Main Header Component
 export function Header() {
   const { isSignedIn, user, isLoaded } = useUser();
   const { openSignUp, openSignIn } = useClerk();
@@ -211,7 +195,7 @@ export function Header() {
   
   return (
     <header className={`text-white sticky top-0 z-60 transition-colors duration-300 ${isScrolled ? 'bg-[#003c95] shadow-md' : 'bg-[#003c95]'}`}> 
-      <div className="container mx-auto flex justify-between items-center h-20 px-4 sm:px-6 lg:px-8">
+      <div className="container max-w-7xl mx-auto flex justify-between items-center h-20 px-4 sm:px-6">
         
         <Link 
           href={role === 'customer' ? "/" : role === 'manager' ? "/manager/dashboard" : role === 'admin' ? "/admin/dashboard" : "/"} 
@@ -241,6 +225,12 @@ export function Header() {
         </nav>
 
         <div className="hidden md:flex items-center gap-2">
+
+          {
+            role && (role === 'customer' || role === 'guest') && (
+              <CurrencySwitcher />
+            )
+          }
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -298,7 +288,6 @@ export function Header() {
         </div>
       </div>
 
-      {/* --- Mobile Menu Panel --- */}
       {isMobileMenuOpen && (
         <div className="md:hidden bg-[#003c95] border-t border-white/20 absolute w-full left-0 shadow-xl">
           <nav className="flex flex-col gap-1 p-4">
@@ -311,7 +300,6 @@ export function Header() {
             ))}
           </nav>
 
-          {/* --- MODIFIED: Ensured the SignedOut and SignedIn components are correctly placed for mobile view --- */}
           <div className="p-4 border-t border-white/20">
             <SignedOut>
               <div className="flex flex-col gap-3">

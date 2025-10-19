@@ -1,96 +1,140 @@
-import React from 'react';
-import { formatDistanceToNow, subDays } from 'date-fns';
 import { Review } from '@/lib/mongodb/models/Components';
+import React, { useRef } from 'react';
 
+interface ReviewsProps {
+    reviews: Review[];
+}
 
-const reviewComments = [
-  "Absolutely incredible experience! The guides were knowledgeable and friendly.",
-  "Really enjoyed this trip. Beautiful location and great activities.",
-  "Amazing value for money. The itinerary was well-planned.",
-  "The best vacation we've had in years! Our kids loved every minute of it.",
-  "Breathtaking scenery and unforgettable experiences.",
-  "Perfect combination of adventure and relaxation."
-];
+const ReviewCard: React.FC<{ review: Review }> = ({ review }) => {
+    const { name = 'Anonymous', country, comment } = review;
+    const initial = name.charAt(0).toUpperCase();
 
-const guestNames = [
-  "Alex", "Blake", "Casey", "Dana", 
-  "Ellis", "Fran", "Gerry", "Harper"
-];
-
-const generateDummyReview = (): Review => {
-  // Generate random date within the last 60 days
-  const date = subDays(new Date(), Math.floor(Math.random() * 60));
-  
-  // Pick a random comment
-  const comment = reviewComments[Math.floor(Math.random() * reviewComments.length)];
-  
-  // Generate weighted rating (mostly 4-5 stars)
-  const rand = Math.random();
-  const rating = rand < 0.6 ? 5 : rand < 0.9 ? 4 : 3;
-  
-  // Pick a random name
-  const name = guestNames[Math.floor(Math.random() * guestNames.length)];
-  
-  return { comment, rating, name, date };
+    const getCountryFlagSwitch = (countryName: string): string => {
+    switch (countryName.toLowerCase()) {
+        case 'eurozone':
+            return '🇪🇺';
+        case 'india':
+            return '🇮🇳';
+        case 'united states':
+            return '🇺🇸';
+        case 'united kingdom':
+            return '🇬🇧';
+        case 'japan':
+            return '🇯🇵';
+        case 'australia':
+            return '🇦🇺';
+        case 'canada':
+            return '🇨🇦';
+        case 'switzerland':
+            return '🇨🇭';
+        case 'china':
+            return '🇨🇳';
+        case 'sweden':
+            return '🇸🇪';
+        case 'new zealand':
+            return '🇳🇿';
+        case 'mexico':
+            return '🇲🇽';
+        case 'singapore':
+            return '🇸🇬';
+        case 'hong kong':
+            return '🇭🇰';
+        case 'norway':
+            return '🇳🇴';
+        case 'south korea':
+            return '🇰🇷';
+        case 'turkey':
+            return '🇹🇷';
+        case 'russia':
+            return '🇷🇺';
+        case 'brazil':
+            return '🇧🇷';
+        case 'south africa':
+            return '🇿🇦';
+        case 'united arab emirates':
+            return '🇦🇪';
+        case 'thailand':
+            return '🇹🇭';
+        case 'argentina':
+            return '🇦🇷';
+        case 'chile':
+            return '🇨🇱';
+        case 'colombia':
+            return '🇨🇴';
+        case 'egypt':
+            return '🇪🇬';
+        // Add your previous ones if needed
+        case 'poland':
+            return '🇵🇱';
+        default:
+            return '🏳️';
+    }
 };
 
-const renderRatingStars = (rating: number) => {
-  return (
-    <div className="flex">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <svg
-          key={star}
-          className={`w-4 h-4 ${
-            star <= rating ? 'text-yellow-400' : 'text-gray-300'
-          }`}
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-        </svg>
-      ))}
-    </div>
-  );
-};
-
-const ReviewCard = ({ review }: { review: Review }) => {
-  return (
-    <div className="bg-white rounded-lg shadow-md p-4 flex flex-col h-full">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center">
-          <div className="bg-[#003c95] rounded-full h-8 w-8 flex items-center justify-center mr-2">
-            <span className="font-bold text-[#003c95] text-sm">
-              {review.name?.charAt(0)}
-            </span>
-          </div>
-          <div>
-            <div className="font-medium text-sm">{review.name}</div>
-            <div className="text-xs text-gray-500">
-              {formatDistanceToNow(review.date as Date, { addSuffix: true })}
-            </div>
-          </div>
+    return (
+        <div className="flex-shrink-0 w-full sm:w-[380px] p-6 border border-gray-200 rounded-xl space-y-4 bg-white">
+            <header className="flex items-center space-x-4">
+                <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center text-white text-xl font-bold">
+                    {initial}
+                </div>
+                <div>
+                    <h3 className="font-bold text-gray-900">{name}</h3>
+                    <p className="text-sm text-gray-600 flex items-center">
+                        <span className="mr-2">{getCountryFlagSwitch(country ?? '')}</span>
+                        {country}
+                    </p>
+                </div>
+            </header>
+            <p className="text-gray-700">&apos;{comment}&apos;</p>
+            <a href="#" className="text-blue-600 font-medium hover:underline">
+                Read more
+            </a>
         </div>
-        <div>{renderRatingStars(review.rating)}</div>
-      </div>
-      <p className="text-gray-700 text-sm flex-grow">{review.comment}</p>
-    </div>
-  );
+    );
 };
 
-const HorizontalReviewCards = () => {
-  const reviews = Array.from({ length: 4 }).map(() => generateDummyReview());
-  
-  return (
-    <div className="max-w-6xl mx-auto py-8 px-4">
-      <h2 className="text-2xl font-bold text-center mb-6">What Our Customers Say</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {reviews.map((review, index) => (
-          <ReviewCard key={index} review={review} />
-        ))}
-      </div>
-    </div>
-  );
+
+
+export const GuestReviews: React.FC<ReviewsProps> = ({ reviews }) => {
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    const handleScroll = () => {
+        if (scrollContainerRef.current) {
+            const scrollAmount = scrollContainerRef.current.clientWidth * 0.8;
+            scrollContainerRef.current.scrollBy({
+                left: scrollAmount,
+                behavior: 'smooth',
+            });
+        }
+    };
+
+    return (
+        <section className="w-full  mx-auto py-4 sm:py-6 font-sans">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">
+                Guests who stayed here loved
+            </h2>
+            <div className="relative">
+                <div
+                    ref={scrollContainerRef}
+                    className="flex space-x-6 overflow-x-auto pb-4 scrollbar-hide"
+                >
+                    {reviews.map((review, index) => (
+                        <ReviewCard key={review.name ? `${review.name}-${index}` : index} review={review} />
+                    ))}
+                </div>
+
+                {/* Arrow Button */}
+                <button
+                    onClick={handleScroll}
+                    aria-label="Next reviews"
+                    className="absolute top-1/2 -right-0 sm:-right-5 transform -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </div>
+        </section>
+    );
 };
 
-export default HorizontalReviewCards;

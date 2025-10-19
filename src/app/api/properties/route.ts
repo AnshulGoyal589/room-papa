@@ -1,20 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllProperties, Property } from '@/lib/mongodb/models/Property';
+import {  Property } from '@/lib/mongodb/models/Property';
 import getClient from '@/lib/mongodb/client';
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const properties = await getAllProperties(userId || undefined);
-    return NextResponse.json(properties);
-  }catch (error: unknown) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 }
-    );
-  }
-}
 
 export async function POST(req: NextRequest) {
   try {

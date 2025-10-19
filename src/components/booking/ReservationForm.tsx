@@ -4,68 +4,66 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import Image from 'next/image';
-import {
-    Star as StarIcon, CheckCircle, Users, Wifi, ParkingSquare, Wind, Utensils, Info, AlertTriangle, Car, Bus, ChevronDown, ChevronUp
-} from 'lucide-react';
+import { CheckCircle, Users, Wifi, ParkingSquare, Wind, Utensils, Info, AlertTriangle, Car, Bus, ChevronDown, ChevronUp } from 'lucide-react';
 import RazorpayPaymentButton from '@/components/payment/RazorpayPaymentButton';
-import { DisplayableRoomOffer } from '@/types/booking';
+import { StoredRoomCategory } from '@/types/booking';
 import { ReservationData } from '@/lib/mongodb/models/Components';
-// import { send } from 'process';
+import { Property } from '@/lib/mongodb/models/Property';
+import { renderRatingStars, Stepper } from './Helper';
 
-const RESERVATION_DATA_KEY = 'reservationData_v1';
+const RESERVATION_DATA_KEY =  process.env.NEXT_RESERVATION_DATA_KEY || "reservationData_v1";
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "";
 
 
-// --- Helper Components ---
-const renderRatingStars = (rating: number) => (
-    <div className="flex items-center">
-        {[...Array(5)].map((_, i) => (
-            <StarIcon key={i} className={`w-4 h-4 ${i < Math.floor(rating) ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} />
-        ))}
-    </div>
-);
+// Helper function to reconstruct a basic offer detail for the form display
+function getBasicOfferDetails(
+    offerId: string, 
+    categories: StoredRoomCategory[]
+): { categoryTitle: string; intendedAdults: number; guestCapacityInOffer: number } | null {
+    const parts = offerId.split('_');
+    const categoryId = parts[0];
+    const category = categories.find(c => c.id === categoryId);
 
-const Stepper = () => (
-    <div className="flex items-center justify-between max-w-lg mx-auto mb-6">
-        <div className="flex items-center text-[#003c95]">
-            <CheckCircle className="w-6 h-6 mr-2" />
-            <span className="font-semibold">Your Selection</span>
-        </div>
-        <div className="flex-1 border-t-2 border-gray-300 mx-4"></div>
-        <div className="flex items-center text-[#003c95] font-bold">
-            <span className="flex items-center justify-center w-6 h-6 mr-2 border-2 border-[#003c95] rounded-full text-sm">2</span>
-            <span>Your Details</span>
-        </div>
-        <div className="flex-1 border-t-2 border-gray-300 mx-4"></div>
-        <div className="flex items-center text-gray-400">
-            <span className="flex items-center justify-center w-6 h-6 mr-2 border-2 border-gray-400 rounded-full text-sm">3</span>
-            <span>Finish booking</span>
-        </div>
-    </div>
-);
+    if (!category) return null;
+
+    const bookingModel = category.pricingModel || 'perOccupancy';
+
+    if (bookingModel === 'perUnit') {
+        // Per Unit model: capacity is totalOccupancy, intended adults is totalOccupancy
+        return {
+            categoryTitle: category.title,
+            intendedAdults: category.totalOccupancy || 1,
+            guestCapacityInOffer: category.totalOccupancy || 1,
+        };
+    }
+
+    // Per Occupancy model
+    const guestCountMatch = parts[1]?.match(/(\d+)guests/);
+    const intendedAdults = guestCountMatch ? parseInt(guestCountMatch[1], 10) : 1;
+    
+    return {
+        categoryTitle: category.title,
+        intendedAdults: intendedAdults,
+        guestCapacityInOffer: intendedAdults, // Base capacity for this offer type
+    };
+}
 
 
-// --- Main Component ---
-export default function ReservationForm({ propertyId }: { propertyId: string }) {
+export default function ReservationForm({ property }: { property: Property }) {
     const router = useRouter();
     const { user, isLoaded, isSignedIn } = useUser();
-    // console.log("PropertyId in ReservationForm:", propertyId);
     const [reservationDetails, setReservationDetails] = useState<ReservationData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     
-    // Form data
     const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', phone: '', guestFullName: '' });
     const [country, setCountry] = useState('India');
-    // const [countryCode, setCountryCode] = useState('+91');
     const [guestDetailsPerRoom, setGuestDetailsPerRoom] = useState<Record<string, { guestName: string }>>({});
 
-    // --- NEW STATE ---
     const [bookingFor, setBookingFor] = useState<'self' | 'someone_else'>('self');
     const [travelingFor, setTravelingFor] = useState<'leisure' | 'work'>('leisure');
     const [gstDetails, setGstDetails] = useState({ number: '', businessName: '' });
     
-    // UI/Options state
     const [wantsRoomsTogether, setWantsRoomsTogether] = useState(false);
     const [wantsAirportShuttle, setWantsAirportShuttle] = useState(false);
     const [wantsCarRental, setWantsCarRental] = useState(false);
@@ -73,32 +71,39 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
     const [arrivalTime, setArrivalTime] = useState('');
     const [showPriceDetails, setShowPriceDetails] = useState(false);
     const [bookingConfirmed, setBookingConfirmed] = useState(false);
-    // const [paymentError, setPaymentError] = useState<string | null>(null);
-
-   
-    // --- Logic Hooks (Unchanged) ---
+    
     useEffect(() => {
         const storedData = localStorage.getItem(RESERVATION_DATA_KEY);
         if (!storedData) {
             setError("Booking details not found. Please start over."); setLoading(false);
-            router.push(`/properties/${propertyId}`); return;
+            router.push(`/properties/${property._id}`); return;
         }
         try {
             const parsedData: ReservationData = JSON.parse(storedData);
-            if (parsedData.propertyId !== propertyId) {
-                setError("Mismatched booking data. Redirecting..."); setLoading(false);
+            if (parsedData.propertyId !== property._id?.toString()) {
+                setError("Mismatched booking data. Redirecting...");
+                setLoading(false);
                 localStorage.removeItem(RESERVATION_DATA_KEY);
-                router.push(`/properties/${propertyId}`); return;
+                router.push(`/properties/${property._id}`);
+                return;
             }
-            // console.log("testing: ", parsedData);
-            setReservationDetails(parsedData);
+            // Ensure necessary defaults are set for new fields if they weren't stored
+            const globalGuestCount = parsedData.adultCount + parsedData.childCount;
+            setReservationDetails({ 
+                ...parsedData, 
+                globalGuestCount: globalGuestCount, // Ensure this exists for UI display
+                totalSelectedPhysicalRooms: Object.values(parsedData.selectedOffers).reduce((sum, qty) => sum + qty, 0) // Ensure this exists
+            });
+
         } catch (error) {
             console.error("Error parsing reservation data:", error);
             setError("Could not read booking details. Please start over.");
             localStorage.removeItem(RESERVATION_DATA_KEY);
-            router.push(`/properties/${propertyId}`);
-        } finally { setLoading(false); }
-    }, [propertyId, router]);
+            router.push(`/properties/${property._id}`);
+        } finally {
+            setLoading(false);
+        }
+    }, [property._id, router]);
 
     useEffect(() => {
         if (isLoaded && isSignedIn && user) {
@@ -106,23 +111,31 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
         }
     }, [isLoaded, isSignedIn, user]);
 
-    // --- Dynamic Room Instances for Form ---
+    // MODIFIED roomInstances calculation
     const roomInstances = useMemo(() => {
-        if (!reservationDetails) return [];
-        const instances: { key: string; offer: DisplayableRoomOffer }[] = [];
+        if (!reservationDetails || !property.categoryRooms) return [];
+        
+        const instances: { key: string; offer: { categoryTitle: string; intendedAdults: number; guestCapacityInOffer: number; offerId: string; } }[] = [];
+        
         Object.entries(reservationDetails.selectedOffers).forEach(([offerId, qty]) => {
-            // console.log("offerId, qty: ", offerId, qty);
-            const offer = reservationDetails.displayableRoomOffers.find(o => o.offerId === offerId);
-            if (offer) {
-                for (let i = 0; i < qty; i++) {
-                    instances.push({ key: `${offerId}-${i}`, offer });
+            const offerDetails = getBasicOfferDetails(offerId, property.categoryRooms || []);
+
+            if (offerDetails) {
+                // If perUnit, qty is always 1, and we push 1 instance representing the unit
+                // If perOccupancy, push `qty` instances
+                const count = reservationDetails.selectedBookingModel === 'perUnit' ? 1 : qty;
+
+                for (let i = 0; i < count; i++) {
+                    instances.push({ 
+                        key: `${offerId}-${i}`, 
+                        offer: { ...offerDetails, offerId } 
+                    });
                 }
             }
         });
         return instances;
-    }, [reservationDetails]);
+    }, [reservationDetails, property.categoryRooms]);
     
-    // --- Handlers ---
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -140,15 +153,18 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
         }));
     };
 
-    // --- Loading and Error States (Unchanged) ---
     if (loading) { return <div className="flex justify-center items-center min-h-screen bg-gray-100"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#003c95] mx-auto"></div></div>; }
-    if (error || !reservationDetails) { return <div className="container mx-auto px-4 py-16 text-center"><h2 className="text-2xl font-bold text-red-600 mb-4">{error || 'Could not load reservation.'}</h2><button onClick={() => router.push('/properties')} className="mt-4 px-6 py-2 bg-[#003c95] text-white rounded-md hover:bg-[#003c95]">Find Properties</button></div>; }
+    if (error || !reservationDetails) { return <div className="container mx-auto px-4 py-16 text-center"><h2 className="text-2xl font-bold text-red-600 mb-4">{error || 'Could not load reservation.'}</h2><button onClick={() => router.push(`/properties/${property._id}`)} className="mt-4 px-6 py-2 bg-[#003c95] text-white rounded-md hover:bg-[#003c95]">Restart Booking</button></div>; }
     
-    const { propertyTitle, propertyImage, propertyLocation, propertyRating, checkInDate, checkOutDate, days, globalGuestCount, pricingDetails } = reservationDetails;
+    const { checkInDate, checkOutDate, days, pricingDetails, selectedBookingModel } = reservationDetails;
+    // Recalculating globalGuestCount safely, as we ensured it exists in useEffect
+    const globalGuestCount = reservationDetails.adultCount + reservationDetails.childCount; 
+    
     const checkIn = new Date(checkInDate);
     const checkOut = new Date(checkOutDate);
 
-    // --- Final Booking.com Styled JSX ---
+    const isPerUnitBooking = selectedBookingModel === 'perUnit';
+    
     return (
         <>
             <div className="bg-white min-h-screen">
@@ -156,19 +172,18 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                     <Stepper />
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         
-                        {/* Left Column - Booking Summary */}
                         <div className="lg:col-span-1 space-y-4 lg:sticky top-5 self-start">
                             <div className="border border-gray-300 rounded-md p-4 space-y-4">
                                 <div className="flex space-x-4">
-                                    {propertyImage && <div className="relative w-24 h-20 rounded-md overflow-hidden flex-shrink-0"><Image src={propertyImage} alt={propertyTitle} layout="fill" objectFit="cover" /></div>}
+                                    {property.bannerImage?.url && <div className="relative w-24 h-20 rounded-md overflow-hidden flex-shrink-0"><Image src={property.bannerImage.url} alt={property.bannerImage.alt || property.title || "alt tag" } layout="fill" objectFit="cover" /></div>}
                                     <div>
                                         <span className="text-xs">Hotel</span>
-                                        {propertyRating && renderRatingStars(propertyRating)}
-                                        <h3 className="font-bold text-gray-800 leading-tight">{propertyTitle}</h3>
-                                        <p className="text-xs text-gray-600 mt-1">{propertyLocation.address}</p>
+                                        {property.totalRating && renderRatingStars(property.totalRating)}
+                                        <h3 className="font-bold text-gray-800 leading-tight">{property.title}</h3>
+                                        <p className="text-xs text-gray-600 mt-1">{property.location.address}</p>
                                     </div>
                                 </div>
-                                {propertyRating && <div className="flex items-center gap-2"><div className="bg-[#003c95] text-white font-bold text-sm px-2 py-1 rounded-md">{propertyRating.toFixed(1)}</div><span className="font-semibold">Good</span><span className="text-xs text-gray-500">1,012 reviews</span></div>}
+                                {property.totalRating && <div className="flex items-center gap-2"><div className="bg-[#003c95] text-white font-bold text-sm px-2 py-1 rounded-md">{property.totalRating.toFixed(1)}</div><span className="font-semibold">Good</span><span className="text-xs text-gray-500">1,012 reviews</span></div>}
                                 <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
                                     <span className="flex items-center"><Wifi size={14} className="mr-1.5"/>Free Wifi</span>
                                     <span className="flex items-center"><ParkingSquare size={14} className="mr-1.5"/>Parking</span>
@@ -179,12 +194,31 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                             <div className="border border-gray-300 rounded-md p-4 space-y-3">
                                 <h3 className="font-bold text-lg">Your booking details</h3>
                                 <div className="flex justify-between items-start">
-                                    <div><p className="font-semibold">Check-in</p><p className="text-gray-800 font-bold text-sm">{checkIn.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p><p className="text-xs text-gray-500">From 3:00 PM</p></div>
-                                    <div className="text-right"><p className="font-semibold">Check-out</p><p className="text-gray-800 font-bold text-sm">{checkOut.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p><p className="text-xs text-gray-500">Until 12:00 PM</p></div>
+                                    <div>
+                                        <p className="font-semibold">Check-in</p>
+                                        <p className="text-gray-800 font-bold text-sm">{checkIn.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                        <p className="text-xs text-gray-500">From 3:00 PM</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-semibold">Check-out</p>
+                                        <p className="text-gray-800 font-bold text-sm">{checkOut.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                        <p className="text-xs text-gray-500">Until 12:00 PM</p>
+                                    </div>
                                 </div>
-                                <div><p className="font-semibold text-sm">Total length of stay:</p><p className="text-gray-600 text-sm">{days} {days === 1 ? 'night' : 'nights'}</p></div>
+                                <div>
+                                    <p className="font-semibold text-sm">Total length of stay:</p>
+                                    <p className="text-gray-600 text-sm">{days} {days === 1 ? 'night' : 'nights'}</p>
+                                </div>
                                 <hr/>
-                                <div><p className="font-semibold">You selected</p><p className="text-[#003c95] font-bold text-sm">{roomInstances.length} room{roomInstances.length > 1 && 's'} for {globalGuestCount} guests</p><button onClick={() => router.back()} className="text-[#003c95] text-sm font-semibold hover:underline">Change your selection</button></div>
+                                <div>
+                                    <p className="font-semibold">You selected</p>
+                                    {isPerUnitBooking ? (
+                                        <p className="text-[#003c95] font-bold text-sm">1 entire unit for {globalGuestCount} guests</p>
+                                    ) : (
+                                        <p className="text-[#003c95] font-bold text-sm">{roomInstances.length} room{roomInstances.length > 1 && 's'} for {globalGuestCount} guests</p>
+                                    )}
+                                    <button onClick={() => router.back()} className="text-[#003c95] text-sm font-semibold hover:underline">Change your selection</button>
+                                </div>
                             </div>
                             <div className="border border-gray-300 rounded-md p-4">
                                 <h3 className="font-bold text-lg">Your price summary</h3>
@@ -204,7 +238,6 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                             </div>
                         </div>
 
-                        {/* Right Column - User Details & Forms */}
                         <div className="lg:col-span-2 space-y-6">
                             {isSignedIn && user && <div className="bg-[#003c95] border border-[#003c95] rounded-md p-4 flex items-center space-x-4"><Image src={user.imageUrl} alt="user avatar" width={40} height={40} className="rounded-full" /><p className='text-white' >You are signed in as <span className="font-bold">{user.emailAddresses[0].emailAddress}</span></p></div>}
                             
@@ -218,7 +251,6 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                     </div>
                                     <div><label className="block text-sm font-medium text-gray-700 mb-1">Email address <span className="text-red-500">*</span></label><input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded-md"/><p className="text-xs text-gray-500 mt-1">Confirmation email sent to this address</p></div>
                                     
-                                    {/* --- NEW SECTION: "Who are you booking for?" --- */}
                                     <div>
                                         <p className="block text-sm font-medium text-gray-700 mb-2">Who are you booking for? <span className="font-normal text-gray-500">(optional)</span></p>
                                         <div className="flex items-center space-x-6">
@@ -231,7 +263,6 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                         <div><label className="block text-sm font-medium text-gray-700 mb-1">Guest&apos;s Full Name <span className="text-red-500">*</span></label><input name="guestFullName" value={formData.guestFullName} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded-md" placeholder="Enter the name of the guest"/></div>
                                     )}
 
-                                    {/* --- NEW SECTION: "Are you traveling for work?" --- */}
                                     <div>
                                         <p className="block text-sm font-medium text-gray-700 mb-2">Are you traveling for work? <span className="font-normal text-gray-500">(optional)</span></p>
                                         <div className="flex items-center space-x-6">
@@ -265,13 +296,14 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                 </div>
                             </div>
                             
-                            {/* ... (Rest of the form is unchanged) ... */}
-                            {roomInstances.map(({ key, offer }) => (
+                            {roomInstances.map(({ key, offer }, index) => (
                                 <div key={key} className="bg-white p-6 rounded-lg border border-gray-200">
-                                    <h3 className="font-bold text-lg">{offer.categoryTitle}</h3>
+                                    <h3 className="font-bold text-lg">
+                                        {isPerUnitBooking ? `${offer.categoryTitle} (Entire Unit)` : `${offer.categoryTitle} (Room ${index + 1})`}
+                                    </h3>
                                     <div className="my-2 space-y-1 text-sm">
                                         <p className="flex items-center text-green-600 font-semibold"><CheckCircle size={16} className="mr-2"/>Free cancellation before June 8, 2025</p>
-                                        <p className="flex items-center"><Users size={16} className="mr-2"/>Guests: {offer.intendedAdults} adult{offer.intendedAdults > 1 && 's'}</p>
+                                        <p className="flex items-center"><Users size={16} className="mr-2"/>Guests covered: {offer.guestCapacityInOffer} {isPerUnitBooking ? 'guests' : 'adults'}</p>
                                     </div>
                                     <div className="mt-4"><label className="block text-sm font-medium text-gray-700 mb-1">Full Guest Name</label><input onChange={(e) => handleGuestDetailChange(key, 'guestName', e.target.value)} className="w-full sm:w-2/3 p-2 border border-gray-300 rounded-md" /></div>
                                 </div>
@@ -304,12 +336,10 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                             <div className="text-right">
                                 <RazorpayPaymentButton
                                     className="bg-[#003c95] text-white font-bold py-3 px-6 rounded-md hover:bg-[#003c95] transition-colors text-lg"
-                                    amountInSubunits={Math.round(pricingDetails.totalBookingPricing * 100)} currency={pricingDetails.currency} receiptId={`booking_${propertyId}_${Date.now()}`}
+                                    amountInSubunits={Math.round(pricingDetails.totalBookingPricing * 100)} currency={pricingDetails.currency} receiptId={`booking_${property._id}_${Date.now()}`}
                                     bookingPayload={{ 
                                         type: "property", 
-                                        details: { 
-                                            id: propertyId, title: propertyTitle, ownerId: reservationDetails.ownerId, locationFrom: "NA", locationTo: `${propertyLocation.address}, ${propertyLocation.city}`, type: reservationDetails.propertyType, reservationPolicy: reservationDetails.reservationPolicy,
-                                        },
+                                        infoDetails: property, // Pass the whole property object here
                                         bookingDetails: { 
                                             checkIn: checkIn.toISOString(),
                                             checkOut: checkOut.toISOString(),
@@ -318,29 +348,48 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                                             totalGuests: globalGuestCount,
                                             totalRoomsSelected: reservationDetails.totalSelectedPhysicalRooms,
                                             selectedMealPlan: reservationDetails.selectedMealPlan,
-                                            roomsDetail: Object.entries(reservationDetails.selectedOffers).filter(([, qty]) => qty > 0).map(([offerId, qty]) => { const offer = reservationDetails.displayableRoomOffers.find(o => o.offerId === offerId); return { categoryId: propertyId || 'unknown',
-                                            // roomsDetail: Object.entries(reservationDetails.selectedOffers).filter(([, qty]) => qty > 0).map(([offerId, qty]) => { const offer = reservationDetails.displayableRoomOffers.find(o => o.offerId === offerId); return { categoryId: offer?.categoryId || 'unknown',
-                                            offerKey: offerId.split('_').slice(1).join('_'),
-                                            title: offer?.categoryTitle || 'Unknown', qty,
-                                            estimatedPricePerRoomNight: offer?.pricePerNight || 0,
-                                            currency: offer?.currency || pricingDetails.currency }; 
-                                        }),
-                                        calculatedPricePerNight: pricingDetails.totalBookingPricePerNight, 
-                                        currency: pricingDetails.currency,
-                                        numberOfNights: days,
-                                        subtotal: pricingDetails.subtotalNights,
-                                        serviceFee: pricingDetails.serviceCharge,
-                                        taxes: pricingDetails.taxesApplied,
-                                        totalPrice: pricingDetails.totalBookingPricing, 
-                                    },
-                                    guestDetails: {
-                                        ...formData, country, countryCode : "+91", clerkId : user?.id , bookingFor, travelingFor, gstDetails: travelingFor === 'work' ? gstDetails : null, addOns: { wantsAirportShuttle, wantsCarRental }, specialRequests: `${specialRequests}${wantsRoomsTogether ? ' (Rooms close together requested)' : ''}`, arrivalTime, roomGuests: guestDetailsPerRoom }, userId : user?.id, recipients: [formData.email, user?.primaryEmailAddress?.emailAddress].filter(Boolean) as string[] 
+                                            selectedBookingModel: reservationDetails.selectedBookingModel, // Pass the model
+                                            roomsDetail: Object.entries(reservationDetails.selectedOffers)
+                                                .filter(([, qty]) => qty > 0)
+                                                .map(([offerId]) => {
+                                                    // This needs to be robust, using property data is safer for backend processing
+                                                    const parts = offerId.split('_');
+                                                    return { 
+                                                        categoryId: parts[0],
+                                                        quantity: reservationDetails.selectedBookingModel === 'perUnit' ? 1 : reservationDetails.selectedOffers[offerId],
+                                                        type: reservationDetails.selectedBookingModel,
+                                                    };
+                                                }),
+                                            // Assuming totalBookingPricePerNight is available or calculated
+                                            calculatedPricePerNight: pricingDetails.totalBookingPricing / days, 
+                                            currency: pricingDetails.currency,
+                                            numberOfNights: days,
+                                            subtotal: pricingDetails.subtotalNights,
+                                            serviceFee: pricingDetails.serviceCharge,
+                                            taxes: pricingDetails.taxesApplied,
+                                            totalPrice: pricingDetails.totalBookingPricing, 
+                                        },
+                                        guestDetails: {
+                                            ...formData,
+                                            country,
+                                            countryCode : "+91",
+                                            clerkId : user?.id ,
+                                            bookingFor,
+                                            travelingFor,
+                                            gstDetails: travelingFor === 'work' ? gstDetails : null,
+                                            addOns: { wantsAirportShuttle, wantsCarRental },
+                                            specialRequests: `${specialRequests}${wantsRoomsTogether ? ' (Rooms close together requested)' : ''}`,
+                                            arrivalTime,
+                                            roomGuests: guestDetailsPerRoom,
+                                            userId : user?.id,
+                                        },
+                                        recipients: [formData.email, user?.primaryEmailAddress?.emailAddress].filter(Boolean) as string[] 
                                     }}
                                     prefill={{ name: `${formData.firstName} ${formData.lastName}`, email: formData.email, contact: `+91${formData.phone}` }}
-                                    notes={{ propertyTitle, checkIn: checkIn.toISOString().split('T')[0], checkOut: checkOut.toISOString().split('T')[0] }}
+                                    notes={{ property: property.title || 'Unknown Property', checkIn: checkIn.toISOString().split('T')[0], checkOut: checkOut.toISOString().split('T')[0] }}
                                     onPaymentSuccess={() => { setBookingConfirmed(true); localStorage.removeItem(RESERVATION_DATA_KEY); }}
                                     onPaymentError={(errorMessage) => console.error(errorMessage)}
-                                    razorpayKeyId={RAZORPAY_KEY_ID} companyName="YourStays.com"
+                                    razorpayKeyId={RAZORPAY_KEY_ID} companyName="RoomPapa"
                                     disabled={!formData.firstName || !formData.lastName || !formData.email || !formData.phone || pricingDetails.totalBookingPricing <= 0}
                                     buttonText="Next: Final details >"
                                 />
@@ -350,13 +399,12 @@ export default function ReservationForm({ propertyId }: { propertyId: string }) 
                 </div>
             </div>
 
-            {/* Confirmation Modal (Unchanged) */}
             {bookingConfirmed && (
-                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[110] backdrop-blur-sm">
+                <div className="fixed inset-0 bg-black/40 bg-opacity-10 flex items-center justify-center p-4 z-[110]">
                     <div className="bg-white rounded-lg max-w-md w-full p-7 text-center shadow-xl">
                         <div className="mb-4"><div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center border-2 border-green-200"><CheckCircle className="w-10 h-10 text-green-500" /></div></div>
                         <h3 className="text-xl font-bold text-gray-800 mb-2">Booking Confirmed!</h3>
-                        <p className="mb-5 text-sm text-gray-600">Your booking for <span className="font-semibold">{propertyTitle}</span> is confirmed. A confirmation email has been sent to <span className="font-semibold">{formData.email}</span>.</p>
+                        <p className="mb-5 text-sm text-gray-600">Your booking for <span className="font-semibold">{property.title || 'Unknown Property'}</span> is confirmed. A confirmation email has been sent to <span className="font-semibold">{formData.email}</span>.</p>
                         <button onClick={() => router.push('/customer/bookings')} className="w-full bg-[#003c95] text-white py-2.5 px-4 rounded-lg font-semibold hover:bg-[#003c95]">View My Bookings</button>
                     </div>
                 </div>

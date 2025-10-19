@@ -1,27 +1,16 @@
-import { DiscountedPricingByMealPlan, PricingByMealPlan } from ".";
 import { Property } from "@/lib/mongodb/models/Property";
-import { Image, SeasonalCoasting } from "@/lib/mongodb/models/Components";
-
-export interface RoomCategoryPricing {
-  singleOccupancyAdultPrice: PricingByMealPlan;
-  discountedSingleOccupancyAdultPrice?: DiscountedPricingByMealPlan;
-  doubleOccupancyAdultPrice: PricingByMealPlan;
-  discountedDoubleOccupancyAdultPrice?: DiscountedPricingByMealPlan;
-  tripleOccupancyAdultPrice: PricingByMealPlan;
-  discountedTripleOccupancyAdultPrice?: DiscountedPricingByMealPlan;
-  child5to12Price: PricingByMealPlan;
-  discountedChild5to12Price?: DiscountedPricingByMealPlan;
-}
+import { Image, Period, SeasonalCoasting } from "@/lib/mongodb/models/Components";
+import { PricingByMealPlan, RoomCategoryPricing } from "./property";
 
 export interface HikePricingByOccupancy {
   singleOccupancyAdultHike: PricingByMealPlan;
   doubleOccupancyAdultHike: PricingByMealPlan;
   tripleOccupancyAdultHike: PricingByMealPlan;
+  totalOccupancyHike?: Partial<PricingByMealPlan>;
 }
 
 export interface StoredRoomCategory {
     id: string;
-    _id?: string;
     title: string;
     qty: number;
     currency: string;
@@ -29,66 +18,19 @@ export interface StoredRoomCategory {
     unavailableDates: string[];
     seasonalHike?: SeasonalCoasting;
     roomSize: string;
-    availabilityStartDate?: string;
-    availabilityEndDate?: string;
+    availability: Period[];
     categoryActivities?: string[];
     categoryFacilities?: string[];
     categoryImages?: Image[];
-    size?: string;
+    pricingModel?: 'perOccupancy' | 'perUnit';
     bedConfiguration?: string;
-    maxOccupancy?: number;
     roomSpecificAmenities?: string[];
+    totalOccupancy?: number;
+    totalOccupancyPrice?: Partial<PricingByMealPlan>;
+    discountedTotalOccupancyPrice?: Partial<PricingByMealPlan>;
 }
 
 export type ExtendedProperty = Omit<Property, 'categoryRooms' | 'costing' | 'rooms' | 'startDate' | 'endDate' | 'createdAt' | 'updatedAt'>;
-// {
-//     // _id?: ObjectId; 
-//     type: PropertyType;
-//     location: {
-//         address: string;
-//         state: string;
-//         city: string;
-//         country: string;
-//     };
-//     costing: { 
-//         price: number; 
-//         discountedPrice: number; 
-//         currency: string;
-//     };
-//     rooms: number; 
-//     categoryRooms: StoredRoomCategory[];
-//     amenities: string[];
-//     accessibility?: string[];
-//     roomAccessibility?: string[];
-//     popularFilters?: string[];
-//     funThingsToDo?: string[];
-//     meals?: string[];
-//     facilities?: string[];
-//     bedPreference?: string[];
-//     reservationPolicy?: string[];
-//     brands?: string[];
-//     roomFacilities?: string[];
-//     propertyRating?: number;
-//     googleMaps?: string;
-
-//     startDate?: string; 
-//     endDate?: string;   
-//     createdAt?: Date; 
-//     updatedAt?: Date; 
-//     userId?: string;
-//     title?: string;
-//     description?: string;
-//     totalRating?: number;
-//     review?: {
-//         userId?: string;
-//         userName?: string;
-//         comment: string;
-//         rating: number;
-//         createdAt?: Date;
-//     }[];
-//     bannerImage?: Image;
-//     detailImages?: Image[];
-// }
 
 export interface DisplayableRoomOffer {
     offerId: string;
@@ -114,5 +56,7 @@ export interface DisplayableRoomOffer {
     categoryAvailabilityEndDate?: string;
     categoryActivities?: string[];
     categoryFacilities?: string[];
+
+    isPerUnitOffer?: boolean;
 
 }

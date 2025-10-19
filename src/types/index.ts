@@ -1,8 +1,6 @@
 import { ObjectId } from "mongodb";
-import { RoomCategoryPricing } from "./booking";
+import { RoomCategoryPricing } from "./property";
 
-export type PropertyType = 'hotel' | 'apartment' | 'villa' | 'hostel' | 'resort' | 'cottage' | 'homestay';
-export type PropertyAmenities = 'wifi' | 'pool' | 'gym' | 'spa' | 'restaurant' | 'parking' | 'airConditioning' | 'breakfast';
 export type PopularFilters = 'Free cancellation' | 'No prepayment' | 'Book without credit card' | 'Breakfast & dinner included' | 'Swimming Pool';
 export type RoomAccessibility = 'Entire unit located on ground floor' | 'Upper floors accessible by elevator' | 'Entire unit wheelchair accessible' | 'Toilet with grab rails' | 'Adapted bath' | 'Roll-in shower' | 'Walk-in shower' | 'Raised toilet' | 'Lowered sink' | 'Emergency cord in bathroom' | 'Shower chair';
 export type PropertyAccessibility = 'Toilet with grab rails' | 'Higher level toilet' | 'gyLower bathroom sinkm' | 'Emergency cord in bathroom' | 'Auditory guidance';
@@ -11,23 +9,15 @@ export type ItineraryDayWeather = 'sunny' | 'cloudy' | 'rainy' | 'snowy' | 'unkn
 export type TransportationType = 'flight' | 'train' | 'bus' | 'car' | 'ferry' | 'other';
 export type TripType = 'Domestic' | 'International';
 
+
+
 export interface SearchHeaderProps {
   category: string;
   initialSearchParams?: { [key: string]: string };
 }
+  
 
 
-export interface PricingByMealPlan {
-  noMeal: number;
-  breakfastOnly: number;
-  allMeals: number; // Represents Breakfast + Lunch/Dinner
-}
-
-export interface DiscountedPricingByMealPlan {
-  noMeal?: number;        // Use optional if discount might not exist
-  breakfastOnly?: number;
-  allMeals?: number;
-}
 
 
 
@@ -204,10 +194,3 @@ export interface TravellingSearchParams extends SearchParams {
   tags?: string[];
 }
 
-export interface PropertySearchParams extends SearchParams {
-  type?: PropertyType;
-  minPrice?: number;
-  maxPrice?: number;
-  amenities?: PropertyAmenities[];
-  rooms?: number;
-}

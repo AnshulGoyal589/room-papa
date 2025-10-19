@@ -31,7 +31,7 @@ const generateDummyReview = (): Review => {
   // Pick a random name
   const name = guestNames[Math.floor(Math.random() * guestNames.length)];
   
-  return { comment, rating, name, date };
+  return { comment, rating, name, date , country: "India" , userId: "dummyUserId" } as Review;
 };
 
 const renderRatingStars = (rating: number) => {

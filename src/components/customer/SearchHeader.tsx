@@ -34,7 +34,7 @@ export default function SearchHeader() {
 
   const showHeading = pathname === '/';
 
-  const getCategory = (tabId: TabId): CategoryType => {
+  const getCategory = React.useCallback((tabId: TabId): CategoryType => {
     switch (tabId) {
       case 'property':
         return 'property';
@@ -48,7 +48,7 @@ export default function SearchHeader() {
       default:
         return 'property';
     }
-  };
+  }, []);
 
   const tabs = useMemo(() => [
     { id: 'property',  label: 'Stays', icon: Building, description: 'Find exclusive deals on millions of rooms worldwide.' },
@@ -81,7 +81,7 @@ export default function SearchHeader() {
     // if (category === 'trip') return <TripsSearchForm />;
     // if (category === 'travelling') return <FlightsSearchForm />;
     return <StaysSearchForm />;
-  }, [activeTab, getCategory]);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

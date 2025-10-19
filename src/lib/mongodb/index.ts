@@ -92,12 +92,6 @@ export async function updateManagerStatus(clerkId: string | undefined , status: 
   return 'guest';
 }
 
-
-export async function getUsersByRole(role: UserRole): Promise<User[]> {
-  const users = await getUsersCollection();
-  return users.find({ role }).toArray();
-}
-
 export async function getUserDetailsById(clerkUserId: string) {
   try {
     // Correctly use clerkClient to fetch user

@@ -13,13 +13,12 @@ import PropertyEditForm from '@/components/manager/EditForms/PropertyEditForm';
 import TripEditForm from '@/components/manager/EditForms/TripEditForm';
 import TravellingEditForm from '@/components/manager/EditForms/TravellingEditForm';
 
-type ItemCategory = 'Property' | 'Trip' | 'Travelling';
 type ItemData = Property | Trip | Travelling;
 
 // Define the props this component receives from the server page
 interface ItemEditClientViewProps {
   initialItemData: ItemData;
-  initialCategory: ItemCategory;
+  initialCategory: string;
 }
 
 export default function ItemEditClientView({ initialItemData, initialCategory }: ItemEditClientViewProps) {

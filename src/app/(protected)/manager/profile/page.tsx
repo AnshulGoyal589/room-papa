@@ -1,34 +1,22 @@
-import { User } from '@/lib/mongodb/models/User';
 import { redirect } from 'next/navigation';
 import ProfileClientView from './ProfileClientView';
-
-async function getManagerProfile(): Promise<User | null> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const url = `${baseUrl}/api/manager/profile`;
-
-  try {
-    const response = await fetch(url, {cache: 'no-store'});
-
-    if (!response.ok) {
-      console.error(`Failed to fetch profile: ${response.statusText}`);
-      return null;
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching manager profile:', error);
-    return null;
-  }
-}
+import { getAuthenticatedUserProfile, userRole } from '@/lib/data/auth';
+import { auth } from '@clerk/nextjs/server';
 
 
 export default async function ManagerProfilePage() {
-  const user = await getManagerProfile();
-
-  // If fetching fails or user is not found, redirect.
+  
+  const { userId } = await auth();
+  if (!userId) {
+    redirect('/');
+  }
+  const role = await userRole(userId ?? undefined);
+  if (role !== 'manager') {
+    redirect('/');
+  }
+  const user = await getAuthenticatedUserProfile();
   if (!user) {
-    redirect('/'); // Or to a login page
+    redirect('/');
   }
 
   return (
@@ -38,7 +26,6 @@ export default async function ManagerProfilePage() {
         <p className="text-gray-600">Update your personal and bank details here.</p>
       </div>
       
-      {/* Pass the server-fetched data as a prop to the Client Component */}
       <ProfileClientView initialUser={user} />
     </div>
   );

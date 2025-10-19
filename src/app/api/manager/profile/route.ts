@@ -1,35 +1,29 @@
-// app/api/manager/profile/route.ts
-
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { getDb, getUsersCollection } from '@/lib/mongodb';
 
-/**
- * GET handler to fetch the current manager's profile.
- */
-export async function GET() {
-  try {
-    await getDb();
+// export async function GET() {
+//   try {
+//     await getDb();
     
-    const { userId: clerkId } = await auth();
-    console.log(clerkId);
-    if (!clerkId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-    const users = await getUsersCollection();
-    const user = await users.findOne({ clerkId });
+//     const { userId: clerkId } = await auth();
+//     if (!clerkId) {
+//       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+//     }
+//     const users = await getUsersCollection();
+//     const user = await users.findOne({ clerkId });
 
-    if (!user) {
-      return NextResponse.json({ message: 'User profile not found' }, { status: 404 });
-    }
+//     if (!user) {
+//       return NextResponse.json({ message: 'User profile not found' }, { status: 404 });
+//     }
     
-    return NextResponse.json(user);
+//     return NextResponse.json(user);
 
-  } catch (error) {
-    console.error('Failed to get manager profile:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
-  }
-}
+//   } catch (error) {
+//     console.error('Failed to get manager profile:', error);
+//     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+//   }
+// }
 
 export async function PATCH(request: Request) {
   try {
@@ -43,7 +37,6 @@ export async function PATCH(request: Request) {
     const body = await request.json();
     const { name, contactNumber, address, bankDetails } = body;
 
-    // Basic validation
     if (!name || !contactNumber) {
         return NextResponse.json({ message: 'Name and Contact Number are required.' }, { status: 400 });
     }
@@ -58,7 +51,7 @@ export async function PATCH(request: Request) {
           'managerDetails.bankDetails': bankDetails,
         }
       },
-      { returnDocument: 'after' } // Return the updated document
+      { returnDocument: 'after' }
     );
 
     if (!userToUpdate) {

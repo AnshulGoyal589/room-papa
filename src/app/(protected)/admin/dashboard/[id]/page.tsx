@@ -1,38 +1,28 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { Property } from '@/lib/mongodb/models/Property';
 import { Trip } from '@/lib/mongodb/models/Trip';
 import { Travelling } from '@/lib/mongodb/models/Travelling';
 import ItemDetailClientView from './ItemDetailClientView';
+import { auth } from '@clerk/nextjs/server';
+import { fetchCategoryData } from '@/lib/data/category';
+import { userRole } from '@/lib/data/auth';
 
-type ItemCategory = 'Property' | 'Trip' | 'Travelling';
 type FetchedItem = {
   itemData: Property | Trip | Travelling;
-  category: ItemCategory;
+  category: string;
 };
 
 async function fetchItemData(itemId: string): Promise<FetchedItem | null> {
-  const endpoints = [
-    { url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/properties/${itemId}`, category: 'Property' },
-    { url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/trips/${itemId}`, category: 'Trip' },
-    { url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/travellings/${itemId}`, category: 'Travelling' }
-  ] as const;
+  
+  try {
 
-  const results = await Promise.allSettled(
-    endpoints.map(ep => fetch(ep.url).then(res => {
-      if (!res.ok) throw new Error(`Failed to fetch from ${ep.url}`);
-      return res.json();
-    }))
-  );
-
-  for (let i = 0; i < results.length; i++) {
-    const result = results[i];
-    if (result.status === 'fulfilled') {
-      return {
-        itemData: result.value,
-        category: endpoints[i].category,
-      };
+    const categoryData = await fetchCategoryData(itemId);
+    if (categoryData) {
+        return { itemData: categoryData.data, category: categoryData.category };
     }
+  } catch (error) {
+      console.error("Failed to fetch item data:", error);
   }
 
   return null;
@@ -55,6 +45,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 }
 
 export default async function ItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
+
+  const { userId } = await auth();
+  const role = await userRole(userId ?? undefined);
+  if (role !== 'admin') {
+    redirect('/');
+  }
+
   const resolvedParams = await params;
   const fetchedItem = await fetchItemData(resolvedParams.id);
 
@@ -64,9 +61,11 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
   
   const { itemData, category } = fetchedItem;
 
+  const plainItemData = JSON.parse(JSON.stringify(itemData));
+  
   return (
     <ItemDetailClientView
-      initialItemData={itemData} 
+      initialItemData={plainItemData} 
       initialCategory={category} 
     />
   );

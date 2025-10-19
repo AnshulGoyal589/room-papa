@@ -24,7 +24,7 @@ interface UniquePropertiesProps {
 export default function UniqueProperties({ initialProperties }: UniquePropertiesProps): React.ReactElement {
   const router = useRouter();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-// console.log("Initial Properties in UniqueProperties component:", initialProperties);
+  
   const handleSearch = (id: string) => {
     router.push(`/property/${id}`);
   };
@@ -35,18 +35,15 @@ export default function UniqueProperties({ initialProperties }: UniqueProperties
     }
   };
 
-  console.log("Rendering UniqueProperties with properties:", initialProperties);
-
-
- return (
+  return (
     <div className="bg-white py-10 sm:py-4">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-<h2 className="text-3xl font-bold mb-2 text-charcoal-text">
-  Extraordinary Stays, Curated for You
-</h2>
-<p className="text-lg text-gray-600 mb-8">
-  Move beyond the standard hotel
-</p>
+        <h2 className="text-3xl font-bold mb-2 text-charcoal-text">
+          Extraordinary Stays, Curated for You
+        </h2>
+        <p className="text-lg text-gray-600 mb-8">
+          Move beyond the standard hotel
+        </p>
         <div className="relative">
           <div 
             ref={scrollContainerRef}

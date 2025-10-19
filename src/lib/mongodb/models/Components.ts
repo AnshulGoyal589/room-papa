@@ -1,4 +1,4 @@
-import { PropertyType, UserRole } from "@/types";
+import { UserRole } from "@/types";
 import { Property } from "./Property";
 import { Travelling } from "./Travelling";
 import { Trip } from "./Trip";
@@ -12,7 +12,6 @@ export interface Location{
     country: string;
 }
 
-
 export interface SeasonalCoasting {
   startDate: string;
   endDate: string;
@@ -25,18 +24,33 @@ export interface Costing {
     currency: string;
 }
 
+export interface CurrencyCosting {
+    price: number;
+    currency: string;
+}
+
 export interface Image {
   url: string;
   publicId?: string;
   alt?: string;
 }
 
+export type ReviewCategory = 'Service' | 'Value' | 'Location' | 'Cleanliness' | 'Comfort' | 'Facilities';
+
 export interface Review{
-    comment: string;
-    rating: number;
-    name?: string;
-    date?: Date;
+  comment: string;
+  rating: number;
+  category?: ReviewCategory[];
+  name?: string;
+  userId : string;
+  date?: Date;
+  country?: string;
 };
+
+export interface Period{
+  startDate: string;
+  endDate: string;
+}
 
 
 export interface FAQItem {
@@ -47,7 +61,7 @@ export interface FAQItem {
   keywords?: string[];
 }
 
-export type ItemCategory = 'Property' | 'Trip' | 'Travelling';
+export type ItemCategory = 'property' | 'trip' | 'travelling';
 
 export interface BaseItem {
   _id?: string;
@@ -105,13 +119,14 @@ export interface RoleProtectionProps {
 
 export interface ReservationData {
     propertyId: string;
-    propertyTitle: string;
-    propertyImage: string | null;
-    propertyLocation: Location;
-    propertyRating: number | null;
+    // propertyTitle: string;
+    // propertyImage: string | null;
+    // propertyLocation: Location;
+    // propertyRating: number | null;
     checkInDate: string;
     checkOutDate: string;
-    reservationPolicy : string[];
+    // reservationPolicy : string[];
+    selectedBookingModel: 'perUnit' | 'perOccupancy';
     days: number;
     adultCount: number;
     childCount: number;
@@ -128,8 +143,8 @@ export interface ReservationData {
         currency: string;
         totalBookingPricePerNight: number;
     };
-    ownerId: string;
-    propertyType: PropertyType;
+    // ownerId: string;
+    // propertyType: PropertyType;
 }
 
 export interface SearchFormProps {

@@ -1,41 +1,42 @@
 import { Collection ,ObjectId} from 'mongodb';
 import { getDb } from '..';
 import { TripType } from '@/types';
-import { Costing, Image, Review } from './Components';
+import { Costing, Image, Period, Review } from './Components';
+
+export interface Destination{
+  address?: string;
+  city: string;
+  state: string;
+  country: string;
+}
 
 export interface Trip {
   _id?: ObjectId;
-  userId?: string; // Reference to the user who created the trip i.e. manager ID
-  title?: string; // Tagline of the Trip
-  description?: string; // Description of the trip
-  domain?: string;
-  destination: {
-    city: string;
-    state : string;
-    country: string;
-  };
-  startDate: string;
-  endDate: string;
-  costing: Costing;
-  totalRating?: number; 
-  review?: Review[];
-  activities:string[];
-  rat ?: number | '1';
-  createdAt?: Date;
-  updatedAt?: Date;
-  bannerImage?: Image; // Main featured image
-  detailImages?: Image[]; // Trip gallery images
-  type : string; // Domestic or International
+  accessibility?: string[];
+  activities: string[];
   amenities?: string[];
-
-  accessibility ?: string[];
-  popularFilters ?: string[];
-  funThingsToDo ?: string[];
-  meals ?: string[];
-  facilities ?: string[];
-  rating ?: number;
-  reservationPolicy ?: string[];
-  brands ?: string[];
+  availability?: Period[];
+  bannerImage?: Image;
+  brands?: string[];
+  costing: Costing;
+  createdAt?: Date;
+  description?: string;
+  destination: Destination;
+  detailImages?: Image[];
+  domain?: string;
+  facilities?: string[];
+  funThingsToDo?: string[];
+  meals?: string[];
+  popularFilters?: string[];
+  pickupService?: boolean;
+  
+  reservationPolicy?: string[];
+  review?: Review[];
+  title?: string;
+  totalRating?: number; 
+  type: string; // Domestic or International
+  updatedAt?: Date;
+  userId?: string; // Reference to the user who created the trip i.e. manager ID
 }
 
 interface TripValidationInput {
@@ -99,60 +100,56 @@ export async function getTripsCollection(): Promise<Collection<Trip>> {
     return db.collection<Trip>('trips');
   }
   
-  export async function getAllTrips(userId?: string): Promise<Trip[]> {
+  export async function getAllTrips(): Promise<Trip[]> {
     const trips = await getTripsCollection();
-    
-    const query = userId ? { userId } : {};
-    return trips.find(query).toArray();
+    return trips.find({}).toArray();
   }
+
+    export async function getAllUploaderTrips(userId: string): Promise<Trip[]> {
+      const trips = await getTripsCollection();
+      if(!userId){
+        return trips.find({}).toArray();
+      }
+      return trips.find({ userId }).toArray();
+    }
   
   export async function getTripById(id: string): Promise<Trip | null> {
     const trips = await getTripsCollection();
     return trips.findOne({ _id: new ObjectId(id) });
   }
   
-  // export async function createTrip(tripData: Omit<Trip, '_id' | 'createdAt' | 'updatedAt'>): Promise<Trip> {
-  //   try {
-  //     // Validate trip data
-  //     validateTrip(tripData as any);
-      
-  //     const trips = await getTripsCollection();
-      
-  //     const newTrip: Trip = {
-  //       ...tripData,
-  //       accommodations: tripData.accommodations || [],
-  //       transportation: tripData.transportation || [],
-  //       activities: tripData.activities || [],
-  //       createdAt: new Date(),
-  //       updatedAt: new Date()
-  //     };
-      
-  //     const result = await trips.insertOne(newTrip as any);
-      
-  //     return {
-  //       ...newTrip,
-  //       _id: result.insertedId.toString()
-  //     };
-  //   } catch (error) {
-  //     console.error('Error creating trip:', error);
-  //     throw error;
-  //   }
-  // }
-  
   export async function updateTrip(id: string, tripData: Partial<Trip>): Promise<Trip | null> {
+    
+    if (!ObjectId.isValid(id)) {
+      console.error("Invalid ID format provided:", id);
+      return null;
+    }
+    
     const trips = await getTripsCollection();
+
+    const updatePayload = { ...tripData };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (updatePayload as any)._id; 
     
-    await trips.updateOne(
-      { _id: new ObjectId(id) },
-      { 
-        $set: {
-          ...tripData,
-          updatedAt: new Date()
-        } 
+     try {
+        const result = await trips.findOneAndUpdate(
+          { _id: new ObjectId(id) },
+          {
+            $set: {
+              ...updatePayload,
+              updatedAt: new Date()
+            }
+          },
+          {
+            returnDocument: 'after' 
+          }
+        );
+        return result;
+
+      } catch (error) {
+        console.error("Failed to update property:", error);
+        throw new Error("Database update failed.");
       }
-    );
-    
-    return getTripById(id);
   }
   
   export async function deleteTrip(id: string): Promise<boolean> {
