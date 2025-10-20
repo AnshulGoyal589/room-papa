@@ -1,19 +1,8 @@
 User-agent: *
 Allow: /
 Disallow: /api/
-Disallow: /_not-found
 Disallow: /admin/
 Disallow: /manager/
-Disallow: /cancel/
-Disallow: /confirm-with-payment/
-Disallow: /upload/
-Disallow: /user-role/
-Disallow: /payment/
-Disallow: /register/
-Disallow: /login/
+Disallow: /customer/
 
-User-agent: Googlebot-Image
-Allow: /images/properties/
-
-Host: https://roompapa.com
-Sitemap: https://roompapa.com//sitemap.xml
+Sitemap: https://roompapa.com/sitemap.xml
