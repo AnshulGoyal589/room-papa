@@ -1,4 +1,5 @@
 import { Booking } from '@/lib/mongodb/models/Booking';
+import Image from 'next/image';
 import {
   FaUser, FaEnvelope, FaPhone, FaCalendarAlt, FaMoon, FaUsers,
   FaMapMarkerAlt, FaBuilding, FaConciergeBell, FaMoneyBillWave, FaShieldAlt,
@@ -105,7 +106,7 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
             </div>
             <div>
               {infoDetails.bannerImage?.url ? (
-                <img src={infoDetails.bannerImage.url} alt={infoDetails.bannerImage?.alt || infoDetails.title} className="rounded-lg w-full h-full object-cover" />
+                <Image src={infoDetails.bannerImage.url} alt={infoDetails.bannerImage?.alt || infoDetails.title} className="rounded-lg w-full h-full object-cover" />
               ) : (
                 <div className="rounded-lg w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">No image</div>
               )}

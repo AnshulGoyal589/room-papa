@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { BedDouble } from 'lucide-react';
-import { StoredRoomCategory } from '@/types/booking';
 import { ExtendedProperty, PropertyFormProps } from '@/lib/mongodb/models/Components';
 import { PricingByMealPlan, PropertyType } from '@/types/property';
 import { SectionHeader } from './SharedUI';
@@ -10,6 +9,7 @@ import RoomCategoryList from './RoomCategoryList';
 import RoomCategoryForm from './RoomCategoryForm';
 import PropertyFeaturesSection from './PropertyFeaturesSection';
 import { singleOccupancyPropertyTypes } from '../../../../public/assets/data';
+import { RoomCategory } from '@/types/property';
 
 const getPrice = (pricing: Partial<PricingByMealPlan> | undefined, mealPlan: keyof PricingByMealPlan): number => {
     return pricing?.[mealPlan] ?? 0;
@@ -130,7 +130,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
     handlePropertyChange(field, currentArray.filter(i => i !== item));
   };
 
-  const handleAddCategory = (categoryToAdd: StoredRoomCategory) => {
+  const handleAddCategory = (categoryToAdd: RoomCategory) => {
     const updatedCategories = [...(propertyData.categoryRooms || []), categoryToAdd];
     handlePropertyChange('categoryRooms', updatedCategories);
   };

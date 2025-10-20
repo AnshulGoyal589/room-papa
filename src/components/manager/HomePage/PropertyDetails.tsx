@@ -10,10 +10,10 @@ import GoogleMapsSection from './GoogleMapsSection';
 import { Image as ImageType, Period, SeasonalCoasting } from '@/lib/mongodb/models/Components'; // Assuming structure is imported
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { HikePricingByOccupancy, StoredRoomCategory } from '@/types/booking'; // Assuming types are used
+import { HikePricingByOccupancy } from '@/types/booking'; // Assuming types are used
 import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
 import { CldImage } from 'next-cloudinary';
-import { DiscountedPricingByMealPlan, PricingByMealPlan, RoomCategoryPricing } from '@/types/property';
+import { DiscountedPricingByMealPlan, PricingByMealPlan, RoomCategory, RoomCategoryPricing } from '@/types/property';
 import { Checkbox } from '@/components/ui/checkbox';
 
 // Helper function definitions (kept mostly the same)
@@ -476,7 +476,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
             return;
         }
 
-        const categoryToAdd: StoredRoomCategory = {
+        const categoryToAdd: RoomCategory = {
             id: generateId(),
             title: newCategory.title,
             qty: newCategory.qty,
@@ -510,7 +510,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
     
 
     const handleRemoveCategory = (idToRemove: string) => {
-        const updatedCategories = (ensurePropertyData.categoryRooms || []).filter((cat: StoredRoomCategory) => cat.id !== idToRemove);
+        const updatedCategories = (ensurePropertyData.categoryRooms || []).filter((cat: RoomCategory) => cat.id !== idToRemove);
         setEnsurePropertyData((prev) => ({
             ...prev,
             categoryRooms: updatedCategories
@@ -572,7 +572,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
     const currentCategories = ensurePropertyData.categoryRooms || [];
 
     if (Array.isArray(currentCategories) && currentCategories.length > 0) {
-        displayTotalRooms = currentCategories.reduce((sum: number, category: StoredRoomCategory) => sum + (category.qty || 0), 0);
+        displayTotalRooms = currentCategories.reduce((sum: number, category: RoomCategory) => sum + (category.qty || 0), 0);
     }
 
     return (
@@ -679,7 +679,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                     <h3 className="text-xl font-semibold text-gray-800 mb-6">Room Categories & Pricing</h3>
                      {currentCategories && currentCategories.length > 0 && (
                         <div className="mb-6 space-y-4">
-                             {currentCategories.map((cat: StoredRoomCategory) => {
+                             {currentCategories.map((cat: RoomCategory) => {
                                 // Determine pricing data based on model
                                 const isPerUnit = cat.pricingModel === 'perUnit';
                                 const pricing = cat?.pricing || initialNewCategoryFormState.pricing;
@@ -710,8 +710,8 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                                                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                                                     {cat.categoryImages.map((img, index) => (
                                                         <CldImage
-                                                            key={img.publicId || index}
-                                                            src={img.publicId || img.url}
+                                                            key={img.url || index}
+                                                            src={img.url}
                                                             width={150}
                                                             height={100}
                                                             crop="fill"

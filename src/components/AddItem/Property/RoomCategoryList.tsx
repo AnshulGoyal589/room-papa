@@ -1,12 +1,12 @@
 import React from 'react';
-import { StoredRoomCategory } from '@/types/booking';
+import { RoomCategory } from '@/types/property';
 import { Button } from '@/components/ui/button';
 import { Baby, CalendarDays, CalendarOff, DollarSign, Home, Sparkles, Users, Wrench, X } from 'lucide-react';
 import { PricingByMealPlan } from '@/types/property';
 import { ChipList, MealPlanLabel } from './SharedUI';
 
 interface RoomCategoryListProps {
-  categories: StoredRoomCategory[];
+  categories: RoomCategory[];
   onRemoveCategory: (id: string) => void;
 }
 

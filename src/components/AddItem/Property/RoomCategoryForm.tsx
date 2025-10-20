@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Plus, Baby, DollarSign, Users, Utensils, CalendarOff, Sparkles, Wrench, CalendarDays, Home } from 'lucide-react';
 
-import { HikePricingByOccupancy, StoredRoomCategory } from '@/types/booking';
+import { HikePricingByOccupancy } from '@/types/booking';
 import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
 import { Image, Period, SeasonalCoasting } from '@/lib/mongodb/models/Components';
-import { PricingByMealPlan, RoomCategoryPricing } from '@/types/property';
+import { PricingByMealPlan, RoomCategory, RoomCategoryPricing } from '@/types/property';
 import { ChipList } from './SharedUI';
 import { singleAndMultipleOccupancyPropertyTypes, singleOccupancyPropertyTypes } from '../../../../public/assets/data';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -76,7 +76,7 @@ const hikePricingConfig: HikePricingRowConfig[] = [
 
 // Component Props
 interface RoomCategoryFormProps {
-    onAddCategory: (category: StoredRoomCategory) => void;
+    onAddCategory: (category: RoomCategory) => void;
     propertyType: string;
 }
 
@@ -234,7 +234,7 @@ const RoomCategoryForm: React.FC<RoomCategoryFormProps> = ({ onAddCategory, prop
             alert('Both start and end dates are required for a seasonal hike.'); return;
         }
 
-        const categoryToAdd: StoredRoomCategory = {
+        const categoryToAdd: RoomCategory = {
             id: generateId(),
             title: newCategory.title,
             qty: newCategory.qty,

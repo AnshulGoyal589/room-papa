@@ -1,6 +1,5 @@
 import nodemailer from 'nodemailer';
-import { Booking, BookingDetails, BookingGuestDetails, BookingInfoDetails, PropertyRoomDetail } from '@/lib/mongodb/models/Booking'; // Assuming these types are in your models
-import { ObjectId } from 'mongodb';
+import { Booking } from '@/lib/mongodb/models/Booking';
 
 // Configure email transport
 const transporter = nodemailer.createTransport({
@@ -76,7 +75,7 @@ export async function sendBookingConfirmationEmail(bookingData: Booking) {
     }
     return stars;
   };
-  
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
   const formatCurrency = (amount: number, currency: string): string => {
     // Use INR for display as per PDF example
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);

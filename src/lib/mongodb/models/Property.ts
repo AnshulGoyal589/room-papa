@@ -2,10 +2,9 @@
 
 import { Collection, ObjectId } from 'mongodb';
 import { getDb } from '..';
-import { StoredRoomCategory } from '@/types/booking';
 import { Costing, Image, Location, Review } from './Components';
 import { HouseRules, PropertyAmenities, propertyAmenitiesArray, PropertyType } from '@/types/property';
-
+import { RoomCategory } from '@/types/property';
 
 export interface Property {
   _id?: ObjectId;
@@ -14,7 +13,7 @@ export interface Property {
   bannerImage?: Image;
   bedPreference?: string[];
   brands?: string[];
-  categoryRooms?: StoredRoomCategory[];
+  categoryRooms?: RoomCategory[];
   costing: Costing;
   createdAt?: Date;
   description?: string;
