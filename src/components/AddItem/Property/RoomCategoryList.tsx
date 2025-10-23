@@ -50,67 +50,72 @@ const RoomCategoryList: React.FC<RoomCategoryListProps> = ({ categories, onRemov
 
           <div className="space-y-3 text-sm border-t pt-3">
             {cat.pricingModel === 'perUnit' ? (
-                            <div>
-                                <p className="font-medium flex items-center"><Home className="inline h-4 w-4 mr-1 text-primary"/>Pricing for Entire Unit (Max: {cat.totalOccupancy} guests):</p>
-                                <div className="pl-4 space-y-1 mt-1">
-                                    {(['noMeal', 'breakfastOnly', 'allMeals'] as const).map(mp => {
-                                        const basePrice = getPrice(cat.totalOccupancyPrice, mp);
-                                        const discPrice = getPrice(cat.discountedTotalOccupancyPrice, mp);
-                                        if (basePrice === 0 && discPrice === 0) return null;
-                                        return (
-                                            <span key={mp} className="mr-4 inline-block">
-                                                <MealPlanLabel mealPlan={mp} /> {cat.currency} {basePrice}
-                                                {discPrice > 0 && discPrice < basePrice ? ` (Disc: ${discPrice})` : ''}
-                                            </span>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        ) : (
-                          <>
-                            <p className="font-medium flex items-center"><Users className="inline h-4 w-4 mr-1 text-primary"/>Adult Pricing (Total Room Price):</p>
-                            <div className="pl-4 space-y-1">
-                              {[
-                                  { label: '1 Adult', base: cat.pricing.singleOccupancyAdultPrice, disc: cat.pricing.discountedSingleOccupancyAdultPrice },
-                                  { label: '2 Adults', base: cat.pricing.doubleOccupancyAdultPrice, disc: cat.pricing.discountedDoubleOccupancyAdultPrice },
-                                  { label: '3 Adults', base: cat.pricing.tripleOccupancyAdultPrice, disc: cat.pricing.discountedTripleOccupancyAdultPrice },
-                              ].map(p => (
-                                  <div key={p.label}>
-                                    <strong>{p.label}:</strong>
-                                    {['noMeal', 'breakfastOnly', 'allMeals'].map(mp => {
-                                        const mealKey = mp as keyof PricingByMealPlan;
-                                        const basePrice = getPrice(p.base, mealKey);
-                                        const discPrice = getPrice(p.disc, mealKey);
-                                        return (
-                                            <span key={mealKey} className="ml-2">
-                                                <MealPlanLabel mealPlan={mealKey} /> {cat.currency} {basePrice}
-                                                {discPrice > 0 && discPrice < basePrice ? ` (Disc: ${discPrice})` : ''}
-                                            </span>
-                                        )
-                                      })}
-                                  </div>
-                              ))}
-                            </div>
-                            </>
-                        )}
-
-            <p className="font-medium flex items-center pt-2"><Baby className="inline h-4 w-4 mr-1 text-primary"/>Child Pricing (Per Child, Sharing):</p>
-            <div className="pl-4 space-y-1">
-                {[ { label: 'Child (5-12 yrs)', base: cat.pricing.child5to12Price, disc: cat.pricing.discountedChild5to12Price } ].map(p => (
-                    <div key={p.label}>
-                      <strong>{p.label}:</strong>
-                      {['noMeal', 'breakfastOnly', 'allMeals'].map(mp => {
-                        const mealKey = mp as keyof PricingByMealPlan;
-                        const basePrice = getPrice(p.base, mealKey);
-                        const discPrice = getPrice(p.disc, mealKey);
-                          if (basePrice > 0 || discPrice > 0) {
-                            return ( <span key={mealKey} className="ml-2"> <MealPlanLabel mealPlan={mealKey} /> {cat.currency} {basePrice} {discPrice > 0 && discPrice < basePrice ? ` (Disc: ${discPrice})` : ''}</span> )
-                        } return null;
-                      })}
+                <div>
+                    <p className="font-medium flex items-center"><Home className="inline h-4 w-4 mr-1 text-primary"/>Pricing for Entire Unit (Max: {cat.totalOccupancy} guests):</p>
+                    <div className="pl-4 space-y-1 mt-1">
+                        {(['noMeal', 'breakfastOnly', 'allMeals'] as const).map(mp => {
+                            const basePrice = getPrice(cat.totalOccupancyPrice, mp);
+                            const discPrice = getPrice(cat.discountedTotalOccupancyPrice, mp);
+                            if (basePrice === 0 && discPrice === 0) return null;
+                            return (
+                                <span key={mp} className="mr-4 inline-block">
+                                    <MealPlanLabel mealPlan={mp} /> {cat.currency} {basePrice}
+                                    {discPrice > 0 && discPrice < basePrice ? ` (Disc: ${discPrice})` : ''}
+                                </span>
+                            );
+                        })}
                     </div>
-                ))}
-                <p className="text-xs text-muted-foreground italic">Children below 5: Free (implicitly)</p>
-            </div>
+                </div>
+            ) : (
+                <>
+                    <div>
+                      <p className="font-medium flex items-center"><Users className="inline h-4 w-4 mr-1 text-primary"/>Adult Pricing (Total Room Price):</p>
+                      <div className="pl-4 space-y-1">
+                        {[
+                            { label: '1 Adult', base: cat.pricing.singleOccupancyAdultPrice, disc: cat.pricing.discountedSingleOccupancyAdultPrice },
+                            { label: '2 Adults', base: cat.pricing.doubleOccupancyAdultPrice, disc: cat.pricing.discountedDoubleOccupancyAdultPrice },
+                            { label: '3 Adults', base: cat.pricing.tripleOccupancyAdultPrice, disc: cat.pricing.discountedTripleOccupancyAdultPrice },
+                        ].map(p => (
+                            <div key={p.label}>
+                              <strong>{p.label}:</strong>
+                              {['noMeal', 'breakfastOnly', 'allMeals'].map(mp => {
+                                  const mealKey = mp as keyof PricingByMealPlan;
+                                  const basePrice = getPrice(p.base, mealKey);
+                                  const discPrice = getPrice(p.disc, mealKey);
+                                  return (
+                                      <span key={mealKey} className="ml-2">
+                                          <MealPlanLabel mealPlan={mealKey} /> {cat.currency} {basePrice}
+                                          {discPrice > 0 && discPrice < basePrice ? ` (Disc: ${discPrice})` : ''}
+                                      </span>
+                                  )
+                                })}
+                            </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* MODIFIED: Moved Child Pricing inside the 'perOccupancy' block */}
+                    <div>
+                        <p className="font-medium flex items-center pt-2"><Baby className="inline h-4 w-4 mr-1 text-primary"/>Child Pricing (Per Child, Sharing):</p>
+                        <div className="pl-4 space-y-1">
+                            {[ { label: 'Child (5-12 yrs)', base: cat.pricing.child5to12Price, disc: cat.pricing.discountedChild5to12Price } ].map(p => (
+                                <div key={p.label}>
+                                <strong>{p.label}:</strong>
+                                {['noMeal', 'breakfastOnly', 'allMeals'].map(mp => {
+                                    const mealKey = mp as keyof PricingByMealPlan;
+                                    const basePrice = getPrice(p.base, mealKey);
+                                    const discPrice = getPrice(p.disc, mealKey);
+                                    if (basePrice > 0 || discPrice > 0) {
+                                        return ( <span key={mealKey} className="ml-2"> <MealPlanLabel mealPlan={mealKey} /> {cat.currency} {basePrice} {discPrice > 0 && discPrice < basePrice ? ` (Disc: ${discPrice})` : ''}</span> )
+                                    } return null;
+                                })}
+                                </div>
+                            ))}
+                            <p className="text-xs text-muted-foreground italic">Children below 5: Free (implicitly)</p>
+                        </div>
+                    </div>
+                </>
+            )}
           </div>
 
           {cat.seasonalHike && (
@@ -160,11 +165,16 @@ const RoomCategoryList: React.FC<RoomCategoryListProps> = ({ categories, onRemov
                   <ChipList items={cat.categoryFacilities} noRemove colorClass="bg-indigo-100 text-indigo-700"/>
               </div>
           )}
-
-            {cat.unavailableDates.length > 0 && (
+            
+            {/* MODIFIED: Unavailable Periods Display Logic */}
+            {cat.unavailableDates && cat.unavailableDates.length > 0 && (
               <div className="mt-3 pt-3 border-t">
-                  <p className="font-medium text-sm flex items-center"><CalendarOff className="inline h-4 w-4 mr-1 text-destructive"/>Unavailable Dates:</p>
-                  <ChipList items={cat.unavailableDates} noRemove colorClass="bg-destructive/10 text-destructive"/>
+                  <p className="font-medium text-sm flex items-center"><CalendarOff className="inline h-4 w-4 mr-1 text-destructive"/>Unavailable Periods:</p>
+                  <ChipList 
+                    items={cat.unavailableDates.map(p => `${new Date(p.startDate).toLocaleDateString()} to ${new Date(p.endDate).toLocaleDateString()}`)} 
+                    noRemove 
+                    colorClass="bg-destructive/10 text-destructive"
+                  />
               </div>
             )}
         </div>

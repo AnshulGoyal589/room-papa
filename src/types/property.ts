@@ -62,24 +62,24 @@ export interface PropertySearchParams extends SearchParams {
 }
 
 export interface RoomCategory {
-    id: string;
-    title: string;
-    qty: number;
-    currency: string;
-    pricing: RoomCategoryPricing;
-    unavailableDates: string[];
-    seasonalHike?: SeasonalCoasting;
-    roomSize: string;
-    availability: Period[];
-    categoryActivities?: string[];
-    categoryFacilities?: string[];
-    categoryImages?: Image[];
-    pricingModel?: 'perOccupancy' | 'perUnit';
-    bedConfiguration?: string;
-    roomSpecificAmenities?: string[];
-    totalOccupancy?: number;
-    totalOccupancyPrice?: Partial<PricingByMealPlan>;
-    discountedTotalOccupancyPrice?: Partial<PricingByMealPlan>;
+  availability: Period[];
+  bedConfiguration?: string;
+  categoryActivities?: string[];
+  categoryFacilities?: string[];
+  categoryImages?: Image[];
+  currency: string;
+  discountedTotalOccupancyPrice?: Partial<PricingByMealPlan>;
+  id: string;
+  pricing: RoomCategoryPricing;
+  pricingModel?: 'perOccupancy' | 'perUnit';
+  qty: number;
+  roomSize: string;
+  roomSpecificAmenities?: string[];
+  seasonalHike?: SeasonalCoasting;
+  title: string;
+  totalOccupancy?: number;
+  totalOccupancyPrice?: Partial<PricingByMealPlan>;
+  unavailableDates: Period[];
 }
 
 export interface RoomCategoryPricing {

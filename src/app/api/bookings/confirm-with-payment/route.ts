@@ -6,15 +6,6 @@ import { Booking } from '@/lib/mongodb/models/Booking';
 import { getPropertiesCollection } from '@/lib/mongodb/models/Property';
 import { sendBookingConfirmationEmail } from '@/lib/email-service';
 
-const getDatesInRange = (startDate: Date, endDate: Date): string[] => {
-    const dates: string[] = [];
-    const currentDate = new Date(startDate.toISOString().split('T')[0]);
-    while (currentDate < endDate) {
-        dates.push(currentDate.toISOString().split('T')[0]);
-        currentDate.setDate(currentDate.getDate() + 1);
-    }
-    return dates;
-};
 
 export async function POST(request: Request) {
     try {
@@ -61,10 +52,18 @@ export async function POST(request: Request) {
         const { id: newBookingId } = await bookingRepository.createBooking(bookingInput);
 
         if (bookingPayload.type === 'property') {
-            const datesToBlock = getDatesInRange(
-                new Date(bookingPayload.bookingDetails.checkIn),
-                new Date(bookingPayload.bookingDetails.checkOut)
-            );
+
+            const checkInDate = new Date(bookingPayload.bookingDetails.checkIn);
+            const checkOutDate = new Date(bookingPayload.bookingDetails.checkOut);
+            
+            // Calculate the last night of the stay, as checkout day is when the guest leaves.
+            const lastNight = new Date(checkOutDate);
+            lastNight.setDate(lastNight.getDate() - 1);
+
+            const periodToBlock = {
+                startDate: checkInDate.toISOString().split('T')[0],
+                endDate: lastNight.toISOString().split('T')[0]
+            };
 
             const validRoomsToUpdate = bookingPayload.bookingDetails.roomsDetail.filter(
                 (room: { categoryId: string }) => room.categoryId && ObjectId.isValid(room.categoryId)
@@ -83,8 +82,8 @@ export async function POST(request: Request) {
                         "categoryRooms._id": { $in: categoryObjectIdsToUpdate }
                     },
                     { 
-                        $addToSet: { 
-                            "categoryRooms.$[elem].unavailableDates": { $each: datesToBlock }
+                        $push: {
+                            "categoryRooms.$[elem].unavailableDates": periodToBlock 
                         }
                     },
                     { 

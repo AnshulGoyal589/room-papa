@@ -11,7 +11,7 @@ import {
     HelpCircle,
 } from 'lucide-react';
 import Image from 'next/image';
-import { CldImage } from 'next-cloudinary'; 
+import { CldImage } from 'next-cloudinary';
 import { useRouter } from 'next/navigation';
 import { useUser, useClerk, SignedOut } from '@clerk/nextjs';
 import { Property } from '@/lib/mongodb/models/Property';
@@ -136,7 +136,7 @@ export default function PropertyDetailPage({ property }: { property: Property | 
         }
     }, [checkInDate, checkOutDate, adultCount, childCount, selectedOffers, selectedMealPlan, property, selectedBookingModel]);
     
-    // --- Availability Check (Unchanged) ---
+    // --- Availability Check (MODIFIED) ---
     const checkAvailabilityForSelection = useCallback((
         startDate: Date | null,
         endDate: Date | null,
@@ -170,10 +170,22 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                 }
             }
 
+            // --- MODIFIED LOGIC FOR UNAVAILABLE PERIODS ---
             if (category.unavailableDates && category.unavailableDates.length > 0) {
                 for (const dateStr of bookingDates) {
-                    if (category.unavailableDates.includes(dateStr)) {
-                        return { available: false, message: `Room type "${category.title}" is unavailable on ${new Date(dateStr + 'T12:00:00').toLocaleDateString()}. Please adjust dates or selection.` };
+                    const currentDate = new Date(dateStr);
+                    currentDate.setUTCHours(12); // Normalize to midday to avoid timezone shifts
+
+                    const isBlocked = category.unavailableDates.some(period => {
+                        const periodStart = new Date(period.startDate);
+                        periodStart.setUTCHours(12);
+                        const periodEnd = new Date(period.endDate);
+                        periodEnd.setUTCHours(12);
+                        return currentDate >= periodStart && currentDate <= periodEnd;
+                    });
+
+                    if (isBlocked) {
+                        return { available: false, message: `Room type "${category.title}" is unavailable during your selected dates due to a blackout period.` };
                     }
                 }
             }
@@ -181,7 +193,7 @@ export default function PropertyDetailPage({ property }: { property: Property | 
         return { available: true, message: null };
     }, []);
 
-    // --- Displayable Room Offers Calculation (Unchanged for logic, filtered by model) ---
+    // --- Displayable Room Offers Calculation (MODIFIED) ---
     const displayableRoomOffers = useMemo((): DisplayableRoomOffer[] => {
         if (!property?.categoryRooms || !checkInDate || !checkOutDate || days <= 0) return [];
         
@@ -212,8 +224,25 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                 });
                 if (!isAvailable) return;
             }
-            if (cat.unavailableDates?.some(unavailableDate => bookingDateRange.includes(unavailableDate))) {
-                return;
+            
+            // --- MODIFIED LOGIC FOR UNAVAILABLE PERIODS ---
+            if (cat.unavailableDates && cat.unavailableDates.length > 0) {
+                const isBlocked = bookingDateRange.some(dateStr => {
+                    const currentDate = new Date(dateStr);
+                    currentDate.setUTCHours(12); // Normalize to midday
+
+                    return cat.unavailableDates.some(period => {
+                        const periodStart = new Date(period.startDate);
+                        periodStart.setUTCHours(12);
+                        const periodEnd = new Date(period.endDate);
+                        periodEnd.setUTCHours(12);
+                        return currentDate >= periodStart && currentDate <= periodEnd;
+                    });
+                });
+    
+                if (isBlocked) {
+                    return; // Skip creating an offer for this category
+                }
             }
 
             // --- PER UNIT LOGIC ---
@@ -235,7 +264,6 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                     categoryTitle: cat.title,
                     bedConfiguration: cat.bedConfiguration,
                     roomSpecificAmenities: cat.roomSpecificAmenities,
-                    // IMPORTANT: Max rooms is always 1 for this booking model, regardless of cat.qty
                     maxPhysicalRoomsForCategory: 1, 
                     intendedAdults: totalOccupancy, 
                     intendedChildren: 0,
@@ -252,7 +280,6 @@ export default function PropertyDetailPage({ property }: { property: Property | 
             }
 
             // --- PER OCCUPANCY LOGIC (Default) ---
-            
             const calculateOfferPrice = (numAdults: number): { price: number, originalPrice?: number, isDiscounted: boolean } => {
                 let basePrice = 0, discountedPrice = 0;
                 let occupancyType: keyof HikePricingByOccupancy | null = null;
@@ -538,7 +565,6 @@ export default function PropertyDetailPage({ property }: { property: Property | 
     const selectionLabel = selectedBookingModel === 'perUnit' ? 'Select Unit' : 'Select rooms';
     const roomTypeLabel = selectedBookingModel === 'perUnit' ? 'Unit/Villa Type' : 'Room type';
     const roomCountLabel = totalSelectedPhysicalRooms === 1 && selectedBookingModel === 'perUnit' ? '1 entire unit' : `${totalSelectedPhysicalRooms} room${totalSelectedPhysicalRooms > 1 ? 's' : ''}`;
-
 
     return (
         <>

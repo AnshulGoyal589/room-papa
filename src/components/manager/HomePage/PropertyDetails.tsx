@@ -89,6 +89,8 @@ const initialNewCategoryFormState = {
     totalOccupancyPrice: emptyMealPlanPricing() as PricingByMealPlan,
     discountedTotalOccupancyPrice: emptyMealPlanPricing() as DiscountedPricingByMealPlan,
 
+    newUnavailablePeriod: { startDate: '', endDate: '' },
+    currentUnavailableDates: [] as Period[],
 
     newAvailabilityPeriod: { startDate: '', endDate: '' },
     currentAvailabilityPeriods: [] as Period[],
@@ -279,6 +281,40 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
             updatedPricing[mealPlan] = safeValue;
             return { ...prev, [priceField]: updatedPricing };
         });
+    };
+
+    const handleNewUnavailablePeriodChange = (field: 'startDate' | 'endDate', value: string) => {
+        setNewCategory(prev => ({
+            ...prev,
+            newUnavailablePeriod: {
+                ...prev.newUnavailablePeriod,
+                [field]: value
+            }
+        }));
+    };
+
+    const handleAddUnavailablePeriod = () => {
+        const { startDate, endDate } = newCategory.newUnavailablePeriod;
+        if (!startDate || !endDate) {
+            alert("Both Start Date and End Date are required for an unavailable period.");
+            return;
+        }
+        if (new Date(endDate) < new Date(startDate)) {
+            alert('End Date cannot be before Start Date.');
+            return;
+        }
+        setNewCategory(prev => ({
+            ...prev,
+            currentUnavailableDates: [...prev.currentUnavailableDates, { startDate, endDate }],
+            newUnavailablePeriod: { startDate: '', endDate: '' } 
+        }));
+    };
+
+    const handleRemoveUnavailablePeriod = (indexToRemove: number) => {
+        setNewCategory(prev => ({
+            ...prev,
+            currentUnavailableDates: prev.currentUnavailableDates.filter((_, index) => index !== indexToRemove)
+        }));
     };
 
     // ... (Other handlers like availability, activities, facilities, hike pricing remain the same) ...
@@ -481,7 +517,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
             title: newCategory.title,
             qty: newCategory.qty,
             currency: newCategory.currency,
-            unavailableDates: [],
+            unavailableDates: [...newCategory.currentUnavailableDates],
             availability: [...newCategory.currentAvailabilityPeriods],
             roomSize: newCategory.roomSize || "Unknown",
             categoryActivities: [...newCategory.currentCategoryActivities],
@@ -839,10 +875,14 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                                             </div>
                                         )}
 
-                                        {cat.unavailableDates && cat.unavailableDates.length > 0 && (
+                                        {cat.unavailableDates && (cat.unavailableDates as Period[]).length > 0 && (
                                             <div className="mt-4 pt-3 border-t text-sm">
-                                                <p className="font-semibold text-red-600 mb-1">Unavailable Dates for this Category:</p>
-                                                <div className="flex flex-wrap gap-1"> {cat.unavailableDates.map((date: string) => ( <Badge key={date} variant="destructive" className='font-normal'>{date}</Badge> ))} </div>
+                                                <p className="font-semibold text-red-600 mb-1">Unavailable Periods for this Category:</p>
+                                                <ul className="list-disc list-inside space-y-1 pl-2 text-gray-700">
+                                                    {(cat.unavailableDates as Period[]).map((period, index) => (
+                                                        <li key={index}>{period.startDate} to {period.endDate}</li>
+                                                    ))}
+                                                </ul>
                                             </div>
                                         )}
                                     </div>
@@ -1046,7 +1086,45 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                                 <ChipListDisplay items={newCategory.currentCategoryFacilities} onRemove={handleRemoveCategoryFacilityFromForm} baseColorClass="bg-indigo-100 text-indigo-700 border-indigo-300" />
                             </div>
 
+                            <div className="pt-4 border-t border-gray-300">
+                                <FormLabel className="text-md font-semibold text-gray-700 mb-2 block flex items-center">
+                                    <CalendarDays className="inline h-5 w-5 mr-2"/> Unavailable Periods
+                                </FormLabel>
+                                <p className="text-xs text-gray-500 mb-3">
+                                    Block out specific date ranges when this category cannot be booked.
+                                </p>
+
+                                {newCategory.currentUnavailableDates.length > 0 && (
+                                    <div className="mb-4 space-y-2">
+                                        <Label className="text-sm text-gray-600">Added Unavailable Periods:</Label>
+                                        {newCategory.currentUnavailableDates.map((period, index) => (
+                                            <div key={index} className="flex items-center justify-between bg-white p-2 rounded border text-sm">
+                                                <span>{period.startDate} &mdash; {period.endDate}</span>
+                                                <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => handleRemoveUnavailablePeriod(index)}>
+                                                    <X size={14} />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                                    <FormItem>
+                                        <Label className="text-xs text-muted-foreground" htmlFor={`new-cat-unavail-start`}>Start Date</Label>
+                                        <Input id={`new-cat-unavail-start`} type="date" value={newCategory.newUnavailablePeriod.startDate} onChange={(e) => handleNewUnavailablePeriodChange('startDate', e.target.value)} />
+                                    </FormItem>
+                                    <FormItem>
+                                        <Label className="text-xs text-muted-foreground" htmlFor={`new-cat-unavail-end`}>End Date</Label>
+                                        <Input id={`new-cat-unavail-end`} type="date" value={newCategory.newUnavailablePeriod.endDate} onChange={(e) => handleNewUnavailablePeriodChange('endDate', e.target.value)} />
+                                    </FormItem>
+                                </div>
+                                <Button type="button" variant="outline" onClick={handleAddUnavailablePeriod} size="sm" className="w-full mt-3">
+                                    <Plus size={16} className="mr-1" /> Add Unavailable Period
+                                </Button>
+                            </div>
+
                             <button type="button" onClick={handleAddCategory} className="flex items-center justify-center w-full py-2.5 bg-[#003c95] text-white rounded-md hover:bg-[#003c95] transition-colors focus:outline-none focus:ring-2 focus:ring-[#003c95] focus:ring-offset-2"> <Plus size={18} className="mr-2" /> Add This Category </button>
+                            
                         </div>
                     )}
                 </div>
