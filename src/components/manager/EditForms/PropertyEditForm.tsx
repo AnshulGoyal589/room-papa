@@ -15,9 +15,9 @@ import { Image as ImageType, Period, SeasonalCoasting } from "@/lib/mongodb/mode
 import MultipleImageUpload from "@/components/cloudinary/MultipleImageUpload";
 import { Badge as UiBadge } from "@/components/ui/badge";
 import { X, Plus, Edit, Check, AlertCircle, Users, Baby, DollarSign, Home, MapPin, BedDouble, ListChecks, Image as ImageIcon, Utensils, CalendarDays, Sparkles, Wrench, ClipboardList, Bed } from "lucide-react";
-import { HikePricingByOccupancy, StoredRoomCategory } from "@/types/booking";
+import { HikePricingByOccupancy } from "@/types/booking";
 import { CldImage } from "next-cloudinary";
-import { DiscountedPricingByMealPlan, PricingByMealPlan, propertyAmenitiesArray, PropertyType, RoomCategoryPricing } from "@/types/property";
+import { DiscountedPricingByMealPlan, PricingByMealPlan, propertyAmenitiesArray, PropertyType, RoomCategory, RoomCategoryPricing } from "@/types/property";
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -92,7 +92,8 @@ const initialNewCategoryState = {
     discountedChild5to12Price: emptyMealPlanPricing(),
   } as RoomCategoryPricing,
   
-  unavailableDates: [] as string[],
+  unavailableDates: [] as Period[],
+  newUnavailablePeriod: { startDate: '', endDate: '' },
   availability: [] as Period[],
   newAvailabilityPeriod: { startDate: '', endDate: '' },
   roomSize: '',
@@ -189,7 +190,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     const clonedItem = JSON.parse(JSON.stringify(item));
     clonedItem.houseRules = clonedItem.houseRules ?? initialHouseRulesState;
     if (clonedItem.categoryRooms && Array.isArray(clonedItem.categoryRooms)) {
-        clonedItem.categoryRooms = clonedItem.categoryRooms.map((cat: StoredRoomCategory) => ({
+        clonedItem.categoryRooms = clonedItem.categoryRooms.map((cat: RoomCategory) => ({
             ...cat,
             id: cat.id || generateId(),
             pricingModel: cat.pricingModel || 'perOccupancy',
@@ -198,7 +199,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
                 : initialNewCategoryState.pricing,
             totalOccupancyPrice: ensureMealPlanPricing(cat.totalOccupancyPrice),
             discountedTotalOccupancyPrice: ensureMealPlanPricing(cat.discountedTotalOccupancyPrice),
-            unavailableDates: Array.isArray(cat.unavailableDates) ? cat.unavailableDates.map(String).sort() : [],
+            unavailableDates: Array.isArray(cat.unavailableDates) ? cat.unavailableDates : [],
             availability: Array.isArray(cat.availability) ? cat.availability : [],
             roomSize: cat.roomSize || "Unknown",
             categoryActivities: Array.isArray(cat.categoryActivities) ? cat.categoryActivities.map(String) : [],
@@ -220,10 +221,10 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     ...initialNewCategoryState,
     currency: item.costing?.currency || "INR",
     newAvailabilityPeriod: { startDate: '', endDate: '' },
+    newUnavailablePeriod: { startDate: '', endDate: '' },
   }));
 
   const [isEditMode, setIsEditMode] = useState(false);
-  const [currentUnavailableDateInput, setCurrentUnavailableDateInput] = useState<string>("");
   const [newCategoryActivityInput, setNewCategoryActivityInput] = useState<string>("");
   const [newCategoryFacilityInput, setNewCategoryFacilityInput] = useState<string>("");
 
@@ -251,7 +252,6 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
             currency: formData.costing?.currency || item.costing?.currency || "INR",
             pricingModel: prev.pricingModel || 'perOccupancy' // Keep the last selected model if not editing
         }));
-        setCurrentUnavailableDateInput("");
         setNewCategoryActivityInput("");
         setNewCategoryFacilityInput("");
     }
@@ -267,7 +267,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
 
       const mealPlanPriorities: (keyof PricingByMealPlan)[] = ['noMeal', 'breakfastOnly', 'allMeals'];
 
-      currentCategories.forEach((cat: StoredRoomCategory) => {
+      currentCategories.forEach((cat: RoomCategory) => {
         let categoryBasePrice = 0;
         let categoryDiscountedPrice = 0;
 
@@ -310,7 +310,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         }
       });
 
-      const totalRooms = currentCategories.reduce((sum: number, category: StoredRoomCategory) => sum + (category.qty || 0), 0);
+      const totalRooms = currentCategories.reduce((sum: number, category: RoomCategory) => sum + (category.qty || 0), 0);
       
       const newCalculatedPrice = minOverallPrice === Infinity ? 0 : parseFloat(minOverallPrice.toFixed(2));
       const newCalculatedDiscountedPrice = minOverallDiscountedPrice === Infinity ? 0 : parseFloat(minOverallDiscountedPrice.toFixed(2));
@@ -372,7 +372,6 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     setNewCategory(prev => ({...prev, categoryImages: images}));
   };
 
-  // Handler for Per Occupancy Pricing
   const handleNewCategoryPricingChange = (
       priceField: keyof RoomCategoryPricing,
       mealPlan: keyof PricingByMealPlan,
@@ -388,7 +387,6 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       });
   };
 
-  // Handler for Per Unit Pricing
   const handleNewCategoryPerUnitPricingChange = (
     priceField: 'totalOccupancyPrice' | 'discountedTotalOccupancyPrice',
     mealPlan: keyof PricingByMealPlan,
@@ -401,15 +399,6 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         updatedPricing[mealPlan] = safeValue;
         return { ...prev, [priceField]: updatedPricing };
     });
-};
-
-  const handleAddDateToNewCategory = () => {
-    if (currentUnavailableDateInput && !newCategory.unavailableDates.includes(currentUnavailableDateInput)) {
-        setNewCategory(prev => ({ ...prev, unavailableDates: [...prev.unavailableDates, currentUnavailableDateInput].sort() }));
-        setCurrentUnavailableDateInput("");
-    } else if (currentUnavailableDateInput && newCategory.unavailableDates.includes(currentUnavailableDateInput)) {
-        alert("This date is already marked as unavailable."); setCurrentUnavailableDateInput("");
-    } else if (!currentUnavailableDateInput) { alert("Please select a date to add."); }
   };
 
   const handleNewCategoryHikePricingChange = (
@@ -435,12 +424,39 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       });
   };
 
-  const handleRemoveDateFromNewCategory = (dateToRemove: string) => {
-      setNewCategory(prev => ({ ...prev, unavailableDates: prev.unavailableDates.filter(date => date !== dateToRemove) }));
+  const handleAddUnavailablePeriod = () => {
+      const { startDate, endDate } = newCategory.newUnavailablePeriod;
+      if (!startDate || !endDate) {
+          alert("Both Start Date and End Date are required for an unavailable period.");
+          return;
+      }
+      if (new Date(endDate) < new Date(startDate)) {
+          alert('End Date cannot be before Start Date.');
+          return;
+      }
+      setNewCategory(prev => ({
+          ...prev,
+          unavailableDates: [...prev.unavailableDates, { startDate, endDate }],
+          newUnavailablePeriod: { startDate: '', endDate: '' } // Reset form
+      }));
   };
 
-  const handleRemoveExistingUnavailableDate = (categoryId: string, dateToRemove: string) => {
-    setFormData((prev: Property) => ({ ...prev, categoryRooms: (prev.categoryRooms || []).map((cat: StoredRoomCategory) => cat.id === categoryId ? { ...cat, unavailableDates: (cat.unavailableDates || []).filter((d: string) => d !== dateToRemove) } : cat ) }));
+  const handleRemoveUnavailablePeriod = (indexToRemove: number) => {
+    setNewCategory(prev => ({
+        ...prev,
+        unavailableDates: prev.unavailableDates.filter((_, index) => index !== indexToRemove)
+    }));
+  };
+
+   const handleRemoveExistingUnavailablePeriod = (categoryId: string, indexToRemove: number) => {
+    setFormData((prev: Property) => ({
+        ...prev,
+        categoryRooms: (prev.categoryRooms || []).map((cat: RoomCategory) =>
+            cat.id === categoryId
+                ? { ...cat, unavailableDates: (cat.unavailableDates as Period[] || []).filter((_, i) => i !== indexToRemove) }
+                : cat
+        )
+    }));
   };
 
   const handleAddCategoryActivity = () => {
@@ -468,11 +484,11 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
   };
 
   const handleRemoveExistingCategoryActivity = (categoryId: string, activityToRemove: string) => {
-    setFormData((prev: Property) => ({ ...prev, categoryRooms: (prev.categoryRooms || []).map((cat: StoredRoomCategory) => cat.id === categoryId ? { ...cat, categoryActivities: (cat.categoryActivities || []).filter((a: string) => a !== activityToRemove) } : cat ) }));
+    setFormData((prev: Property) => ({ ...prev, categoryRooms: (prev.categoryRooms || []).map((cat: RoomCategory) => cat.id === categoryId ? { ...cat, categoryActivities: (cat.categoryActivities || []).filter((a: string) => a !== activityToRemove) } : cat ) }));
   };
 
   const handleRemoveExistingCategoryFacility = (categoryId: string, facilityToRemove: string) => {
-    setFormData((prev: Property) => ({ ...prev, categoryRooms: (prev.categoryRooms || []).map((cat: StoredRoomCategory) => cat.id === categoryId ? { ...cat, categoryFacilities: (cat.categoryFacilities || []).filter((f: string) => f !== facilityToRemove) } : cat ) }));
+    setFormData((prev: Property) => ({ ...prev, categoryRooms: (prev.categoryRooms || []).map((cat: RoomCategory) => cat.id === categoryId ? { ...cat, categoryFacilities: (cat.categoryFacilities || []).filter((f: string) => f !== facilityToRemove) } : cat ) }));
   };
 
   const handleAddOrUpdateCategory = () => {
@@ -529,12 +545,12 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         return;
     }
 
-    const categoryData: StoredRoomCategory = {
+    const categoryData: RoomCategory = {
       id: isEditMode && newCategory.id ? newCategory.id : generateId(),
       title: newCategory.title,
       qty: newCategory.qty,
       currency: newCategory.currency,
-      unavailableDates: newCategory.unavailableDates.sort(),
+      unavailableDates: [...newCategory.unavailableDates].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()),
       roomSize: newCategory.roomSize || "Unknown",
       availability: [...newCategory.availability],
       categoryActivities: [...newCategory.categoryActivities],
@@ -576,7 +592,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       handleChange('houseRules.additionalRules', currentRules.filter(r => r !== ruleToRemove));
   };
 
-  const handleEditCategory = (category: StoredRoomCategory) => {
+  const handleEditCategory = (category: RoomCategory) => {
     const categoryToEdit = JSON.parse(JSON.stringify(category));
     
     // Prepare Per Occupancy Pricing (ensure all keys are present)
@@ -594,7 +610,8 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         qty: categoryToEdit.qty,
         currency: categoryToEdit.currency,
         roomSize: categoryToEdit.roomSize || "Unknown",
-        unavailableDates: Array.isArray(categoryToEdit.unavailableDates) ? categoryToEdit.unavailableDates.map(String).sort() : [],
+        unavailableDates: Array.isArray(categoryToEdit.unavailableDates) ? categoryToEdit.unavailableDates : [],
+        newUnavailablePeriod: { startDate: '', endDate: '' },
         availability: Array.isArray(categoryToEdit.availability) ? categoryToEdit.availability : [],
         newAvailabilityPeriod: { startDate: '', endDate: '' },
         categoryActivities: Array.isArray(categoryToEdit.categoryActivities) ? categoryToEdit.categoryActivities.map(String) : [],
@@ -615,7 +632,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         totalOccupancyPrice: ensureMealPlanPricing(categoryToEdit.totalOccupancyPrice),
         discountedTotalOccupancyPrice: ensureMealPlanPricing(categoryToEdit.discountedTotalOccupancyPrice),
     });
-    setCurrentUnavailableDateInput("");
+    // setCurrentUnavailableDateInput("");
     setNewCategoryActivityInput("");
     setNewCategoryFacilityInput("");
     setIsEditMode(true);
@@ -820,7 +837,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
         {(formData.categoryRooms || []).length > 0 && (
           <div className="mb-6 space-y-4">
             <h3 className="text-xl font-medium text-gray-700">Current Room Categories:</h3>
-            {(formData.categoryRooms || []).map((cat: StoredRoomCategory) => {
+            {(formData.categoryRooms || []).map((cat: RoomCategory) => {
                 const pricing = cat.pricing || initialNewCategoryState.pricing;
                 const currency = cat.currency || "INR";
                 const isPerUnit = cat.pricingModel === 'perUnit';
@@ -844,8 +861,8 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
                             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                                 {cat.categoryImages.map((img, index) => (
                                     <CldImage
-                                        key={img.publicId || index}
-                                        src={img.publicId || img.url}
+                                        key={img.url || index}
+                                        src={ img.url}
                                         width={150}
                                         height={100}
                                         crop="fill"
@@ -972,12 +989,17 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
                         </div>
                     )}
 
-                     {cat.unavailableDates && cat.unavailableDates.length > 0 && (
+                    {cat.unavailableDates && (cat.unavailableDates as Period[]).length > 0 && (
                         <div className="mt-3 pt-2 border-t text-xs">
-                            <p className="font-medium text-red-500 mb-1 flex items-center"><CalendarDays size={14} className="mr-1" /> Unavailable Dates:</p>
+                            <p className="font-medium text-red-500 mb-1 flex items-center"><CalendarDays size={14} className="mr-1" /> Unavailable Periods:</p>
                             <ChipList
-                                items={cat.unavailableDates}
-                                onRemove={(!isEditMode || newCategory.id !== cat.id) ? (date) => handleRemoveExistingUnavailableDate(cat.id!, date) : undefined}
+                                items={(cat.unavailableDates as Period[]).map(p => `${p.startDate} to ${p.endDate}`)}
+                                onRemove={(!isEditMode || newCategory.id !== cat.id)
+                                    ? (item) => {
+                                        const index = (cat.unavailableDates as Period[]).findIndex(p => `${p.startDate} to ${p.endDate}` === item);
+                                        if (index !== -1) handleRemoveExistingUnavailablePeriod(cat.id!, index);
+                                    }
+                                    : undefined}
                                 noRemove={isEditMode && newCategory.id === cat.id}
                                 baseColorClass="bg-red-50 text-red-600 border-red-200"
                             />
@@ -1188,13 +1210,31 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
             </div>
 
             <div className="pt-4 border-t border-gray-300">
-                <label className="text-lg font-semibold text-gray-700 mb-3 block flex items-center"> <CalendarDays className="inline h-5 w-5 mr-2"/> Manage Unavailable Dates </label>
-                <div className="flex items-end gap-2 mb-3">
-                    <div className="flex-grow"> <label htmlFor="newUnavailableDate" className="text-xs font-medium text-gray-600">Add Date</label> <Input id="newUnavailableDate" type="date" value={currentUnavailableDateInput} onChange={(e) => setCurrentUnavailableDateInput(e.target.value)} className="mt-1"/> </div>
-                    <Button type="button" onClick={handleAddDateToNewCategory} variant="outline" size="sm" className="px-3 py-2"> <Plus size={16} className="mr-1.5" /> Add </Button>
+                <label className="text-lg font-semibold text-gray-700 mb-3 block flex items-center"> <CalendarDays className="inline h-5 w-5 mr-2"/> Manage Unavailable Periods </label>
+                {newCategory.unavailableDates.length > 0 && (
+                  <div className="mb-4 space-y-2">
+                      <label className="text-sm font-medium text-gray-600">Added Unavailable Periods:</label>
+                      {newCategory.unavailableDates.map((period, index) => (
+                          <div key={index} className="flex items-center justify-between bg-white p-2 rounded border text-sm">
+                              <span>{period.startDate} &mdash; {period.endDate}</span>
+                              <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleRemoveUnavailablePeriod(index)}>
+                                  <X size={14} />
+                              </Button>
+                          </div>
+                      ))}
+                  </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                  <div>
+                    <label className="text-xs text-muted-foreground">Start Date</label>
+                    <Input type="date" value={newCategory.newUnavailablePeriod.startDate} onChange={(e) => setNewCategory(p => ({...p, newUnavailablePeriod: {...p.newUnavailablePeriod, startDate: e.target.value}}))} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">End Date</label>
+                    <Input type="date" value={newCategory.newUnavailablePeriod.endDate} onChange={(e) => setNewCategory(p => ({...p, newUnavailablePeriod: {...p.newUnavailablePeriod, endDate: e.target.value}}))} />
+                  </div>
                 </div>
-                <ChipList items={newCategory.unavailableDates} onRemove={handleRemoveDateFromNewCategory} baseColorClass="bg-red-50 text-red-600 border-red-200" />
-                {newCategory.unavailableDates.length === 0 && <p className="text-xs text-gray-500">No unavailable dates added for this category yet.</p>}
+                <Button type="button" onClick={handleAddUnavailablePeriod} variant="outline" size="sm" className="w-full mt-3"> <Plus size={16} className="mr-1.5" /> Add Unavailable Period </Button>
             </div>
 
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 mt-4">

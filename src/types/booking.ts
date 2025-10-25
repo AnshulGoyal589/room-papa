@@ -1,33 +1,11 @@
 import { Property } from "@/lib/mongodb/models/Property";
-import { Image, Period, SeasonalCoasting } from "@/lib/mongodb/models/Components";
-import { PricingByMealPlan, RoomCategoryPricing } from "./property";
+import { PricingByMealPlan } from "./property";
 
 export interface HikePricingByOccupancy {
   singleOccupancyAdultHike: PricingByMealPlan;
   doubleOccupancyAdultHike: PricingByMealPlan;
   tripleOccupancyAdultHike: PricingByMealPlan;
   totalOccupancyHike?: Partial<PricingByMealPlan>;
-}
-
-export interface StoredRoomCategory {
-    id: string;
-    title: string;
-    qty: number;
-    currency: string;
-    pricing: RoomCategoryPricing;
-    unavailableDates: string[];
-    seasonalHike?: SeasonalCoasting;
-    roomSize: string;
-    availability: Period[];
-    categoryActivities?: string[];
-    categoryFacilities?: string[];
-    categoryImages?: Image[];
-    pricingModel?: 'perOccupancy' | 'perUnit';
-    bedConfiguration?: string;
-    roomSpecificAmenities?: string[];
-    totalOccupancy?: number;
-    totalOccupancyPrice?: Partial<PricingByMealPlan>;
-    discountedTotalOccupancyPrice?: Partial<PricingByMealPlan>;
 }
 
 export type ExtendedProperty = Omit<Property, 'categoryRooms' | 'costing' | 'rooms' | 'startDate' | 'endDate' | 'createdAt' | 'updatedAt'>;

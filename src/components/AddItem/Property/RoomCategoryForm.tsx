@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Plus, Baby, DollarSign, Users, Utensils, CalendarOff, Sparkles, Wrench, CalendarDays, Home } from 'lucide-react';
 
-import { HikePricingByOccupancy, StoredRoomCategory } from '@/types/booking';
+import { HikePricingByOccupancy } from '@/types/booking';
 import MultipleImageUpload from '@/components/cloudinary/MultipleImageUpload';
 import { Image, Period, SeasonalCoasting } from '@/lib/mongodb/models/Components';
-import { PricingByMealPlan, RoomCategoryPricing } from '@/types/property';
+import { PricingByMealPlan, RoomCategory, RoomCategoryPricing } from '@/types/property';
 import { ChipList } from './SharedUI';
 import { singleAndMultipleOccupancyPropertyTypes, singleOccupancyPropertyTypes } from '../../../../public/assets/data';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -48,8 +48,8 @@ const initialNewCategoryState = {
     child5to12Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
     discountedChild5to12Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
   } as RoomCategoryPricing,
-  newUnavailableDate: '',
-  currentUnavailableDates: [] as string[],
+  newUnavailablePeriod: { startDate: '', endDate: '' }, // MODIFIED: For date ranges
+  currentUnavailableDates: [] as Period[], // MODIFIED: From string[] to Period[]
   newAvailabilityPeriod: { startDate: '', endDate: '' },
   currentAvailabilityPeriods: [] as Period[],
   roomSize: '',
@@ -76,7 +76,7 @@ const hikePricingConfig: HikePricingRowConfig[] = [
 
 // Component Props
 interface RoomCategoryFormProps {
-    onAddCategory: (category: StoredRoomCategory) => void;
+    onAddCategory: (category: RoomCategory) => void;
     propertyType: string;
 }
 
@@ -153,20 +153,20 @@ const RoomCategoryForm: React.FC<RoomCategoryFormProps> = ({ onAddCategory, prop
     };
     
     // START: List Management Handlers (Unavailable Dates, Periods, Activities, Facilities)
-    const handleAddUnavailableDate = () => {
-        const date = newCategory.newUnavailableDate;
-        if (date && !newCategory.currentUnavailableDates.includes(date) && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-            setNewCategory(prev => ({
-                ...prev,
-                currentUnavailableDates: [...prev.currentUnavailableDates, date].sort(),
-                newUnavailableDate: ''
-            }));
-        } else {
-            alert("Please select a valid, unique date.");
+    // MODIFIED: Handlers for Unavailable Periods
+    const handleAddUnavailablePeriod = () => {
+        const { startDate, endDate } = newCategory.newUnavailablePeriod;
+        if (!startDate || !endDate || new Date(endDate) < new Date(startDate)) {
+            alert("Valid start and end dates are required for the unavailable period."); return;
         }
+        setNewCategory(prev => ({
+            ...prev,
+            currentUnavailableDates: [...prev.currentUnavailableDates, { startDate, endDate }],
+            newUnavailablePeriod: { startDate: '', endDate: '' }
+        }));
     };
-    const handleRemoveUnavailableDate = (date: string) => {
-        setNewCategory(prev => ({ ...prev, currentUnavailableDates: prev.currentUnavailableDates.filter(d => d !== date) }));
+    const handleRemoveUnavailablePeriod = (index: number) => {
+        setNewCategory(prev => ({ ...prev, currentUnavailableDates: prev.currentUnavailableDates.filter((_, i) => i !== index) }));
     };
 
     const handleAddAvailabilityPeriod = () => {
@@ -203,12 +203,10 @@ const RoomCategoryForm: React.FC<RoomCategoryFormProps> = ({ onAddCategory, prop
     // END: List Management Handlers
 
     const handleAddCategoryClick = () => {
-        // Validation logic
         if (!newCategory.title.trim()) { alert('Category title is required.'); return; }
         if (newCategory.qty <= 0) { alert('Quantity must be greater than 0.'); return; }
         if (newCategory.categoryImages.length < 3) { alert('Please upload at least 3 images.'); return; }
         
-        // Discount price validation
         const priceFields = ['single', 'double', 'triple', 'child5to12'];
         for (const p of priceFields) {
             const baseField = `${p}OccupancyAdultPrice` as keyof RoomCategoryPricing;
@@ -234,7 +232,7 @@ const RoomCategoryForm: React.FC<RoomCategoryFormProps> = ({ onAddCategory, prop
             alert('Both start and end dates are required for a seasonal hike.'); return;
         }
 
-        const categoryToAdd: StoredRoomCategory = {
+        const categoryToAdd: RoomCategory = {
             id: generateId(),
             title: newCategory.title,
             qty: newCategory.qty,
@@ -251,7 +249,6 @@ const RoomCategoryForm: React.FC<RoomCategoryFormProps> = ({ onAddCategory, prop
         };
 
          if (effectivePricingModel === 'perUnit') {
-            // --- ADDED: Logic for 'perUnit' model ---
             if (newCategory.totalOccupancy <= 0) { alert('Total Occupancy must be greater than 0.'); return; }
             for (const meal of ['noMeal', 'breakfastOnly', 'allMeals'] as const) {
                 const base = newCategory.totalOccupancyPrice[meal] ?? 0;
@@ -273,16 +270,14 @@ const RoomCategoryForm: React.FC<RoomCategoryFormProps> = ({ onAddCategory, prop
                 discountedTripleOccupancyAdultPrice: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
                 child5to12Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
                 discountedChild5to12Price: { noMeal: 0, breakfastOnly: 0, allMeals: 0 },
-            }; // Clear out the other model's data
+            };
         } else {
-            // --- MODIFIED: Logic for 'perOccupancy' model (existing) ---
-            // ... (existing discount price validation)
             categoryToAdd.pricing = newCategory.pricing;
         }
 
 
         onAddCategory(categoryToAdd);
-        setNewCategory(initialNewCategoryState); // Reset form
+        setNewCategory(initialNewCategoryState);
         alert("Category Added Successfully!");
     };
 
@@ -299,7 +294,6 @@ const RoomCategoryForm: React.FC<RoomCategoryFormProps> = ({ onAddCategory, prop
                 <MultipleImageUpload label="Category Images" value={newCategory.categoryImages} onChange={handleImagesChange} minImages={3} maxImages={10} />
             </div>
 
-            {/* Availability Period */}
             <div className="pt-4 border-t">
                 <FormLabel className="text-md font-medium text-foreground mb-3 block flex items-center"><CalendarDays className="inline h-5 w-5 mr-2 text-primary" /> BULK UPDATE Availability Periods (Optional)</FormLabel>
                 <p className="text-xs text-muted-foreground mb-4">If no periods are added, the category is considered always available.</p>
@@ -339,9 +333,7 @@ const RoomCategoryForm: React.FC<RoomCategoryFormProps> = ({ onAddCategory, prop
                 </div>
             )}
             
-            {/* --- MODIFIED: Conditional Rendering of Pricing Sections --- */}
             {effectivePricingModel === 'perUnit' ? (
-                // --- ADDED: 'Per Unit' Pricing Form ---
                 <div className="pt-4 border-t">
                     <FormLabel className="text-md font-medium text-foreground mb-3 block flex items-center"><Home className="inline h-5 w-5 mr-2 text-primary" />Pricing for Entire Unit</FormLabel>
                     <div className="mb-6 p-3 border rounded bg-background/50">
@@ -401,7 +393,6 @@ const RoomCategoryForm: React.FC<RoomCategoryFormProps> = ({ onAddCategory, prop
                     </div>
                 </>
             )}
-            {/* Seasonal Hike */}
             <div className="pt-4 border-t">
                 <FormLabel className="text-md font-medium text-foreground mb-3 block flex items-center"><DollarSign className="inline h-5 w-5 mr-2 text-primary" />Seasonal Price Hike (Optional)</FormLabel>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -423,7 +414,6 @@ const RoomCategoryForm: React.FC<RoomCategoryFormProps> = ({ onAddCategory, prop
                 ))}
             </div>
 
-            {/* Activities & Facilities */}
              <div className="pt-4 border-t">
                 <FormLabel className="text-md font-medium text-foreground mb-3 block flex items-center"><Sparkles className="inline h-5 w-5 mr-2 text-primary" />Category Activities</FormLabel>
                 <div className="flex gap-2"><Input value={newCategory.newCategoryActivity} onChange={(e) => handleFieldChange('newCategoryActivity', e.target.value)} placeholder="e.g., Guided Tour" /><Button type="button" variant="outline" onClick={() => handleAddItemToList('currentCategoryActivities', 'newCategoryActivity')} size="sm"><Plus size={16} /> Add</Button></div>
@@ -435,11 +425,27 @@ const RoomCategoryForm: React.FC<RoomCategoryFormProps> = ({ onAddCategory, prop
                 <ChipList items={newCategory.currentCategoryFacilities} onRemove={(item) => handleRemoveItemFromList('currentCategoryFacilities', item)} />
              </div>
 
-            {/* Unavailable Dates */}
+            {/* MODIFIED: Unavailable Periods Section */}
             <div className="pt-4 border-t">
-                <FormLabel className="text-md font-medium text-foreground mb-3 block flex items-center"><CalendarOff className="inline h-5 w-5 mr-2 text-primary" />Mark Unavailable Dates</FormLabel>
-                <div className="flex gap-2"><Input type="date" value={newCategory.newUnavailableDate} onChange={(e) => handleFieldChange('newUnavailableDate', e.target.value)} /><Button type="button" variant="outline" onClick={handleAddUnavailableDate} size="sm"><Plus size={16}/> Add Date</Button></div>
-                <ChipList items={newCategory.currentUnavailableDates} onRemove={handleRemoveUnavailableDate} />
+                <FormLabel className="text-md font-medium text-foreground mb-3 block flex items-center"><CalendarOff className="inline h-5 w-5 mr-2 text-primary" />Mark Unavailable Periods</FormLabel>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end mt-2">
+                    <FormItem>
+                        <FormLabel className="text-xs text-muted-foreground">Start Date</FormLabel>
+                        <Input type="date" value={newCategory.newUnavailablePeriod.startDate} onChange={(e) => setNewCategory(p => ({ ...p, newUnavailablePeriod: { ...p.newUnavailablePeriod, startDate: e.target.value } }))} />
+                    </FormItem>
+                    <FormItem>
+                        <FormLabel className="text-xs text-muted-foreground">End Date</FormLabel>
+                        <Input type="date" value={newCategory.newUnavailablePeriod.endDate} onChange={(e) => setNewCategory(p => ({ ...p, newUnavailablePeriod: { ...p.newUnavailablePeriod, endDate: e.target.value } }))} />
+                    </FormItem>
+                </div>
+                <Button type="button" variant="outline" onClick={handleAddUnavailablePeriod} size="sm" className="w-full mt-3"><Plus size={16} className="mr-1" /> Add Unavailable Period</Button>
+                <ChipList
+                    items={newCategory.currentUnavailableDates.map(p => `${p.startDate} to ${p.endDate}`)}
+                    onRemove={(item) => {
+                        const index = newCategory.currentUnavailableDates.findIndex(p => `${p.startDate} to ${p.endDate}` === item);
+                        if (index !== -1) handleRemoveUnavailablePeriod(index);
+                    }}
+                />
             </div>
 
             <Button type="button" onClick={handleAddCategoryClick} className="w-full mt-6">

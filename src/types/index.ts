@@ -1,5 +1,4 @@
-import { ObjectId } from "mongodb";
-import { RoomCategoryPricing } from "./property";
+
 
 export type PopularFilters = 'Free cancellation' | 'No prepayment' | 'Book without credit card' | 'Breakfast & dinner included' | 'Swimming Pool';
 export type RoomAccessibility = 'Entire unit located on ground floor' | 'Upper floors accessible by elevator' | 'Entire unit wheelchair accessible' | 'Toilet with grab rails' | 'Adapted bath' | 'Roll-in shower' | 'Walk-in shower' | 'Raised toilet' | 'Lowered sink' | 'Emergency cord in bathroom' | 'Shower chair';
@@ -21,15 +20,7 @@ export interface SearchHeaderProps {
 
 
 
-export interface RoomCategory {
-  id: string; // Essential: Unique identifier for the category (frontend relies on this)
-  _id?: string | ObjectId; // Optional: Mongoose/DB ID if different from frontend 'id'
-  title: string;
-  qty: number;
-  currency: string;
-  pricing: RoomCategoryPricing; // Use the detailed pricing structure above
-  unavailableDates: string[]; // Array of dates in 'YYYY-MM-DD' format
-}
+
 
 export type DateFilter2 = {
   [key: string]: unknown;

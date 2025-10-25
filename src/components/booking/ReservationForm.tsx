@@ -6,7 +6,7 @@ import { useUser } from '@clerk/nextjs';
 import Image from 'next/image';
 import { CheckCircle, Users, Wifi, ParkingSquare, Wind, Utensils, Info, AlertTriangle, Car, Bus, ChevronDown, ChevronUp } from 'lucide-react';
 import RazorpayPaymentButton from '@/components/payment/RazorpayPaymentButton';
-import { StoredRoomCategory } from '@/types/booking';
+import { RoomCategory } from '@/types/property';
 import { ReservationData } from '@/lib/mongodb/models/Components';
 import { Property } from '@/lib/mongodb/models/Property';
 import { renderRatingStars, Stepper } from './Helper';
@@ -18,7 +18,7 @@ const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "";
 // Helper function to reconstruct a basic offer detail for the form display
 function getBasicOfferDetails(
     offerId: string, 
-    categories: StoredRoomCategory[]
+    categories: RoomCategory[]
 ): { categoryTitle: string; intendedAdults: number; guestCapacityInOffer: number } | null {
     const parts = offerId.split('_');
     const categoryId = parts[0];

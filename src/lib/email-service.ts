@@ -75,11 +75,10 @@ export async function sendBookingConfirmationEmail(bookingData: Booking) {
     }
     return stars;
   };
-  
-  const formatCurrency = (amount: number, currency?: string): string => {
-    // Use the provided currency or default to INR
-    const currencyCode = currency || 'INR';
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: currencyCode, minimumFractionDigits: 0 }).format(amount);
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const formatCurrency = (amount: number, currency: string): string => {
+    // Use INR for display as per PDF example
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
   };
   
   // --- Data Preparation ---

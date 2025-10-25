@@ -1,3 +1,4 @@
+import { Image, Period, SeasonalCoasting } from "@/lib/mongodb/models/Components";
 import { SearchParams } from ".";
 
 export const propertyAmenitiesArray = [
@@ -58,6 +59,27 @@ export interface PropertySearchParams extends SearchParams {
   maxPrice?: number;
   amenities?: PropertyAmenities[];
   rooms?: number;
+}
+
+export interface RoomCategory {
+  availability: Period[];
+  bedConfiguration?: string;
+  categoryActivities?: string[];
+  categoryFacilities?: string[];
+  categoryImages?: Image[];
+  currency: string;
+  discountedTotalOccupancyPrice?: Partial<PricingByMealPlan>;
+  id: string;
+  pricing: RoomCategoryPricing;
+  pricingModel?: 'perOccupancy' | 'perUnit';
+  qty: number;
+  roomSize: string;
+  roomSpecificAmenities?: string[];
+  seasonalHike?: SeasonalCoasting;
+  title: string;
+  totalOccupancy?: number;
+  totalOccupancyPrice?: Partial<PricingByMealPlan>;
+  unavailableDates: Period[];
 }
 
 export interface RoomCategoryPricing {

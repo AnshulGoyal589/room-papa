@@ -11,18 +11,18 @@ import {
     HelpCircle,
 } from 'lucide-react';
 import Image from 'next/image';
-import { CldImage } from 'next-cloudinary'; 
+import { CldImage } from 'next-cloudinary';
 import { useRouter } from 'next/navigation';
 import { useUser, useClerk, SignedOut } from '@clerk/nextjs';
 import { Property } from '@/lib/mongodb/models/Property';
-import { DisplayableRoomOffer, HikePricingByOccupancy, StoredRoomCategory } from '@/types/booking';
+import { DisplayableRoomOffer, HikePricingByOccupancy } from '@/types/booking';
 import { Image as PropertyImage } from '@/lib/mongodb/models/Components';
 import { GuestReviews } from './Reviews';
 import { HotelFacilities } from './HotelFacilities';
 import PropertyHeader from './PropertyHeader';
 import ImageGalleryAndMap from './ImageGalleryAndMap';
 import AboutProperty from './AboutProperty';
-import { PricingByMealPlan } from '@/types/property';
+import { PricingByMealPlan, RoomCategory } from '@/types/property';
 import { HouseRules } from './HouseRules';
 import { ImageGalleryModal } from './ImageModal';
 import { calculateDays, getDatesInRange, getPrice, validateDate } from './Helper';
@@ -70,12 +70,12 @@ export default function PropertyDetailPage({ property }: { property: Property | 
         return d.toISOString().split('T')[0];
     }, []);
 
-    const handleCategoryTitleClick = (category: StoredRoomCategory) => {
+    const handleCategoryTitleClick = (category: RoomCategory) => {
         setModalData({ title: category.title, images: category.categoryImages || [] });
     };
 
     const availableBookingModels = useMemo(() => {
-        const models = new Set<StoredRoomCategory['pricingModel']>();
+        const models = new Set<RoomCategory['pricingModel']>();
         property?.categoryRooms?.forEach(cat => {
             models.add(cat.pricingModel || 'perOccupancy');
         });
@@ -136,12 +136,12 @@ export default function PropertyDetailPage({ property }: { property: Property | 
         }
     }, [checkInDate, checkOutDate, adultCount, childCount, selectedOffers, selectedMealPlan, property, selectedBookingModel]);
     
-    // --- Availability Check (Unchanged) ---
+    // --- Availability Check (MODIFIED) ---
     const checkAvailabilityForSelection = useCallback((
         startDate: Date | null,
         endDate: Date | null,
         currentSelectedOffers: Record<string, number>,
-        allCategories: StoredRoomCategory[] | undefined
+        allCategories: RoomCategory[] | undefined
     ): { available: boolean; message: string | null } => {
         if (!startDate || !endDate || endDate <= startDate || !allCategories || Object.keys(currentSelectedOffers).length === 0) {
             return { available: true, message: null };
@@ -170,10 +170,22 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                 }
             }
 
+            // --- MODIFIED LOGIC FOR UNAVAILABLE PERIODS ---
             if (category.unavailableDates && category.unavailableDates.length > 0) {
                 for (const dateStr of bookingDates) {
-                    if (category.unavailableDates.includes(dateStr)) {
-                        return { available: false, message: `Room type "${category.title}" is unavailable on ${new Date(dateStr + 'T12:00:00').toLocaleDateString()}. Please adjust dates or selection.` };
+                    const currentDate = new Date(dateStr);
+                    currentDate.setUTCHours(12); // Normalize to midday to avoid timezone shifts
+
+                    const isBlocked = category.unavailableDates.some(period => {
+                        const periodStart = new Date(period.startDate);
+                        periodStart.setUTCHours(12);
+                        const periodEnd = new Date(period.endDate);
+                        periodEnd.setUTCHours(12);
+                        return currentDate >= periodStart && currentDate <= periodEnd;
+                    });
+
+                    if (isBlocked) {
+                        return { available: false, message: `Room type "${category.title}" is unavailable during your selected dates due to a blackout period.` };
                     }
                 }
             }
@@ -181,7 +193,7 @@ export default function PropertyDetailPage({ property }: { property: Property | 
         return { available: true, message: null };
     }, []);
 
-    // --- Displayable Room Offers Calculation (Unchanged for logic, filtered by model) ---
+    // --- Displayable Room Offers Calculation (MODIFIED) ---
     const displayableRoomOffers = useMemo((): DisplayableRoomOffer[] => {
         if (!property?.categoryRooms || !checkInDate || !checkOutDate || days <= 0) return [];
         
@@ -212,8 +224,25 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                 });
                 if (!isAvailable) return;
             }
-            if (cat.unavailableDates?.some(unavailableDate => bookingDateRange.includes(unavailableDate))) {
-                return;
+            
+            // --- MODIFIED LOGIC FOR UNAVAILABLE PERIODS ---
+            if (cat.unavailableDates && cat.unavailableDates.length > 0) {
+                const isBlocked = bookingDateRange.some(dateStr => {
+                    const currentDate = new Date(dateStr);
+                    currentDate.setUTCHours(12); // Normalize to midday
+
+                    return cat.unavailableDates.some(period => {
+                        const periodStart = new Date(period.startDate);
+                        periodStart.setUTCHours(12);
+                        const periodEnd = new Date(period.endDate);
+                        periodEnd.setUTCHours(12);
+                        return currentDate >= periodStart && currentDate <= periodEnd;
+                    });
+                });
+    
+                if (isBlocked) {
+                    return; // Skip creating an offer for this category
+                }
             }
 
             // --- PER UNIT LOGIC ---
@@ -235,7 +264,6 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                     categoryTitle: cat.title,
                     bedConfiguration: cat.bedConfiguration,
                     roomSpecificAmenities: cat.roomSpecificAmenities,
-                    // IMPORTANT: Max rooms is always 1 for this booking model, regardless of cat.qty
                     maxPhysicalRoomsForCategory: 1, 
                     intendedAdults: totalOccupancy, 
                     intendedChildren: 0,
@@ -252,7 +280,6 @@ export default function PropertyDetailPage({ property }: { property: Property | 
             }
 
             // --- PER OCCUPANCY LOGIC (Default) ---
-            
             const calculateOfferPrice = (numAdults: number): { price: number, originalPrice?: number, isDiscounted: boolean } => {
                 let basePrice = 0, discountedPrice = 0;
                 let occupancyType: keyof HikePricingByOccupancy | null = null;
@@ -329,7 +356,7 @@ export default function PropertyDetailPage({ property }: { property: Property | 
         const totalGuests = adultCount + childCount;
         const currentModel = selectedBookingModel;
         
-        const roomInstances: { category: StoredRoomCategory, offer: DisplayableRoomOffer }[] = [];
+        const roomInstances: { category: RoomCategory, offer: DisplayableRoomOffer }[] = [];
 
         Object.entries(selectedOffers).forEach(([offerId, qty]) => {
             const offer = displayableRoomOffers.find(o => o.offerId === offerId);
@@ -539,7 +566,6 @@ export default function PropertyDetailPage({ property }: { property: Property | 
     const roomTypeLabel = selectedBookingModel === 'perUnit' ? 'Unit/Villa Type' : 'Room type';
     const roomCountLabel = totalSelectedPhysicalRooms === 1 && selectedBookingModel === 'perUnit' ? '1 entire unit' : `${totalSelectedPhysicalRooms} room${totalSelectedPhysicalRooms > 1 ? 's' : ''}`;
 
-
     return (
         <>
             <div className="bg-gray-100">
@@ -685,7 +711,7 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                                                 {(selectedBookingModel === 'perUnit' || offerIndexInCategory === 0) && (
                                                     <td className="block border-b pb-4 mb-4 lg:border-b-0 lg:pb-0 lg:mb-0 lg:table-cell lg:px-4 lg:py-3 lg:align-top lg:border-r" rowSpan={selectedBookingModel === 'perOccupancy' ? offersForThisCategory.length : 1}>
                                                         <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden cursor-pointer group mb-3 shadow-sm" onClick={() => handleCategoryTitleClick(category)}>
-                                                            <CldImage src={category.categoryImages?.[0]?.publicId || '/images/placeholder-property.png'} alt={`Image of ${category.title}`} layout="fill" objectFit="cover" />
+                                                            <CldImage src={category.categoryImages?.[0]?.url || '/images/placeholder-property.png'} alt={`Image of ${category.title}`} layout="fill" objectFit="cover" />
                                                             {category.categoryImages && category.categoryImages.length > 0 && <div className="absolute bottom-2 left-2 bg-white/90 text-gray-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-lg"> {category.categoryImages.length} PHOTOS </div>}
                                                         </div>
                                                         <h3 className="font-bold text-gray-800 text-xl">{offer.categoryTitle}</h3>
