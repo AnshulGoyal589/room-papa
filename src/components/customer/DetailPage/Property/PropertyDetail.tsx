@@ -10,10 +10,9 @@ import {
     X,
     HelpCircle,
 } from 'lucide-react';
-import Image from 'next/image';
 import { CldImage } from 'next-cloudinary';
 import { useRouter } from 'next/navigation';
-import { useUser, useClerk, SignedOut } from '@clerk/nextjs';
+import { useUser, useClerk } from '@clerk/nextjs';
 import { Property } from '@/lib/mongodb/models/Property';
 import { DisplayableRoomOffer, HikePricingByOccupancy } from '@/types/booking';
 import { Image as PropertyImage } from '@/lib/mongodb/models/Components';
@@ -27,7 +26,6 @@ import { HouseRules } from './HouseRules';
 import { ImageGalleryModal } from './ImageModal';
 import { calculateDays, getDatesInRange, getPrice, validateDate } from './Helper';
 
-// --- Constants (retained from original code) ---
 const LOCAL_STORAGE_KEY = process.env.NEXT_LOCAL_STORAGE_KEY || "propertyBookingPreferences_v3";
 const RESERVATION_DATA_KEY = process.env.NEXT_RESERVATION_DATA_KEY || "reservationData_v1";
 const MAX_COMBINED_ROOMS = parseInt(process.env.NEXT_MAX_COMBINED_ROOMS || '5', 10);
@@ -199,9 +197,9 @@ export default function PropertyDetailPage({ property }: { property: Property | 
         
         const currentModel = selectedBookingModel;
         const categoriesToProcess = property.categoryRooms.filter(
-            cat => (cat.pricingModel || 'perOccupancy') === currentModel
+            cat => (cat.pricingModel) === currentModel
         );
-        
+
         const offers: DisplayableRoomOffer[] = [];
         const bookingDateRange = getDatesInRange(checkInDate, checkOutDate);
         if (bookingDateRange.length === 0) return [];
@@ -212,7 +210,7 @@ export default function PropertyDetailPage({ property }: { property: Property | 
             return (hikeGroup && typeof hikeGroup === 'object' && mealPlan in hikeGroup) ? (hikeGroup as any)[mealPlan] : 0;
         };
 
-        categoriesToProcess.forEach(cat => {
+        categoriesToProcess.forEach(cat => {            
             const bookingStart = new Date(checkInDate); bookingStart.setHours(0,0,0,0);
             const bookingEnd = new Date(checkOutDate); bookingEnd.setHours(0,0,0,0);
             
@@ -225,7 +223,6 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                 if (!isAvailable) return;
             }
             
-            // --- MODIFIED LOGIC FOR UNAVAILABLE PERIODS ---
             if (cat.unavailableDates && cat.unavailableDates.length > 0) {
                 const isBlocked = bookingDateRange.some(dateStr => {
                     const currentDate = new Date(dateStr);
@@ -251,12 +248,30 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                 
                 const basePrice = getPricePerUnit(cat.totalOccupancyPrice, selectedMealPlan);
                 const discountedPrice = getPricePerUnit(cat.discountedTotalOccupancyPrice, selectedMealPlan);
+                const occupancyType: keyof HikePricingByOccupancy | null = null;
                 
                 if (basePrice === 0) return;
 
                 const isDisc = discountedPrice > 0 && discountedPrice < basePrice;
                 const finalBasePrice = isDisc ? discountedPrice : basePrice;
                 const originalPriceForCalc = isDisc ? basePrice : undefined;
+
+                let totalHikeAmount = 0;
+                const hike = cat.seasonalHike;
+                
+                if (hike?.startDate && hike.endDate && hike.hikePricing && occupancyType) {
+                    const hikeStartDate = new Date(hike.startDate + 'T00:00:00');
+                    const hikeEndDate = new Date(hike.endDate + 'T23:59:59');
+                    const hikeAmountPerNight = getHikeAmount(hike.hikePricing, occupancyType, selectedMealPlan);
+                    bookingDateRange.forEach(dateStr => {
+                        const currentDate = new Date(dateStr + 'T12:00:00');
+                        if (currentDate >= hikeStartDate && currentDate <= hikeEndDate) {
+                            totalHikeAmount += hikeAmountPerNight;
+                        }
+                    });
+                }
+                const averageHikePerNight = totalHikeAmount / bookingDateRange.length;
+                
 
                 offers.push({
                     offerId: `${cat.id}_unit`,
@@ -268,8 +283,8 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                     intendedAdults: totalOccupancy, 
                     intendedChildren: 0,
                     guestCapacityInOffer: totalOccupancy,
-                    pricePerNight: finalBasePrice,
-                    originalPricePerNight: originalPriceForCalc,
+                    pricePerNight: finalBasePrice + averageHikePerNight,
+                    originalPricePerNight: originalPriceForCalc ? originalPriceForCalc + averageHikePerNight : undefined,
                     isDiscounted: isDisc,
                     currency: cat.currency,
                     roomSize: cat.roomSize || "Unknown",
@@ -593,23 +608,8 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                     
                     <AboutProperty description={property.description} />
 
-                    <SignedOut>
-                        <div className="bg-yellow-50 border border-yellow-300 p-4 rounded-md mb-6 flex flex-col sm:flex-row items-center sm:items-center justify-between text-center sm:text-left gap-4 sm:gap-2">
-                            <div className="flex-grow">
-                                <h3 className="text-lg font-bold text-yellow-800">Sign in, save money</h3>
-                                <p className="text-sm text-yellow-700">To see if you can save 10% or more at this property, sign in</p>
-                                <div className="mt-3">
-                                    <button onClick={() => openSignIn({ redirectUrl: typeof window !== 'undefined' ? window.location.href : undefined})} className="bg-[#003c95] text-white text-sm px-4 py-2 rounded-md hover:bg-[#003c95] mr-2">Sign in</button>
-                                    <button onClick={() => openSignIn({ redirectUrl: typeof window !== 'undefined' ? window.location.href : undefined })} className="text-[#003c95] text-sm font-semibold hover:underline">Create an account</button>
-                                </div>
-                            </div>
-                            <Image src="/images/gift.jpeg" alt="Genius Loyalty Program" width={80} height={80} className="mx-auto sm:mx-0 shrink-0" />
-                        </div>
-                    </SignedOut>
-
                     <div className="bg-white rounded-md border border-gray-300 mb-6">
                         
-                        {/* --- Booking Model Switch UI --- */}
                         {needsModelSwitch && (
                             <div className="p-4 border-b border-gray-200 bg-blue-50">
                                 <h3 className="text-md font-bold mb-3 text-gray-800 flex items-center"><HelpCircle size={16} className="mr-2 text-[#003c95]" /> Choose Booking Style</h3>
@@ -632,7 +632,6 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                                 )}
                             </div>
                         )}
-                        {/* --- End Booking Model Switch UI --- */}
 
 
                         <div className="bg-gray-50 p-4 border-b border-gray-200">

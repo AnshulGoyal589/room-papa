@@ -1,53 +1,25 @@
-import { getUserByClerkId } from "@/lib/mongodb";
-import { auth } from "@clerk/nextjs/server";
 import Image from 'next/image';
 
 /**
- * Compact, Professional, Single-Row Footer Component, including all required data points.
+ * Compact, Professional, Single-Row Footer Component, including all data points for all users.
  */
-export async function Footer() {
+export function Footer() {
     const currentYear = new Date().getFullYear();
-    
-    // --- Authentication and Role Determination ---
-    const { userId } = await auth();
-    let role = 'guest';
-    
-    try {
-        if (userId) {
-            const user = await getUserByClerkId(userId);
-            role = user?.role ? String(user.role).toLowerCase() : 'guest';
-        }
-    } catch (error) {
-        console.error("Failed to fetch user role for footer:", error);
-    }
-    
-    console.log("Footer rendered for role:", role);
 
-    // --- Contact Data and Conditional Logic (All original data retained) ---
+    // --- All Contact Data is now static and visible to everyone ---
     const phones = ['7807154322', '9816054325', '9816254325', '8091954322'];
     
-    const contactEmails = [];
-
-    // Admin must have access to all
-    if (role === 'admin' || role === 'manager') {
-        contactEmails.push({ 
+    // The contactEmails array is now hardcoded with all possible options
+    const contactEmails = [
+        { 
             name: 'Partner Inquiries', 
             email: 'partner@roompapa.com' 
-        });
-    }
-    if (role === 'admin' || role === 'customer') {
-        contactEmails.push({ 
+        },
+        { 
             name: 'Support & Help', 
             email: 'help@roompapa.com' 
-        });
-    }
-    // Default fallback for guest
-    if (contactEmails.length === 0) {
-         contactEmails.push({ 
-             name: 'General Support', 
-             email: 'help@roompapa.com' 
-         });
-    }
+        }
+    ];
 
     const footerLinks = [
         {
