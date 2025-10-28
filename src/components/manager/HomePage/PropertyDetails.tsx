@@ -188,6 +188,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
     const [ensurePropertyData, setEnsurePropertyData] = React.useState<Property>(() => ({
         ...item,
         houseRules: item.houseRules || initialHouseRulesState,
+        offers: Array.isArray(item.offers) ? item.offers.map(String) : [],
         categoryRooms: Array.isArray(item.categoryRooms) ? item.categoryRooms.map(cat => ({
             ...cat,
             id: cat.id || generateId(),
@@ -206,6 +207,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
     }));
 
     const [newAdditionalRule, setNewAdditionalRule] = React.useState('');
+    const [newOffer, setNewOffer] = React.useState('');
 
     const [newCategory, setNewCategory] = React.useState<NewCategoryState>(() => ({
         ...initialNewCategoryFormState,
@@ -217,6 +219,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
         setEnsurePropertyData({
             ...item,
             houseRules: item.houseRules || initialHouseRulesState,
+            offers: Array.isArray(item.offers) ? item.offers.map(String) : [],
             categoryRooms: Array.isArray(item.categoryRooms) ? item.categoryRooms.map(cat => ({
                 ...cat,
                 id: cat.id || generateId(),
@@ -444,6 +447,24 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
     const handleRemoveAdditionalRule = (ruleToRemove: string) => {
         const currentRules = ensurePropertyData.houseRules?.additionalRules || [];
         handlePropertyChange('houseRules.additionalRules', currentRules.filter(r => r !== ruleToRemove));
+    };
+
+    const handleAddOffer = () => {
+        const offerToAdd = newOffer.trim();
+        if (offerToAdd) {
+            const currentOffers = ensurePropertyData.offers || [];
+            if (!currentOffers.includes(offerToAdd)) {
+                handlePropertyChange('offers', [...currentOffers, offerToAdd]);
+                setNewOffer('');
+            } else {
+                alert("This offer is already added.");
+            }
+        }
+    };
+
+    const handleRemoveOffer = (offerToRemove: string) => {
+        const currentOffers = ensurePropertyData.offers || [];
+        handlePropertyChange('offers', currentOffers.filter(o => o !== offerToRemove));
     };
 
     // --- UPDATED handleAddCategory LOGIC ---
@@ -709,6 +730,35 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                     </div>
                 )}
             </div>
+
+            {isEditable && (
+                <div className="border-t pt-8 mt-8">
+                    <h3 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                        <Tag className="w-6 h-6 mr-2 text-gray-600" />
+                        Special Offers
+                    </h3>
+                    <div>
+                        <FormLabel>Add an Offer</FormLabel>
+                        <div className="flex flex-col sm:flex-row gap-2 items-start mt-2">
+                            <Input
+                                value={newOffer}
+                                onChange={(e) => setNewOffer(e.target.value)}
+                                placeholder="e.g., Free Airport Transfer"
+                                className="flex-grow"
+                            />
+                            <Button type="button" variant="outline" onClick={handleAddOffer} size="sm" className="w-full sm:w-auto">
+                                <Plus size={16} className="mr-1" /> Add Offer
+                            </Button>
+                        </div>
+                        <ChipListDisplay
+                            items={ensurePropertyData.offers}
+                            onRemove={handleRemoveOffer}
+                            baseColorClass="bg-green-100 text-green-700 border-green-300"
+                        />
+                    </div>
+                </div>
+            )}
+
 
             {(isEditable || (currentCategories && currentCategories.length > 0)) && (
                 <div className="border-t pt-8 mt-8">
@@ -1130,6 +1180,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                 </div>
             )}
 
+            {renderSection("Special Offers", ensurePropertyData.offers, 'No special offers are currently available.', Tag)}
             {renderSection("Amenities", ensurePropertyData.amenities, 'No specific amenities listed.')}
             {renderSection("Property Accessibility", ensurePropertyData.accessibility, 'No property-wide accessibility features detailed.')}
             {renderSection("Room Accessibility Features", ensurePropertyData.roomAccessibility, 'No specific room accessibility features detailed.')}

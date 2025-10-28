@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { ListChecks, ShieldCheck, ClipboardList, Plus, X } from 'lucide-react';
+import { ListChecks, ShieldCheck, ClipboardList, Plus, X, Tag } from 'lucide-react';
 import { categoryOptions } from '../../../../public/assets/data';
 
 import { ExtendedProperty } from '@/lib/mongodb/models/Components';
@@ -29,6 +29,7 @@ const PropertyFeaturesSection: React.FC<PropertyFeaturesSectionProps> = ({
   onRemoveArrayItem,
 }) => {
   const [newAdditionalRule, setNewAdditionalRule] = useState('');
+  const [newOffer, setNewOffer] = useState(''); 
 
   const renderMultiSelect = (field: keyof ExtendedProperty, label: string, IconComponent?: React.ElementType) => {
     const selectedValues = (propertyData[field] as string[] | undefined) || [];
@@ -84,6 +85,23 @@ const PropertyFeaturesSection: React.FC<PropertyFeaturesSectionProps> = ({
     onPropertyChange('houseRules.additionalRules', currentRules.filter(r => r !== ruleToRemove));
   };
 
+  const handleAddOffer = () => {
+    const offerToAdd = newOffer.trim();
+    if (offerToAdd) {
+      const currentOffers = propertyData.offers || [];
+      if (!currentOffers.includes(offerToAdd)) {
+        onPropertyChange('offers', [...currentOffers, offerToAdd]);
+        setNewOffer('');
+      } else {
+        alert("This offer is already added.");
+      }
+    }
+  };
+
+  const handleRemoveOffer = (offerToRemove: string) => {
+    const currentOffers = propertyData.offers || [];
+    onPropertyChange('offers', currentOffers.filter(o => o !== offerToRemove));
+  };
 
   return (
     <>
@@ -135,6 +153,26 @@ const PropertyFeaturesSection: React.FC<PropertyFeaturesSectionProps> = ({
           <ChipList items={propertyData.houseRules?.additionalRules || []} onRemove={handleRemoveAdditionalRule} />
         </div>
       </div>
+
+      <div className="space-y-4 pt-6 border-t">
+        <SectionHeader title="Special Offers" icon={Tag} />
+        <div className="pt-2">
+          <FormLabel>Add Offer</FormLabel>
+          <div className="flex flex-col md:flex-row gap-2 items-start mt-2">
+            <Input
+              value={newOffer}
+              onChange={(e) => setNewOffer(e.target.value)}
+              placeholder="e.g., Free Airport Transfer, 10% Off on Weekdays"
+              className="flex-grow"
+            />
+            <Button type="button" variant="outline" onClick={handleAddOffer} size="sm" className="w-full md:w-auto">
+              <Plus size={16} className="mr-1" /> Add Offer
+            </Button>
+          </div>
+          <ChipList items={propertyData.offers || []} onRemove={handleRemoveOffer} />
+        </div>
+      </div>
+
 
       <div className="space-y-4 pt-6 border-t">
         <SectionHeader title="Additional Classifications & Features" icon={ShieldCheck} />

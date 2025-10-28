@@ -14,7 +14,7 @@ import ImageUpload from "@/components/cloudinary/ImageUpload";
 import { Image as ImageType, Period, SeasonalCoasting } from "@/lib/mongodb/models/Components";
 import MultipleImageUpload from "@/components/cloudinary/MultipleImageUpload";
 import { Badge as UiBadge } from "@/components/ui/badge";
-import { X, Plus, Edit, Check, AlertCircle, Users, Baby, DollarSign, Home, MapPin, BedDouble, ListChecks, Image as ImageIcon, Utensils, CalendarDays, Sparkles, Wrench, ClipboardList, Bed } from "lucide-react";
+import { X, Plus, Edit, Check, AlertCircle, Users, Baby, DollarSign, Home, MapPin, BedDouble, ListChecks, Image as ImageIcon, Utensils, CalendarDays, Sparkles, Wrench, ClipboardList, Bed, Tag } from "lucide-react";
 import { HikePricingByOccupancy } from "@/types/booking";
 import { CldImage } from "next-cloudinary";
 import { DiscountedPricingByMealPlan, PricingByMealPlan, propertyAmenitiesArray, PropertyType, RoomCategory, RoomCategoryPricing } from "@/types/property";
@@ -189,6 +189,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
   const initialCategoryLoad = useMemo(() => {
     const clonedItem = JSON.parse(JSON.stringify(item));
     clonedItem.houseRules = clonedItem.houseRules ?? initialHouseRulesState;
+    clonedItem.offers = Array.isArray(clonedItem.offers) ? clonedItem.offers.map(String) : [];
     if (clonedItem.categoryRooms && Array.isArray(clonedItem.categoryRooms)) {
         clonedItem.categoryRooms = clonedItem.categoryRooms.map((cat: RoomCategory) => ({
             ...cat,
@@ -217,6 +218,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
   const [formData, setFormData] = useState<Property>(initialCategoryLoad);
   const [newAdditionalRule, setNewAdditionalRule] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [newOffer, setNewOffer] = useState('');
   const [newCategory, setNewCategory] = useState<NewCategoryState>(() => ({
     ...initialNewCategoryState,
     currency: item.costing?.currency || "INR",
@@ -592,6 +594,24 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
       handleChange('houseRules.additionalRules', currentRules.filter(r => r !== ruleToRemove));
   };
 
+  const handleAddOffer = () => {
+    const offerToAdd = newOffer.trim();
+    if (offerToAdd) {
+        const currentOffers = formData.offers || [];
+        if (!currentOffers.includes(offerToAdd)) {
+            handleChange('offers', [...currentOffers, offerToAdd]);
+            setNewOffer('');
+        } else {
+            alert("This offer is already added.");
+        }
+    }
+  };
+
+  const handleRemoveOffer = (offerToRemove: string) => {
+      const currentOffers = formData.offers || [];
+      handleChange('offers', currentOffers.filter(o => o !== offerToRemove));
+  };
+
   const handleEditCategory = (category: RoomCategory) => {
     const categoryToEdit = JSON.parse(JSON.stringify(category));
     
@@ -829,6 +849,34 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
             />
         </div>
       </div>
+      
+      <div className="space-y-4 pt-6 border-t">
+        <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center">
+        <Tag className="mr-3 h-6 w-6 text-primary"/>Special Offers
+        </h2>
+        <div>
+            <label className="font-medium text-gray-700">Add an Offer</label>
+            <div className="flex items-end gap-2 mt-1">
+                <div className="flex-grow">
+                    <Input 
+                    value={newOffer} 
+                    onChange={(e) => setNewOffer(e.target.value)} 
+                    placeholder="e.g., Free Airport Transfer, 10% Off on Weekdays"
+                    />
+                </div>
+                <Button type="button" onClick={handleAddOffer} variant="outline" size="sm" className="px-3 py-2">
+                    <Plus size={16} className="mr-1.5" /> Add
+                </Button>
+            </div>
+            <ChipList
+                items={formData.offers || []}
+                onRemove={handleRemoveOffer}
+                baseColorClass="bg-green-50 text-green-700 border-green-200"
+                icon={Tag}
+            />
+        </div>
+      </div>
+
 
       <div className="space-y-4 pt-6 border-t">
         <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center"><BedDouble className="mr-3 h-6 w-6 text-primary"/>Manage Room Categories</h2>

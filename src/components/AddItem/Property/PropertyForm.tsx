@@ -29,6 +29,7 @@ const initialPropertyData: ExtendedProperty = {
   meals: [],
   facilities: [],
   bedPreference: [],
+  offers: [],
   reservationPolicy: [],
   brands: [],
   roomFacilities: [],

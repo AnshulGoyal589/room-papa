@@ -24,6 +24,7 @@ export interface Property {
   houseRules?: HouseRules;
   location: Location;
   meals?: string[];
+  offers?: string[];
   popularFilters?: string[];
   propertyRating?: number;
   reservationPolicy?: string[];

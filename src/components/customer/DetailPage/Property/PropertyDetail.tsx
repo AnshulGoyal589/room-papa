@@ -25,6 +25,7 @@ import { PricingByMealPlan, RoomCategory } from '@/types/property';
 import { HouseRules } from './HouseRules';
 import { ImageGalleryModal } from './ImageModal';
 import { calculateDays, getDatesInRange, getPrice, validateDate } from './Helper';
+import PropertyOffers from './PropertyOffers';
 
 const LOCAL_STORAGE_KEY = process.env.NEXT_LOCAL_STORAGE_KEY || "propertyBookingPreferences_v3";
 const RESERVATION_DATA_KEY = process.env.NEXT_RESERVATION_DATA_KEY || "reservationData_v1";
@@ -606,7 +607,13 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                         meals={property.meals}
                     />
                     
-                    <AboutProperty description={property.description} />
+                    <AboutProperty
+                        description={property.description}
+                    />
+
+                    <PropertyOffers
+                        offers={property.offers}
+                    />
 
                     <div className="bg-white rounded-md border border-gray-300 mb-6">
                         
