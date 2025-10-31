@@ -96,8 +96,14 @@ const ReviewCard: React.FC<{ review: Review }> = ({ review }) => {
 
 
 export const GuestReviews: React.FC<ReviewsProps> = ({ reviews }) => {
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+    
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    
+    if (reviews.length === 0) {
+        return null; // Don't render the section if there are no reviews
+    }
+    
     const handleScroll = () => {
         if (scrollContainerRef.current) {
             const scrollAmount = scrollContainerRef.current.clientWidth * 0.8;
