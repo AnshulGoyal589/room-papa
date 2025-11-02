@@ -7,7 +7,7 @@ export function Footer() {
     const currentYear = new Date().getFullYear();
 
     // --- All Contact Data is now static and visible to everyone ---
-    const phones = ['7807154322', '9816054325', '9816254325', '8091954322'];
+    const phones = ['7807154322', '8091954322'];
     
     // The contactEmails array is now hardcoded with all possible options
     const contactEmails = [

@@ -787,8 +787,22 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
 
       <div className="space-y-4 pt-6 border-t">
         <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3">Other Property Details</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> <div> <label className="font-medium text-gray-700">Property Rating (Stars)</label> <Input type="number" value={formData.propertyRating || 0} onChange={(e) => handleChange("propertyRating", parseFloat(e.target.value) || 0)} min={0} max={5} step={0.5} /> </div> <div> <label className="font-medium text-gray-700">Google Maps Link (Optional)</label> <Input value={formData.googleMaps || ""} onChange={(e) => handleChange("googleMaps", e.target.value || "")} placeholder="https://maps.app.goo.gl/..." /> </div> </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label className="font-medium text-gray-700">Property Rating (Stars)</label>
+                <Input type="number" value={formData.propertyRating || 0} onChange={(e) => handleChange("propertyRating", parseFloat(e.target.value) || 0)} min={0} max={5} step={0.5} />
+            </div>
+            <div>
+                <label className="font-medium text-gray-700">Google Maps Link (Optional)</label>
+                <Input value={formData.googleMaps || ""} onChange={(e) => handleChange("googleMaps", e.target.value || "")} placeholder="https://maps.app.goo.gl/..." />
+            </div>
+            <div>
+                <label className="font-medium text-gray-700">Property Priority</label>
+                <Input type="number" value={formData.priority || 10} onChange={(e) => handleChange("priority", parseFloat(e.target.value) || 0)} min={0} max={1000} step={1} />
+            </div>
+        </div>
       </div>
+
       <div className="space-y-4 pt-6 border-t">
         <h2 className="text-2xl font-semibold text-gray-800 border-b pb-3 flex items-center">
           <ClipboardList className="mr-3 h-6 w-6 text-primary"/>House Rules

@@ -12,14 +12,9 @@ export async function GET(
     const { searchParams } = request.nextUrl;
 
     const {category} = await params;
-    // console.log("category: ", category);
-    // const category = params.category;
 
     const query = buildCategoryQuery(searchParams, category);
-    const sort = buildSortQuery(searchParams);
-
-    // const pageSize = 10;
-    // const page = parseInt(searchParams.get('page') || '1');
+    const sort = buildSortQuery(searchParams, category);
 
     let collection: string;
     switch (category) {
@@ -43,8 +38,6 @@ export async function GET(
       .sort(sort)
       .toArray();
 
-    // console.log("results: ", results);
-
     return NextResponse.json({ results, total });
   } catch (error: unknown) {
     return NextResponse.json(
@@ -57,7 +50,6 @@ export async function GET(
 function buildCategoryQuery(searchParams: URLSearchParams, category: string): Filter<Document> {
   const query: Filter<Document> = {};
 
-  // General search term
   const searchQuery = searchParams.get('query');
   if (searchQuery) {
     query.$text = { $search: searchQuery };
@@ -65,7 +57,6 @@ function buildCategoryQuery(searchParams: URLSearchParams, category: string): Fi
 
   switch (category.toLowerCase()) {
     case 'property':
-      // Property-specific filters
       if (searchParams.has('minPrice') || searchParams.has('maxPrice')) {
         query.pricePerNight = {};
         const minPrice = searchParams.get('minPrice');
@@ -99,7 +90,6 @@ function buildCategoryQuery(searchParams: URLSearchParams, category: string): Fi
       break;
 
     case 'travelling':
-      // Travelling-specific filters
       const startDate = searchParams.get('startDate');
       const endDate = searchParams.get('endDate');
       if (startDate || endDate) {
@@ -119,7 +109,6 @@ function buildCategoryQuery(searchParams: URLSearchParams, category: string): Fi
       break;
 
     case 'trip':
-      // Trip-specific filters
       const minBudget = searchParams.get('minBudget');
       const maxBudget = searchParams.get('maxBudget');
       if (minBudget || maxBudget) {
@@ -136,9 +125,19 @@ function buildCategoryQuery(searchParams: URLSearchParams, category: string): Fi
   return query;
 }
 
-function buildSortQuery(searchParams: URLSearchParams): Sort {
-  const sortField = searchParams.get('sortBy') || 'createdAt';
+function buildSortQuery(searchParams: URLSearchParams, category: string): Sort {
+  const sortBy = searchParams.get('sortBy');
   const sortOrder = searchParams.get('sortOrder') === 'asc' ? 1 : -1;
 
-  return { [sortField]: sortOrder } as Sort;
+  if (sortBy) {
+    return { [sortBy]: sortOrder };
+  }
+
+  if (category === 'property') {
+    // Default sort for properties is by priority, ascending (lower is better).
+    return { priority: 1 };
+  }
+
+  // Fallback default sorting for all other categories.
+  return { createdAt: -1 };
 }

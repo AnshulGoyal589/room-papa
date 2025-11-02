@@ -34,6 +34,7 @@ const initialPropertyData: ExtendedProperty = {
   brands: [],
   roomFacilities: [],
   propertyRating: 0,
+  priority: 1000,
   googleMaps: '',
   houseRules: {
     checkInTime: '',

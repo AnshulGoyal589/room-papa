@@ -10,7 +10,7 @@ import {
     Bookmark, 
     Heart,
     BedDouble, 
-    Sparkles, 
+    Sparkles,
     Plane, 
     Train, 
     Car as CarIcon, 
@@ -362,6 +362,35 @@ export default function SearchResults() {
             <span className="mx-1 text-gray-400">•</span>
             <span className="text-[#003c95] hover:underline">Show on map</span>
         </div>
+
+        {/* --- START: ATTRACTIVE OFFERS SECTION --- */}
+        {Array.isArray(property.offers) && property.offers.length > 0 && (
+          <div className="mt-1 mb-3 p-3 bg-blue-50 border-l-4 border-[#003c95] rounded-md shadow-sm">
+            <h4 className="flex items-center text-sm font-bold text-[#003c95] mb-1.5">
+              <Sparkles size={16} className="mr-1.5 fill-yellow-400 text-yellow-400" />
+              Special Offers Today:
+            </h4>
+            <ul className="space-y-1">
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {property.offers.slice(0, 3).map((offer: any, index: number) => (
+                <li key={index} className="flex items-start text-sm text-gray-700">
+                  <Check size={16} className="text-green-600 mt-0.5 flex-shrink-0 mr-1.5" />
+                  <span>
+                    {/* Assuming offer is a string or an object with title/description */}
+                    {typeof offer === 'string' ? offer : offer.title || offer.description || 'Exclusive Deal'}
+                  </span>
+                </li>
+              ))}
+              {property.offers.length > 3 && (
+                  <li className="text-xs text-[#003c95] font-medium mt-1 cursor-pointer hover:underline">
+                      + {property.offers.length - 3} more offers available
+                  </li>
+              )}
+            </ul>
+          </div>
+        )}
+        {/* --- END: ATTRACTIVE OFFERS SECTION --- */}
+
 
         <div className="inline-block bg-gray-100 border border-gray-300 text-gray-700 text-xs font-medium px-2 py-1 rounded-sm mb-3 self-start">
             Recommended for you

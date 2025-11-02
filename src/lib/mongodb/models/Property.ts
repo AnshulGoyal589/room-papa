@@ -27,6 +27,7 @@ export interface Property {
   offers?: string[];
   popularFilters?: string[];
   propertyRating?: number;
+  priority?: number;
   reservationPolicy?: string[];
   review?: Review[];
   roomAccessibility?: string[];

@@ -59,6 +59,22 @@ const PropertyDetailsSection: React.FC<PropertyDetailsSectionProps> = ({ propert
             </Select>
           </FormItem>
           <FormItem>
+            <FormLabel>Property Priority</FormLabel>
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={1000}
+              step={1}
+              value={propertyData.priority ?? 1000}
+              onChange={(e) => {
+              const v = e.target.value;
+              onPropertyChange('priority', v === '' ? 1000 : Number(v));
+              }}
+              placeholder="Not prioritised"
+            />
+          </FormItem>
+          <FormItem>
             <FormLabel>Google Maps Link (Optional)</FormLabel>
             <Input
               value={propertyData.googleMaps}

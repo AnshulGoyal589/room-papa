@@ -642,6 +642,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                 <div className="flex items-start space-x-3"> <Users className="w-5 h-5 text-gray-500 shrink-0 mt-1" /> <div> <p className="text-sm font-medium text-gray-500">Total Rooms Available</p> <p className="text-base text-gray-700">{displayTotalRooms}</p> </div> </div>
                 <div className="flex items-start space-x-3"> <Tag className="w-5 h-5 text-gray-500 shrink-0 mt-1" /> <div> <p className="text-sm font-medium text-gray-500">Type</p> <p className="text-base text-gray-700">{formatPropertyType(ensurePropertyData.type)}</p> </div> </div>
                 <div className="flex items-start space-x-3"> <Star className="w-5 h-5 text-yellow-500 shrink-0 mt-1" /> <div> <p className="text-sm font-medium text-gray-500">Property Rating</p> <p className="text-base text-gray-700"> {ensurePropertyData.propertyRating ? `${ensurePropertyData.propertyRating.toString()} / 5 Stars` : 'Not rated yet'} </p> </div> </div>
+                <div className="flex items-start space-x-3"> <Star className="w-5 h-5 text-yellow-500 shrink-0 mt-1" /> <div> <p className="text-sm font-medium text-gray-500">Property Priority</p> <p className="text-base text-gray-700"> {ensurePropertyData.priority ? `${ensurePropertyData.priority.toString()}` : 'No prioritised yet'} </p> </div> </div>
             </div>
 
             <GoogleMapsSection item={ensurePropertyData} />

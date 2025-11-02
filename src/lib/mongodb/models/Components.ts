@@ -119,13 +119,8 @@ export interface RoleProtectionProps {
 
 export interface ReservationData {
     propertyId: string;
-    // propertyTitle: string;
-    // propertyImage: string | null;
-    // propertyLocation: Location;
-    // propertyRating: number | null;
     checkInDate: string;
     checkOutDate: string;
-    // reservationPolicy : string[];
     selectedBookingModel: 'perUnit' | 'perOccupancy';
     days: number;
     adultCount: number;
@@ -143,8 +138,6 @@ export interface ReservationData {
         currency: string;
         totalBookingPricePerNight: number;
     };
-    // ownerId: string;
-    // propertyType: PropertyType;
 }
 
 export interface SearchFormProps {

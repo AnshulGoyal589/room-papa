@@ -246,7 +246,7 @@ export function Header() {
             <div className="flex items-center gap-2 sm:gap-3">
               <button 
                 onClick={handleManagerSignUp}
-                className="hidden lg:flex items-center gap-2 text-white px-4 py-2 rounded-full border-2 border-transparent hover:border-white transition-all duration-300 text-sm font-bold"
+                className="lg:flex items-center gap-2 text-white px-4 py-2 rounded-full border-2 border-transparent hover:border-white transition-all duration-300 text-sm font-bold"
               >
                 <span>List Your Property</span>
               </button>
