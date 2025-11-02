@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       );
     }
     const query = buildSearchQuery(searchParams);
-    const sort = buildSortQuery(searchParams);
+    const sort = buildSortQuery(searchParams, category);
     const collectionName = getCategoryCollection(category);
     if (!collectionName) {
       return NextResponse.json(
@@ -28,9 +28,28 @@ export async function GET(request: NextRequest) {
       );
     }
     const total = await db.collection(collectionName).countDocuments(query);
+    const pipeline: Document[] = [];
+
+    // Stage 1: Filter documents based on search parameters
+    pipeline.push({ $match: query });
+
+    // Stage 2 (Conditional): If the category is 'property', add a temporary field
+    // to handle sorting for items that might not have a 'priority' value.
+    if (category === 'property') {
+      pipeline.push({
+        $addFields: {
+          // If 'priority' exists, use its value. Otherwise, assign a very
+          // large number to push it to the end of an ascending sort.
+          sortPriority: { $ifNull: ['$priority', 99999] }
+        }
+      });
+    }
+
+    // Stage 3: Sort the results
+    pipeline.push({ $sort: sort });
+
     const results = await db.collection(collectionName)
-      .find(query)
-      .sort(sort)
+      .aggregate(pipeline)
       .toArray();
 
       
@@ -262,10 +281,24 @@ function addArrayFilterIfExists(query: QueryType, searchParams: URLSearchParams,
   }
 }
 
-function buildSortQuery(searchParams: URLSearchParams): Sort {
-  const sortField = searchParams.get('sortBy') || 'costing.discountedPrice';
+function buildSortQuery(searchParams: URLSearchParams, category: string): Sort {
+  const sortBy = searchParams.get('sortBy');
   const sortOrder = searchParams.get('sortOrder') === 'asc' ? 1 : -1;
-  return { [sortField]: sortOrder };
+
+  // If a sortBy parameter is explicitly provided by the user, respect it.
+  if (sortBy) {
+    return { [sortBy]: sortOrder };
+  }
+
+  // For 'property' category, default to sorting by our new calculated field.
+  if (category === 'property') {
+    // 1. Sort by the calculated 'sortPriority' field (ascending).
+    // 2. Use a secondary sort for items with the same priority.
+    return { sortPriority: 1, 'costing.discountedPrice': -1 };
+  }
+
+  // Fallback default sort for all other categories.
+  return { 'costing.discountedPrice': -1 };
 }
 
 function serializeDocuments(documents: Document[]) {

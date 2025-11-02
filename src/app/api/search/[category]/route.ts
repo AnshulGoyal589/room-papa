@@ -33,10 +33,23 @@ export async function GET(
 
     const total = await db.collection(collection).countDocuments(query);
 
-    const results = await db.collection(collection)
-      .find(query)
-      .sort(sort)
-      .toArray();
+    const pipeline: Document[] = [];
+
+    pipeline.push({ $match: query });
+
+    if (category === 'property') {
+      pipeline.push({
+        $addFields: {
+          sortPriority: { $ifNull: ['$priority', 1000] }
+        }
+      });
+    }
+    
+    pipeline.push({ $sort: sort });
+
+    const results = await db.collection(collection).aggregate(pipeline).toArray();
+
+    console.log("Results: ",results);
 
     return NextResponse.json({ results, total });
   } catch (error: unknown) {
@@ -129,13 +142,16 @@ function buildSortQuery(searchParams: URLSearchParams, category: string): Sort {
   const sortBy = searchParams.get('sortBy');
   const sortOrder = searchParams.get('sortOrder') === 'asc' ? 1 : -1;
 
+  // If a sortBy parameter is explicitly provided by the user, respect it.
   if (sortBy) {
     return { [sortBy]: sortOrder };
   }
 
+  // For properties, the default sort now uses our temporary field.
   if (category === 'property') {
-    // Default sort for properties is by priority, ascending (lower is better).
-    return { priority: 1 };
+    // 1. Sort by the calculated 'sortPriority' field ascending.
+    // 2. Add 'createdAt' as a secondary sort for items with the same priority.
+    return { sortPriority: 1, createdAt: -1 };
   }
 
   // Fallback default sorting for all other categories.
