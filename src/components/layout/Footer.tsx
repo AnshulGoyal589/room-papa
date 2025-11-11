@@ -7,7 +7,7 @@ export function Footer() {
     const currentYear = new Date().getFullYear();
 
     // --- All Contact Data is now static and visible to everyone ---
-    const phones = ['7807154322', '8091954322'];
+    const phones = ['+91 97367 44322', '+91 98160 54322','+91 98162 54322'];
     
     // The contactEmails array is now hardcoded with all possible options
     const contactEmails = [
@@ -109,12 +109,11 @@ export function Footer() {
                         {/* Addresses - Tightly packed */}
                         <div className="mb-4">
                             <p className="font-bold text-[14px] text-gray-800 uppercase mb-1">Office Locations:</p>
-                            <p className="text-[13px] text-gray-600 leading-snug">
-                                Manali: Manali Circuit House road, 175131 H.P.
-                            </p>
-                            <p className="text-[13px] text-gray-600 leading-snug">
-                                Delhi: 211, Green Park, 110016 New Delhi
-                            </p>
+                            <address className="not-italic text-[13px] text-gray-600 leading-snug">
+                                <span className="inline">
+                                    Circuit House Road, Near Johnson's Cafe, Manali - 175131, District - Kullu, Himachal Pradesh
+                                </span>
+                            </address>
                         </div>
                         
                         {/* Phones - Tightly packed in a grid/flex for horizontal space saving */}
