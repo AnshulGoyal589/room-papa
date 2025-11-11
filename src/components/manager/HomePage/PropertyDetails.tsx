@@ -188,7 +188,8 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
     const [ensurePropertyData, setEnsurePropertyData] = React.useState<Property>(() => ({
         ...item,
         houseRules: item.houseRules || initialHouseRulesState,
-        offers: Array.isArray(item.offers) ? item.offers.map(String) : [],
+        //eslint-disable-next-line @typescript-eslint/no-explicit-any
+        offers: Array.isArray(item.offers) ? item.offers.map(o => (typeof o === 'string' ? { value: o } : (o as any))) : [],
         categoryRooms: Array.isArray(item.categoryRooms) ? item.categoryRooms.map(cat => ({
             ...cat,
             id: cat.id || generateId(),
@@ -219,7 +220,8 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
         setEnsurePropertyData({
             ...item,
             houseRules: item.houseRules || initialHouseRulesState,
-            offers: Array.isArray(item.offers) ? item.offers.map(String) : [],
+        //eslint-disable-next-line @typescript-eslint/no-explicit-any
+            offers: Array.isArray(item.offers) ? item.offers.map(o => (typeof o === 'string' ? { value: o } : (o as any))) : [],
             categoryRooms: Array.isArray(item.categoryRooms) ? item.categoryRooms.map(cat => ({
                 ...cat,
                 id: cat.id || generateId(),
@@ -435,7 +437,8 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
         const ruleToAdd = newAdditionalRule.trim();
         if (ruleToAdd) {
             const currentRules = ensurePropertyData.houseRules?.additionalRules || [];
-            if (!currentRules.includes(ruleToAdd)) {
+            const normalizedRules = currentRules.map((r: unknown) => String(r));
+            if (!normalizedRules.includes(ruleToAdd)) {
                 handlePropertyChange('houseRules.additionalRules', [...currentRules, ruleToAdd]);
                 setNewAdditionalRule('');
             } else {
@@ -446,14 +449,16 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
 
     const handleRemoveAdditionalRule = (ruleToRemove: string) => {
         const currentRules = ensurePropertyData.houseRules?.additionalRules || [];
-        handlePropertyChange('houseRules.additionalRules', currentRules.filter(r => r !== ruleToRemove));
+        const updatedRules = currentRules.map((r: unknown) => String(r)).filter(s => s !== ruleToRemove);
+        handlePropertyChange('houseRules.additionalRules', updatedRules);
     };
 
     const handleAddOffer = () => {
         const offerToAdd = newOffer.trim();
         if (offerToAdd) {
             const currentOffers = ensurePropertyData.offers || [];
-            if (!currentOffers.includes(offerToAdd)) {
+            // Normalize existing values to strings for a safe includes() check
+            if (!currentOffers.map(String).includes(offerToAdd)) {
                 handlePropertyChange('offers', [...currentOffers, offerToAdd]);
                 setNewOffer('');
             } else {
@@ -464,7 +469,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
 
     const handleRemoveOffer = (offerToRemove: string) => {
         const currentOffers = ensurePropertyData.offers || [];
-        handlePropertyChange('offers', currentOffers.filter(o => o !== offerToRemove));
+        handlePropertyChange('offers', currentOffers.filter(o => String(o) !== offerToRemove));
     };
 
     // --- UPDATED handleAddCategory LOGIC ---
@@ -677,7 +682,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                                 <p className="font-semibold mb-2">Additional Rules:</p>
                                 <ul className="list-disc list-inside space-y-1 pl-2">
                                     {ensurePropertyData.houseRules.additionalRules.map((rule, index) => (
-                                        <li key={index}>{rule}</li>
+                                        <li key={index}>{String(rule)}</li>
                                     ))}
                                 </ul>
                             </div>
@@ -726,7 +731,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                                     <Plus size={16} className="mr-1" /> Add Rule
                                 </Button>
                             </div>
-                            <ChipListDisplay items={ensurePropertyData.houseRules?.additionalRules} onRemove={handleRemoveAdditionalRule} />
+                            <ChipListDisplay items={ensurePropertyData.houseRules?.additionalRules?.map(String)} onRemove={handleRemoveAdditionalRule} />
                         </div>
                     </div>
                 )}
@@ -752,10 +757,10 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                             </Button>
                         </div>
                         <ChipListDisplay
-                            items={ensurePropertyData.offers}
-                            onRemove={handleRemoveOffer}
-                            baseColorClass="bg-green-100 text-green-700 border-green-300"
-                        />
+                                items={ensurePropertyData.offers?.map(String)}
+                                onRemove={handleRemoveOffer}
+                                baseColorClass="bg-green-100 text-green-700 border-green-300"
+                            />
                     </div>
                 </div>
             )}
@@ -1181,7 +1186,7 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ item, isEditable = fa
                 </div>
             )}
 
-            {renderSection("Special Offers", ensurePropertyData.offers, 'No special offers are currently available.', Tag)}
+            {renderSection("Special Offers", ensurePropertyData.offers?.map(String), 'No special offers are currently available.', Tag)}
             {renderSection("Amenities", ensurePropertyData.amenities, 'No specific amenities listed.')}
             {renderSection("Property Accessibility", ensurePropertyData.accessibility, 'No property-wide accessibility features detailed.')}
             {renderSection("Room Accessibility Features", ensurePropertyData.roomAccessibility, 'No specific room accessibility features detailed.')}

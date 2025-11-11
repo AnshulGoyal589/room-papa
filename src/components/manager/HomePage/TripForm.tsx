@@ -50,6 +50,7 @@ const initialTripData: Trip = {
   popularFilters: [],
   funThingsToDo: [],
   meals: [],
+  hotels: [],
   facilities: [],
   reservationPolicy: [],
   brands: [],

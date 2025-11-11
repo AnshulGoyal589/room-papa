@@ -1,7 +1,10 @@
 // /components/property-form/PropertyFeaturesSection.tsx
 
+"use client";
+
 import React, { useState } from 'react';
-import { FormItem, FormLabel } from '@/components/ui/form';
+import { useFormContext, Controller, useFieldArray } from 'react-hook-form';
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -9,170 +12,159 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { ListChecks, ShieldCheck, ClipboardList, Plus, X, Tag } from 'lucide-react';
 import { categoryOptions } from '../../../../public/assets/data';
-
-import { ExtendedProperty } from '@/lib/mongodb/models/Components';
 import { propertyAmenitiesArray } from '@/types/property';
 import { SectionHeader, ChipList } from './SharedUI';
+import { Property } from '@/lib/mongodb/models/Property'; // Ensure this type has the updated structure
 
-interface PropertyFeaturesSectionProps {
-  propertyData: ExtendedProperty;
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onPropertyChange: (field: string, value: any) => void;
-  onToggleArrayItem: (field: keyof ExtendedProperty, item: string) => void;
-  onRemoveArrayItem: (field: keyof ExtendedProperty, item: string) => void;
-}
-
-const PropertyFeaturesSection: React.FC<PropertyFeaturesSectionProps> = ({
-  propertyData,
-  onPropertyChange,
-  onToggleArrayItem,
-  onRemoveArrayItem,
-}) => {
+const PropertyFeaturesSection: React.FC = () => {
+  const { control } = useFormContext<Property>();
   const [newAdditionalRule, setNewAdditionalRule] = useState('');
-  const [newOffer, setNewOffer] = useState(''); 
+  // const [newOffer, setNewOffer] = useState('');
 
-  const renderMultiSelect = (field: keyof ExtendedProperty, label: string, IconComponent?: React.ElementType) => {
-    const selectedValues = (propertyData[field] as string[] | undefined) || [];
+  // CORRECTED: Fully type-safe useFieldArray without `as any`
+  const { fields: ruleFields, append: appendRule, remove: removeRule } = useFieldArray({
+    control,
+    name: "houseRules.additionalRules",
+  });
+  // const { fields: offerFields, append: appendOffer, remove: removeOffer } = useFieldArray({
+  const { fields: offerFields, remove: removeOffer } = useFieldArray({
+    control,
+    name: "offers",
+  });
+
+  const renderMultiSelect = (field: keyof Property, label: string, IconComponent?: React.ElementType) => {
     const options = categoryOptions[field as keyof typeof categoryOptions] || [];
     return (
-      <FormItem className="space-y-2">
-        <FormLabel className="flex items-center">
-          {IconComponent && <IconComponent className="mr-2 h-4 w-4 text-muted-foreground" />}
-          {label}
-        </FormLabel>
-        <Select onValueChange={(value) => { if (value) { onToggleArrayItem(field, value); } }} value="">
-          <SelectTrigger className="w-full"><SelectValue placeholder={`Select ${label.toLowerCase()}...`} /></SelectTrigger>
-          <SelectContent>
-            {options.map((option: string) => (
-              <SelectItem key={option} value={option} disabled={selectedValues.includes(option)} className={selectedValues.includes(option) ? 'text-muted-foreground' : ''}>
-                {option}
-              </SelectItem>
-            ))}
-            {options.length === 0 && <SelectItem value="no-options" disabled>No options available</SelectItem>}
-          </SelectContent>
-        </Select>
-        {selectedValues.length > 0 && (
-          <div className="flex flex-wrap gap-2 pt-2">
-            {selectedValues.map((item) => (
-              <div key={item} className="flex items-center bg-muted text-muted-foreground rounded-md px-2.5 py-1 text-sm">
-                <span className="mr-1.5">{item}</span>
-                <button type="button" onClick={() => onRemoveArrayItem(field, item)} className="text-muted-foreground hover:text-foreground transition-colors" aria-label={`Remove ${item}`}>
-                  <X size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </FormItem>
+      <Controller
+        control={control}
+        name={field}
+        render={({ field: { onChange, value } }) => {
+          const selectedValues = (value as string[] | undefined) || [];
+          const handleToggle = (item: string) => {
+            const newArray = selectedValues.includes(item) ? selectedValues.filter(i => i !== item) : [...selectedValues, item];
+            onChange(newArray);
+          };
+          return (
+            <FormItem className="space-y-2">
+              <FormLabel className="flex items-center">
+                {IconComponent && <IconComponent className="mr-2 h-4 w-4 text-muted-foreground" />} {label}
+              </FormLabel>
+              <Select onValueChange={(val) => { if (val) handleToggle(val); }} value="">
+                <FormControl><SelectTrigger><SelectValue placeholder={`Select ${label.toLowerCase()}...`} /></SelectTrigger></FormControl>
+                <SelectContent>
+                  {options.map((option: string) => <SelectItem key={option} value={option} disabled={selectedValues.includes(option)}>{option}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {selectedValues.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {selectedValues.map((item) => (
+                    <div key={item} className="flex items-center bg-muted text-muted-foreground rounded-md px-2.5 py-1 text-sm">
+                      <span className="mr-1.5">{item}</span>
+                      <button type="button" onClick={() => handleToggle(item)} aria-label={`Remove ${item}`}><X size={14} /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </FormItem>
+          );
+        }}
+      />
     );
   };
-
-  const handleAddAdditionalRule = () => {
-    const ruleToAdd = newAdditionalRule.trim();
-    if (ruleToAdd) {
-      const currentRules = propertyData.houseRules?.additionalRules || [];
-      if (!currentRules.includes(ruleToAdd)) {
-        onPropertyChange('houseRules.additionalRules', [...currentRules, ruleToAdd]);
-        setNewAdditionalRule('');
-      } else {
-        alert("This rule is already added.");
-      }
-    }
-  };
-
-  const handleRemoveAdditionalRule = (ruleToRemove: string) => {
-    const currentRules = propertyData.houseRules?.additionalRules || [];
-    onPropertyChange('houseRules.additionalRules', currentRules.filter(r => r !== ruleToRemove));
-  };
-
-  const handleAddOffer = () => {
-    const offerToAdd = newOffer.trim();
-    if (offerToAdd) {
-      const currentOffers = propertyData.offers || [];
-      if (!currentOffers.includes(offerToAdd)) {
-        onPropertyChange('offers', [...currentOffers, offerToAdd]);
-        setNewOffer('');
-      } else {
-        alert("This offer is already added.");
-      }
-    }
-  };
-
-  const handleRemoveOffer = (offerToRemove: string) => {
-    const currentOffers = propertyData.offers || [];
-    onPropertyChange('offers', currentOffers.filter(o => o !== offerToRemove));
-  };
-
+  
   return (
     <>
       <div className="space-y-4 pt-6 border-t">
         <SectionHeader title="Property Amenities" icon={ListChecks} />
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-3">
-          {propertyAmenitiesArray.map((amenity) => (
-            <div key={amenity} className="flex items-center space-x-2">
-              <Checkbox id={`amenity-${amenity}`} checked={(propertyData.amenities || []).includes(amenity)}
-                onCheckedChange={() => onToggleArrayItem('amenities', amenity)} />
-              <Label htmlFor={`amenity-${amenity}`} className="text-sm font-normal capitalize cursor-pointer"> {amenity.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} </Label>
+        <Controller control={control} name="amenities"
+          render={({ field }) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-3">
+              {propertyAmenitiesArray.map((amenity) => (
+                <div key={amenity} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`amenity-${amenity}`}
+                    checked={field.value?.includes(amenity) ?? false}
+                    onCheckedChange={(checked) => {
+                      const current = field.value || [];
+                      const newValue = checked ? [...current, amenity] : current.filter(a => a !== amenity);
+                      field.onChange(newValue);
+                    }}
+                  />
+                  <Label htmlFor={`amenity-${amenity}`} className="text-sm font-normal capitalize cursor-pointer">{amenity.replace(/([A-Z])/g, ' $1').trim()}</Label>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        />
       </div>
 
       <div className="space-y-4 pt-6 border-t">
         <SectionHeader title="House Rules" icon={ClipboardList} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormItem>
-            <FormLabel>Check-in Time</FormLabel>
-            <Input type="time" value={propertyData.houseRules?.checkInTime} onChange={(e) => onPropertyChange('houseRules.checkInTime', e.target.value)} />
-          </FormItem>
-          <FormItem>
-            <FormLabel>Check-out Time</FormLabel>
-            <Input type="time" value={propertyData.houseRules?.checkOutTime} onChange={(e) => onPropertyChange('houseRules.checkOutTime', e.target.value)} />
-          </FormItem>
+          <FormField control={control} name="houseRules.checkInTime" render={({ field }) => (<FormItem><FormLabel>Check-in Time</FormLabel><FormControl><Input type="time" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={control} name="houseRules.checkOutTime" render={({ field }) => (<FormItem><FormLabel>Check-out Time</FormLabel><FormControl><Input type="time" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-          <div className="flex items-center space-x-2">
-            <Checkbox id="smokingAllowed" checked={propertyData.houseRules?.smokingAllowed} onCheckedChange={(checked) => onPropertyChange('houseRules.smokingAllowed', !!checked)} />
-            <Label htmlFor="smokingAllowed">Smoking Allowed</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox id="petsAllowed" checked={propertyData.houseRules?.petsAllowed} onCheckedChange={(checked) => onPropertyChange('houseRules.petsAllowed', !!checked)} />
-            <Label htmlFor="petsAllowed">Pets Allowed</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox id="partiesAllowed" checked={propertyData.houseRules?.partiesAllowed} onCheckedChange={(checked) => onPropertyChange('houseRules.partiesAllowed', !!checked)} />
-            <Label htmlFor="partiesAllowed">Parties/Events Allowed</Label>
-          </div>
+          <FormField control={control} name="houseRules.smokingAllowed" render={({ field }) => (<FormItem className="flex items-center space-x-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} id="smokingAllowed" /></FormControl><Label htmlFor="smokingAllowed">Smoking Allowed</Label></FormItem>)} />
+          <FormField control={control} name="houseRules.petsAllowed" render={({ field }) => (<FormItem className="flex items-center space-x-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} id="petsAllowed" /></FormControl><Label htmlFor="petsAllowed">Pets Allowed</Label></FormItem>)} />
+          <FormField control={control} name="houseRules.partiesAllowed" render={({ field }) => (<FormItem className="flex items-center space-x-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} id="partiesAllowed" /></FormControl><Label htmlFor="partiesAllowed">Parties/Events Allowed</Label></FormItem>)} />
         </div>
         <div className="pt-4">
           <FormLabel>Additional Rules</FormLabel>
           <div className="flex flex-col md:flex-row gap-2 items-start mt-2">
-            <Input value={newAdditionalRule} onChange={(e) => setNewAdditionalRule(e.target.value)} placeholder="e.g., Quiet hours after 10 PM" className="flex-grow" />
-            <Button type="button" variant="outline" onClick={handleAddAdditionalRule} size="sm" className="w-full md:w-auto"><Plus size={16} className="mr-1" /> Add Rule</Button>
+            <Input value={newAdditionalRule} onChange={(e) => setNewAdditionalRule(e.target.value)} placeholder="e.g., Quiet hours after 10 PM" />
+            <Button type="button" variant="outline" size="sm" onClick={() => { if(newAdditionalRule.trim()) { appendRule({ value: newAdditionalRule.trim() }); setNewAdditionalRule(''); } }}><Plus size={16} /> Add Rule</Button>
           </div>
-          <ChipList items={propertyData.houseRules?.additionalRules || []} onRemove={handleRemoveAdditionalRule} />
+          {/* CORRECTED: Type-safe mapping over fields */}
+          <ChipList items={ruleFields.map(field => field.value)} onRemove={(item) => {
+            const index = ruleFields.findIndex(f => f.value === item);
+            if (index !== -1) removeRule(index);
+          }} />
         </div>
       </div>
 
       <div className="space-y-4 pt-6 border-t">
         <SectionHeader title="Special Offers" icon={Tag} />
-        <div className="pt-2">
-          <FormLabel>Add Offer</FormLabel>
-          <div className="flex flex-col md:flex-row gap-2 items-start mt-2">
-            <Input
-              value={newOffer}
-              onChange={(e) => setNewOffer(e.target.value)}
-              placeholder="e.g., Free Airport Transfer, 10% Off on Weekdays"
-              className="flex-grow"
-            />
-            <Button type="button" variant="outline" onClick={handleAddOffer} size="sm" className="w-full md:w-auto">
-              <Plus size={16} className="mr-1" /> Add Offer
+        <FormLabel>Add Offer</FormLabel>
+
+        <Controller
+          control={control}
+          name="offers"
+          render={({ field }) => (
+        <div className="flex flex-col md:flex-row gap-2 items-start mt-2">
+          <div className="flex-1 flex items-center gap-2">
+            <Input id="new-offer-input" placeholder="e.g., 10% off for 3 nights" className="flex-1" />
+            <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const el = document.getElementById('new-offer-input') as HTMLInputElement | null;
+            const val = el?.value.trim();
+            if (val) {
+              const current = field.value || [];
+              field.onChange([...current, val]);
+              if (el) el.value = '';
+            }
+          }}
+            >
+          <Plus size={16} /> Add Offer
             </Button>
           </div>
-          <ChipList items={propertyData.offers || []} onRemove={handleRemoveOffer} />
+        </div>
+          )}
+        />
+
+        <div className="pt-2">
+          <ChipList
+        items={offerFields.map(f => f.value)}
+        onRemove={(item) => {
+          const index = offerFields.findIndex(f => f.value === item);
+          if (index !== -1) removeOffer(index);
+        }}
+          />
         </div>
       </div>
-
 
       <div className="space-y-4 pt-6 border-t">
         <SectionHeader title="Additional Classifications & Features" icon={ShieldCheck} />
@@ -181,11 +173,11 @@ const PropertyFeaturesSection: React.FC<PropertyFeaturesSectionProps> = ({
           {renderMultiSelect('roomAccessibility', 'Room Accessibility Features')}
           {renderMultiSelect('popularFilters', 'Popular Filters/Tags')}
           {renderMultiSelect('funThingsToDo', 'Nearby Fun & Activities')}
-          {renderMultiSelect('meals', 'Meal Options Available (Property Wide)')}
+          {renderMultiSelect('meals', 'Meal Options Available')}
           {renderMultiSelect('facilities', 'On-site Facilities & Services')}
           {renderMultiSelect('bedPreference', 'Bed Preferences/Types Offered')}
           {renderMultiSelect('reservationPolicy', 'Reservation Policies')}
-          {renderMultiSelect('brands', 'Associated Brands (if any)')}
+          {renderMultiSelect('brands', 'Associated Brands')}
           {renderMultiSelect('roomFacilities', 'Standard In-Room Facilities')}
         </div>
       </div>

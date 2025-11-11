@@ -580,7 +580,10 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
     const ruleToAdd = newAdditionalRule.trim();
     if (ruleToAdd) {
         const currentRules = formData.houseRules?.additionalRules || [];
-        if (!currentRules.includes(ruleToAdd)) {
+        // Use a safe comparison by stringifying existing values to avoid
+        // "Argument of type 'string' is not assignable to parameter of type 'StringValue'"
+        const exists = currentRules.some((r) => String(r) === ruleToAdd);
+        if (!exists) {
             handleChange('houseRules.additionalRules', [...currentRules, ruleToAdd]);
             setNewAdditionalRule('');
         } else {
@@ -591,14 +594,15 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
 
   const handleRemoveAdditionalRule = (ruleToRemove: string) => {
       const currentRules = formData.houseRules?.additionalRules || [];
-      handleChange('houseRules.additionalRules', currentRules.filter(r => r !== ruleToRemove));
+      handleChange('houseRules.additionalRules', currentRules.filter(r => String(r) !== ruleToRemove));
   };
 
   const handleAddOffer = () => {
     const offerToAdd = newOffer.trim();
     if (offerToAdd) {
         const currentOffers = formData.offers || [];
-        if (!currentOffers.includes(offerToAdd)) {
+        const exists = currentOffers.some((o) => String(o) === offerToAdd);
+        if (!exists) {
             handleChange('offers', [...currentOffers, offerToAdd]);
             setNewOffer('');
         } else {
@@ -609,7 +613,8 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
 
   const handleRemoveOffer = (offerToRemove: string) => {
       const currentOffers = formData.offers || [];
-      handleChange('offers', currentOffers.filter(o => o !== offerToRemove));
+      // Ensure both sides are compared as strings to avoid type mismatches (e.g., StringValue vs string)
+      handleChange('offers', currentOffers.filter(o => String(o) !== String(offerToRemove)));
   };
 
   const handleEditCategory = (category: RoomCategory) => {
@@ -857,7 +862,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
                 </Button>
             </div>
             <ChipList
-                items={formData.houseRules?.additionalRules || []}
+                items={(formData.houseRules?.additionalRules || []).map(r => String(r))}
                 onRemove={handleRemoveAdditionalRule}
                 baseColorClass="bg-gray-100 text-gray-700 border-gray-200"
             />
@@ -883,7 +888,7 @@ const PropertyEditForm: React.FC<PropertyEditFormProps> = ({ item, onSave }) => 
                 </Button>
             </div>
             <ChipList
-                items={formData.offers || []}
+                items={(formData.offers || []).map(o => String(o))}
                 onRemove={handleRemoveOffer}
                 baseColorClass="bg-green-50 text-green-700 border-green-200"
                 icon={Tag}

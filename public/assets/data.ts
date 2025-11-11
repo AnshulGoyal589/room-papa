@@ -43,3 +43,6 @@ export const categoryOptions = {
   export const singleOccupancyPropertyTypes = [
     'Homestay'
   ] as const;
+
+
+  

@@ -105,11 +105,15 @@ export interface PricingByMealPlan {
   allMeals: number;
 }
 
+export interface StringValue {
+  value: string;
+}
+
 export interface HouseRules {
   checkInTime?: string;  
   checkOutTime?: string; 
   smokingAllowed?: boolean; 
   petsAllowed?: boolean;   
   partiesAllowed?: boolean; 
-  additionalRules?: string[];
+  additionalRules?: StringValue[];
 }

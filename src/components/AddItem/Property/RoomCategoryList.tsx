@@ -1,53 +1,63 @@
+// /components/property-form/RoomCategoryList.tsx
+
+"use client";
+
 import React from 'react';
-import { RoomCategory } from '@/types/property';
+import { useFormContext, useFieldArray } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Baby, CalendarDays, CalendarOff, DollarSign, Home, Sparkles, Users, Wrench, X } from 'lucide-react';
 import { PricingByMealPlan } from '@/types/property';
 import { ChipList, MealPlanLabel } from './SharedUI';
-
-interface RoomCategoryListProps {
-  categories: RoomCategory[];
-  onRemoveCategory: (id: string) => void;
-}
+import { Property } from '@/lib/mongodb/models/Property';
 
 const getPrice = (pricing: Partial<PricingByMealPlan> | undefined, mealPlan: keyof PricingByMealPlan): number => {
     return pricing?.[mealPlan] ?? 0;
 };
 
-const RoomCategoryList: React.FC<RoomCategoryListProps> = ({ categories, onRemoveCategory }) => {
-  if (!categories || categories.length === 0) {
+
+const RoomCategoryList: React.FC = () => {
+  const { control } = useFormContext<Property>();
+  const { fields, remove } = useFieldArray<Property, "categoryRooms">({
+    control,
+    name: "categoryRooms",
+  });
+
+  if (fields.length === 0) {
     return null;
   }
 
   return (
     <div className="mb-6 space-y-4">
       <h4 className="text-md font-medium text-foreground">Added Categories:</h4>
-      {categories.map((cat) => (
-        <div key={cat.id} className="p-4 bg-white border rounded-lg">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <p className="font-semibold text-foreground text-lg">{cat.title}
-              <span className="text-sm text-muted-foreground ml-2">({cat.qty} rooms)</span></p>
-              <p className="text-xs text-muted-foreground">Currency: {cat.currency}</p>
+      {fields.map((field, index) => {
+        // typed via useFieldArray generics as RoomCategory & { id: string }
+        const cat = field;
+        return (
+          <div key={cat.id} className="p-4 bg-white border rounded-lg">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <p className="font-semibold text-foreground text-lg">{cat.title}
+                <span className="text-sm text-muted-foreground ml-2">({cat.qty} rooms)</span></p>
+                <p className="text-xs text-muted-foreground">Currency: {cat.currency}</p>
+              </div>
+              <Button variant="ghost" size="icon" type="button" onClick={() => remove(index)} className="text-destructive hover:text-destructive/80 -mt-2 -mr-2" aria-label={`Remove ${cat.title}`}>
+                <X size={18} />
+              </Button>
             </div>
-            <Button variant="ghost" size="icon" type="button" onClick={() => onRemoveCategory(cat.id)} className="text-destructive hover:text-destructive/80 -mt-2 -mr-2" aria-label={`Remove ${cat.title}`}>
-              <X size={18} />
-            </Button>
-          </div>
 
-          {cat.availability && cat.availability.length > 0 && (
+            {/* All display logic below remains the same, using `cat` */}
+            {cat.availability && cat.availability.length > 0 && (
               <div className="text-sm mb-2 pt-2 border-t mt-2">
                   <p className="font-medium flex items-center"><CalendarDays className="inline h-4 w-4 mr-1 text-primary"/>Availability Periods:</p>
                   <ul className="pl-5 text-xs text-muted-foreground list-disc list-inside">
-                      {cat.availability.map((period, index) => (
-                          <li key={index}>
+                      {cat.availability.map((period, pIndex) => (
+                          <li key={pIndex}>
                               {new Date(period.startDate).toLocaleDateString()} to {new Date(period.endDate).toLocaleDateString()}
                           </li>
                       ))}
                   </ul>
               </div>
-          )}
-
+            )}
           <div className="space-y-3 text-sm border-t pt-3">
             {cat.pricingModel === 'perUnit' ? (
                 <div>
@@ -178,7 +188,8 @@ const RoomCategoryList: React.FC<RoomCategoryListProps> = ({ categories, onRemov
               </div>
             )}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

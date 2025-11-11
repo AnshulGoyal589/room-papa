@@ -55,6 +55,7 @@ const initialTripData: Trip = {
   facilities: [],
   reservationPolicy: [],
   brands: [],
+  hotels: [],
   pickupService: false,
 };
 

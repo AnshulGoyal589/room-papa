@@ -13,6 +13,8 @@ import { PricingByMealPlan, RoomCategory, RoomCategoryPricing } from '@/types/pr
 import { ChipList } from './SharedUI';
 import { singleAndMultipleOccupancyPropertyTypes, singleOccupancyPropertyTypes } from '../../../../public/assets/data';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
+import { Property } from '@/lib/mongodb/models/Property';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -74,13 +76,12 @@ const hikePricingConfig: HikePricingRowConfig[] = [
     { occupancy: 3, field: 'tripleOccupancyAdultHike', label: '3 Adults' },
 ];
 
-// Component Props
-interface RoomCategoryFormProps {
-    onAddCategory: (category: RoomCategory) => void;
-    propertyType: string;
-}
 
-const RoomCategoryForm: React.FC<RoomCategoryFormProps> = ({ onAddCategory, propertyType }) => {
+const RoomCategoryForm: React.FC = () => {
+    const { control } = useFormContext<Property>();
+    const { append } = useFieldArray<Property, "categoryRooms">({ control, name: "categoryRooms" });
+    const propertyType = useWatch({ control, name: "type" });
+
     const [newCategory, setNewCategory] = useState(initialNewCategoryState);
     const [pricingModel, setPricingModel] = useState<'perOccupancy' | 'perUnit'>('perOccupancy');
 
@@ -276,7 +277,7 @@ const RoomCategoryForm: React.FC<RoomCategoryFormProps> = ({ onAddCategory, prop
         }
 
 
-        onAddCategory(categoryToAdd);
+        append(categoryToAdd);
         setNewCategory(initialNewCategoryState);
         alert("Category Added Successfully!");
     };

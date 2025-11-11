@@ -481,7 +481,7 @@ export default function PropertyDetailPage({ property }: { property: Property | 
                     <PropertyHeader title={property.title ?? ''} type={property.type} totalRating={property.totalRating} propertyRating={property.propertyRating} address={property.location.address ?? ''} city={property.location.city ?? ''} />
                     <ImageGalleryAndMap bannerImage={property.bannerImage} detailImages={property.detailImages} googleMaps={property.googleMaps} title={property.title} type={property.type} amenities={property.amenities} funThingsToDo={property.funThingsToDo} meals={property.meals} />
                     <AboutProperty description={property.description} />
-                    <PropertyOffers offers={property.offers} />
+                    <PropertyOffers offers={property.offers ? property.offers.map(o => typeof o === 'string' ? o : String(o)) : undefined} />
 
                     <div className="bg-white rounded-md border border-gray-300 mb-6">
                         {needsModelSwitch && (

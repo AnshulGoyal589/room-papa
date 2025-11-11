@@ -71,7 +71,7 @@ export const HouseRules = ({ rules }: { rules: Property['houseRules'] }) => {
             {rules.additionalRules && rules.additionalRules.length > 0 && (
                  <RuleRow icon={Info} title="Additional Rules">
                     <ul className="list-disc list-inside space-y-1.5">
-                        {rules.additionalRules.map((rule, index) => <li key={index}>{rule}</li>)}
+                        {rules.additionalRules.map((rule, index) => <li key={index}>{String(rule)}</li>)}
                     </ul>
                 </RuleRow>
             )}

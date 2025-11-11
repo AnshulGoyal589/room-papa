@@ -10,6 +10,44 @@ export interface Destination{
   country: string;
 }
 
+export type WithClientId<T> = T & { clientId: string };
+
+export interface PlaceToVisit {
+  name: string;
+  description?: string;
+  duration?: string; // e.g., "2 hours"
+  location?: Destination;
+  image?: Image;
+}
+
+export interface TransportSegment {
+  mode?: string; // e.g., "Private Car", "Flight", "Train"
+  details?: string; // e.g., "Toyota Innova", "Flight SG-123"
+  departureTime?: string;
+  arrivalTime?: string;
+}
+
+export interface Accommodation {
+  hotelId?: ObjectId; // Link to your Hotels collection
+  name?: string;      // Manual entry if not in your DB
+  address?: string;
+  image?: Image;
+}
+
+export interface ItineraryDay {
+  dayNumber: number;
+  date?: Date;
+  title?: string;
+  overview?: string;
+  activities?: string[];
+  placesToVisit?: WithClientId<PlaceToVisit>[]; 
+  meals?: string[];
+  transport?: WithClientId<TransportSegment>[];
+  accommodation?: Accommodation | null;
+  images?: Image[];
+  notes?: string;
+}
+
 export interface Trip {
   _id?: ObjectId;
   accessibility?: string[];
@@ -29,14 +67,16 @@ export interface Trip {
   meals?: string[];
   popularFilters?: string[];
   pickupService?: boolean;
-  
   reservationPolicy?: string[];
   review?: Review[];
   title?: string;
-  totalRating?: number; 
+  totalRating?: number;
   type: string; // Domestic or International
   updatedAt?: Date;
-  userId?: string; // Reference to the user who created the trip i.e. manager ID
+  userId?: string;
+  hotels: ObjectId[];
+  daysCount?: number;
+  itinerary?: ItineraryDay[];
 }
 
 interface TripValidationInput {

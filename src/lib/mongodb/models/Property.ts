@@ -3,7 +3,7 @@
 import { Collection, ObjectId } from 'mongodb';
 import { getDb } from '..';
 import { Costing, Image, Location, Review } from './Components';
-import { HouseRules, PropertyAmenities, propertyAmenitiesArray, PropertyType } from '@/types/property';
+import { HouseRules, PropertyAmenities, propertyAmenitiesArray, PropertyType, StringValue } from '@/types/property';
 import { RoomCategory } from '@/types/property';
 
 export interface Property {
@@ -24,7 +24,7 @@ export interface Property {
   houseRules?: HouseRules;
   location: Location;
   meals?: string[];
-  offers?: string[];
+  offers?: StringValue[];
   popularFilters?: string[];
   propertyRating?: number;
   priority?: number;
