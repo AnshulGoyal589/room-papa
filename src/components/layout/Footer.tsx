@@ -111,7 +111,7 @@ export function Footer() {
                             <p className="font-bold text-[14px] text-gray-800 uppercase mb-1">Office Locations:</p>
                             <address className="not-italic text-[13px] text-gray-600 leading-snug">
                                 <span className="inline">
-                                    Circuit House Road, Near Johnson's Cafe, Manali - 175131, District - Kullu, Himachal Pradesh
+                                    Circuit House Road, Near Johnson&apos;s Cafe, Manali - 175131, District - Kullu, Himachal Pradesh
                                 </span>
                             </address>
                         </div>
