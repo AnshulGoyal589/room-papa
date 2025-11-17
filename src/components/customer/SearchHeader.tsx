@@ -3,12 +3,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Building,
-  Plane,
+  // Plane,
   // Hotel,
-  Car,
+  // Car,
   Landmark,
   ShieldCheck,
-  PlaneIcon,
+  // PlaneIcon,
 } from 'lucide-react';
 import StaysSearchForm from './SearchForms/StaysSearchForm';
 import { usePathname } from 'next/navigation';
@@ -52,11 +52,13 @@ export default function SearchHeader() {
 
   const tabs = useMemo(() => [
     { id: 'property',  label: 'Stays', icon: Building, description: 'Find exclusive deals on millions of rooms worldwide.' },
-    { id: 'flight+hotel', label: 'Flight + Hotel', icon: PlaneIcon, description: 'Bundle your trip and unlock exclusive savings.' },
-    { id: 'car-rentals', label: 'Car Rentals', icon: Car, description: 'Compare cheap car hire deals from top providers.' },
-    { id: 'attractions', label: 'Attractions', icon: Landmark, description: 'Discover unforgettable experiences with free cancellation.' },
-    { id: 'airport-taxis', label: 'Airport Taxis', icon: ShieldCheck, description: 'Pre-book a hassle-free ride to or from the airport.' },
-    { id: 'travelling', label: 'Flights', icon: Plane, description: 'Book the best deals on airline tickets worldwide.' },
+    { id: 'trip',  label: 'Tours & Packages', icon: Landmark, description: 'Discover curated tours, day trips, and complete travel packages worldwide.' },
+    { id: 'activities', label: 'Activities', icon: ShieldCheck, description: 'Explore a wide range of activities and experiences to enhance your trip.' },
+    // { id: 'flight+hotel', label: 'Flight + Hotel', icon: PlaneIcon, description: 'Bundle your trip and unlock exclusive savings.' },
+    // { id: 'car-rentals', label: 'Car Rentals', icon: Car, description: 'Compare cheap car hire deals from top providers.' },
+    // { id: 'attractions', label: 'Attractions', icon: Landmark, description: 'Discover unforgettable experiences with free cancellation.' },
+    // { id: 'airport-taxis', label: 'Airport Taxis', icon: ShieldCheck, description: 'Pre-book a hassle-free ride to or from the airport.' },
+    // { id: 'travelling', label: 'Flights', icon: Plane, description: 'Book the best deals on airline tickets worldwide.' },
   ], []);
 
   const { title, subtitle } = useMemo(() => {
@@ -66,10 +68,12 @@ export default function SearchHeader() {
       switch (currentTab.id) {
         case 'property': dynamicTitle = 'Book Hotels, Apartments & Vacation Rentals'; break;
         case 'travelling': dynamicTitle = 'Search & Compare Cheap Flights'; break;
-        case 'flight+hotel': dynamicTitle = 'Save Big with Flight + Hotel Deals'; break;
+        case 'trip': dynamicTitle = 'Explore Tours & Travel Packages'; break;
+        case 'activities': dynamicTitle = 'Discover Exciting Activities & Experiences'; break;
+        // case 'flight+hotel': dynamicTitle = 'Save Big with Flight + Hotel Deals'; break;
         case 'car-rentals': dynamicTitle = 'Find the Perfect Car Rental'; break;
-        case 'attractions': dynamicTitle = 'Book Tours, Attractions & Things to Do'; break;
-        case 'airport-taxis': dynamicTitle = 'Reliable Airport Taxis & Transfers'; break;
+        // case 'attractions': dynamicTitle = 'Book Tours, Attractions & Things to Do'; break;
+        // case 'airport-taxis': dynamicTitle = 'Reliable Airport Taxis & Transfers'; break;
       }
       return { title: dynamicTitle, subtitle: currentTab.description };
     }
