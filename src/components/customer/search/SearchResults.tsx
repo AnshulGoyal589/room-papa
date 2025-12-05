@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -16,8 +16,10 @@ import {
     Car as CarIcon, 
     Star as StarIcon,
     ThumbsUp,        
-    Check,           
-    ChevronRight     
+    Check,
+    ChevronRight,     
+    Gift,
+    Ticket
 } from 'lucide-react';
 import { Property } from '@/lib/mongodb/models/Property'; 
 import { Trip } from '@/lib/mongodb/models/Trip';
@@ -74,8 +76,6 @@ const calculateNights = (checkInStr?: string | null, checkOutStr?: string | null
     return 1;
   }
 };
-
-
 
 const calculateTotalDiscountedPricePerNight = (
     adults: number, 
@@ -190,78 +190,105 @@ const calculateTotalBasePricePerNight = (
     
     return totalAdultPrice + totalChildPrice;
 };
+type Offer = string | { title?: string; description?: string; code?: string };
 
-
-export default function SearchResults() {
-  const router = useRouter();
-  const currentSearchParams = useSearchParams();
-  const [results, setResults] = useState<Array<Property | Trip | Travelling>>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [totalResults, setTotalResults] = useState(0);
-  const [category, setCategory] = useState<string>('property');
-  const [activeSortKey, setActiveSortKey] = useState<string>('recommended_desc');
-
-  useEffect(() => {
-    const params: { [key: string]: string } = {};
-    currentSearchParams?.forEach((value, key) => {
-      params[key] = value;
-    });
-
-    const currentCategory = params.category || 'property';
-    setCategory(currentCategory);
-    
-    const chips: Array<{key: string, value: string}> = [];
-    Object.entries(params).forEach(([key, value]) => {
-      if (key !== 'page' && key !== 'sortBy' && key !== 'sortOrder' && key !== 'category' && value) {
-        chips.push({ key, value });
-      }
-    });
-    const currentSortBy = params.sortBy;
-    const currentSortOrder = params.sortOrder;
-    if (currentSortBy) {
-      setActiveSortKey(`${currentSortBy}_${currentSortOrder || 'desc'}`);
-    } else {
-      const defaultSortTab = sortTabsConfig.find(tab => tab.sortByValue === 'recommended');
-      setActiveSortKey(defaultSortTab ? defaultSortTab.key : 'recommended_desc');
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+const normalizeOffers = (offers?: any[]): Offer[] => {
+  if (!Array.isArray(offers)) return [];
+  return offers.map((o) => {
+    // plain string
+    if (typeof o === 'string') return o;
+    // bson StringValue-like { value: '...' }
+    if (o && typeof o.value === 'string') return o.value;
+    // already an Offer-like object
+    if (o && (o.title || o.description || o.code)) {
+      return { title: o.title, description: o.description, code: o.code };
     }
+    // fallback to string representation
+    return String(o);
+  });
+};
 
-  }, [currentSearchParams]);
+// -------------------------------------------------------------------
+// NEW & IMPROVED: OfferItem Component (Replaces CouponItem)
+// -------------------------------------------------------------------
+const OfferItem = ({ offer }: { offer: Offer }) => {
+  // Extract the text of the offer.
+  const offerText = typeof offer === 'string' ? offer : offer.title || offer.description || 'Exclusive Benefit';
 
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      const params = new URLSearchParams(currentSearchParams?.toString() || '');
-      if (!params.has('category')) {
-        params.set('category', category); 
-      }
-      const activeSortOption = sortTabsConfig.find(tab => tab.key === activeSortKey);
-      if (activeSortOption) {
-        if(!params.has('sortBy') && activeSortOption.sortByValue !== 'recommended') { 
-            params.set('sortBy', activeSortOption.sortByValue);
-            params.set('sortOrder', activeSortOption.sortOrderValue);
-        } 
-      }
-      
-      try {
-        const response = await fetch(`/api/search?${params.toString()}`);
-        if (!response.ok) {
-          throw new Error(`API Error: ${response.status}`);
-        }
-        const data = await response.json();
-        setResults(data.results || []); 
-        setTotalResults(data.total || 0);
-      } catch (error) {
-        console.error('Error fetching search results:', error);
-        setResults([]);
-        setTotalResults(0);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, [currentSearchParams, category, activeSortKey]);
+  return (
+    <div className="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-lg shadow-sm">
+      <Check 
+        size={20} 
+        className="text-green-600 mt-0.5 flex-shrink-0" 
+      />
+      <span className="font-medium text-gray-800">
+        {offerText}
+      </span>
+    </div>
+  );
+};
 
-  const renderPropertyCard = (property: Property) => {
+
+// -------------------------------------------------------------------
+// NEW & IMPROVED: OffersModal Component (More Appealing Version)
+// -------------------------------------------------------------------
+const OffersModal = ({ offers, onClose }: { offers: Offer[]; onClose: () => void; }) => {
+  return (
+    // The Modal Backdrop - using a slightly more modern opacity syntax
+    <div 
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="offers-modal-title"
+      className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+    >
+      {/* The Modal Panel */}
+      <div 
+        className="bg-white rounded-xl shadow-2xl w-full max-w-md relative transform transition-all duration-300 ease-in-out animate-[scaleUp_0.3s_ease-out_forwards] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal Header */}
+        <div className="p-6 text-center border-b border-gray-200">
+          <div className="mx-auto mb-3 inline-block p-3 bg-indigo-100 rounded-full">
+            <Gift size={32} className="text-indigo-600" />
+          </div>
+          <h2 id="offers-modal-title" className="text-2xl font-bold text-gray-900">
+            Exclusive Perks With Your Stay
+          </h2>
+          <p className="text-base text-gray-500 mt-2">
+            Book this property through <span className="font-semibold text-indigo-600">Room Papa</span> and enjoy these benefits, on us!
+          </p>
+        </div>
+
+        {/* Offers List */}
+        <div className="p-6 bg-slate-50 space-y-3 max-h-[50vh] overflow-y-auto">
+          {offers.map((offer, index) => (
+            <OfferItem key={index} offer={offer} />
+          ))}
+        </div>
+        
+        {/* Modal Footer */}
+        <div className="p-5 text-center bg-white border-t border-gray-200">
+            <p className="text-sm text-gray-600 mb-4">
+               ✨ These offers will be automatically applied at checkout.
+            </p>
+            <button
+                onClick={onClose}
+                className="w-full bg-[#003c95] text-white font-bold py-3 px-4 rounded-lg hover:bg-opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#003c95]"
+            >
+                Sounds Good!
+            </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+  const PropertyCard = ({ property }: { property: Property }) => {
+    // --- STATE FOR MODAL VISIBILITY ---
+    const [isOffersModalOpen, setIsOffersModalOpen] = useState(false);
+
     const ratingDesc = getRatingDescription(property.totalRating || property.propertyRating);
     const reviewText = formatReviewCount(Array.isArray(property.review) ? property.review : property.review ? [property.review] : []);
     
@@ -304,172 +331,172 @@ export default function SearchResults() {
     }
 
     const currencySymbol = property.costing?.currency === 'INR' ? '₹' : (property.costing?.currency || '$');
-    const taxesAndCharges = property.costing ? (property.costing.price * 0.1) : 0; // Note: This tax calc is a sample and may need to be adjusted.
+    // const taxesAndCharges = property.costing ? (property.costing.price * 0.1) : 0; // Note: This tax calc is a sample and may need to be adjusted.
 
     return (
-    <div 
-      key={property._id?.toString()} 
-      className="flex flex-col sm:flex-row border border-gray-300 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 bg-white group"
-    >
-      
-      <div className="w-full sm:w-[240px] md:w-[260px] lg:w-[280px] h-52 sm:h-auto relative">
-        <Link href={`/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}&rooms=${roomsQuery}`} className="block w-full h-full">
-            {property.bannerImage?.url ? (
-            <Image 
-                src={property.bannerImage.url} 
-                alt={property.title || "Property image"}
-                fill
-                sizes="(max-width: 640px) 100vw, 280px"
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-            ) : (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                <BedDouble size={48} className="text-gray-400" />
+    <Fragment>
+      <div 
+        // key={property._id?.toString()} 
+        className="flex flex-col sm:flex-row border border-gray-300 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 bg-white group"
+      >
+        
+        <div className="w-full sm:w-[240px] md:w-[260px] lg:w-[280px] h-52 sm:h-auto relative">
+          <Link href={`/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}&rooms=${roomsQuery}`} className="block w-full h-full">
+              {property.bannerImage?.url ? (
+              <Image 
+                  src={property.bannerImage.url} 
+                  alt={property.title || "Property image"}
+                  fill
+                  sizes="(max-width: 640px) 100vw, 280px"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+              ) : (
+              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                  <BedDouble size={48} className="text-gray-400" />
+              </div>
+              )}
+          </Link>
+          <button 
+              className="absolute top-3 right-3 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors"
+          >
+            <Heart size={20} className="text-red-500" />
+          </button>
+        </div>
+        
+        <div className="flex-grow p-4 flex flex-col">
+          <div className="flex justify-between items-start">
+              <Link href={`/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}&rooms=${roomsQuery}`} className="block mb-1">
+                  <h3 className="text-xl md:text-2xl font-bold text-[#003c95] hover:text-[#003c95] transition-colors line-clamp-2">{property.title || "Untitled Property"}</h3>
+              </Link>
+              {(property.totalRating || property.propertyRating) && (
+                <div className="sm:hidden flex flex-col items-end ml-2">
+                  <div className={`text-xs font-semibold ${ratingDesc.className}`}>{ratingDesc.text}</div>
+                  <div className="bg-[#003c95] text-white text-sm font-bold px-2 py-0.5 rounded">
+                      {(property.totalRating || property.propertyRating)?.toFixed(1)}
+                  </div>
+                </div>
+              )}
+          </div>
+
+          <div className="flex items-center mb-2 text-sm">
+              {Array(5).fill(0).map((_, i) => (
+                  <StarIcon key={i} size={16} className={`mr-0.5 ${ (property.propertyRating || 0) >= i + 0.5 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+              ))}
+              {(property.propertyRating || 0) >= 4 && <ThumbsUp size={16} className="ml-1 text-yellow-500" />}
+          </div>
+
+          <div className="text-xs text-gray-600 mb-2">
+              <span className="text-[#003c95] hover:underline">{property.location?.city}</span>
+              <span className="mx-1 text-gray-400">•</span>
+              <span className="text-[#003c95] hover:underline">Show on map</span>
+          </div>
+
+          {/* --- START: MODIFIED ATTRACTIVE OFFERS SECTION --- */}
+          {Array.isArray(property.offers) && property.offers.length > 0 && (
+            <div className="my-2">
+              <button
+                onClick={() => setIsOffersModalOpen(true)}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 text-sm font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-4 py-2.5 rounded-lg hover:bg-indigo-100 hover:border-indigo-300 transition-all duration-200 shadow-sm"
+              >
+                <Ticket size={18} className="transform -rotate-12" />
+                <span>View {property.offers.length} Special Offer{property.offers.length > 1 && 's'}</span>
+              </button>
             </div>
-            )}
-        </Link>
-        <button 
-            className="absolute top-3 right-3 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors"
-        >
-          <Heart size={20} className="text-red-500" />
-        </button>
-      </div>
-      
-      <div className="flex-grow p-4 flex flex-col">
-        <div className="flex justify-between items-start">
-            <Link href={`/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}&rooms=${roomsQuery}`} className="block mb-1">
-                <h3 className="text-xl md:text-2xl font-bold text-[#003c95] hover:text-[#003c95] transition-colors line-clamp-2">{property.title || "Untitled Property"}</h3>
-            </Link>
-            {(property.totalRating || property.propertyRating) && (
-              <div className="sm:hidden flex flex-col items-end ml-2">
-                <div className={`text-xs font-semibold ${ratingDesc.className}`}>{ratingDesc.text}</div>
-                <div className="bg-[#003c95] text-white text-sm font-bold px-2 py-0.5 rounded">
-                    {(property.totalRating || property.propertyRating)?.toFixed(1)}
+          )}
+          {/* --- END: MODIFIED ATTRACTIVE OFFERS SECTION --- */}
+
+
+          <div className="inline-block bg-gray-100 border border-gray-300 text-gray-700 text-xs font-medium px-2 py-1 rounded-sm my-3 self-start">
+              Recommended for you
+          </div>
+          
+          <div className="text-sm text-gray-800 mb-1">
+              <span className="font-semibold">{roomTypeTitle}</span>
+          </div>
+          <div className="text-sm text-gray-600 mb-2">
+              {bedConfiguration}
+          </div>
+
+          {hasFreeCancellation && (
+              <div className="flex items-center text-green-600 text-sm mb-1">
+                  <Check size={18} className="mr-1.5" />
+                  <span>Free cancellation</span>
+              </div>
+          )}
+          {hasNoPrepayment && (
+              <div className="flex items-center text-green-600 text-sm">
+                  <Check size={18} className="mr-1.5" />
+                  <span>No prepayment needed <span className="text-gray-500">– pay at the property</span></span>
+              </div>
+          )}
+          
+          <div className="flex-grow"></div> 
+
+        </div>
+
+        <div className='w-full sm:w-auto sm:min-w-[200px] md:min-w-[220px] lg:min-w-[240px] p-4 flex flex-col justify-between items-center sm:items-end border-t sm:border-t-0 sm:border-l border-gray-200/80 bg-gray-50/30 sm:bg-transparent'>
+          <div className="w-full text-center sm:text-right mb-3 sm:mb-0">
+              {(property.totalRating) ? (
+              <div className="hidden sm:flex items-center justify-end gap-2 mb-1">
+                <div className="text-right">
+                <p className={`text-sm font-semibold ${ratingDesc.className}`}>{ratingDesc.text}</p>
+                <p className="text-xs text-gray-500">{reviewText}</p>
+                </div>
+                <div className="bg-[#003c95] text-white text-base font-bold px-2 py-1 rounded h-fit">
+                {(property.totalRating && property.review && property.review.length > 0
+                  ? (property.totalRating / property.review.length).toFixed(1)
+                  : property.totalRating?.toFixed(1))}
                 </div>
               </div>
-            )}
-        </div>
-
-        <div className="flex items-center mb-2 text-sm">
-            {Array(5).fill(0).map((_, i) => (
-                <StarIcon key={i} size={16} className={`mr-0.5 ${ (property.propertyRating || 0) >= i + 0.5 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
-            ))}
-            {(property.propertyRating || 0) >= 4 && <ThumbsUp size={16} className="ml-1 text-yellow-500" />}
-        </div>
-
-        <div className="text-xs text-gray-600 mb-2">
-            <span className="text-[#003c95] hover:underline">{property.location?.city}</span>
-            <span className="mx-1 text-gray-400">•</span>
-            <span className="text-[#003c95] hover:underline">Show on map</span>
-        </div>
-
-        {/* --- START: ATTRACTIVE OFFERS SECTION --- */}
-        {Array.isArray(property.offers) && property.offers.length > 0 && (
-          <div className="mt-1 mb-3 p-3 bg-blue-50 border-l-4 border-[#003c95] rounded-md shadow-sm">
-            <h4 className="flex items-center text-sm font-bold text-[#003c95] mb-1.5">
-              <Sparkles size={16} className="mr-1.5 fill-yellow-400 text-yellow-400" />
-              Special Offers Today:
-            </h4>
-            <ul className="space-y-1">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {property.offers.slice(0, 3).map((offer: any, index: number) => (
-                <li key={index} className="flex items-start text-sm text-gray-700">
-                  <Check size={16} className="text-green-600 mt-0.5 flex-shrink-0 mr-1.5" />
-                  <span>
-                    {/* Assuming offer is a string or an object with title/description */}
-                    {typeof offer === 'string' ? offer : offer.title || offer.description || 'Exclusive Deal'}
-                  </span>
-                </li>
-              ))}
-              {property.offers.length > 3 && (
-                  <li className="text-xs text-[#003c95] font-medium mt-1 cursor-pointer hover:underline">
-                      + {property.offers.length - 3} more offers available
-                  </li>
+              ) : (
+              <div className="flex flex-col items-end mb-1">
+                <p className="text-xs text-gray-500 mb-1">No reviews yet</p>
+              </div>
               )}
-            </ul>
           </div>
-        )}
-        {/* --- END: ATTRACTIVE OFFERS SECTION --- */}
-
-
-        <div className="inline-block bg-gray-100 border border-gray-300 text-gray-700 text-xs font-medium px-2 py-1 rounded-sm mb-3 self-start">
-            Recommended for you
-        </div>
-        
-        <div className="text-sm text-gray-800 mb-1">
-            <span className="font-semibold">{roomTypeTitle}</span>
-        </div>
-        <div className="text-sm text-gray-600 mb-2">
-            {bedConfiguration}
-        </div>
-
-        {hasFreeCancellation && (
-            <div className="flex items-center text-green-600 text-sm mb-1">
-                <Check size={18} className="mr-1.5" />
-                <span>Free cancellation</span>
-            </div>
-        )}
-        {hasNoPrepayment && (
-            <div className="flex items-center text-green-600 text-sm">
-                <Check size={18} className="mr-1.5" />
-                <span>No prepayment needed <span className="text-gray-500">– pay at the property</span></span>
-            </div>
-        )}
-        
-        <div className="flex-grow"></div> 
-
-      </div>
-
-      <div className='w-full sm:w-auto sm:min-w-[200px] md:min-w-[220px] lg:min-w-[240px] p-4 flex flex-col justify-between items-center sm:items-end border-t sm:border-t-0 sm:border-l border-gray-200/80 bg-gray-50/30 sm:bg-transparent'>
-        <div className="w-full text-center sm:text-right mb-3 sm:mb-0">
-            {(property.totalRating) ? (
-            <div className="hidden sm:flex items-center justify-end gap-2 mb-1">
-              <div className="text-right">
-              <p className={`text-sm font-semibold ${ratingDesc.className}`}>{ratingDesc.text}</p>
-              <p className="text-xs text-gray-500">{reviewText}</p>
-              </div>
-              <div className="bg-[#003c95] text-white text-base font-bold px-2 py-1 rounded h-fit">
-              {(property.totalRating && property.review && property.review.length > 0
-                ? (property.totalRating / property.review.length).toFixed(1)
-                : property.totalRating?.toFixed(1))}
-              </div>
-            </div>
-            ) : (
-            <div className="flex flex-col items-end mb-1">
-              <p className="text-xs text-gray-500 mb-1">No reviews yet</p>
-            </div>
+          
+          <div className="w-full text-center sm:text-right">
+            <p className="text-xs text-gray-500 mb-0.5">{guestSummary}</p>
+            {property.categoryRooms && property.categoryRooms.length > 0 && propertyCostingDiscountedPrice !== undefined && (
+              <>
+                <span className="text-2xl font-bold text-gray-800">
+                  {currencySymbol}
+                  {(propertyCostingDiscountedPrice * numNights).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})}
+                </span>
+                {/* {isOffersModalOpen && Array.isArray(property.offers) && (
+                  <OffersModal 
+                    offers={normalizeOffers(property.offers)} 
+                    onClose={() => setIsOffersModalOpen(false)} 
+                  />
+                )} */}
+                <Link  
+                  href={`/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}&rooms=${roomsQuery}`} 
+                  className="mt-2.5 block bg-[#003c95] hover:bg-[#003c95] text-white font-semibold py-2.5 px-4 rounded-md text-sm transition-colors w-full flex items-center justify-center"
+                >
+                See availability
+                <ChevronRight size={18} className="ml-1" />
+              </Link>
+              </>
             )}
-        </div>
+          </div>
         
-        <div className="w-full text-center sm:text-right">
-          <p className="text-xs text-gray-500 mb-0.5">{guestSummary}</p>
-          {property.categoryRooms && property.categoryRooms.length > 0 && propertyCostingDiscountedPrice !== undefined && (
-            <>
-              <span className="text-2xl font-bold text-gray-800">
-                {currencySymbol}
-                {(propertyCostingDiscountedPrice * numNights).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})}
-              </span>
-              { taxesAndCharges > 0 && (
-                <p className="text-xs text-gray-500">
-                  +{currencySymbol}{(taxesAndCharges * numNights).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})} taxes and charges
-                </p>
-              )}
-            </>
-          )}
-           <Link 
-            href={`/property/${property._id}?checkIn=${checkInQuery || ''}&checkOut=${checkOutQuery || ''}&adults=${adultsQuery}&children=${childrenQuery}&rooms=${roomsQuery}`} 
-            className="mt-2.5 block bg-[#003c95] hover:bg-[#003c95] text-white font-semibold py-2.5 px-4 rounded-md text-sm transition-colors w-full flex items-center justify-center"
-          >
-            See availability
-            <ChevronRight size={18} className="ml-1" />
-          </Link>
         </div>
+
       </div>
-    </div>
+      
+      {/* --- RENDER THE MODAL IF isOffersModalOpen IS TRUE --- */}
+      {isOffersModalOpen && Array.isArray(property.offers) && (
+        <OffersModal 
+          offers={normalizeOffers(property.offers)} 
+          onClose={() => setIsOffersModalOpen(false)} 
+        />
+      )}
+    </Fragment>
     );
   };
   
-  const renderTripCard = (trip: Trip) => {
+  const TripCard = ({ trip }: { trip: Trip }) => {
+    const router = useRouter();
     const ratingDesc = getRatingDescription(trip.totalRating);
     const reviewText = formatReviewCount(Array.isArray(trip.review) ? trip.review : trip.review ? [trip.review] : []);
     const placeholderImage = '/placeholder-trip.jpg';
@@ -558,7 +585,8 @@ export default function SearchResults() {
     );
   };
   
-  const renderTravellingCard = (itinerary: Travelling) => {
+  const TravellingCard = ({ itinerary }: { itinerary: Travelling }) => {
+    const router = useRouter();
     const placeholderImage = '/placeholder-itinerary.jpg';
     const getTransportationIcon = (type?: TransportationType | string) => { 
       const iconSize = 14; 
@@ -645,6 +673,77 @@ export default function SearchResults() {
     );
   };
 
+
+export default function SearchResults() {
+  // const router = useRouter();
+  const currentSearchParams = useSearchParams();
+  const [results, setResults] = useState<Array<Property | Trip | Travelling>>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [totalResults, setTotalResults] = useState(0);
+  const [category, setCategory] = useState<string>('property');
+  const [activeSortKey, setActiveSortKey] = useState<string>('recommended_desc');
+
+  useEffect(() => {
+    const params: { [key: string]: string } = {};
+    currentSearchParams?.forEach((value, key) => {
+      params[key] = value;
+    });
+
+    const currentCategory = params.category || 'property';
+    setCategory(currentCategory);
+    
+    const chips: Array<{key: string, value: string}> = [];
+    Object.entries(params).forEach(([key, value]) => {
+      if (key !== 'page' && key !== 'sortBy' && key !== 'sortOrder' && key !== 'category' && value) {
+        chips.push({ key, value });
+      }
+    });
+    const currentSortBy = params.sortBy;
+    const currentSortOrder = params.sortOrder;
+    if (currentSortBy) {
+      setActiveSortKey(`${currentSortBy}_${currentSortOrder || 'desc'}`);
+    } else {
+      const defaultSortTab = sortTabsConfig.find(tab => tab.sortByValue === 'recommended');
+      setActiveSortKey(defaultSortTab ? defaultSortTab.key : 'recommended_desc');
+    }
+
+  }, [currentSearchParams]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      const params = new URLSearchParams(currentSearchParams?.toString() || '');
+      if (!params.has('category')) {
+        params.set('category', category); 
+      }
+      const activeSortOption = sortTabsConfig.find(tab => tab.key === activeSortKey);
+      if (activeSortOption) {
+        if(!params.has('sortBy') && activeSortOption.sortByValue !== 'recommended') { 
+            params.set('sortBy', activeSortOption.sortByValue);
+            params.set('sortOrder', activeSortOption.sortOrderValue);
+        } 
+      }
+      
+      try {
+        const response = await fetch(`/api/search?${params.toString()}`);
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status}`);
+        }
+        const data = await response.json();
+        setResults(data.results || []); 
+        setTotalResults(data.total || 0);
+      } catch (error) {
+        console.error('Error fetching search results:', error);
+        setResults([]);
+        setTotalResults(0);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [currentSearchParams, category, activeSortKey]);
+
+
   return (
     <div className="bg-[#003c95]/20 min-h-screen py-6 sm:py-8 px-2 sm:px-4 md:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
@@ -686,11 +785,11 @@ export default function SearchResults() {
               }
               switch (category) {
                 case 'trip':
-                  return renderTripCard(item as Trip);
+                  return <TripCard key={item._id.toString()} trip={item as Trip} />;
                 case 'travelling':
-                  return renderTravellingCard(item as Travelling);
+                  return <TravellingCard key={item._id.toString()} itinerary={item as Travelling} />;
                 default: 
-                  return renderPropertyCard(item as Property);
+                  return <PropertyCard key={item._id.toString()} property={item as Property} />;
               }
             })}
           </div>
