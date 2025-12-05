@@ -24,12 +24,12 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://roompapa.com';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  
+
   title: {
     template: '%s | Room Papa - Find & Book Hotels, Apartments & More',
     default: 'Room Papa | Find & Book Hotels, Apartments & Vacation Rentals Online',
   },
-  
+
   description: 'Discover and book the best hotels, apartments, vacation rentals, and unique accommodations with Room Papa. Compare prices, read reviews, and enjoy secure booking with instant confirmation. Your perfect stay is just a click away!',
 
   keywords: [
@@ -118,14 +118,43 @@ export const metadata: Metadata = {
     "verified hosts India",
     "trusted accommodation platform",
     "travel booking India",
-    "holiday rentals India"
+    "holiday rentals India",
+    "Hotel at Manali",
+    "hotel in Manali on mall road",
+    "hotel in Manali booking",
+    "hotel in Manali 5 star",
+    "online hotel booking Manali",
+    "hotel Manali heights",
+    "Vaayu resort Manali",
+    "online hotel booking shimla",
+    "hotel himgiri Manali",
+    "hotel in Manali price",
+    "hotel Manali grand",
+    "Hotel manu allaya resort Manali",
+    "budget hotel in Manali",
+    "cheep hotel in Manali",
+    "hotel in old Manali",
+    "hotel in jibhi",
+    "jibhi tree house",
+    "cottage in jibhi",
+    "villas in Manali",
+    "jibhi homestay",
+    "hotel in kasol",
+    "kasol hotel booking",
+    "online hotel booking kasol",
+    "best hotel in Manali",
+    "hotel in Manali with view",
+    "best hotel in old Manali",
+    "best 4 star hotel in Manali",
+    "hotel in dharamshala",
+
   ],
 
   // Enhanced author and publisher information
   authors: [{ name: 'Room Papa Team' }],
   creator: 'Room Papa',
   publisher: 'Room Papa',
-  
+
   // Category for better content classification
   category: 'Travel & Tourism',
 
@@ -190,7 +219,7 @@ export const metadata: Metadata = {
   // App-specific metadata
   applicationName: 'Room Papa',
   referrer: 'origin-when-cross-origin',
-  
+
   // Enhanced verification (add your actual codes)
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION || '',
@@ -290,16 +319,16 @@ export default function RootLayout({
           <meta name="apple-mobile-web-app-status-bar-style" content="default" />
           <meta name="format-detection" content="telephone=no" />
           <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-          
+
           {/* Preconnect to external domains for performance */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
           <link rel="preconnect" href="https://res.cloudinary.com" />
-          
+
           {/* DNS prefetch for external resources */}
           <link rel="dns-prefetch" href="//www.google-analytics.com" />
           <link rel="dns-prefetch" href="//www.googletagmanager.com" />
-          
+
           {/* Structured Data JSON-LD */}
           <script
             type="application/ld+json"
@@ -307,18 +336,18 @@ export default function RootLayout({
               __html: JSON.stringify(structuredData),
             }}
           />
-          
+
           {/* Manifest for PWA capabilities */}
           <link rel="manifest" href="/manifest.json" />
-          
+
           {/* Additional favicon formats */}
           <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
           <link rel="alternate icon" href="/favicon.ico" />
           <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#2563eb" />
         </head>
-        <body 
+        <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-          itemScope 
+          itemScope
           itemType="https://schema.org/WebPage"
         >
           <RoleProtection>
